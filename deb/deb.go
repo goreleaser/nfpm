@@ -1,3 +1,4 @@
+// Package deb implements pkg.Packager providing .deb bindings.
 package deb
 
 import (
@@ -14,12 +15,14 @@ import (
 	"github.com/caarlos0/pkg/tmpl"
 )
 
+// Deb is a deb pkg
 type Deb struct {
 	ctx  context.Context
 	Info pkg.Info
 	Path string
 }
 
+// New deb package with the given ctx and info
 func New(ctx context.Context, info pkg.Info) (*Deb, error) {
 	folder, err := ioutil.TempDir("", "deb")
 	if err != nil {
@@ -33,6 +36,7 @@ func New(ctx context.Context, info pkg.Info) (*Deb, error) {
 	}, nil
 }
 
+// Add adds a file to the package
 func (d *Deb) Add(src, dst string) error {
 	info, err := os.Stat(src)
 	if err != nil {
@@ -48,6 +52,7 @@ func (d *Deb) Add(src, dst string) error {
 	return ioutil.WriteFile(filepath.Join(d.Path, dst), bts, info.Mode())
 }
 
+// Close closes the package
 func (d *Deb) Close() error {
 	if err := d.createControl(); err != nil {
 		return err
