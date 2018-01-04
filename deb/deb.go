@@ -20,10 +20,11 @@ type Deb struct {
 	ctx  context.Context
 	Info pkg.Info
 	Path string
+	Tmp  string
 }
 
 // New deb package with the given ctx and info
-func New(ctx context.Context, info pkg.Info) (*Deb, error) {
+func New(ctx context.Context, info pkg.Info, path string) (*Deb, error) {
 	folder, err := ioutil.TempDir("", "deb")
 	if err != nil {
 		return nil, err
@@ -32,7 +33,8 @@ func New(ctx context.Context, info pkg.Info) (*Deb, error) {
 	return &Deb{
 		ctx:  ctx,
 		Info: info,
-		Path: folder,
+		Tmp:  folder,
+		Path: path,
 	}, nil
 }
 
@@ -42,14 +44,14 @@ func (d *Deb) Add(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(d.Path, filepath.Dir(dst)), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(d.Tmp, filepath.Dir(dst)), 0755); err != nil {
 		return err
 	}
 	bts, err := ioutil.ReadFile(src)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath.Join(d.Path, dst), bts, info.Mode())
+	return ioutil.WriteFile(filepath.Join(d.Tmp, dst), bts, info.Mode())
 }
 
 // Close closes the package
@@ -57,7 +59,7 @@ func (d *Deb) Close() error {
 	if err := d.createControl(); err != nil {
 		return err
 	}
-	cmd := exec.CommandContext(d.ctx, "dpkg-deb", "--build", d.Path, d.Info.Filename+".deb")
+	cmd := exec.CommandContext(d.ctx, "dpkg-deb", "--build", d.Tmp, d.Path)
 	bts, err := cmd.CombinedOutput()
 	log.Println(string(bts))
 	return err
@@ -84,7 +86,7 @@ func (d *Deb) createControl() error {
 	if err := template.Must(t.Parse(controlTemplate)).Execute(&b, d.Info); err != nil {
 		return err
 	}
-	control := filepath.Join(d.Path, "DEBIAN", "control")
+	control := filepath.Join(d.Tmp, "DEBIAN", "control")
 	if err := os.Mkdir(filepath.Dir(control), 0755); err != nil {
 		return err
 	}

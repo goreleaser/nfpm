@@ -12,15 +12,14 @@ type Packager interface {
 
 // Info contains information about the package
 type Info struct {
-	Filename    string
-	Name        string
-	Arch        string
-	Version     string
-	Section     string
-	Priority    string
-	Depends     []string
-	Maintainer  string
-	Description string
-	Vendor      string
-	Homepage    string
+	Name        string   `yaml:"name,omitempty"`
+	Arch        string   `yaml:"arch,omitempty"`
+	Version     string   `yaml:"version,omitempty"`
+	Section     string   `yaml:"section,omitempty"`
+	Priority    string   `yaml:"priority,omitempty"`
+	Depends     []string `yaml:"depends,omitempty"`
+	Maintainer  string   `yaml:"maintainer,omitempty"`
+	Description string   `yaml:"description,omitempty"`
+	Vendor      string   `yaml:"vendor,omitempty"`
+	Homepage    string   `yaml:"homepage,omitempty"`
 }
