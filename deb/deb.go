@@ -59,7 +59,7 @@ func (d *Deb) Close() error {
 	if err := d.createControl(); err != nil {
 		return err
 	}
-	cmd := exec.CommandContext(d.ctx, "dpkg-deb", "--build", d.Tmp, d.Path)
+	cmd := exec.CommandContext(d.ctx, "dpkg-deb", "--root-owner-group", "--build", d.Tmp, d.Path)
 	bts, err := cmd.CombinedOutput()
 	log.Println(string(bts))
 	return err

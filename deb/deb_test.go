@@ -20,10 +20,9 @@ func TestDeb(t *testing.T) {
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
 		Version:     "1.0.0",
 		Section:     "default",
-		Filename:    "/tmp/foo_1.0.0-0",
 		Homepage:    "http://carlosbecker.com",
 		Vendor:      "nope",
-	})
+	}, "/tmp/foo_1.0.0-0.deb")
 	assert.NoError(t, err)
 	assert.NoError(t, deb.Add("./testdata/fake", "/usr/local/bin/fake"))
 	assert.NoError(t, deb.Add("./testdata/whatever.conf", "/etc/fake/fake.conf"))
