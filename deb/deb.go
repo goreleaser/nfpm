@@ -84,8 +84,9 @@ func (d *Deb) createControl() error {
 	if err := template.Must(t.Parse(controlTemplate)).Execute(&b, d.Info); err != nil {
 		return err
 	}
-	if err := os.Mkdir(filepath.Join(d.Path, "DEBIAN"), 0755); err != nil {
+	control := filepath.Join(d.Path, "DEBIAN", "control")
+	if err := os.Mkdir(filepath.Dir(control), 0755); err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath.Join(d.Path, "DEBIAN", "control"), b.Bytes(), 0644)
+	return ioutil.WriteFile(control, b.Bytes(), 0644)
 }
