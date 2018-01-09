@@ -2,6 +2,7 @@ package deb
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 
 	"github.com/caarlos0/pkg"
@@ -9,22 +10,28 @@ import (
 )
 
 func TestDeb(t *testing.T) {
-	deb, err := New(context.Background(), pkg.Info{
-		Name: "foo",
-		Arch: "amd64",
-		Depends: []string{
-			"bash",
+	var files = []pkg.File{
+		{Src: "./testdata/fake", Dst: "/usr/local/bin/fake"},
+		{Src: "./testdata/whatever.conf", Dst: "/etc/fake/fake.conf"},
+	}
+	var err = New(
+		context.Background(),
+		pkg.Info{
+			Name: "foo",
+			Arch: "amd64",
+			Depends: []string{
+				"bash",
+			},
+			Description: "Foo does things",
+			Priority:    "extra",
+			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
+			Version:     "1.0.0",
+			Section:     "default",
+			Homepage:    "http://carlosbecker.com",
+			Vendor:      "nope",
 		},
-		Description: "Foo does things",
-		Priority:    "extra",
-		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
-		Version:     "1.0.0",
-		Section:     "default",
-		Homepage:    "http://carlosbecker.com",
-		Vendor:      "nope",
-	}, "/tmp/foo_1.0.0-0.deb")
+		files,
+		ioutil.Discard,
+	)
 	assert.NoError(t, err)
-	assert.NoError(t, deb.Add("./testdata/fake", "/usr/local/bin/fake"))
-	assert.NoError(t, deb.Add("./testdata/whatever.conf", "/etc/fake/fake.conf"))
-	assert.NoError(t, deb.Close())
 }

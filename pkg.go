@@ -2,12 +2,9 @@
 // formats.
 package pkg
 
-import "io"
-
-// Packager can package files in some format
-type Packager interface {
-	io.Closer
-	Add(src, dst string) error
+// File is file inside the package
+type File struct {
+	Src, Dst string
 }
 
 // Info contains information about the package
@@ -18,6 +15,9 @@ type Info struct {
 	Section     string   `yaml:"section,omitempty"`
 	Priority    string   `yaml:"priority,omitempty"`
 	Depends     []string `yaml:"depends,omitempty"`
+	Replaces    []string `yaml:"replaces,omitempty"`
+	Provides    []string `yaml:"provides,omitempty"`
+	Conflicts   []string `yaml:"conflicts,omitempty"`
 	Maintainer  string   `yaml:"maintainer,omitempty"`
 	Description string   `yaml:"description,omitempty"`
 	Vendor      string   `yaml:"vendor,omitempty"`

@@ -10,7 +10,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/caarlos0/pkg"
 	"github.com/caarlos0/pkg/deb"
 )
@@ -34,19 +33,16 @@ func main() {
 	var info pkg.Info
 	kingpin.FatalIfError(yaml.Unmarshal(bts, &info), "%v")
 
-	var packager pkg.Packager
-	switch *format {
-	case "deb":
-		packager, err = deb.New(ctx, info, *target)
-	default:
-		log.Fatalf("packager not found for %s", *format)
-	}
-	kingpin.FatalIfError(err, "%v")
-
+	var pkgFiles []pkg.File
 	for _, file := range *files {
 		s := strings.Split(file, "=")
-		kingpin.FatalIfError(packager.Add(s[0], s[1]), "%v")
+		pkgFiles = append(pkgFiles, pkg.File{
+			Src: s[0],
+			Dst: s[1],
+		})
 	}
 
-	kingpin.FatalIfError(packager.Close(), "%v")
+	f, err := os.Create(*target)
+	kingpin.FatalIfError(err, "%v")
+	kingpin.FatalIfError(deb.Package(ctx, info, pkgFiles, f), "%v")
 }
