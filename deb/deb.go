@@ -18,10 +18,18 @@ import (
 	"github.com/caarlos0/pkg"
 )
 
+var _ pkg.Packager = Default
+
+// Default deb packager
+var Default = &Deb{}
+
+// Deb is a deb packager implementation
+type Deb struct{}
+
 // Package writes a new deb package to the given writer using the given info
-func Package(ctx context.Context, info pkg.Info, files []pkg.File, deb io.Writer) (err error) {
+func (*Deb) Package(ctx context.Context, info pkg.Info, deb io.Writer) (err error) {
 	var now = time.Now()
-	dataTarGz, md5sums, instSize, err := createDataTarGz(now, files)
+	dataTarGz, md5sums, instSize, err := createDataTarGz(now, info)
 	if err != nil {
 		return err
 	}
@@ -59,7 +67,7 @@ func addArFile(now time.Time, w *ar.Writer, name string, body []byte) error {
 	return err
 }
 
-func createDataTarGz(now time.Time, files []pkg.File) (dataTarGz, md5sums []byte, instSize int64, err error) {
+func createDataTarGz(now time.Time, info pkg.Info) (dataTarGz, md5sums []byte, instSize int64, err error) {
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
 	var out = tar.NewWriter(compress)
@@ -69,19 +77,19 @@ func createDataTarGz(now time.Time, files []pkg.File) (dataTarGz, md5sums []byte
 	var md5buf bytes.Buffer
 	var md5tmp = make([]byte, 0, md5.Size)
 
-	for _, file := range files {
-		f, err := os.Open(file.Src)
+	for src, dst := range info.Files {
+		file, err := os.Open(src)
 		if err != nil {
-			return nil, nil, 0, fmt.Errorf("cannot open %s: %v", file.Src, err)
+			return nil, nil, 0, fmt.Errorf("cannot open %s: %v", src, err)
 		}
-		defer f.Close()
-		info, err := f.Stat()
+		defer file.Close()
+		info, err := file.Stat()
 		if err != nil || info.IsDir() {
 			continue
 		}
 		instSize += info.Size()
 		var header = tar.Header{
-			Name:    file.Dst,
+			Name:    dst,
 			Size:    info.Size(),
 			Mode:    int64(info.Mode()),
 			ModTime: now,
@@ -89,12 +97,12 @@ func createDataTarGz(now time.Time, files []pkg.File) (dataTarGz, md5sums []byte
 		if err := out.WriteHeader(&header); err != nil {
 			return nil, nil, 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", header.Name, err)
 		}
-		if _, err := io.Copy(out, f); err != nil {
+		if _, err := io.Copy(out, file); err != nil {
 			return nil, nil, 0, fmt.Errorf("cannot write %s to data.tar.gz: %v", header.Name, err)
 		}
 
 		var digest = md5.New()
-		if _, err := io.Copy(out, io.TeeReader(f, digest)); err != nil {
+		if _, err := io.Copy(out, io.TeeReader(file, digest)); err != nil {
 			return nil, nil, 0, err
 		}
 		fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(md5tmp), header.Name[2:])

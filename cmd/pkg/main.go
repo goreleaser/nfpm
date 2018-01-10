@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -18,7 +18,6 @@ var (
 	app    = kingpin.New("pkg", "packages apps")
 	config = app.Flag("config", "config file").ExistingFile()
 	format = app.Flag("format", "format to package").Default("deb").String()
-	files  = app.Flag("file", "file to add to the package, in the src=dst format").Required().Strings()
 	target = app.Flag("target", "where to save the package").Required().String()
 )
 
@@ -33,16 +32,18 @@ func main() {
 	var info pkg.Info
 	kingpin.FatalIfError(yaml.Unmarshal(bts, &info), "%v")
 
-	var pkgFiles []pkg.File
-	for _, file := range *files {
-		s := strings.Split(file, "=")
-		pkgFiles = append(pkgFiles, pkg.File{
-			Src: s[0],
-			Dst: s[1],
-		})
+	var packager pkg.Packager
+	switch *format {
+	case "deb":
+		packager = deb.Default
+	}
+
+	if packager == nil {
+		kingpin.Fatalf("format %s is not implemented yet", *format)
 	}
 
 	f, err := os.Create(*target)
 	kingpin.FatalIfError(err, "")
-	kingpin.FatalIfError(deb.Package(ctx, info, pkgFiles, f), "")
+	kingpin.FatalIfError(packager.Package(ctx, info, f), "")
+	fmt.Println("done:", *target)
 }
