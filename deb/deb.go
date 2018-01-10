@@ -29,11 +29,10 @@ func Package(ctx context.Context, info pkg.Info, files []pkg.File, deb io.Writer
 	if err != nil {
 		return err
 	}
-	w := ar.NewWriter(deb)
+	var w = ar.NewWriter(deb)
 	if err := w.WriteGlobalHeader(); err != nil {
 		return fmt.Errorf("cannot write ar header to deb file: %v", err)
 	}
-
 	if err := addArFile(now, w, "debian-binary", []byte("2.0\n")); err != nil {
 		return fmt.Errorf("cannot pack debian-binary: %v", err)
 	}

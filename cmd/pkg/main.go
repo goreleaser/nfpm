@@ -28,7 +28,7 @@ func main() {
 	defer cancel()
 
 	bts, err := ioutil.ReadFile(*config)
-	kingpin.FatalIfError(err, "%v")
+	kingpin.FatalIfError(err, "")
 
 	var info pkg.Info
 	kingpin.FatalIfError(yaml.Unmarshal(bts, &info), "%v")
@@ -43,6 +43,6 @@ func main() {
 	}
 
 	f, err := os.Create(*target)
-	kingpin.FatalIfError(err, "%v")
-	kingpin.FatalIfError(deb.Package(ctx, info, pkgFiles, f), "%v")
+	kingpin.FatalIfError(err, "")
+	kingpin.FatalIfError(deb.Package(ctx, info, pkgFiles, f), "")
 }

@@ -14,9 +14,9 @@ type Info struct {
 	Version     string   `yaml:"version,omitempty"`
 	Section     string   `yaml:"section,omitempty"`
 	Priority    string   `yaml:"priority,omitempty"`
+	Replaces    string   `yaml:"replaces,omitempty"`
+	Provides    string   `yaml:"provides,omitempty"`
 	Depends     []string `yaml:"depends,omitempty"`
-	Replaces    []string `yaml:"replaces,omitempty"`
-	Provides    []string `yaml:"provides,omitempty"`
 	Conflicts   []string `yaml:"conflicts,omitempty"`
 	Maintainer  string   `yaml:"maintainer,omitempty"`
 	Description string   `yaml:"description,omitempty"`
