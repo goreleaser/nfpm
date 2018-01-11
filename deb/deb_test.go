@@ -1,7 +1,6 @@
 package deb
 
 import (
-	"context"
 	"io/ioutil"
 	"testing"
 
@@ -10,12 +9,7 @@ import (
 )
 
 func TestDeb(t *testing.T) {
-	var files = []pkg.File{
-		{Src: "./testdata/fake", Dst: "/usr/local/bin/fake"},
-		{Src: "./testdata/whatever.conf", Dst: "/etc/fake/fake.conf"},
-	}
-	var err = New(
-		context.Background(),
+	var err = Default.Package(
 		pkg.Info{
 			Name: "foo",
 			Arch: "amd64",
@@ -29,8 +23,11 @@ func TestDeb(t *testing.T) {
 			Section:     "default",
 			Homepage:    "http://carlosbecker.com",
 			Vendor:      "nope",
+			Files: map[string]string{
+				"./testdata/fake":          "/usr/local/bin/fake",
+				"./testdata/whatever.conf": "/etc/fake/fake.conf",
+			},
 		},
-		files,
 		ioutil.Discard,
 	)
 	assert.NoError(t, err)

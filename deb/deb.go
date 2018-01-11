@@ -5,7 +5,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"context"
 	"crypto/md5"
 	"fmt"
 	"io"
@@ -27,7 +26,7 @@ var Default = &Deb{}
 type Deb struct{}
 
 // Package writes a new deb package to the given writer using the given info
-func (*Deb) Package(ctx context.Context, info pkg.Info, deb io.Writer) (err error) {
+func (*Deb) Package(info pkg.Info, deb io.Writer) (err error) {
 	var now = time.Now()
 	dataTarGz, md5sums, instSize, err := createDataTarGz(now, info)
 	if err != nil {

@@ -2,14 +2,11 @@
 // formats.
 package pkg
 
-import (
-	"context"
-	"io"
-)
+import "io"
 
 // Packager represents any packager implementation
 type Packager interface {
-	Package(ctx context.Context, info Info, w io.Writer) error
+	Package(info Info, w io.Writer) error
 }
 
 // Info contains information about the package

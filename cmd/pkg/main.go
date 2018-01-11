@@ -1,17 +1,14 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
-
-	"gopkg.in/yaml.v2"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/caarlos0/pkg"
 	"github.com/caarlos0/pkg/deb"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -23,8 +20,6 @@ var (
 
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
 
 	bts, err := ioutil.ReadFile(*config)
 	kingpin.FatalIfError(err, "")
@@ -44,6 +39,6 @@ func main() {
 
 	f, err := os.Create(*target)
 	kingpin.FatalIfError(err, "")
-	kingpin.FatalIfError(packager.Package(ctx, info, f), "")
+	kingpin.FatalIfError(packager.Package(info, f), "")
 	fmt.Println("done:", *target)
 }
