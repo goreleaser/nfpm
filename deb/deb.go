@@ -1,4 +1,4 @@
-// Package deb implements pkg.Packager providing .deb bindings.
+// Package deb implements packager.Packager providing .deb bindings.
 package deb
 
 import (
@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/blakesmith/ar"
-	"github.com/caarlos0/pkg"
+	"github.com/goreleaser/packager"
 )
 
-var _ pkg.Packager = Default
+var _ packager.Packager = Default
 
 // Default deb packager
 var Default = &Deb{}
@@ -26,7 +26,7 @@ var Default = &Deb{}
 type Deb struct{}
 
 // Package writes a new deb package to the given writer using the given info
-func (*Deb) Package(info pkg.Info, deb io.Writer) (err error) {
+func (*Deb) Package(info packager.Info, deb io.Writer) (err error) {
 	var now = time.Now()
 	dataTarGz, md5sums, instSize, err := createDataTarGz(now, info)
 	if err != nil {
@@ -66,7 +66,7 @@ func addArFile(now time.Time, w *ar.Writer, name string, body []byte) error {
 	return err
 }
 
-func createDataTarGz(now time.Time, info pkg.Info) (dataTarGz, md5sums []byte, instSize int64, err error) {
+func createDataTarGz(now time.Time, info packager.Info) (dataTarGz, md5sums []byte, instSize int64, err error) {
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
 	var out = tar.NewWriter(compress)
@@ -134,11 +134,11 @@ Description: {{.Info.Description}}
 `
 
 type controlData struct {
-	Info          pkg.Info
+	Info          packager.Info
 	InstalledSize int64
 }
 
-func createControl(now time.Time, instSize int64, md5sums []byte, info pkg.Info) (controlTarGz []byte, err error) {
+func createControl(now time.Time, instSize int64, md5sums []byte, info packager.Info) (controlTarGz []byte, err error) {
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
 	var out = tar.NewWriter(compress)

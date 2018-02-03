@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/caarlos0/pkg"
-	"github.com/caarlos0/pkg/deb"
-	"gopkg.in/yaml.v2"
+	"github.com/goreleaser/packager"
+	"github.com/goreleaser/packager/deb"
+	yaml "gopkg.in/yaml.v1"
 )
 
 var (
@@ -24,10 +24,10 @@ func main() {
 	bts, err := ioutil.ReadFile(*config)
 	kingpin.FatalIfError(err, "")
 
-	var info pkg.Info
+	var info packager.Info
 	kingpin.FatalIfError(yaml.Unmarshal(bts, &info), "%v")
 
-	var packager pkg.Packager
+	var packager packager.Packager
 	switch *format {
 	case "deb":
 		packager = deb.Default

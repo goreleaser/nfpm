@@ -1,6 +1,6 @@
 // Package pkg provides ways to package programs in some linux packaging
 // formats.
-package pkg
+package packager
 
 import "io"
 

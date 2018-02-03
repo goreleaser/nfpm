@@ -4,13 +4,13 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/caarlos0/pkg"
+	"github.com/goreleaser/packager"
 	"github.com/tj/assert"
 )
 
 func TestDeb(t *testing.T) {
 	var err = Default.Package(
-		pkg.Info{
+		packager.Info{
 			Name: "foo",
 			Arch: "amd64",
 			Depends: []string{
