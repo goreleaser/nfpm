@@ -24,5 +24,6 @@ type Info struct {
 	Description string            `yaml:"description,omitempty"`
 	Vendor      string            `yaml:"vendor,omitempty"`
 	Homepage    string            `yaml:"homepage,omitempty"`
+	License     string            `yaml:"license,omitempty"`
 	Files       map[string]string `yaml:"files,omitempty"`
 }
