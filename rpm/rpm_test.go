@@ -26,7 +26,9 @@ func TestRPM(t *testing.T) {
 			License:     "MIT",
 			Files: map[string]string{
 				"./testdata/fake": "/usr/local/bin/fake",
-				// "./testdata/whatever.conf": "/etc/fake/fake.conf",
+			},
+			ConfigFiles: map[string]string{
+				"./testdata/whatever.conf": "/etc/fake/fake.conf",
 			},
 		},
 		ioutil.Discard,

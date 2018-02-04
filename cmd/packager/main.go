@@ -8,6 +8,7 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/goreleaser/packager"
 	"github.com/goreleaser/packager/deb"
+	"github.com/goreleaser/packager/rpm"
 	yaml "gopkg.in/yaml.v1"
 )
 
@@ -31,6 +32,8 @@ func main() {
 	switch *format {
 	case "deb":
 		packager = deb.Default
+	case "rpm":
+		packager = rpm.Default
 	}
 
 	if packager == nil {

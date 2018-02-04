@@ -25,7 +25,10 @@ var Default = &RPM{}
 type RPM struct{}
 
 // Package writes a new RPM package to the given writer using the given info
-func (*RPM) Package(info packager.Info, deb io.Writer) error {
+func (*RPM) Package(info packager.Info, w io.Writer) error {
+	if info.Arch == "amd64" {
+		info.Arch = "x86_64"
+	}
 	root, err := ioutil.TempDir("", info.Name)
 	if err != nil {
 		return err
@@ -82,6 +85,16 @@ func (*RPM) Package(info packager.Info, deb io.Writer) error {
 	cmd.Dir = root
 	out, err := cmd.CombinedOutput()
 	log.Println(string(out))
+	rpm, err := os.Open(filepath.Join(
+		root,
+		"RPMS",
+		info.Arch,
+		fmt.Sprintf("%s-%s-1.%s.rpm", info.Name, info.Version, info.Arch),
+	))
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(w, rpm)
 	return err
 }
 
@@ -128,7 +141,9 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-#%config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
+{{ range $index, $element := .ConfigFiles }}
+#%config(noreplace) {{ . }}
+{{ end }}
 %{_bindir}/*
 
 %changelog
