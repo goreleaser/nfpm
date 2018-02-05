@@ -10,8 +10,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"text/template"
 
-	"github.com/alecthomas/template"
 	"github.com/goreleaser/archive"
 	"github.com/goreleaser/nfpm"
 )

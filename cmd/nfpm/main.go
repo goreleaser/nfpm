@@ -25,23 +25,23 @@ func main() {
 	bts, err := ioutil.ReadFile(*config)
 	kingpin.FatalIfError(err, "")
 
-	var info packager.Info
+	var info nfpm.Info
 	kingpin.FatalIfError(yaml.Unmarshal(bts, &info), "%v")
 
-	var packager nfpm.Packager
+	var pkg nfpm.Packager
 	switch *format {
 	case "deb":
-		packager = deb.Default
+		pkg = deb.Default
 	case "rpm":
-		packager = rpm.Default
+		pkg = rpm.Default
 	}
 
-	if packager == nil {
+	if pkg == nil {
 		kingpin.Fatalf("format %s is not implemented yet", *format)
 	}
 
 	f, err := os.Create(*target)
 	kingpin.FatalIfError(err, "")
-	kingpin.FatalIfError(packager.Package(info, f), "")
+	kingpin.FatalIfError(pkg.Package(info, f), "")
 	fmt.Println("done:", *target)
 }

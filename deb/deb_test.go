@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/goreleaser/nfpm"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDeb(t *testing.T) {

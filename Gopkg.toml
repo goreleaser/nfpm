@@ -1,0 +1,23 @@
+[[constraint]]
+  name = "github.com/alecthomas/kingpin"
+  version = "2.2.6"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/blakesmith/ar"
+
+[[constraint]]
+  name = "github.com/goreleaser/archive"
+  version = "1.0.3"
+
+[[constraint]]
+  branch = "v1"
+  name = "gopkg.in/yaml.v1"
+
+[prune]
+  go-tests = true
+  unused-packages = true
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.2.1"
