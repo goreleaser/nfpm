@@ -24,8 +24,8 @@ func TestDeb(t *testing.T) {
 			Homepage:    "http://carlosbecker.com",
 			Vendor:      "nope",
 			Files: map[string]string{
-				"./testdata/fake":          "/usr/local/bin/fake",
-				"./testdata/whatever.conf": "/etc/fake/fake.conf",
+				"../testdata/fake":          "/usr/local/bin/fake",
+				"../testdata/whatever.conf": "/etc/fake/fake.conf",
 			},
 		},
 		ioutil.Discard,

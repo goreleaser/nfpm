@@ -28,10 +28,10 @@ func TestRPM(t *testing.T) {
 			Vendor:      "nope",
 			License:     "MIT",
 			Files: map[string]string{
-				"./testdata/fake": "/usr/local/bin/fake",
+				"../testdata/fake": "/usr/local/bin/fake",
 			},
 			ConfigFiles: map[string]string{
-				"./testdata/whatever.conf": "/etc/fake/fake.conf",
+				"../testdata/whatever.conf": "/etc/fake/fake.conf",
 			},
 		},
 		f,
