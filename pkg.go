@@ -13,6 +13,7 @@ type Packager interface {
 type Info struct {
 	Name        string            `yaml:"name,omitempty"`
 	Arch        string            `yaml:"arch,omitempty"`
+	Platform    string            `yaml:"platform,omitempty"`
 	Version     string            `yaml:"version,omitempty"`
 	Section     string            `yaml:"section,omitempty"`
 	Priority    string            `yaml:"priority,omitempty"`

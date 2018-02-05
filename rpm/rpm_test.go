@@ -1,7 +1,7 @@
 package rpm
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/goreleaser/packager"
@@ -9,10 +9,13 @@ import (
 )
 
 func TestRPM(t *testing.T) {
-	var err = Default.Package(
+	f, err := os.Create("foo.rpm")
+	assert.NoError(t, err)
+	err = Default.Package(
 		packager.Info{
-			Name: "foo",
-			Arch: "amd64",
+			Name:     "foo",
+			Arch:     "amd64",
+			Platform: "linux",
 			Depends: []string{
 				"bash",
 			},
@@ -31,7 +34,7 @@ func TestRPM(t *testing.T) {
 				"./testdata/whatever.conf": "/etc/fake/fake.conf",
 			},
 		},
-		ioutil.Discard,
+		f,
 	)
 	assert.NoError(t, err)
 }

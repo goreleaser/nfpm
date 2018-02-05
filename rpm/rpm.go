@@ -78,9 +78,11 @@ func (*RPM) Package(info packager.Info, w io.Writer) error {
 	var args = []string{
 		"--define", fmt.Sprintf("_topdir %s", root),
 		"--define", fmt.Sprintf("_tmppath %s/tmp", root),
+		"--target", fmt.Sprintf("%s-unknown-%s", info.Arch, info.Platform),
 		"-ba",
 		"SPECS/" + info.Name + ".spec",
 	}
+	log.Println(args)
 	cmd := exec.Command("rpmbuild", args...)
 	cmd.Dir = root
 	out, err := cmd.CombinedOutput()
@@ -103,9 +105,10 @@ const specTemplate = `
 # Don't try fancy stuff like debuginfo, which is useless on binary-only
 # packages. Don't strip binary too
 # Be sure buildpolicy set to do nothing
-%define        __spec_install_post %{nil}
-%define          debug_package %{nil}
-%define        __os_install_post %{_dbpath}/brp-compress
+%define __spec_install_post %{nil}
+%define debug_package %{nil}
+%define __os_install_post %{_dbpath}/brp-compress
+%define _arch {{.Arch}}
 
 Name: {{ .Name }}
 Summary: {{ first_line .Description }}
@@ -143,6 +146,9 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 {{ range $index, $element := .ConfigFiles }}
 #%config(noreplace) {{ . }}
+{{ end }}
+{{ range $index, $element := .Files }}
+{{ . }}
 {{ end }}
 %{_bindir}/*
 
