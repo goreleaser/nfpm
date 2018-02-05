@@ -100,11 +100,7 @@ func (*RPM) Package(info packager.Info, w io.Writer) error {
 	return err
 }
 
-// TODO: declare dependencies and etc here as well
 const specTemplate = `
-# Don't try fancy stuff like debuginfo, which is useless on binary-only
-# packages. Don't strip binary too
-# Be sure buildpolicy set to do nothing
 %define __spec_install_post %{nil}
 %define debug_package %{nil}
 %define __os_install_post %{_dbpath}/brp-compress
@@ -118,8 +114,23 @@ License: {{ .License }}
 Group: Development/Tools
 SOURCE0 : %{name}-%{version}.tar.gz
 URL: {{ .Homepage }}
-
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+
+{{ range $index, $element := .Replaces }}
+Obsolotes: {{ . }}
+{{ end }}
+
+{{ range $index, $element := .Conflicts }}
+Conflicts: {{ . }}
+{{ end }}
+
+{{ range $index, $element := .Provides }}
+Provides: {{ . }}
+{{ end }}
+
+{{ range $index, $element := .Depends }}
+Requires: {{ . }}
+{{ end }}
 
 %description
 {{ .Description }}
@@ -137,10 +148,8 @@ mkdir -p  %{buildroot}
 # in builddir
 cp -a * %{buildroot}
 
-
 %clean
 rm -rf %{buildroot}
-
 
 %files
 %defattr(-,root,root,-)

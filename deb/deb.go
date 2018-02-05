@@ -125,8 +125,8 @@ Architecture: {{.Info.Arch}}
 Maintainer: {{.Info.Maintainer}}
 Vendor: {{.Info.Vendor}}
 Installed-Size: {{.InstalledSize}}
-Replaces: {{.Info.Replaces}}
-Provides: {{.Info.Provides}}
+Replaces: {{join .Info.Replaces}}
+Provides: {{join .Info.Provides}}
 Depends: {{join .Info.Depends}}
 Conflicts: {{join .Info.Conflicts}}
 Homepage: {{.Info.Homepage}}
