@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/goreleaser/packager"
-	"github.com/goreleaser/packager/deb"
-	"github.com/goreleaser/packager/rpm"
+	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/deb"
+	"github.com/goreleaser/nfpm/rpm"
 	yaml "gopkg.in/yaml.v1"
 )
 
@@ -28,7 +28,7 @@ func main() {
 	var info packager.Info
 	kingpin.FatalIfError(yaml.Unmarshal(bts, &info), "%v")
 
-	var packager packager.Packager
+	var packager nfpm.Packager
 	switch *format {
 	case "deb":
 		packager = deb.Default

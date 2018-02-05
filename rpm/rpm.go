@@ -13,10 +13,10 @@ import (
 
 	"github.com/alecthomas/template"
 	"github.com/goreleaser/archive"
-	"github.com/goreleaser/packager"
+	"github.com/goreleaser/nfpm"
 )
 
-var _ packager.Packager = Default
+var _ nfpm.Packager = Default
 
 // Default deb packager
 var Default = &RPM{}
@@ -25,7 +25,7 @@ var Default = &RPM{}
 type RPM struct{}
 
 // Package writes a new RPM package to the given writer using the given info
-func (*RPM) Package(info packager.Info, w io.Writer) error {
+func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if info.Arch == "amd64" {
 		info.Arch = "x86_64"
 	}

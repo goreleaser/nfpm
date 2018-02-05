@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/goreleaser/packager"
+	"github.com/goreleaser/nfpm"
 	"github.com/tj/assert"
 )
 
@@ -12,7 +12,7 @@ func TestRPM(t *testing.T) {
 	f, err := os.Create("foo.rpm")
 	assert.NoError(t, err)
 	err = Default.Package(
-		packager.Info{
+		nfpm.Info{
 			Name:     "foo",
 			Arch:     "amd64",
 			Platform: "linux",

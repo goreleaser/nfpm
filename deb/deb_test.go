@@ -4,13 +4,13 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/goreleaser/packager"
+	"github.com/goreleaser/nfpm"
 	"github.com/tj/assert"
 )
 
 func TestDeb(t *testing.T) {
 	var err = Default.Package(
-		packager.Info{
+		nfpm.Info{
 			Name: "foo",
 			Arch: "amd64",
 			Depends: []string{
