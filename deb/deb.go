@@ -76,35 +76,37 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 	var md5buf bytes.Buffer
 	var md5tmp = make([]byte, 0, md5.Size)
 
-	for src, dst := range info.Files {
-		file, err := os.Open(src)
-		if err != nil {
-			return nil, nil, 0, fmt.Errorf("cannot open %s: %v", src, err)
-		}
-		defer file.Close()
-		info, err := file.Stat()
-		if err != nil || info.IsDir() {
-			continue
-		}
-		instSize += info.Size()
-		var header = tar.Header{
-			Name:    dst,
-			Size:    info.Size(),
-			Mode:    int64(info.Mode()),
-			ModTime: now,
-		}
-		if err := out.WriteHeader(&header); err != nil {
-			return nil, nil, 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", header.Name, err)
-		}
-		if _, err := io.Copy(out, file); err != nil {
-			return nil, nil, 0, fmt.Errorf("cannot write %s to data.tar.gz: %v", header.Name, err)
-		}
+	for _, files := range []map[string]string{info.Files, info.ConfigFiles} {
+		for src, dst := range files {
+			file, err := os.Open(src)
+			if err != nil {
+				return nil, nil, 0, fmt.Errorf("cannot open %s: %v", src, err)
+			}
+			defer file.Close()
+			info, err := file.Stat()
+			if err != nil || info.IsDir() {
+				continue
+			}
+			instSize += info.Size()
+			var header = tar.Header{
+				Name:    dst,
+				Size:    info.Size(),
+				Mode:    int64(info.Mode()),
+				ModTime: now,
+			}
+			if err := out.WriteHeader(&header); err != nil {
+				return nil, nil, 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", header.Name, err)
+			}
+			if _, err := io.Copy(out, file); err != nil {
+				return nil, nil, 0, fmt.Errorf("cannot write %s to data.tar.gz: %v", header.Name, err)
+			}
 
-		var digest = md5.New()
-		if _, err := io.Copy(out, io.TeeReader(file, digest)); err != nil {
-			return nil, nil, 0, err
+			var digest = md5.New()
+			if _, err := io.Copy(out, io.TeeReader(file, digest)); err != nil {
+				return nil, nil, 0, err
+			}
+			fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(md5tmp), header.Name[2:])
 		}
-		fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(md5tmp), header.Name[2:])
 	}
 
 	if err := out.Close(); err != nil {

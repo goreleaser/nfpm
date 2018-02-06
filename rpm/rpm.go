@@ -1,18 +1,18 @@
 package rpm
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
 
-	"github.com/goreleaser/archive"
 	"github.com/goreleaser/nfpm"
 )
 
@@ -29,35 +29,68 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if info.Arch == "amd64" {
 		info.Arch = "x86_64"
 	}
+	if info.Platform == "" {
+		info.Platform = "linux"
+	}
+
 	root, err := ioutil.TempDir("", info.Name)
 	if err != nil {
 		return err
 	}
-	for _, folder := range []string{
-		"RPMS",
-		"SRPMS",
-		"BUILD",
-		"SOURCES",
-		"SPECS",
-		"tmp",
-	} {
-		if err := os.Mkdir(filepath.Join(root, folder), 0744); err != nil {
-			return err
-		}
+	if err := createDirs(root); err != nil {
+		return err
 	}
-	targz, err := os.Create(filepath.Join(root, "SOURCES", fmt.Sprintf("%s-%s.tar.gz", info.Name, info.Version)))
+
+	folder := fmt.Sprintf("%s-%s", info.Name, info.Version)
+	bts, err := createTarGz(info, folder)
+	if err != nil {
+		return err
+	}
+	targzPath := filepath.Join(root, "SOURCES", folder+".tar.gz")
+	targz, err := os.Create(targzPath)
 	if err != nil {
 		return fmt.Errorf("failed to create tar.gz file: %s", err)
 	}
-	archive := archive.New(targz)
-	defer archive.Close()
-	for src, dst := range info.Files {
-		if err := archive.Add(fmt.Sprintf("%s-%s/%s", info.Name, info.Version, dst), src); err != nil {
-			return fmt.Errorf("failed to add file %s to tar.gz: %s", src, err)
-		}
+	defer targz.Close()
+	if _, err := targz.Write(bts); err != nil {
+		return err
 	}
-	archive.Close()
+	if err := targz.Close(); err != nil {
+		return err
+	}
 
+	specPath := filepath.Join(root, "SPECS", info.Name+".spec")
+	if err := createSpec(info, specPath); err != nil {
+		return err
+	}
+
+	var args = []string{
+		"--define", fmt.Sprintf("_topdir %s", root),
+		"--define", fmt.Sprintf("_tmppath %s/tmp", root),
+		"--target", fmt.Sprintf("%s-unknown-%s", info.Arch, info.Platform),
+		"-ba",
+		"SPECS/" + info.Name + ".spec",
+	}
+	cmd := exec.Command("rpmbuild", args...)
+	cmd.Dir = root
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("rpmbuild failed: %s", string(out))
+	}
+
+	rpmPath := filepath.Join(
+		root, "RPMS", info.Arch,
+		fmt.Sprintf("%s-%s-1.%s.rpm", info.Name, info.Version, info.Arch),
+	)
+	rpm, err := os.Open(rpmPath)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(w, rpm)
+	return err
+}
+
+func createSpec(info nfpm.Info, path string) error {
 	var body bytes.Buffer
 	var tmpl = template.New("spec")
 	tmpl.Funcs(template.FuncMap{
@@ -71,33 +104,70 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if err := template.Must(tmpl.Parse(specTemplate)).Execute(&body, info); err != nil {
 		return fmt.Errorf("failed to create spec file: %s", err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(root, "SPECS", info.Name+".spec"), body.Bytes(), 0644); err != nil {
+	if err := ioutil.WriteFile(path, body.Bytes(), 0644); err != nil {
 		return fmt.Errorf("failed to write spec file: %s", err)
 	}
+	return nil
+}
 
-	var args = []string{
-		"--define", fmt.Sprintf("_topdir %s", root),
-		"--define", fmt.Sprintf("_tmppath %s/tmp", root),
-		"--target", fmt.Sprintf("%s-unknown-%s", info.Arch, info.Platform),
-		"-ba",
-		"SPECS/" + info.Name + ".spec",
-	}
-	log.Println(args)
-	cmd := exec.Command("rpmbuild", args...)
-	cmd.Dir = root
-	out, err := cmd.CombinedOutput()
-	log.Println(string(out))
-	rpm, err := os.Open(filepath.Join(
-		root,
+func createDirs(root string) error {
+	for _, folder := range []string{
 		"RPMS",
-		info.Arch,
-		fmt.Sprintf("%s-%s-1.%s.rpm", info.Name, info.Version, info.Arch),
-	))
-	if err != nil {
-		return err
+		"SRPMS",
+		"BUILD",
+		"SOURCES",
+		"SPECS",
+		"tmp",
+	} {
+		path := filepath.Join(root, folder)
+		if err := os.Mkdir(path, 0744); err != nil {
+			return fmt.Errorf("could not create dir %s: %s", path, err)
+		}
 	}
-	_, err = io.Copy(w, rpm)
-	return err
+	return nil
+}
+
+func createTarGz(info nfpm.Info, root string) ([]byte, error) {
+	var buf bytes.Buffer
+	var compress = gzip.NewWriter(&buf)
+	var out = tar.NewWriter(compress)
+	defer out.Close()
+	defer compress.Close()
+
+	for _, files := range []map[string]string{info.Files, info.ConfigFiles} {
+		for src, dst := range files {
+			file, err := os.Open(src)
+			if err != nil {
+				return nil, fmt.Errorf("cannot open %s: %v", src, err)
+			}
+			defer file.Close()
+			info, err := file.Stat()
+			if err != nil || info.IsDir() {
+				continue
+			}
+			var header = tar.Header{
+				Name:    filepath.Join(root, dst),
+				Size:    info.Size(),
+				Mode:    int64(info.Mode()),
+				ModTime: info.ModTime(),
+			}
+			if err := out.WriteHeader(&header); err != nil {
+				return nil, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", header.Name, err)
+			}
+			if _, err := io.Copy(out, file); err != nil {
+				return nil, fmt.Errorf("cannot write %s to data.tar.gz: %v", header.Name, err)
+			}
+		}
+	}
+
+	if err := out.Close(); err != nil {
+		return nil, fmt.Errorf("closing data.tar.gz: %v", err)
+	}
+	if err := compress.Close(); err != nil {
+		return nil, fmt.Errorf("closing data.tar.gz: %v", err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 const specTemplate = `
@@ -153,13 +223,16 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-{{ range $index, $element := .ConfigFiles }}
-#%config(noreplace) {{ . }}
-{{ end }}
 {{ range $index, $element := .Files }}
 {{ . }}
 {{ end }}
 %{_bindir}/*
+{{ range $index, $element := .ConfigFiles }}
+{{ . }}
+{{ end }}
+{{ range $index, $element := .ConfigFiles }}
+#%config(noreplace) {{ . }}
+{{ end }}
 
 %changelog
 # noop
