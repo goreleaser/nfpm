@@ -11,6 +11,7 @@ WIP: simple deb/rpm packager written in Go
 - be distributed as a single binary
 - reproducible results
   - depend on the fewer external things as possible
+  - generate packages from yaml files (and/or json/toml?)
 - be possible to be used as a lib for other go projects (namely goreleaser itself)
 
 ### Status
