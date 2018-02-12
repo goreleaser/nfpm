@@ -10,7 +10,7 @@ import (
 
 func TestDeb(t *testing.T) {
 	var err = Default.Package(
-		nfpm.Info{
+		nfpm.WithDefaults(nfpm.Info{
 			Name: "foo",
 			Arch: "amd64",
 			Depends: []string{
@@ -27,7 +27,7 @@ func TestDeb(t *testing.T) {
 				"../testdata/fake":          "/usr/local/bin/fake",
 				"../testdata/whatever.conf": "/etc/fake/fake.conf",
 			},
-		},
+		}),
 		ioutil.Discard,
 	)
 	assert.NoError(t, err)

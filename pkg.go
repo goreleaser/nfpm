@@ -55,3 +55,14 @@ type Info struct {
 	Files       map[string]string `yaml:"files,omitempty"`
 	ConfigFiles map[string]string `yaml:"config_files,omitempty"`
 }
+
+// WithDefaults set some sane defaults into the given Info
+func WithDefaults(info Info) Info {
+	if info.Bindir == "" {
+		info.Bindir = "/usr/local/bin"
+	}
+	if info.Platform == "" {
+		info.Platform = "linux"
+	}
+	return info
+}

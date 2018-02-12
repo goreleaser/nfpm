@@ -32,10 +32,6 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if info.Arch == "amd64" {
 		info.Arch = "x86_64"
 	}
-	if info.Platform == "" {
-		info.Platform = "linux"
-	}
-
 	root, err := ioutil.TempDir("", info.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp dir")
@@ -138,7 +134,7 @@ func createTarGz(info nfpm.Info, root string) ([]byte, error) {
 		for src, dst := range files {
 			file, err := os.Open(src)
 			if err != nil {
-				return nil, errors.Wrapf(err, "could not open %s", src)
+				return nil, errors.Wrap(err, "could not add file to the archive")
 			}
 			defer file.Close()
 			info, err := file.Stat()

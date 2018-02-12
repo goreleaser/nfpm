@@ -83,7 +83,7 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 		for src, dst := range files {
 			file, err := os.Open(src)
 			if err != nil {
-				return nil, nil, 0, errors.Wrapf(err, "could not open %s", src)
+				return nil, nil, 0, errors.Wrap(err, "could not add file to the archive")
 			}
 			defer file.Close()
 			info, err := file.Stat()

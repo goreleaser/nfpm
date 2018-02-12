@@ -1,7 +1,7 @@
 package rpm
 
 import (
-	"os"
+	"io/ioutil"
 	"testing"
 
 	"github.com/goreleaser/nfpm"
@@ -9,13 +9,10 @@ import (
 )
 
 func TestRPM(t *testing.T) {
-	f, err := os.Create("foo.rpm")
-	assert.NoError(t, err)
-	err = Default.Package(
-		nfpm.Info{
-			Name:     "foo",
-			Arch:     "amd64",
-			Platform: "linux",
+	var err = Default.Package(
+		nfpm.WithDefaults(nfpm.Info{
+			Name: "foo",
+			Arch: "amd64",
 			Depends: []string{
 				"bash",
 			},
@@ -34,8 +31,8 @@ func TestRPM(t *testing.T) {
 			ConfigFiles: map[string]string{
 				"../testdata/whatever.conf": "/etc/fake/fake.conf",
 			},
-		},
-		f,
+		}),
+		ioutil.Discard,
 	)
 	assert.NoError(t, err)
 }
