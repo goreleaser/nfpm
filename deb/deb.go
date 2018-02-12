@@ -15,6 +15,7 @@ import (
 
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/nfpm"
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -40,16 +41,16 @@ func (*Deb) Package(info nfpm.Info, deb io.Writer) (err error) {
 	}
 	var w = ar.NewWriter(deb)
 	if err := w.WriteGlobalHeader(); err != nil {
-		return fmt.Errorf("cannot write ar header to deb file: %v", err)
+		return errors.Wrap(err, "cannot write ar header to deb file")
 	}
 	if err := addArFile(now, w, "debian-binary", []byte("2.0\n")); err != nil {
-		return fmt.Errorf("cannot pack debian-binary: %v", err)
+		return errors.Wrap(err, "cannot pack debian-binary")
 	}
 	if err := addArFile(now, w, "control.tar.gz", controlTarGz); err != nil {
-		return fmt.Errorf("cannot add control.tar.gz to deb: %v", err)
+		return errors.Wrap(err, "cannot add control.tar.gz to deb")
 	}
 	if err := addArFile(now, w, "data.tar.gz", dataTarGz); err != nil {
-		return fmt.Errorf("cannot add data.tar.gz to deb: %v", err)
+		return errors.Wrap(err, "cannot add data.tar.gz to deb")
 	}
 	return nil
 }
@@ -62,7 +63,7 @@ func addArFile(now time.Time, w *ar.Writer, name string, body []byte) error {
 		ModTime: now,
 	}
 	if err := w.WriteHeader(&header); err != nil {
-		return fmt.Errorf("cannot write file header: %v", err)
+		return errors.Wrap(err, "cannot write file header")
 	}
 	_, err := w.Write(body)
 	return err
@@ -82,7 +83,7 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 		for src, dst := range files {
 			file, err := os.Open(src)
 			if err != nil {
-				return nil, nil, 0, fmt.Errorf("cannot open %s: %v", src, err)
+				return nil, nil, 0, errors.Wrapf(err, "could not open %s", src)
 			}
 			defer file.Close()
 			info, err := file.Stat()
@@ -97,25 +98,25 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 				ModTime: now,
 			}
 			if err := out.WriteHeader(&header); err != nil {
-				return nil, nil, 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", header.Name, err)
+				return nil, nil, 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", header)
 			}
 			if _, err := io.Copy(out, file); err != nil {
-				return nil, nil, 0, fmt.Errorf("cannot write %s to data.tar.gz: %v", header.Name, err)
+				return nil, nil, 0, errors.Wrapf(err, "cannot write %s to data.tar.gz", header)
 			}
 
 			var digest = md5.New()
 			if _, err := io.Copy(out, io.TeeReader(file, digest)); err != nil {
-				return nil, nil, 0, err
+				return nil, nil, 0, errors.Wrap(err, "failed to copy")
 			}
 			fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(md5tmp), header.Name[2:])
 		}
 	}
 
 	if err := out.Close(); err != nil {
-		return nil, nil, 0, fmt.Errorf("closing data.tar.gz: %v", err)
+		return nil, nil, 0, errors.Wrap(err, "closing data.tar.gz")
 	}
 	if err := compress.Close(); err != nil {
-		return nil, nil, 0, fmt.Errorf("closing data.tar.gz: %v", err)
+		return nil, nil, 0, errors.Wrap(err, "closing data.tar.gz")
 	}
 
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
@@ -170,10 +171,10 @@ func createControl(now time.Time, instSize int64, md5sums []byte, info nfpm.Info
 		Typeflag: tar.TypeReg,
 	}
 	if err := out.WriteHeader(&header); err != nil {
-		return nil, fmt.Errorf("cannot write header of control file to control.tar.gz: %v", err)
+		return nil, errors.Wrap(err, "cannot write header of control file to control.tar.gz")
 	}
 	if _, err := out.Write(body.Bytes()); err != nil {
-		return nil, fmt.Errorf("cannot write control file to control.tar.gz: %v", err)
+		return nil, errors.Wrap(err, "cannot write control file to control.tar.gz")
 	}
 
 	header = tar.Header{
@@ -184,17 +185,17 @@ func createControl(now time.Time, instSize int64, md5sums []byte, info nfpm.Info
 		Typeflag: tar.TypeReg,
 	}
 	if err := out.WriteHeader(&header); err != nil {
-		return nil, fmt.Errorf("cannot write header of md5sums file to control.tar.gz: %v", err)
+		return nil, errors.Wrap(err, "cannot write header of md5sums file to control.tar.gz")
 	}
 	if _, err := out.Write(md5sums); err != nil {
-		return nil, fmt.Errorf("cannot write md5sums file to control.tar.gz: %v", err)
+		return nil, errors.Wrap(err, "cannot write md5sums file to control.tar.gz")
 	}
 
 	if err := out.Close(); err != nil {
-		return nil, fmt.Errorf("closing control.tar.gz: %v", err)
+		return nil, errors.Wrap(err, "closing control.tar.gz")
 	}
 	if err := compress.Close(); err != nil {
-		return nil, fmt.Errorf("closing control.tar.gz: %v", err)
+		return nil, errors.Wrap(err, "closing control.tar.gz")
 	}
 	return buf.Bytes(), nil
 }

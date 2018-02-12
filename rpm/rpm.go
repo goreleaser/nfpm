@@ -14,6 +14,7 @@ import (
 	"text/template"
 
 	"github.com/goreleaser/nfpm"
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -37,33 +38,33 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 
 	root, err := ioutil.TempDir("", info.Name)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create temp dir")
 	}
 	if err := createDirs(root); err != nil {
-		return err
+		return errors.Wrap(err, "failed to rpm dir structure")
 	}
 
 	folder := fmt.Sprintf("%s-%s", info.Name, info.Version)
 	bts, err := createTarGz(info, folder)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create tar.gz")
 	}
 	targzPath := filepath.Join(root, "SOURCES", folder+".tar.gz")
 	targz, err := os.Create(targzPath)
 	if err != nil {
-		return fmt.Errorf("failed to create tar.gz file: %s", err)
+		return errors.Wrap(err, "failed to create tar.gz file")
 	}
 	defer targz.Close()
 	if _, err := targz.Write(bts); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write tar.gz file")
 	}
 	if err := targz.Close(); err != nil {
-		return err
+		return errors.Wrap(err, "failed to close tar.gz file")
 	}
 
 	specPath := filepath.Join(root, "SPECS", info.Name+".spec")
 	if err := createSpec(info, specPath); err != nil {
-		return err
+		return errors.Wrap(err, "failed to create rpm spec file")
 	}
 
 	var args = []string{
@@ -77,7 +78,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	cmd.Dir = root
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("rpmbuild failed: %s", string(out))
+		return errors.Wrapf(err, "rpmbuild failed: %s", string(out))
 	}
 
 	rpmPath := filepath.Join(
@@ -86,10 +87,10 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	)
 	rpm, err := os.Open(rpmPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed open rpm file")
 	}
 	_, err = io.Copy(w, rpm)
-	return err
+	return errors.Wrap(err, "failed to copy rpm file to writer")
 }
 
 func createSpec(info nfpm.Info, path string) error {
@@ -104,12 +105,9 @@ func createSpec(info nfpm.Info, path string) error {
 		},
 	})
 	if err := template.Must(tmpl.Parse(specTemplate)).Execute(&body, info); err != nil {
-		return fmt.Errorf("failed to create spec file: %s", err)
+		return errors.Wrap(err, "failed to parse spec template")
 	}
-	if err := ioutil.WriteFile(path, body.Bytes(), 0644); err != nil {
-		return fmt.Errorf("failed to write spec file: %s", err)
-	}
-	return nil
+	return errors.Wrap(ioutil.WriteFile(path, body.Bytes(), 0644), "failed to write spec file")
 }
 
 func createDirs(root string) error {
@@ -123,7 +121,7 @@ func createDirs(root string) error {
 	} {
 		path := filepath.Join(root, folder)
 		if err := os.Mkdir(path, 0744); err != nil {
-			return fmt.Errorf("could not create dir %s: %s", path, err)
+			return errors.Wrapf(err, "failed to create %s", path)
 		}
 	}
 	return nil
@@ -140,7 +138,7 @@ func createTarGz(info nfpm.Info, root string) ([]byte, error) {
 		for src, dst := range files {
 			file, err := os.Open(src)
 			if err != nil {
-				return nil, fmt.Errorf("cannot open %s: %v", src, err)
+				return nil, errors.Wrapf(err, "could not open %s", src)
 			}
 			defer file.Close()
 			info, err := file.Stat()
@@ -154,19 +152,19 @@ func createTarGz(info nfpm.Info, root string) ([]byte, error) {
 				ModTime: info.ModTime(),
 			}
 			if err := out.WriteHeader(&header); err != nil {
-				return nil, fmt.Errorf("cannot write header of %s to data.tar.gz: %v", header.Name, err)
+				return nil, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", header.Name)
 			}
 			if _, err := io.Copy(out, file); err != nil {
-				return nil, fmt.Errorf("cannot write %s to data.tar.gz: %v", header.Name, err)
+				return nil, errors.Wrapf(err, "cannot write %s to data.tar.gz", header.Name)
 			}
 		}
 	}
 
 	if err := out.Close(); err != nil {
-		return nil, fmt.Errorf("closing data.tar.gz: %v", err)
+		return nil, errors.Wrap(err, "failed to close data.tar.gz writer")
 	}
 	if err := compress.Close(); err != nil {
-		return nil, fmt.Errorf("closing data.tar.gz: %v", err)
+		return nil, errors.Wrap(err, "failed to close data.tar.gz gzip writer")
 	}
 
 	return buf.Bytes(), nil
@@ -228,7 +226,7 @@ rm -rf %{buildroot}
 {{ range $index, $element := .Files }}
 {{ . }}
 {{ end }}
-%{_bindir}/*
+# %{_bindir}/*
 {{ range $index, $element := .ConfigFiles }}
 {{ . }}
 {{ end }}
