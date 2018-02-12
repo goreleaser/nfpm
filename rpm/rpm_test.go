@@ -27,6 +27,7 @@ func TestRPM(t *testing.T) {
 			Homepage:    "http://carlosbecker.com",
 			Vendor:      "nope",
 			License:     "MIT",
+			Bindir:      "/usr/local/bin",
 			Files: map[string]string{
 				"../testdata/fake": "/usr/local/bin/fake",
 			},

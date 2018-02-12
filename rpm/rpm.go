@@ -175,6 +175,7 @@ const specTemplate = `
 %define debug_package %{nil}
 %define __os_install_post %{_dbpath}/brp-compress
 %define _arch {{.Arch}}
+%define _bindir {{.Bindir}}
 
 Name: {{ .Name }}
 Summary: {{ first_line .Description }}
@@ -226,12 +227,12 @@ rm -rf %{buildroot}
 {{ range $index, $element := .Files }}
 {{ . }}
 {{ end }}
-# %{_bindir}/*
+%{_bindir}/*
 {{ range $index, $element := .ConfigFiles }}
 {{ . }}
 {{ end }}
 {{ range $index, $element := .ConfigFiles }}
-#%config(noreplace) {{ . }}
+%config(noreplace) {{ . }}
 {{ end }}
 
 %changelog

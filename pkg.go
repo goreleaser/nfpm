@@ -51,6 +51,7 @@ type Info struct {
 	Vendor      string            `yaml:"vendor,omitempty"`
 	Homepage    string            `yaml:"homepage,omitempty"`
 	License     string            `yaml:"license,omitempty"`
+	Bindir      string            `yaml:"bindir,omitempty"`
 	Files       map[string]string `yaml:"files,omitempty"`
 	ConfigFiles map[string]string `yaml:"config_files,omitempty"`
 }
