@@ -2,7 +2,32 @@
 // formats.
 package nfpm
 
-import "io"
+import (
+	"fmt"
+	"io"
+	"sync"
+)
+
+var (
+	packagers = map[string]Packager{}
+	lock      sync.Mutex
+)
+
+// Register a new packager for the given format
+func Register(format string, p Packager) {
+	lock.Lock()
+	packagers[format] = p
+	lock.Unlock()
+}
+
+// Get a packager for the given format
+func Get(format string) (Packager, error) {
+	p, ok := packagers[format]
+	if !ok {
+		return nil, fmt.Errorf("no packager registered for the format %s", format)
+	}
+	return p, nil
+}
 
 // Packager represents any packager implementation
 type Packager interface {

@@ -7,8 +7,8 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/goreleaser/nfpm"
-	"github.com/goreleaser/nfpm/deb"
-	"github.com/goreleaser/nfpm/rpm"
+	_ "github.com/goreleaser/nfpm/deb"
+	_ "github.com/goreleaser/nfpm/rpm"
 	yaml "gopkg.in/yaml.v1"
 )
 
@@ -28,14 +28,7 @@ func main() {
 	var info nfpm.Info
 	kingpin.FatalIfError(yaml.Unmarshal(bts, &info), "%v")
 
-	var pkg nfpm.Packager
-	switch *format {
-	case "deb":
-		pkg = deb.Default
-	case "rpm":
-		pkg = rpm.Default
-	}
-
+	var pkg = nfpm.Get(*format)
 	if pkg == nil {
 		kingpin.Fatalf("format %s is not implemented yet", *format)
 	}

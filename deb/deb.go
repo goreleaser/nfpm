@@ -17,7 +17,9 @@ import (
 	"github.com/goreleaser/nfpm"
 )
 
-var _ nfpm.Packager = Default
+func init() {
+	nfpm.Register("deb", Default)
+}
 
 // Default deb packager
 var Default = &Deb{}
