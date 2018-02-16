@@ -28,9 +28,9 @@ func main() {
 	var info nfpm.Info
 	kingpin.FatalIfError(yaml.Unmarshal(bts, &info), "%v")
 
-	var pkg = nfpm.Get(*format)
-	if pkg == nil {
-		kingpin.Fatalf("format %s is not implemented yet", *format)
+	pkg, err := nfpm.Get(*format)
+	if err != nil {
+		kingpin.Fatalf(err.Error())
 	}
 
 	f, err := os.Create(*target)

@@ -73,19 +73,23 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
 	var out = tar.NewWriter(compress)
-	defer out.Close()
-	defer compress.Close()
+
+	// the writers are properly closed later, this is just in case that we have
+	// an error in another part of the code.
+	defer out.Close()      // nolint: errcheck
+	defer compress.Close() // nolint: errcheck
 
 	var md5buf bytes.Buffer
 	var md5tmp = make([]byte, 0, md5.Size)
 
 	for _, files := range []map[string]string{info.Files, info.ConfigFiles} {
 		for src, dst := range files {
-			file, err := os.Open(src)
+			file, err := os.OpenFile(src, os.O_RDONLY, 0600)
 			if err != nil {
 				return nil, nil, 0, errors.Wrap(err, "could not add file to the archive")
 			}
-			defer file.Close()
+			// don't care if it errs while closing...
+			defer file.Close() // nolint: errcheck
 			info, err := file.Stat()
 			if err != nil || info.IsDir() {
 				continue
@@ -108,7 +112,9 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 			if _, err := io.Copy(out, io.TeeReader(file, digest)); err != nil {
 				return nil, nil, 0, errors.Wrap(err, "failed to copy")
 			}
-			fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(md5tmp), header.Name[2:])
+			if _, err := fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(md5tmp), header.Name[2:]); err != nil {
+				return nil, nil, 0, errors.Wrap(err, "failed to write md5")
+			}
 		}
 	}
 
@@ -147,8 +153,10 @@ func createControl(now time.Time, instSize int64, md5sums []byte, info nfpm.Info
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
 	var out = tar.NewWriter(compress)
-	defer out.Close()
-	defer compress.Close()
+	// the writers are properly closed later, this is just in case that we have
+	// an error in another part of the code.
+	defer out.Close()      // nolint: errcheck
+	defer compress.Close() // nolint: errcheck
 
 	var body bytes.Buffer
 	var tmpl = template.New("control")
