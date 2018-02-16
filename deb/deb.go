@@ -81,7 +81,10 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 	defer compress.Close() // nolint: errcheck
 
 	var md5buf bytes.Buffer
-	for _, files := range []map[string]string{info.Files, info.ConfigFiles} {
+	for _, files := range []map[string]string{
+		info.Files,
+		info.ConfigFiles,
+	} {
 		for src, dst := range files {
 			size, err := copyToTarAndDigest(out, &md5buf, now, src, dst)
 			if err != nil {
