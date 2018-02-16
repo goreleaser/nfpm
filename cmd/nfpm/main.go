@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/gobuffalo/packr"
@@ -14,17 +15,27 @@ import (
 )
 
 var (
-	app    = kingpin.New("nfpm", "not-fpm packages apps in some formats")
-	config = app.Flag("config", "config file").Default("nfpm.yaml").String()
+	version = "master"
 
-	pkgCmd = app.Command("pkg", "package based on the config file")
-	format = pkgCmd.Flag("format", "format to package").Default("deb").String()
-	target = pkgCmd.Flag("target", "where to save the package").Required().String()
+	app    = kingpin.New("nfpm", "not-fpm packages apps in some formats")
+	config = app.Flag("config", "config file").
+		Default("nfpm.yaml").
+		Short('f').
+		String()
+
+	pkgCmd = app.Command("pkg", "package based on the config file").Alias("package")
+	target = pkgCmd.Flag("target", "where to save the generated package").
+		Default("/tmp/foo.deb").
+		Short('t').
+		String()
 
 	initCmd = app.Command("init", "create an empty config file")
 )
 
 func main() {
+	app.Version(version)
+	app.VersionFlag.Short('v')
+	app.HelpFlag.Short('h')
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case initCmd.FullCommand():
 		if err := initFile(*config); err != nil {
@@ -32,7 +43,7 @@ func main() {
 		}
 		fmt.Printf("created config file from example: %s\n", *config)
 	case pkgCmd.FullCommand():
-		if err := doPackage(*config, *format, *target); err != nil {
+		if err := doPackage(*config, *target); err != nil {
 			kingpin.Fatalf(err.Error())
 		}
 	}
@@ -43,7 +54,8 @@ func initFile(config string) error {
 	return ioutil.WriteFile(config, box.Bytes("."), 0666)
 }
 
-func doPackage(config, format, target string) error {
+func doPackage(config, target string) error {
+	format := filepath.Ext(target)[1:]
 	bts, err := ioutil.ReadFile(config)
 	if err != nil {
 		return err
@@ -54,7 +66,7 @@ func doPackage(config, format, target string) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Printf("using %s packager...\n", format)
 	pkg, err := nfpm.Get(format)
 	if err != nil {
 		return err
