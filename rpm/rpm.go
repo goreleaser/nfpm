@@ -36,10 +36,10 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if err := createTarGz(info, temps.Folder, temps.Source); err != nil {
+	if err = createTarGz(info, temps.Folder, temps.Source); err != nil {
 		return errors.Wrap(err, "failed to create tar.gz")
 	}
-	if err := createSpec(info, temps.Spec); err != nil {
+	if err = createSpec(info, temps.Spec); err != nil {
 		return errors.Wrap(err, "failed to create rpm spec file")
 	}
 
@@ -50,6 +50,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 		"-ba",
 		"SPECS/" + info.Name + ".spec",
 	}
+	// #nosec
 	cmd := exec.Command("rpmbuild", args...)
 	cmd.Dir = temps.Root
 	out, err := cmd.CombinedOutput()
@@ -123,7 +124,7 @@ func createDirs(root string) error {
 		"tmp",
 	} {
 		path := filepath.Join(root, folder)
-		if err := os.Mkdir(path, 0744); err != nil {
+		if err := os.Mkdir(path, 0700); err != nil {
 			return errors.Wrapf(err, "failed to create %s", path)
 		}
 	}
