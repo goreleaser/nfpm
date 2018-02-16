@@ -13,28 +13,58 @@ import (
 )
 
 var (
-	app    = kingpin.New("pkg", "packages apps")
-	config = app.Flag("config", "config file").ExistingFile()
-	format = app.Flag("format", "format to package").Default("deb").String()
-	target = app.Flag("target", "where to save the package").Required().String()
+	app    = kingpin.New("nfpm", "not-fpm packages apps in some formats")
+	config = app.Flag("config", "config file").Default("nfpm.yaml").String()
+
+	pkgCmd = app.Command("pkg", "package based on the config file")
+	format = pkgCmd.Flag("format", "format to package").Default("deb").String()
+	target = pkgCmd.Flag("target", "where to save the package").Required().String()
+
+	initCmd = app.Command("init", "create an empty config file")
 )
 
 func main() {
-	kingpin.MustParse(app.Parse(os.Args[1:]))
+	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case initCmd.FullCommand():
+		if err := initFile(*config); err != nil {
+			kingpin.Fatalf(err.Error())
+		}
+		fmt.Printf("created empty config file at %s, edit at will\n", *config)
+	case pkgCmd.FullCommand():
+		if err := doPackage(*config, *format, *target); err != nil {
+			kingpin.Fatalf(err.Error())
+		}
+	}
+}
 
-	bts, err := ioutil.ReadFile(*config)
-	kingpin.FatalIfError(err, "")
-
-	var info nfpm.Info
-	kingpin.FatalIfError(yaml.Unmarshal(bts, &info), "%v")
-
-	pkg, err := nfpm.Get(*format)
+func initFile(config string) error {
+	yml, err := yaml.Marshal(nfpm.Info{})
 	if err != nil {
-		kingpin.Fatalf(err.Error())
+		return err
+	}
+	return ioutil.WriteFile(config, yml, 0666)
+}
+
+func doPackage(config, format, target string) error {
+	bts, err := ioutil.ReadFile(config)
+	if err != nil {
+		return err
 	}
 
-	f, err := os.Create(*target)
-	kingpin.FatalIfError(err, "")
-	kingpin.FatalIfError(pkg.Package(info, f), "")
-	fmt.Println("done:", *target)
+	var info nfpm.Info
+	err = yaml.Unmarshal(bts, &info)
+	if err != nil {
+		return err
+	}
+
+	pkg, err := nfpm.Get(format)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(target)
+	if err != nil {
+		return err
+	}
+	return pkg.Package(info, f)
 }
