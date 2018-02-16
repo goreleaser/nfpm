@@ -1,0 +1,29 @@
+name: "foo"
+arch: "amd64"
+platform: "linux"
+version: "1.0.0"
+section: "default"
+priority: "extra"
+replaces:
+- foobar
+provides:
+- bar
+depends:
+- foo
+- bar
+conflicts:
+- not-foo
+- not-bar
+maintainer: "John Doe <john@example.com>"
+description: |
+  FooBar is the great foo and bar software.
+    And this can be in multiple lines!
+vendor: "FooBarCorp"
+homepage: "http://eaxmple.com"
+license: "MIT"
+bindir: "/usr/local/bin"
+files:
+  ./foo: "/usr/local/bin/foo"
+  ./bar: "/usr/local/bin/bar"
+config_files:
+  ./foobar.conf: "/etc/foobar.conf"

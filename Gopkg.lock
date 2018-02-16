@@ -35,6 +35,18 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/gobuffalo/packr"
+  packages = ["."]
+  revision = "6434a292ac52e6964adebfdce3f9ce6d9f16be01"
+  version = "v1.10.4"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
@@ -55,6 +67,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ffaf7c3c47e735ab247f597b16bb415d7e97b9032be049472f0ec0dae4c0e522"
+  inputs-digest = "390b14a0b40ecd556f19ac89f571d9caa1af22832a33c9cc10174001c04ab386"
   solver-name = "gps-cdcl"
   solver-version = 1

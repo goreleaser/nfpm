@@ -36,24 +36,24 @@ type Packager interface {
 
 // Info contains information about the package
 type Info struct {
-	Name        string            `yaml:"name"`
-	Arch        string            `yaml:"arch"`
-	Platform    string            `yaml:"platform"`
-	Version     string            `yaml:"version"`
-	Section     string            `yaml:"section"`
-	Priority    string            `yaml:"priority"`
-	Replaces    []string          `yaml:"replaces"`
-	Provides    []string          `yaml:"provides"`
-	Depends     []string          `yaml:"depends"`
-	Conflicts   []string          `yaml:"conflicts"`
-	Maintainer  string            `yaml:"maintainer"`
-	Description string            `yaml:"description"`
-	Vendor      string            `yaml:"vendor"`
-	Homepage    string            `yaml:"homepage"`
-	License     string            `yaml:"license"`
-	Bindir      string            `yaml:"bindir"`
-	Files       map[string]string `yaml:"files"`
-	ConfigFiles map[string]string `yaml:"config_files"`
+	Name        string            `yaml:"name,omitempty"`
+	Arch        string            `yaml:"arch,omitempty"`
+	Platform    string            `yaml:"platform,omitempty"`
+	Version     string            `yaml:"version,omitempty"`
+	Section     string            `yaml:"section,omitempty"`
+	Priority    string            `yaml:"priority,omitempty"`
+	Replaces    []string          `yaml:"replaces,omitempty"`
+	Provides    []string          `yaml:"provides,omitempty"`
+	Depends     []string          `yaml:"depends,omitempty"`
+	Conflicts   []string          `yaml:"conflicts,omitempty"`
+	Maintainer  string            `yaml:"maintainer,omitempty"`
+	Description string            `yaml:"description,omitempty"`
+	Vendor      string            `yaml:"vendor,omitempty"`
+	Homepage    string            `yaml:"homepage,omitempty"`
+	License     string            `yaml:"license,omitempty"`
+	Bindir      string            `yaml:"bindir,omitempty"`
+	Files       map[string]string `yaml:"files,omitempty"`
+	ConfigFiles map[string]string `yaml:"config_files,omitempty"`
 }
 
 // WithDefaults set some sane defaults into the given Info

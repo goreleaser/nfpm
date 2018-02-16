@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/gobuffalo/packr"
 	"github.com/goreleaser/nfpm"
 	_ "github.com/goreleaser/nfpm/deb"
 	_ "github.com/goreleaser/nfpm/rpm"
@@ -29,7 +30,7 @@ func main() {
 		if err := initFile(*config); err != nil {
 			kingpin.Fatalf(err.Error())
 		}
-		fmt.Printf("created empty config file at %s, edit at will\n", *config)
+		fmt.Printf("created config file from example: %s\n", *config)
 	case pkgCmd.FullCommand():
 		if err := doPackage(*config, *format, *target); err != nil {
 			kingpin.Fatalf(err.Error())
@@ -38,11 +39,8 @@ func main() {
 }
 
 func initFile(config string) error {
-	yml, err := yaml.Marshal(nfpm.Info{})
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(config, yml, 0666)
+	box := packr.NewBox("./nfpm.yaml.example")
+	return ioutil.WriteFile(config, box.Bytes("."), 0666)
 }
 
 func doPackage(config, format, target string) error {
