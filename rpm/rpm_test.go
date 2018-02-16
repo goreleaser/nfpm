@@ -2,6 +2,7 @@ package rpm
 
 import (
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/goreleaser/nfpm"
@@ -54,10 +55,17 @@ func TestNoFiles(t *testing.T) {
 			Vendor:      "nope",
 			License:     "MIT",
 			Bindir:      "/usr/local/bin",
-			Files:       map[string]string{},
-			ConfigFiles: map[string]string{},
 		}),
 		ioutil.Discard,
 	)
 	assert.Error(t, err)
+}
+
+func TestRPMBuildNotInPath(t *testing.T) {
+	assert.NoError(t, os.Setenv("PATH", ""))
+	var err = Default.Package(
+		nfpm.WithDefaults(nfpm.Info{}),
+		ioutil.Discard,
+	)
+	assert.EqualError(t, err, `rpmbuild failed: exec: "rpmbuild": executable file not found in $PATH`)
 }

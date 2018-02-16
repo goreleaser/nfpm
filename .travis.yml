@@ -1,5 +1,8 @@
 dist: trusty
-sudo: required
+addons:
+  apt:
+    packages:
+    - rpmbuild
 language: go
 go: 1.9
 services:

@@ -55,7 +55,11 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	cmd.Dir = temps.Root
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return errors.Wrapf(err, "rpmbuild failed: %s", string(out))
+		var msg = "rpmbuild failed"
+		if string(out) != "" {
+			msg += ": " + string(out)
+		}
+		return errors.Wrap(err, msg)
 	}
 
 	rpm, err := os.Open(temps.RPM)
