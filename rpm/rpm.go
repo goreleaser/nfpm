@@ -141,31 +141,11 @@ func createTarGz(info nfpm.Info, root, file string) error {
 
 	for _, files := range []map[string]string{info.Files, info.ConfigFiles} {
 		for src, dst := range files {
-			file, err := os.OpenFile(src, os.O_RDONLY, 0600)
-			if err != nil {
-				return errors.Wrap(err, "could not add file to the archive")
-			}
-			// don't really care if Close() errs
-			defer file.Close() // nolint: errcheck
-			info, err := file.Stat()
-			if err != nil || info.IsDir() {
-				continue
-			}
-			var header = tar.Header{
-				Name:    filepath.Join(root, dst),
-				Size:    info.Size(),
-				Mode:    int64(info.Mode()),
-				ModTime: info.ModTime(),
-			}
-			if err := out.WriteHeader(&header); err != nil {
-				return errors.Wrapf(err, "cannot write header of %s to data.tar.gz", header.Name)
-			}
-			if _, err := io.Copy(out, file); err != nil {
-				return errors.Wrapf(err, "cannot write %s to data.tar.gz", header.Name)
+			if err := copyToTarGz(out, root, src, dst); err != nil {
+				return err
 			}
 		}
 	}
-
 	if err := out.Close(); err != nil {
 		return errors.Wrap(err, "failed to close data.tar.gz writer")
 	}
@@ -174,6 +154,35 @@ func createTarGz(info nfpm.Info, root, file string) error {
 	}
 	if err := ioutil.WriteFile(file, buf.Bytes(), 0666); err != nil {
 		return errors.Wrap(err, "could not write to .tar.gz file")
+	}
+	return nil
+}
+
+func copyToTarGz(out *tar.Writer, root, src, dst string) error {
+	file, err := os.OpenFile(src, os.O_RDONLY, 0600)
+	if err != nil {
+		return errors.Wrap(err, "could not add file to the archive")
+	}
+	// don't really care if Close() errs
+	defer file.Close() // nolint: errcheck
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return nil
+	}
+	var header = tar.Header{
+		Name:    filepath.Join(root, dst),
+		Size:    info.Size(),
+		Mode:    int64(info.Mode()),
+		ModTime: info.ModTime(),
+	}
+	if err := out.WriteHeader(&header); err != nil {
+		return errors.Wrapf(err, "cannot write header of %s to data.tar.gz", header.Name)
+	}
+	if _, err := io.Copy(out, file); err != nil {
+		return errors.Wrapf(err, "cannot write %s to data.tar.gz", header.Name)
 	}
 	return nil
 }

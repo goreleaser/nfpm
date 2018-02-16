@@ -80,41 +80,13 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 	defer compress.Close() // nolint: errcheck
 
 	var md5buf bytes.Buffer
-	var md5tmp = make([]byte, 0, md5.Size)
-
 	for _, files := range []map[string]string{info.Files, info.ConfigFiles} {
 		for src, dst := range files {
-			file, err := os.OpenFile(src, os.O_RDONLY, 0600)
+			size, err := copyToTarAndDigest(out, &md5buf, now, src, dst)
 			if err != nil {
-				return nil, nil, 0, errors.Wrap(err, "could not add file to the archive")
+				return nil, nil, 0, err
 			}
-			// don't care if it errs while closing...
-			defer file.Close() // nolint: errcheck
-			info, err := file.Stat()
-			if err != nil || info.IsDir() {
-				continue
-			}
-			instSize += info.Size()
-			var header = tar.Header{
-				Name:    dst,
-				Size:    info.Size(),
-				Mode:    int64(info.Mode()),
-				ModTime: now,
-			}
-			if err := out.WriteHeader(&header); err != nil {
-				return nil, nil, 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", header)
-			}
-			if _, err := io.Copy(out, file); err != nil {
-				return nil, nil, 0, errors.Wrapf(err, "cannot write %s to data.tar.gz", header)
-			}
-
-			var digest = md5.New()
-			if _, err := io.Copy(out, io.TeeReader(file, digest)); err != nil {
-				return nil, nil, 0, errors.Wrap(err, "failed to copy")
-			}
-			if _, err := fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(md5tmp), header.Name[2:]); err != nil {
-				return nil, nil, 0, errors.Wrap(err, "failed to write md5")
-			}
+			instSize += size
 		}
 	}
 
@@ -126,6 +98,42 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 	}
 
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
+}
+
+func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, now time.Time, src, dst string) (int64, error) {
+	file, err := os.OpenFile(src, os.O_RDONLY, 0600)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not add file to the archive")
+	}
+	// don't care if it errs while closing...
+	defer file.Close() // nolint: errcheck
+	info, err := file.Stat()
+	if err != nil {
+		return 0, err
+	}
+	if info.IsDir() {
+		return 0, nil
+	}
+	var header = tar.Header{
+		Name:    dst,
+		Size:    info.Size(),
+		Mode:    int64(info.Mode()),
+		ModTime: now,
+	}
+	if err := tarw.WriteHeader(&header); err != nil {
+		return 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", header)
+	}
+	if _, err := io.Copy(tarw, file); err != nil {
+		return 0, errors.Wrapf(err, "cannot write %s to data.tar.gz", header)
+	}
+	var digest = md5.New()
+	if _, err := io.Copy(tarw, io.TeeReader(file, digest)); err != nil {
+		return 0, errors.Wrap(err, "failed to copy")
+	}
+	if _, err := fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), header.Name[2:]); err != nil {
+		return 0, errors.Wrap(err, "failed to write md5")
+	}
+	return info.Size(), nil
 }
 
 var controlTemplate = `Package: {{.Info.Name}}
