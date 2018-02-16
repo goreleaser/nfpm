@@ -2,7 +2,7 @@ dist: trusty
 addons:
   apt:
     packages:
-    - rpmbuild
+    - rpm
 language: go
 go: 1.9
 services:
