@@ -1,3 +1,6 @@
 vendor
 *.rpm
 coverage.txt
+dist
+nfpm.yaml
+cmd/nfpm/main-packr.go
