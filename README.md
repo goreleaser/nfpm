@@ -17,12 +17,12 @@
 The first steps are to run `nfpm init` to initialize a config file and edit
 the generated file according to your needs:
 
-![nfpm init](https://user-images.githubusercontent.com/245435/36346038-a11210ee-141d-11e8-9838-f95afa10c4f5.png)
+![nfpm init](https://user-images.githubusercontent.com/245435/36346101-f81cdcec-141e-11e8-8afc-a5eb93b7d510.png)
 
 The next step is to run `nfpm pkg --target mypkg.deb`.
 NFPM will guess which packager to use based on the target file extension.
 
-![nfpm pkg](https://user-images.githubusercontent.com/245435/36346033-66b4ba50-141d-11e8-8f69-2367f9e96702.png)
+![nfpm pkg](https://user-images.githubusercontent.com/245435/36346100-eaaf24c0-141e-11e8-8345-100f4d3ed02d.png)
 
 And that's it!
 
