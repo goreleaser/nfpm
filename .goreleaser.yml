@@ -1,5 +1,5 @@
 builds:
-- main: ./cmd/nfpm/...
+- main: ./cmd/nfpm
   hooks:
     pre: packr
   env:
