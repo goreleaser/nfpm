@@ -184,32 +184,15 @@ func createControl(now time.Time, instSize int64, md5sums []byte, info nfpm.Info
 	}); err != nil {
 		return nil, err
 	}
-	var header = tar.Header{
-		Name:     "control",
-		Size:     int64(body.Len()),
-		Mode:     0644,
-		ModTime:  now,
-		Typeflag: tar.TypeReg,
-	}
-	if err := out.WriteHeader(&header); err != nil {
-		return nil, errors.Wrap(err, "cannot write header of control file to control.tar.gz")
-	}
-	if _, err := out.Write(body.Bytes()); err != nil {
-		return nil, errors.Wrap(err, "cannot write control file to control.tar.gz")
-	}
 
-	header = tar.Header{
-		Name:     "md5sums",
-		Size:     int64(len(md5sums)),
-		Mode:     0644,
-		ModTime:  now,
-		Typeflag: tar.TypeReg,
-	}
-	if err := out.WriteHeader(&header); err != nil {
-		return nil, errors.Wrap(err, "cannot write header of md5sums file to control.tar.gz")
-	}
-	if _, err := out.Write(md5sums); err != nil {
-		return nil, errors.Wrap(err, "cannot write md5sums file to control.tar.gz")
+	for name, content := range map[string][]byte{
+		"control":   body.Bytes(),
+		"md5sums":   md5sums,
+		"conffiles": conffiles(info),
+	} {
+		if err := newFileInsideTarGz(out, name, content, now); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := out.Close(); err != nil {
@@ -219,4 +202,29 @@ func createControl(now time.Time, instSize int64, md5sums []byte, info nfpm.Info
 		return nil, errors.Wrap(err, "closing control.tar.gz")
 	}
 	return buf.Bytes(), nil
+}
+
+func newFileInsideTarGz(out *tar.Writer, name string, content []byte, now time.Time) error {
+	var header = tar.Header{
+		Name:     name,
+		Size:     int64(len(content)),
+		Mode:     0644,
+		ModTime:  now,
+		Typeflag: tar.TypeReg,
+	}
+	if err := out.WriteHeader(&header); err != nil {
+		return errors.Wrapf(err, "cannot write header of %s file to control.tar.gz", name)
+	}
+	if _, err := out.Write(content); err != nil {
+		return errors.Wrapf(err, "cannot write %s file to control.tar.gz", name)
+	}
+	return nil
+}
+
+func conffiles(info nfpm.Info) []byte {
+	var confs []string
+	for _, dst := range info.ConfigFiles {
+		confs = append(confs, dst)
+	}
+	return []byte(strings.Join(confs, "\n") + "\n")
 }

@@ -87,3 +87,12 @@ func TestDebNoInfo(t *testing.T) {
 	var err = Default.Package(nfpm.WithDefaults(nfpm.Info{}), ioutil.Discard)
 	assert.NoError(t, err)
 }
+
+func TestConffiles(t *testing.T) {
+	out := conffiles(nfpm.Info{
+		ConfigFiles: map[string]string{
+			"fake": "/etc/fake",
+		},
+	})
+	assert.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
+}
