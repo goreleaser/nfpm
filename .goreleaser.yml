@@ -9,12 +9,12 @@ builds:
   - darwin
   goarch:
   - amd64
-dockers:
-  - image: goreleaser/nfpm
-    tag_templates:
-    - '{{ .Tag }}'
-    - 'v{{ .Major }}.{{ .Minor }}'
-    - 'latest'
+# dockers:
+#   - image: goreleaser/nfpm
+#     tag_templates:
+#     - '{{ .Tag }}'
+#     - 'v{{ .Major }}.{{ .Minor }}'
+#     - 'latest'
 archive:
   replacements:
     darwin: Darwin
