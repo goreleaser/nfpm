@@ -46,6 +46,7 @@ func main() {
 		if err := doPackage(*config, *target); err != nil {
 			kingpin.Fatalf(err.Error())
 		}
+		fmt.Printf("created package: %s\n", *target)
 	}
 }
 
