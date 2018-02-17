@@ -31,13 +31,13 @@ brew:
   description: NFPM is not FPM
   test: |
     system "#{bin}/nfpm -v"
-scoop:
-  bucket:
-    owner: goreleaser
-    name: scoop-bucket
-  homepage:  https://github.com/goreleaser/nfpm
-  description: NFPM is not FPM
-  license: MIT
+# scoop:
+#   bucket:
+#     owner: goreleaser
+#     name: scoop-bucket
+#   homepage:  https://github.com/goreleaser/nfpm
+#   description: NFPM is not FPM
+#   license: MIT
 # TODO: change to nfpm when released
 # fpm:
 #   name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
