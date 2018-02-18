@@ -9,6 +9,8 @@ go: '1.10'
 #   - docker
 install:
   - make setup
+before_script:
+  - rpmbuild --version
 script:
   - make ci
 after_success:
