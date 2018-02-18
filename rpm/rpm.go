@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -31,6 +32,10 @@ type RPM struct{}
 func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if info.Arch == "amd64" {
 		info.Arch = "x86_64"
+	}
+	_, err := exec.LookPath("rpmbuild")
+	if err != nil {
+		return fmt.Errorf("rpmbuild not present in $PATH")
 	}
 	temps, err := setupTempFiles(info)
 	if err != nil {
@@ -70,21 +75,62 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	return errors.Wrap(err, "failed to copy rpm file to writer")
 }
 
+type rpmbuildVersion struct {
+	Major, Minor, Path int
+}
+
+func getRpmbuildVersion() (rpmbuildVersion, error) {
+	// #nosec
+	bts, err := exec.Command("rpmbuild", "--version").CombinedOutput()
+	if err != nil {
+		return rpmbuildVersion{}, errors.Wrap(err, "failed to get rpmbuild version")
+	}
+	var v = make([]int, 3)
+	vs := strings.TrimSuffix(strings.TrimPrefix(string(bts), "RPM version "), "\n")
+	for i, part := range strings.Split(vs, ".")[:3] {
+		pi, err := strconv.Atoi(part)
+		if err != nil {
+			return rpmbuildVersion{}, errors.Wrapf(err, "could not parse version %s", vs)
+		}
+		v[i] = pi
+	}
+	return rpmbuildVersion{
+		Major: v[0],
+		Minor: v[1],
+		Path:  v[2],
+	}, nil
+}
+
 func createSpec(info nfpm.Info, path string) error {
-	var body bytes.Buffer
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
+	if err != nil {
+		return errors.Wrap(err, "failed to create spec")
+	}
+	vs, err := getRpmbuildVersion()
+	if err != nil {
+		return err
+	}
+	return writeSpec(file, info, vs)
+}
+
+func writeSpec(w io.Writer, info nfpm.Info, vs rpmbuildVersion) error {
 	var tmpl = template.New("spec")
 	tmpl.Funcs(template.FuncMap{
-		"join": func(strs []string) string {
-			return strings.Trim(strings.Join(strs, ", "), " ")
-		},
 		"first_line": func(str string) string {
 			return strings.Split(str, "\n")[0]
 		},
 	})
-	if err := template.Must(tmpl.Parse(specTemplate)).Execute(&body, info); err != nil {
+	type data struct {
+		Info   nfpm.Info
+		RPM413 bool
+	}
+	if err := template.Must(tmpl.Parse(specTemplate)).Execute(w, data{
+		Info:   info,
+		RPM413: vs.Major >= 4 && vs.Minor >= 13,
+	}); err != nil {
 		return errors.Wrap(err, "failed to parse spec template")
 	}
-	return errors.Wrap(ioutil.WriteFile(path, body.Bytes(), 0644), "failed to write spec file")
+	return nil
 }
 
 type tempFiles struct {
@@ -196,37 +242,47 @@ const specTemplate = `
 %define __spec_install_post %{nil}
 %define debug_package %{nil}
 %define __os_install_post %{_dbpath}/brp-compress
-%define _arch {{.Arch}}
-%define _bindir {{.Bindir}}
+%define _arch {{ .Info.Arch }}
+%define _bindir {{ .Info.Bindir }}
 
-Name: {{ .Name }}
-Summary: {{ first_line .Description }}
-Version: {{ .Version }}
+Name: {{ .Info.Name }}
+Summary: {{ first_line .Info.Description }}
+Version: {{ .Info.Version }}
 Release: 1
-License: {{ .License }}
+License: {{ .Info.License }}
 Group: Development/Tools
 SOURCE0 : %{name}-%{version}.tar.gz
-URL: {{ .Homepage }}
+URL: {{ .Info.Homepage }}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
-{{ range $index, $element := .Replaces }}
-Obsolotes: {{ . }}
+{{ range $index, $element := .Info.Replaces }}
+Obsoletes: {{ . }}
 {{ end }}
 
-{{ range $index, $element := .Conflicts }}
+{{ range $index, $element := .Info.Conflicts }}
 Conflicts: {{ . }}
 {{ end }}
 
-{{ range $index, $element := .Provides }}
+{{ range $index, $element := .Info.Provides }}
 Provides: {{ . }}
 {{ end }}
 
-{{ range $index, $element := .Depends }}
+{{ range $index, $element := .Info.Depends }}
 Requires: {{ . }}
 {{ end }}
 
+{{ if .RPM413 }}
+{{ range $index, $element := .Info.Recommends }}
+Recommends: {{ . }}
+{{ end }}
+
+{{ range $index, $element := .Info.Suggests }}
+Suggests: {{ . }}
+{{ end }}
+{{ end }}
+
 %description
-{{ .Description }}
+{{ .Info.Description }}
 
 %prep
 %setup -q
@@ -246,14 +302,14 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-{{ range $index, $element := .Files }}
+{{ range $index, $element := .Info.Files }}
 {{ . }}
 {{ end }}
 %{_bindir}/*
-{{ range $index, $element := .ConfigFiles }}
+{{ range $index, $element := .Info.ConfigFiles }}
 {{ . }}
 {{ end }}
-{{ range $index, $element := .ConfigFiles }}
+{{ range $index, $element := .Info.ConfigFiles }}
 %config(noreplace) {{ . }}
 {{ end }}
 

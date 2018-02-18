@@ -152,6 +152,8 @@ Installed-Size: {{.InstalledSize}}
 Replaces: {{join .Info.Replaces}}
 Provides: {{join .Info.Provides}}
 Depends: {{join .Info.Depends}}
+Recommends: {{join .Info.Recommends}}
+Recommends: {{join .Info.Suggests}}
 Conflicts: {{join .Info.Conflicts}}
 Homepage: {{.Info.Homepage}}
 Description: {{.Info.Description}}
@@ -172,13 +174,7 @@ func createControl(now time.Time, instSize int64, md5sums []byte, info nfpm.Info
 	defer compress.Close() // nolint: errcheck
 
 	var body bytes.Buffer
-	var tmpl = template.New("control")
-	tmpl.Funcs(template.FuncMap{
-		"join": func(strs []string) string {
-			return strings.Trim(strings.Join(strs, ", "), " ")
-		},
-	})
-	if err := template.Must(tmpl.Parse(controlTemplate)).Execute(&body, controlData{
+	if err := writeControl(&body, controlData{
 		Info:          info,
 		InstalledSize: instSize / 1024,
 	}); err != nil {
@@ -202,6 +198,16 @@ func createControl(now time.Time, instSize int64, md5sums []byte, info nfpm.Info
 		return nil, errors.Wrap(err, "closing control.tar.gz")
 	}
 	return buf.Bytes(), nil
+}
+
+func writeControl(w io.Writer, data controlData) error {
+	var tmpl = template.New("control")
+	tmpl.Funcs(template.FuncMap{
+		"join": func(strs []string) string {
+			return strings.Trim(strings.Join(strs, ", "), " ")
+		},
+	})
+	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
 }
 
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte, now time.Time) error {
