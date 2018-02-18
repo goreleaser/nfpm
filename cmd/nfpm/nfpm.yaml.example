@@ -11,6 +11,8 @@ provides:
 depends:
 - foo
 - bar
+recommends:
+- whatever
 conflicts:
 - not-foo
 - not-bar

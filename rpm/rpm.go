@@ -71,7 +71,14 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 }
 
 func createSpec(info nfpm.Info, path string) error {
-	var body bytes.Buffer
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0655)
+	if err != nil {
+		return errors.Wrap(err, "failed to create spec")
+	}
+	return writeSpec(file, info)
+}
+
+func writeSpec(w io.Writer, info nfpm.Info) error {
 	var tmpl = template.New("spec")
 	tmpl.Funcs(template.FuncMap{
 		"join": func(strs []string) string {
@@ -81,10 +88,10 @@ func createSpec(info nfpm.Info, path string) error {
 			return strings.Split(str, "\n")[0]
 		},
 	})
-	if err := template.Must(tmpl.Parse(specTemplate)).Execute(&body, info); err != nil {
+	if err := template.Must(tmpl.Parse(specTemplate)).Execute(w, info); err != nil {
 		return errors.Wrap(err, "failed to parse spec template")
 	}
-	return errors.Wrap(ioutil.WriteFile(path, body.Bytes(), 0644), "failed to write spec file")
+	return nil
 }
 
 type tempFiles struct {
@@ -210,7 +217,7 @@ URL: {{ .Homepage }}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 {{ range $index, $element := .Replaces }}
-Obsolotes: {{ . }}
+Obsoletes: {{ . }}
 {{ end }}
 
 {{ range $index, $element := .Conflicts }}
@@ -223,6 +230,10 @@ Provides: {{ . }}
 
 {{ range $index, $element := .Depends }}
 Requires: {{ . }}
+{{ end }}
+
+{{ range $index, $element := .Recommends }}
+Recommends: {{ . }}
 {{ end }}
 
 %description
