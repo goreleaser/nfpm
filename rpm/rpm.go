@@ -75,25 +75,26 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	return errors.Wrap(err, "failed to copy rpm file to writer")
 }
 
-type version struct {
+type rpmbuildVersion struct {
 	Major, Minor, Path int
 }
 
-func rpmbuildVersion() (version, error) {
+func getRpmbuildVersion() (rpmbuildVersion, error) {
+	// #nosec
 	bts, err := exec.Command("rpmbuild", "--version").CombinedOutput()
 	if err != nil {
-		return version{}, errors.Wrap(err, "failed to get rpmbuild version")
+		return rpmbuildVersion{}, errors.Wrap(err, "failed to get rpmbuild version")
 	}
 	var v = make([]int, 3)
 	vs := strings.TrimSuffix(strings.TrimPrefix(string(bts), "RPM version "), "\n")
 	for i, part := range strings.Split(vs, ".")[:3] {
 		pi, err := strconv.Atoi(part)
 		if err != nil {
-			return version{}, errors.Wrapf(err, "could not parse version %s", vs)
+			return rpmbuildVersion{}, errors.Wrapf(err, "could not parse version %s", vs)
 		}
 		v[i] = pi
 	}
-	return version{
+	return rpmbuildVersion{
 		Major: v[0],
 		Minor: v[1],
 		Path:  v[2],
@@ -101,18 +102,18 @@ func rpmbuildVersion() (version, error) {
 }
 
 func createSpec(info nfpm.Info, path string) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0655)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
 	if err != nil {
 		return errors.Wrap(err, "failed to create spec")
 	}
-	version, err := rpmbuildVersion()
+	vs, err := getRpmbuildVersion()
 	if err != nil {
 		return err
 	}
-	return writeSpec(file, info, version)
+	return writeSpec(file, info, vs)
 }
 
-func writeSpec(w io.Writer, info nfpm.Info, vs version) error {
+func writeSpec(w io.Writer, info nfpm.Info, vs rpmbuildVersion) error {
 	var tmpl = template.New("spec")
 	tmpl.Funcs(template.FuncMap{
 		"first_line": func(str string) string {

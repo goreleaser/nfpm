@@ -52,10 +52,10 @@ var info = nfpm.WithDefaults(nfpm.Info{
 })
 
 func TestSpec(t *testing.T) {
-	for golden, vs := range map[string]version{
-		"testdata/spec_4.14.x.golden": version{4, 14, 2},
-		"testdata/spec_4.13.x.golden": version{4, 13, 1},
-		"testdata/spec_4.12.x.golden": version{4, 12, 9},
+	for golden, vs := range map[string]rpmbuildVersion{
+		"testdata/spec_4.14.x.golden": rpmbuildVersion{4, 14, 2},
+		"testdata/spec_4.13.x.golden": rpmbuildVersion{4, 13, 1},
+		"testdata/spec_4.12.x.golden": rpmbuildVersion{4, 12, 9},
 	} {
 		t.Run(golden, func(tt *testing.T) {
 			var w bytes.Buffer
@@ -110,7 +110,7 @@ func TestRPMBuildNotInPath(t *testing.T) {
 }
 
 func TestRpmBuildVersion(t *testing.T) {
-	v, err := rpmbuildVersion()
+	v, err := getRpmbuildVersion()
 	assert.NoError(t, err)
 	assert.Equal(t, 4, v.Major)
 	assert.True(t, v.Minor >= 11)
