@@ -233,7 +233,7 @@ Requires: {{ . }}
 {{ end }}
 
 {{ range $index, $element := .Recommends }}
-Suggests: {{ . }}
+Recommends: {{ . }}
 {{ end }}
 
 %description
