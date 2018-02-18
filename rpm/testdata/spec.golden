@@ -32,7 +32,7 @@ Requires: bash
 
 
 
-Recommends: git
+Suggests: git
 
 
 %description
