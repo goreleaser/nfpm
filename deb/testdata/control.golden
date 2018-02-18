@@ -10,7 +10,7 @@ Replaces: svn
 Provides: bzr
 Depends: bash
 Recommends: git
-Recommends: bash
+Suggests: bash
 Conflicts: zsh
 Homepage: http://carlosbecker.com
 Description: Foo does things

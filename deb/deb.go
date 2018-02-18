@@ -153,7 +153,7 @@ Replaces: {{join .Info.Replaces}}
 Provides: {{join .Info.Provides}}
 Depends: {{join .Info.Depends}}
 Recommends: {{join .Info.Recommends}}
-Recommends: {{join .Info.Suggests}}
+Suggests: {{join .Info.Suggests}}
 Conflicts: {{join .Info.Conflicts}}
 Homepage: {{.Info.Homepage}}
 Description: {{.Info.Description}}
