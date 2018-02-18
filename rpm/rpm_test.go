@@ -53,9 +53,9 @@ var info = nfpm.WithDefaults(nfpm.Info{
 
 func TestSpec(t *testing.T) {
 	for golden, vs := range map[string]rpmbuildVersion{
-		"testdata/spec_4.14.x.golden": rpmbuildVersion{4, 14, 2},
-		"testdata/spec_4.13.x.golden": rpmbuildVersion{4, 13, 1},
-		"testdata/spec_4.12.x.golden": rpmbuildVersion{4, 12, 9},
+		"testdata/spec_4.14.x.golden": {4, 14, 2},
+		"testdata/spec_4.13.x.golden": {4, 13, 1},
+		"testdata/spec_4.12.x.golden": {4, 12, 9},
 	} {
 		t.Run(golden, func(tt *testing.T) {
 			var w bytes.Buffer
