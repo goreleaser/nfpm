@@ -32,8 +32,6 @@ Requires: bash
 
 
 
-Recommends: git
-
 
 %description
 Foo does things

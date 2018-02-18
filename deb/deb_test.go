@@ -21,6 +21,9 @@ var info = nfpm.WithDefaults(nfpm.Info{
 	Recommends: []string{
 		"git",
 	},
+	Suggests: []string{
+		"bash",
+	},
 	Replaces: []string{
 		"svn",
 	},

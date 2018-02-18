@@ -22,6 +22,9 @@ var info = nfpm.WithDefaults(nfpm.Info{
 	Recommends: []string{
 		"git",
 	},
+	Suggests: []string{
+		"bash",
+	},
 	Replaces: []string{
 		"svn",
 	},
@@ -49,15 +52,22 @@ var info = nfpm.WithDefaults(nfpm.Info{
 })
 
 func TestSpec(t *testing.T) {
-	var w bytes.Buffer
-	assert.NoError(t, writeSpec(&w, info))
-	var golden = "testdata/spec.golden"
-	if *update {
-		ioutil.WriteFile(golden, w.Bytes(), 0655)
+	for golden, vs := range map[string]version{
+		"testdata/spec_4.14.x.golden": version{4, 14, 2},
+		"testdata/spec_4.13.x.golden": version{4, 13, 1},
+		"testdata/spec_4.12.x.golden": version{4, 12, 9},
+	} {
+		t.Run(golden, func(tt *testing.T) {
+			var w bytes.Buffer
+			assert.NoError(tt, writeSpec(&w, info, vs))
+			if *update {
+				ioutil.WriteFile(golden, w.Bytes(), 0655)
+			}
+			bts, err := ioutil.ReadFile(golden)
+			assert.NoError(tt, err)
+			assert.Equal(tt, string(bts), w.String())
+		})
 	}
-	bts, err := ioutil.ReadFile(golden)
-	assert.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
 }
 
 func TestRPM(t *testing.T) {
@@ -89,10 +99,20 @@ func TestNoFiles(t *testing.T) {
 }
 
 func TestRPMBuildNotInPath(t *testing.T) {
+	path := os.Getenv("PATH")
+	defer os.Setenv("PATH", path)
 	assert.NoError(t, os.Setenv("PATH", ""))
 	var err = Default.Package(
 		nfpm.WithDefaults(nfpm.Info{}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, `rpmbuild failed: exec: "rpmbuild": executable file not found in $PATH`)
+	assert.EqualError(t, err, `rpmbuild not present in $PATH`)
+}
+
+func TestRpmBuildVersion(t *testing.T) {
+	v, err := rpmbuildVersion()
+	assert.NoError(t, err)
+	assert.Equal(t, 4, v.Major)
+	assert.True(t, v.Minor >= 11)
+	assert.True(t, v.Path >= 0)
 }

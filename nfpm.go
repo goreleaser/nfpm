@@ -46,6 +46,7 @@ type Info struct {
 	Provides    []string          `yaml:"provides,omitempty"`
 	Depends     []string          `yaml:"depends,omitempty"`
 	Recommends  []string          `yaml:"recommends,omitempty"`
+	Suggests    []string          `yaml:"suggests,omitempty"`
 	Conflicts   []string          `yaml:"conflicts,omitempty"`
 	Maintainer  string            `yaml:"maintainer,omitempty"`
 	Description string            `yaml:"description,omitempty"`
