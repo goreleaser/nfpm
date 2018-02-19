@@ -1,3 +1,4 @@
+// Package main contains the main nfpm cli source code.
 package main
 
 import (
