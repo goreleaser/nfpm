@@ -11,8 +11,6 @@
     <a href="http://godoc.org/github.com/goreleaser/nfpm"><img alt="Go Doc" src="https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square"></a>
     <a href="https://saythanks.io/to/caarlos0"><img alt="SayThanks.io" src="https://img.shields.io/badge/SayThanks.io-%E2%98%BC-1EAEDB.svg?style=flat-square"></a>
     <a href="https://github.com/goreleaser"><img alt="Powered By: GoReleaser" src="https://img.shields.io/badge/powered%20by-goreleaser-green.svg?style=flat-square"></a>
-    <a href="https://opencollective.com/auditnet/backers/"><img alt="Backers on Open Collective" src="https://opencollective.com/auditnet/backers/badge.svg?style=flat-square"></a>
-    <a href="https://opencollective.com/auditnet/sponsors/"><img alt="Sponsors on Open Collective" src="https://opencollective.com/auditnet/sponsors/badge.svg?style=flat-square"></a>
   </p>
 </p>
 
