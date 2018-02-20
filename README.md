@@ -23,7 +23,9 @@
 * reproducible results
   * depend on the fewer external things as possible (namely `rpmbuild`)
   * generate packages based on yaml files (maybe also json and toml?)
-* be possible to use it as a lib in other go projects (namely goreleaser itself)
+* be possible to use it as a lib in other go projects (namely [goreleaser] itself)
+
+[goreleaser]: https://goreleaser.com/#linux_packages.nfpm
 
 ## Usage
 
@@ -49,7 +51,7 @@ And that's it!
 
 Donations are very much appreciated! You can donate/sponsor on the main
 [goreleaser opencollective](https://opencollective.com/goreleaser)! It's
-easy and will surely help the developers at least buy some :coffee: or :beer:!
+easy and will surely help the developers at least buy some ☕️ or 🍺!
 
 ## Stargazers over time
 
