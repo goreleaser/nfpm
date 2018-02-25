@@ -129,3 +129,11 @@ func TestConffiles(t *testing.T) {
 	})
 	assert.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
 }
+
+func TestPathsToCreate(t *testing.T) {
+	assert.Equal(
+		t,
+		[]string{"usr", "usr/share", "usr/share/doc", "usr/share/doc/whatever"},
+		pathsToCreate("/usr/share/doc/whatever/foo.md"),
+	)
+}
