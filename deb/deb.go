@@ -109,48 +109,6 @@ func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64,
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
 }
 
-// this is needed because the data.tar.gz file should have the empty folders
-// as well, so we walk through the dst and create all subfolders.
-func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
-	for _, path := range pathsToCreate(dst) {
-		if created[path] {
-			// skipping dir that was previously created inside the archive
-			// (eg: usr/)
-			continue
-		}
-		if err := tarw.WriteHeader(&tar.Header{
-			Name:     path + "/",
-			Mode:     0755,
-			Typeflag: tar.TypeDir,
-			Format:   tar.FormatGNU,
-			ModTime:  time.Now(),
-		}); err != nil {
-			return errors.Wrap(err, "failed to create folder")
-		}
-		created[path] = true
-	}
-	return nil
-}
-
-func pathsToCreate(dst string) []string {
-	var paths []string
-	var base = dst[1:]
-	for {
-		base = filepath.Dir(base)
-		if base == "." {
-			break
-		}
-		paths = append(paths, base)
-	}
-	// we don't really need to create those things in order apparently, but,
-	// it looks really weird if we do.
-	var result []string
-	for i := len(paths) - 1; i >= 0; i-- {
-		result = append(result, paths[i])
-	}
-	return result
-}
-
 func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int64, error) {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600)
 	if err != nil {
@@ -185,29 +143,6 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		return 0, errors.Wrap(err, "failed to write md5")
 	}
 	return info.Size(), nil
-}
-
-var controlTemplate = `Package: {{.Info.Name}}
-Version: {{.Info.Version}}
-Section: {{.Info.Section}}
-Priority: {{.Info.Priority}}
-Architecture: {{.Info.Arch}}
-Maintainer: {{.Info.Maintainer}}
-Vendor: {{.Info.Vendor}}
-Installed-Size: {{.InstalledSize}}
-Replaces: {{join .Info.Replaces}}
-Provides: {{join .Info.Provides}}
-Depends: {{join .Info.Depends}}
-Recommends: {{join .Info.Recommends}}
-Suggests: {{join .Info.Suggests}}
-Conflicts: {{join .Info.Conflicts}}
-Homepage: {{.Info.Homepage}}
-Description: {{.Info.Description}}
-`
-
-type controlData struct {
-	Info          nfpm.Info
-	InstalledSize int64
 }
 
 func createControl(instSize int64, md5sums []byte, info nfpm.Info) (controlTarGz []byte, err error) {
@@ -246,16 +181,6 @@ func createControl(instSize int64, md5sums []byte, info nfpm.Info) (controlTarGz
 	return buf.Bytes(), nil
 }
 
-func writeControl(w io.Writer, data controlData) error {
-	var tmpl = template.New("control")
-	tmpl.Funcs(template.FuncMap{
-		"join": func(strs []string) string {
-			return strings.Trim(strings.Join(strs, ", "), " ")
-		},
-	})
-	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
-}
-
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	var header = tar.Header{
 		Name:     name,
@@ -274,10 +199,85 @@ func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	return nil
 }
 
+// this is needed because the data.tar.gz file should have the empty folders
+// as well, so we walk through the dst and create all subfolders.
+func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
+	for _, path := range pathsToCreate(dst) {
+		if created[path] {
+			// skipping dir that was previously created inside the archive
+			// (eg: usr/)
+			continue
+		}
+		if err := tarw.WriteHeader(&tar.Header{
+			Name:     path + "/",
+			Mode:     0755,
+			Typeflag: tar.TypeDir,
+			Format:   tar.FormatGNU,
+			ModTime:  time.Now(),
+		}); err != nil {
+			return errors.Wrap(err, "failed to create folder")
+		}
+		created[path] = true
+	}
+	return nil
+}
+
+func pathsToCreate(dst string) []string {
+	var paths = []string{}
+	var base = dst[1:]
+	for {
+		base = filepath.Dir(base)
+		if base == "." {
+			break
+		}
+		paths = append(paths, base)
+	}
+	// we don't really need to create those things in order apparently, but,
+	// it looks really weird if we do.
+	var result = []string{}
+	for i := len(paths) - 1; i >= 0; i-- {
+		result = append(result, paths[i])
+	}
+	return result
+}
+
 func conffiles(info nfpm.Info) []byte {
 	var confs []string
 	for _, dst := range info.ConfigFiles {
 		confs = append(confs, dst)
 	}
 	return []byte(strings.Join(confs, "\n") + "\n")
+}
+
+var controlTemplate = `Package: {{.Info.Name}}
+Version: {{.Info.Version}}
+Section: {{.Info.Section}}
+Priority: {{.Info.Priority}}
+Architecture: {{.Info.Arch}}
+Maintainer: {{.Info.Maintainer}}
+Vendor: {{.Info.Vendor}}
+Installed-Size: {{.InstalledSize}}
+Replaces: {{join .Info.Replaces}}
+Provides: {{join .Info.Provides}}
+Depends: {{join .Info.Depends}}
+Recommends: {{join .Info.Recommends}}
+Suggests: {{join .Info.Suggests}}
+Conflicts: {{join .Info.Conflicts}}
+Homepage: {{.Info.Homepage}}
+Description: {{.Info.Description}}
+`
+
+type controlData struct {
+	Info          nfpm.Info
+	InstalledSize int64
+}
+
+func writeControl(w io.Writer, data controlData) error {
+	var tmpl = template.New("control")
+	tmpl.Funcs(template.FuncMap{
+		"join": func(strs []string) string {
+			return strings.Trim(strings.Join(strs, ", "), " ")
+		},
+	})
+	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
 }
