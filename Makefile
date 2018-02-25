@@ -6,7 +6,6 @@ TEST_OPTIONS?=
 setup:
 	go get -u github.com/alecthomas/gometalinter
 	go get -u github.com/golang/dep/cmd/dep
-	go get -u github.com/pierrre/gotestcover
 	go get -u golang.org/x/tools/cmd/cover
 	go get -u github.com/caarlos0/bandep
 	go get -u github.com/gobuffalo/packr/...
@@ -22,7 +21,7 @@ check:
 
 # Run all the tests
 test:
-	gotestcover $(TEST_OPTIONS) -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
+	go test $(TEST_OPTIONS) -v -coverpkg=./... -race -failfast -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
 .PHONY: cover
 
 # Run all the tests and opens the coverage report
