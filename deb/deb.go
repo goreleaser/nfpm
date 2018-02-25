@@ -119,7 +119,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, now time.Time, src, ds
 		return 0, nil
 	}
 	var header = tar.Header{
-		Name:    dst,
+		Name:    dst[1:],
 		Size:    info.Size(),
 		Mode:    int64(info.Mode()),
 		ModTime: now,
@@ -132,7 +132,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, now time.Time, src, ds
 	if _, err := io.Copy(tarw, io.TeeReader(file, digest)); err != nil {
 		return 0, errors.Wrap(err, "failed to copy")
 	}
-	if _, err := fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), header.Name[1:]); err != nil {
+	if _, err := fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), header.Name); err != nil {
 		return 0, errors.Wrap(err, "failed to write md5")
 	}
 	return info.Size(), nil
