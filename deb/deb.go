@@ -80,13 +80,15 @@ func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64,
 	defer out.Close()      // nolint: errcheck
 	defer compress.Close() // nolint: errcheck
 
+	var created = map[string]bool{}
+
 	var md5buf bytes.Buffer
 	for _, files := range []map[string]string{
 		info.Files,
 		info.ConfigFiles,
 	} {
 		for src, dst := range files {
-			if err := createTree(out, dst); err != nil {
+			if err := createTree(out, dst, created); err != nil {
 				return nil, nil, 0, err
 			}
 			size, err := copyToTarAndDigest(out, &md5buf, src, dst)
@@ -109,8 +111,13 @@ func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64,
 
 // this is needed because the data.tar.gz file should have the empty folders
 // as well, so we walk through the dst and create all subfolders.
-func createTree(tarw *tar.Writer, dst string) error {
+func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 	for _, path := range pathsToCreate(dst) {
+		if created[path] {
+			// skipping dir that was previously created inside the archive
+			// (eg: usr/)
+			continue
+		}
 		if err := tarw.WriteHeader(&tar.Header{
 			Name:     path + "/",
 			Mode:     0755,
@@ -120,6 +127,7 @@ func createTree(tarw *tar.Writer, dst string) error {
 		}); err != nil {
 			return errors.Wrap(err, "failed to create folder")
 		}
+		created[path] = true
 	}
 	return nil
 }
@@ -155,6 +163,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		return 0, err
 	}
 	if info.IsDir() {
+		// TODO: this should probably return an error
 		return 0, nil
 	}
 	var header = tar.Header{
