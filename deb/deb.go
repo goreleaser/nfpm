@@ -5,6 +5,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"path/filepath"
 	// #nosec
 	"crypto/md5"
 	"fmt"
@@ -31,12 +32,11 @@ type Deb struct{}
 
 // Package writes a new deb package to the given writer using the given info
 func (*Deb) Package(info nfpm.Info, deb io.Writer) (err error) {
-	var now = time.Now()
-	dataTarGz, md5sums, instSize, err := createDataTarGz(now, info)
+	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
 	if err != nil {
 		return err
 	}
-	controlTarGz, err := createControl(now, instSize, md5sums, info)
+	controlTarGz, err := createControl(instSize, md5sums, info)
 	if err != nil {
 		return err
 	}
@@ -44,24 +44,24 @@ func (*Deb) Package(info nfpm.Info, deb io.Writer) (err error) {
 	if err := w.WriteGlobalHeader(); err != nil {
 		return errors.Wrap(err, "cannot write ar header to deb file")
 	}
-	if err := addArFile(now, w, "debian-binary", []byte("2.0\n")); err != nil {
+	if err := addArFile(w, "debian-binary", []byte("2.0\n")); err != nil {
 		return errors.Wrap(err, "cannot pack debian-binary")
 	}
-	if err := addArFile(now, w, "control.tar.gz", controlTarGz); err != nil {
+	if err := addArFile(w, "control.tar.gz", controlTarGz); err != nil {
 		return errors.Wrap(err, "cannot add control.tar.gz to deb")
 	}
-	if err := addArFile(now, w, "data.tar.gz", dataTarGz); err != nil {
+	if err := addArFile(w, "data.tar.gz", dataTarGz); err != nil {
 		return errors.Wrap(err, "cannot add data.tar.gz to deb")
 	}
 	return nil
 }
 
-func addArFile(now time.Time, w *ar.Writer, name string, body []byte) error {
+func addArFile(w *ar.Writer, name string, body []byte) error {
 	var header = ar.Header{
 		Name:    name,
 		Size:    int64(len(body)),
 		Mode:    0644,
-		ModTime: now,
+		ModTime: time.Now(),
 	}
 	if err := w.WriteHeader(&header); err != nil {
 		return errors.Wrap(err, "cannot write file header")
@@ -70,7 +70,7 @@ func addArFile(now time.Time, w *ar.Writer, name string, body []byte) error {
 	return err
 }
 
-func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64, err error) {
+func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64, err error) {
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
 	var out = tar.NewWriter(compress)
@@ -80,13 +80,18 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 	defer out.Close()      // nolint: errcheck
 	defer compress.Close() // nolint: errcheck
 
+	var created = map[string]bool{}
+
 	var md5buf bytes.Buffer
 	for _, files := range []map[string]string{
 		info.Files,
 		info.ConfigFiles,
 	} {
 		for src, dst := range files {
-			size, err := copyToTarAndDigest(out, &md5buf, now, src, dst)
+			if err := createTree(out, dst, created); err != nil {
+				return nil, nil, 0, err
+			}
+			size, err := copyToTarAndDigest(out, &md5buf, src, dst)
 			if err != nil {
 				return nil, nil, 0, err
 			}
@@ -104,7 +109,7 @@ func createDataTarGz(now time.Time, info nfpm.Info) (dataTarGz, md5sums []byte, 
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
 }
 
-func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, now time.Time, src, dst string) (int64, error) {
+func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int64, error) {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600)
 	if err != nil {
 		return 0, errors.Wrap(err, "could not add file to the archive")
@@ -116,13 +121,15 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, now time.Time, src, ds
 		return 0, err
 	}
 	if info.IsDir() {
+		// TODO: this should probably return an error
 		return 0, nil
 	}
 	var header = tar.Header{
 		Name:    dst[1:],
 		Size:    info.Size(),
 		Mode:    int64(info.Mode()),
-		ModTime: now,
+		ModTime: time.Now(),
+		Format:  tar.FormatGNU,
 	}
 	if err := tarw.WriteHeader(&header); err != nil {
 		return 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", header)
@@ -136,6 +143,110 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, now time.Time, src, ds
 		return 0, errors.Wrap(err, "failed to write md5")
 	}
 	return info.Size(), nil
+}
+
+func createControl(instSize int64, md5sums []byte, info nfpm.Info) (controlTarGz []byte, err error) {
+	var buf bytes.Buffer
+	var compress = gzip.NewWriter(&buf)
+	var out = tar.NewWriter(compress)
+	// the writers are properly closed later, this is just in case that we have
+	// an error in another part of the code.
+	defer out.Close()      // nolint: errcheck
+	defer compress.Close() // nolint: errcheck
+
+	var body bytes.Buffer
+	if err := writeControl(&body, controlData{
+		Info:          info,
+		InstalledSize: instSize / 1024,
+	}); err != nil {
+		return nil, err
+	}
+
+	for name, content := range map[string][]byte{
+		"control":   body.Bytes(),
+		"md5sums":   md5sums,
+		"conffiles": conffiles(info),
+	} {
+		if err := newFileInsideTarGz(out, name, content); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := out.Close(); err != nil {
+		return nil, errors.Wrap(err, "closing control.tar.gz")
+	}
+	if err := compress.Close(); err != nil {
+		return nil, errors.Wrap(err, "closing control.tar.gz")
+	}
+	return buf.Bytes(), nil
+}
+
+func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
+	var header = tar.Header{
+		Name:     name,
+		Size:     int64(len(content)),
+		Mode:     0644,
+		ModTime:  time.Now(),
+		Typeflag: tar.TypeReg,
+		Format:   tar.FormatGNU,
+	}
+	if err := out.WriteHeader(&header); err != nil {
+		return errors.Wrapf(err, "cannot write header of %s file to control.tar.gz", name)
+	}
+	if _, err := out.Write(content); err != nil {
+		return errors.Wrapf(err, "cannot write %s file to control.tar.gz", name)
+	}
+	return nil
+}
+
+// this is needed because the data.tar.gz file should have the empty folders
+// as well, so we walk through the dst and create all subfolders.
+func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
+	for _, path := range pathsToCreate(dst) {
+		if created[path] {
+			// skipping dir that was previously created inside the archive
+			// (eg: usr/)
+			continue
+		}
+		if err := tarw.WriteHeader(&tar.Header{
+			Name:     path + "/",
+			Mode:     0755,
+			Typeflag: tar.TypeDir,
+			Format:   tar.FormatGNU,
+			ModTime:  time.Now(),
+		}); err != nil {
+			return errors.Wrap(err, "failed to create folder")
+		}
+		created[path] = true
+	}
+	return nil
+}
+
+func pathsToCreate(dst string) []string {
+	var paths = []string{}
+	var base = dst[1:]
+	for {
+		base = filepath.Dir(base)
+		if base == "." {
+			break
+		}
+		paths = append(paths, base)
+	}
+	// we don't really need to create those things in order apparently, but,
+	// it looks really weird if we do.
+	var result = []string{}
+	for i := len(paths) - 1; i >= 0; i-- {
+		result = append(result, paths[i])
+	}
+	return result
+}
+
+func conffiles(info nfpm.Info) []byte {
+	var confs []string
+	for _, dst := range info.ConfigFiles {
+		confs = append(confs, dst)
+	}
+	return []byte(strings.Join(confs, "\n") + "\n")
 }
 
 var controlTemplate = `Package: {{.Info.Name}}
@@ -161,42 +272,6 @@ type controlData struct {
 	InstalledSize int64
 }
 
-func createControl(now time.Time, instSize int64, md5sums []byte, info nfpm.Info) (controlTarGz []byte, err error) {
-	var buf bytes.Buffer
-	var compress = gzip.NewWriter(&buf)
-	var out = tar.NewWriter(compress)
-	// the writers are properly closed later, this is just in case that we have
-	// an error in another part of the code.
-	defer out.Close()      // nolint: errcheck
-	defer compress.Close() // nolint: errcheck
-
-	var body bytes.Buffer
-	if err := writeControl(&body, controlData{
-		Info:          info,
-		InstalledSize: instSize / 1024,
-	}); err != nil {
-		return nil, err
-	}
-
-	for name, content := range map[string][]byte{
-		"control":   body.Bytes(),
-		"md5sums":   md5sums,
-		"conffiles": conffiles(info),
-	} {
-		if err := newFileInsideTarGz(out, name, content, now); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := out.Close(); err != nil {
-		return nil, errors.Wrap(err, "closing control.tar.gz")
-	}
-	if err := compress.Close(); err != nil {
-		return nil, errors.Wrap(err, "closing control.tar.gz")
-	}
-	return buf.Bytes(), nil
-}
-
 func writeControl(w io.Writer, data controlData) error {
 	var tmpl = template.New("control")
 	tmpl.Funcs(template.FuncMap{
@@ -205,29 +280,4 @@ func writeControl(w io.Writer, data controlData) error {
 		},
 	})
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
-}
-
-func newFileInsideTarGz(out *tar.Writer, name string, content []byte, now time.Time) error {
-	var header = tar.Header{
-		Name:     name,
-		Size:     int64(len(content)),
-		Mode:     0644,
-		ModTime:  now,
-		Typeflag: tar.TypeReg,
-	}
-	if err := out.WriteHeader(&header); err != nil {
-		return errors.Wrapf(err, "cannot write header of %s file to control.tar.gz", name)
-	}
-	if _, err := out.Write(content); err != nil {
-		return errors.Wrapf(err, "cannot write %s file to control.tar.gz", name)
-	}
-	return nil
-}
-
-func conffiles(info nfpm.Info) []byte {
-	var confs []string
-	for _, dst := range info.ConfigFiles {
-		confs = append(confs, dst)
-	}
-	return []byte(strings.Join(confs, "\n") + "\n")
 }

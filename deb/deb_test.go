@@ -3,6 +3,7 @@ package deb
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -41,7 +42,8 @@ var info = nfpm.WithDefaults(nfpm.Info{
 	Homepage:    "http://carlosbecker.com",
 	Vendor:      "nope",
 	Files: map[string]string{
-		"../testdata/fake": "/usr/local/bin/fake",
+		"../testdata/fake":          "/usr/local/bin/fake",
+		"../testdata/whatever.conf": "/usr/share/doc/fake/fake.txt",
 	},
 	ConfigFiles: map[string]string{
 		"../testdata/whatever.conf": "/etc/fake/fake.conf",
@@ -128,4 +130,16 @@ func TestConffiles(t *testing.T) {
 		},
 	})
 	assert.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
+}
+
+func TestPathsToCreate(t *testing.T) {
+	for path, parts := range map[string][]string{
+		"/usr/share/doc/whatever/foo.md": []string{"usr", "usr/share", "usr/share/doc", "usr/share/doc/whatever"},
+		"/var/moises":                    []string{"var"},
+		"/":                              []string{},
+	} {
+		t.Run(fmt.Sprintf("path: '%s'", path), func(t *testing.T) {
+			assert.Equal(t, parts, pathsToCreate(path))
+		})
+	}
 }
