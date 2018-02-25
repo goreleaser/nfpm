@@ -5,7 +5,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"encoding/hex"
 	// #nosec
 	"crypto/md5"
 	"fmt"
@@ -133,8 +132,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, now time.Time, src, ds
 	if _, err := io.Copy(tarw, io.TeeReader(file, digest)); err != nil {
 		return 0, errors.Wrap(err, "failed to copy")
 	}
-	var hash = hex.EncodeToString(digest.Sum(nil))
-	if _, err := fmt.Fprintf(md5w, "%s  %s\n", hash, header.Name[1:]); err != nil {
+	if _, err := fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), header.Name[1:]); err != nil {
 		return 0, errors.Wrap(err, "failed to write md5")
 	}
 	return info.Size(), nil
