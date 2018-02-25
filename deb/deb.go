@@ -143,7 +143,7 @@ func pathsToCreate(dst string) []string {
 		paths = append(paths, base)
 	}
 	// we don't really need to create those things in order apparently, but,
-	// it looks really weird if we dont.
+	// it looks really weird if we do.
 	var result []string
 	for i := len(paths) - 1; i >= 0; i-- {
 		result = append(result, paths[i])
