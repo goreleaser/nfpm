@@ -116,6 +116,7 @@ func createTree(tarw *tar.Writer, dst string) error {
 			Mode:     0755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
+			ModTime:  time.Now(),
 		}); err != nil {
 			return errors.Wrap(err, "failed to create folder")
 		}
