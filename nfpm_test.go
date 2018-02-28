@@ -30,16 +30,20 @@ func TestGet(t *testing.T) {
 }
 
 func TestDefaultsOnEmptyInfo(t *testing.T) {
-	info := Info{}
+	info := Info{
+		Version: "2.4.1",
+	}
 	info = WithDefaults(info)
 	assert.NotEmpty(t, info.Bindir)
 	assert.NotEmpty(t, info.Platform)
+	assert.Equal(t, "2.4.1", info.Version)
 }
 
 func TestDefaults(t *testing.T) {
 	info := Info{
 		Bindir:   "/usr/bin",
 		Platform: "darwin",
+		Version:  "2.4.1",
 	}
 	got := WithDefaults(info)
 	assert.Equal(t, info, got)

@@ -5,6 +5,7 @@ package nfpm
 import (
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 )
 
@@ -66,5 +67,6 @@ func WithDefaults(info Info) Info {
 	if info.Platform == "" {
 		info.Platform = "linux"
 	}
+	info.Version = strings.TrimPrefix(info.Version, "v")
 	return info
 }

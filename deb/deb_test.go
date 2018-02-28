@@ -37,7 +37,7 @@ var info = nfpm.WithDefaults(nfpm.Info{
 	Description: "Foo does things",
 	Priority:    "extra",
 	Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
-	Version:     "1.0.0",
+	Version:     "v1.0.0",
 	Section:     "default",
 	Homepage:    "http://carlosbecker.com",
 	Vendor:      "nope",
