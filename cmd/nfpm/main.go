@@ -78,5 +78,5 @@ func doPackage(config, target string) error {
 	if err != nil {
 		return err
 	}
-	return pkg.Package(info, f)
+	return pkg.Package(nfpm.WithDefaults(info), f)
 }
