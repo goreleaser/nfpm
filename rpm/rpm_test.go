@@ -116,3 +116,32 @@ func TestRpmBuildVersion(t *testing.T) {
 	assert.True(t, v.Minor >= 11)
 	assert.True(t, v.Path >= 0)
 }
+
+func TestParseRpmbuildVersion(t *testing.T) {
+	for _, version := range []string{
+		"RPM-Version 4.14.1",
+		"RPM version 4.14.1",
+	} {
+		t.Run(version, func(t *testing.T) {
+			v, err := parseRPMbuildVersion(version)
+			assert.NoError(t, err)
+			assert.Equal(t, 4, v.Major)
+			assert.Equal(t, 14, v.Minor)
+			assert.Equal(t, 1, v.Path)
+		})
+	}
+}
+
+func TestParseRpmbuildVersionError(t *testing.T) {
+	for _, version := range []string{
+		"RPM-Versionzz 4.14.1",
+		"nooo foo bar 1.2.3",
+		"RPM version 4.14.a",
+		"RPM version 4.14",
+	} {
+		t.Run(version, func(t *testing.T) {
+			_, err := parseRPMbuildVersion(version)
+			assert.Error(t, err)
+		})
+	}
+}
