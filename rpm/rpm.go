@@ -86,8 +86,12 @@ func getRpmbuildVersion() (rpmbuildVersion, error) {
 	if err != nil {
 		return rpmbuildVersion{}, errors.Wrap(err, "failed to get rpmbuild version")
 	}
+	return parseRPMbuildVersion(string(bts))
+}
+
+func parseRPMbuildVersion(out string) (rpmbuildVersion, error) {
 	var v = make([]int, 3)
-	vs := strings.TrimSuffix(strings.TrimPrefix(string(bts), "RPM version "), "\n")
+	vs := strings.TrimSuffix(strings.TrimPrefix(out, "RPM version "), "\n")
 	for i, part := range strings.Split(vs, ".")[:3] {
 		pi, err := strconv.Atoi(part)
 		if err != nil {
