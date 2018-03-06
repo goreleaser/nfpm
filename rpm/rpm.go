@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -86,16 +87,25 @@ func getRpmbuildVersion() (rpmbuildVersion, error) {
 	if err != nil {
 		return rpmbuildVersion{}, errors.Wrap(err, "failed to get rpmbuild version")
 	}
-	return parseRPMbuildVersion(string(bts))
+	return parseRPMbuildVersion(strings.TrimSuffix(string(bts), "\n"))
 }
 
+var versionExp = regexp.MustCompile(`RPM[- ][Vv]ersion (\d+)\.(\d+)\.(\d+)`)
+
 func parseRPMbuildVersion(out string) (rpmbuildVersion, error) {
+	matches := versionExp.FindAllStringSubmatch(out, -1)
+	if len(matches) == 0 {
+		return rpmbuildVersion{}, errors.New("unexpected rpmbuild --version output")
+	}
+	version := matches[0][1:]
+	if len(version) != 3 {
+		return rpmbuildVersion{}, errors.New("unexpected rpmbuild --version output")
+	}
 	var v = make([]int, 3)
-	vs := strings.TrimSuffix(strings.TrimPrefix(out, "RPM version "), "\n")
-	for i, part := range strings.Split(vs, ".")[:3] {
+	for i, part := range version {
 		pi, err := strconv.Atoi(part)
 		if err != nil {
-			return rpmbuildVersion{}, errors.Wrapf(err, "could not parse version %s", vs)
+			return rpmbuildVersion{}, errors.Wrapf(err, "could not parse version %s", out)
 		}
 		v[i] = pi
 	}
