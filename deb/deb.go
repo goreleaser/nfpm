@@ -257,12 +257,24 @@ Architecture: {{.Info.Arch}}
 Maintainer: {{.Info.Maintainer}}
 Vendor: {{.Info.Vendor}}
 Installed-Size: {{.InstalledSize}}
-Replaces: {{join .Info.Replaces}}
-Provides: {{join .Info.Provides}}
-Depends: {{join .Info.Depends}}
-Recommends: {{join .Info.Recommends}}
-Suggests: {{join .Info.Suggests}}
-Conflicts: {{join .Info.Conflicts}}
+{{- with .Info.Replaces}}
+Replaces: {{join .}}
+{{- end }}
+{{- with .Info.Provides}}
+Provides: {{join .}}
+{{- end }}
+{{- with .Info.Depends}}
+Depends: {{join .}}
+{{- end }}
+{{- with .Info.Recommends}}
+Recommends: {{join .}}
+{{- end }}
+{{- with .Info.Suggests}}
+Suggests: {{join .}}
+{{- end }}
+{{- with .Info.Conflicts}}
+Conflicts: {{join .}}
+{{- end }}
 Homepage: {{.Info.Homepage}}
 Description: {{.Info.Description}}
 `
