@@ -70,6 +70,39 @@ func TestControl(t *testing.T) {
 	assert.Equal(t, string(bts), w.String())
 }
 
+func TestNoJoinsControl(t *testing.T) {
+	var w bytes.Buffer
+	assert.NoError(t, writeControl(&w, controlData{
+		Info: nfpm.WithDefaults(nfpm.Info{
+			Name:        "foo",
+			Arch:        "amd64",
+			Depends:     []string{},
+			Recommends:  []string{},
+			Suggests:    []string{},
+			Replaces:    []string{},
+			Provides:    []string{},
+			Conflicts:   []string{},
+			Description: "Foo does things",
+			Priority:    "extra",
+			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
+			Version:     "v1.0.0",
+			Section:     "default",
+			Homepage:    "http://carlosbecker.com",
+			Vendor:      "nope",
+			Files:       map[string]string{},
+			ConfigFiles: map[string]string{},
+		}),
+		InstalledSize: 10,
+	}))
+	var golden = "testdata/control2.golden"
+	if *update {
+		ioutil.WriteFile(golden, w.Bytes(), 0655)
+	}
+	bts, err := ioutil.ReadFile(golden)
+	assert.NoError(t, err)
+	assert.Equal(t, string(bts), w.String())
+}
+
 func TestDebFileDoesNotExist(t *testing.T) {
 	var err = Default.Package(
 		nfpm.WithDefaults(nfpm.Info{
