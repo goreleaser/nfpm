@@ -17,6 +17,7 @@ import (
 
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/pkgutil"
 	"github.com/pkg/errors"
 )
 
@@ -87,15 +88,21 @@ func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64,
 		info.Files,
 		info.ConfigFiles,
 	} {
-		for src, dst := range files {
-			if err := createTree(out, dst, created); err != nil {
-				return nil, nil, 0, err
-			}
-			size, err := copyToTarAndDigest(out, &md5buf, src, dst)
+		for glob, dstroot := range files {
+			globbed, err := pkgutil.Glob(glob, dstroot)
 			if err != nil {
 				return nil, nil, 0, err
 			}
-			instSize += size
+			for src, dst := range globbed {
+				if err := createTree(out, dst, created); err != nil {
+					return nil, nil, 0, err
+				}
+				size, err := copyToTarAndDigest(out, &md5buf, src, dst)
+				if err != nil {
+					return nil, nil, 0, err
+				}
+				instSize += size
+			}
 		}
 	}
 
