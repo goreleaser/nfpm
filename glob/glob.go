@@ -1,3 +1,4 @@
+// Package glob provides file globbing for use in nfpm.Packager implementations
 package glob
 
 import (
