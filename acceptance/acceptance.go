@@ -1,7 +1,6 @@
 package acceptance
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -17,8 +16,8 @@ import (
 	_ "github.com/goreleaser/nfpm/rpm"
 )
 
-func accept(t *testing.T, name, format string) {
-	var config = fmt.Sprintf("./testdata/%s.yaml", name)
+func accept(t *testing.T, name, conf, format, dockerfile string) {
+	var config = filepath.Join("./testdata", conf)
 	tmp, err := filepath.Abs("./testdata/tmp")
 	require.NoError(t, err)
 	var target = filepath.Join(tmp, name+"."+format)
@@ -43,7 +42,7 @@ func accept(t *testing.T, name, format string) {
 		"docker",
 		"build",
 		"-f",
-		fmt.Sprintf("./testdata/%s.dockerfile", name),
+		filepath.Join("./testdata", dockerfile),
 		"./testdata",
 	)
 	t.Log("will exec:", cmd.Args)
