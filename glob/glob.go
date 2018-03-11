@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	zglob "github.com/mattn/go-zglob"
+	"github.com/mattn/go-zglob"
 )
 
-// LongestCommonPrefix returns the longest prefix of all strings the argument
+// longestCommonPrefix returns the longest prefix of all strings the argument
 // slice. If the slice is empty the empty string is returned
-func LongestCommonPrefix(strs []string) string {
+func longestCommonPrefix(strs []string) string {
 	if len(strs) == 0 {
 		return ""
 	}
@@ -48,7 +48,7 @@ func Glob(glob, dst string) (map[string]string, error) {
 		return nil, fmt.Errorf("no files matched by: %s", glob)
 	}
 	files := make(map[string]string)
-	prefix := LongestCommonPrefix(matches)
+	prefix := longestCommonPrefix(matches)
 	// the prefix may not be a complete path, in that case use the parent directory
 	if _, err := os.Stat(prefix); os.IsNotExist(err) {
 		prefix = filepath.Dir(prefix)

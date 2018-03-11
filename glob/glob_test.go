@@ -16,11 +16,11 @@ func TestLongestCommonPrefix(t *testing.T) {
 		"longesttest",
 	}
 
-	lcp1 := LongestCommonPrefix(strings)
+	lcp1 := longestCommonPrefix(strings)
 	assert.Equal(t, "long", lcp1)
 
 	empty := []string{}
-	lcp2 := LongestCommonPrefix(empty)
+	lcp2 := longestCommonPrefix(empty)
 	assert.Equal(t, "", lcp2)
 
 	unique := []string{
@@ -33,7 +33,7 @@ func TestLongestCommonPrefix(t *testing.T) {
 		"another",
 	}
 
-	lcp3 := LongestCommonPrefix(unique)
+	lcp3 := longestCommonPrefix(unique)
 	assert.Equal(t, "", lcp3)
 }
 
