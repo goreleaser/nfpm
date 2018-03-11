@@ -49,6 +49,10 @@ func Glob(glob, dst string) (map[string]string, error) {
 	}
 	files := make(map[string]string)
 	prefix := LongestCommonPrefix(matches)
+	// the prefix may not be a complete path, in that case use the parent directory
+	if _, err := os.Stat(prefix); os.IsNotExist(err) {
+		prefix = filepath.Dir(prefix)
+	}
 	for _, src := range matches {
 		// only include files
 		if f, err := os.Stat(src); err == nil && f.Mode().IsDir() {

@@ -38,17 +38,24 @@ func TestLongestCommonPrefix(t *testing.T) {
 }
 
 func TestGlob(t *testing.T) {
-	files, err := Glob("./testdata/**/*", "/foo/bar")
+	files, err := Glob("testdata/dir_a/dir_*/*", "/foo/bar")
 	assert.NoError(t, err)
 	assert.Len(t, files, 2)
-	assert.Equal(t, "/foo/bar/b/test_b.txt", files["testdata/a/b/test_b.txt"])
-	assert.Equal(t, "/foo/bar/c/test_c.txt", files["testdata/a/c/test_c.txt"])
+	assert.Equal(t, "/foo/bar/dir_b/test_b.txt", files["testdata/dir_a/dir_b/test_b.txt"])
+	assert.Equal(t, "/foo/bar/dir_c/test_c.txt", files["testdata/dir_a/dir_c/test_c.txt"])
 
-	nilvalue, err := Glob("./does/not/exist", "/var/lib")
+	nilvalue, err := Glob("does/not/exist", "/foo/bar")
 	assert.Error(t, err)
 	assert.Nil(t, nilvalue)
 
-	nomatches, err := Glob("./testdata/nothing*", "/foo/bar")
+	nomatches, err := Glob("testdata/nothing*", "/foo/bar")
 	assert.Nil(t, nomatches)
 	assert.Error(t, err)
+}
+
+func TestSingleGlob(t *testing.T) {
+	files, err := Glob("testdata/dir_a/dir_b/test_b.txt", "/foo/bar/dest.dat")
+	assert.NoError(t, err)
+	assert.Len(t, files, 1)
+	assert.Equal(t, "/foo/bar/dest.dat", files["testdata/dir_a/dir_b/test_b.txt"])
 }
