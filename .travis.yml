@@ -4,8 +4,8 @@ addons:
     - rpm
 language: go
 go: '1.10'
-# services:
-#   - docker
+services:
+  - docker
 install:
   - make setup
 before_script:
