@@ -1,5 +1,6 @@
 FROM ubuntu
-COPY tmp/complex_deb.deb /tmp/foo.deb
+ARG package
+COPY ${package} /tmp/foo.deb
 RUN dpkg -i /tmp/foo.deb && \
 		test -e /usr/local/bin/fake && \
 		test -f /etc/foo/whatever.conf && \

@@ -1,5 +1,6 @@
 FROM fedora
-COPY tmp/simple_rpm.rpm /tmp/foo.rpm
+ARG package
+COPY ${package} /tmp/foo.rpm
 RUN rpm -ivh /tmp/foo.rpm && \
 		test -e /usr/local/bin/fake && \
 		test -f /etc/foo/whatever.conf && \

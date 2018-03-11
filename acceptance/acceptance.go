@@ -20,7 +20,8 @@ func accept(t *testing.T, name, conf, format, dockerfile string) {
 	var config = filepath.Join("./testdata", conf)
 	tmp, err := filepath.Abs("./testdata/tmp")
 	require.NoError(t, err)
-	var target = filepath.Join(tmp, name+"."+format)
+	var packageName = name + "." + format
+	var target = filepath.Join(tmp, packageName)
 
 	require.NoError(t, os.MkdirAll(tmp, 0700))
 
@@ -43,6 +44,8 @@ func accept(t *testing.T, name, conf, format, dockerfile string) {
 		"build",
 		"-f",
 		filepath.Join("./testdata", dockerfile),
+		"--build-arg",
+		"package="+filepath.Join("tmp", packageName),
 		"./testdata",
 	)
 	t.Log("will exec:", cmd.Args)
