@@ -1,4 +1,4 @@
-package pkgutil
+package glob
 
 import (
 	"fmt"

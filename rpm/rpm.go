@@ -17,7 +17,7 @@ import (
 	"text/template"
 
 	"github.com/goreleaser/nfpm"
-	"github.com/goreleaser/nfpm/pkgutil"
+	"github.com/goreleaser/nfpm/glob"
 	"github.com/pkg/errors"
 )
 
@@ -207,8 +207,8 @@ func createTarGz(info nfpm.Info, root, file string) error {
 	defer compress.Close() // nolint: errcheck
 
 	for _, files := range []map[string]string{info.Files, info.ConfigFiles} {
-		for glob, dstroot := range files {
-			globbed, err := pkgutil.Glob(glob, dstroot)
+		for srcglob, dstroot := range files {
+			globbed, err := glob.Glob(srcglob, dstroot)
 			if err != nil {
 				return err
 			}
