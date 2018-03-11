@@ -9,6 +9,7 @@ builds:
   - darwin
   goarch:
   - amd64
+# TODO: build a functional docker image
 # dockers:
 #   - image: goreleaser/nfpm
 #     tag_templates:
@@ -31,14 +32,6 @@ brew:
   description: NFPM is not FPM
   test: |
     system "#{bin}/nfpm -v"
-# scoop:
-#   bucket:
-#     owner: goreleaser
-#     name: scoop-bucket
-#   homepage:  https://github.com/goreleaser/nfpm
-#   description: NFPM is not FPM
-#   license: MIT
-# TODO: change to nfpm when released
 nfpm:
   name_template: '{{ .ProjectName }}_{{ .Arch }}'
   homepage:  https://github.com/goreleaser/nfpm
@@ -49,4 +42,5 @@ nfpm:
   formats:
     - deb
     - rpm
-  # TODO: should be able to do that "suggested packages" thing
+  recommends:
+    - rpm
