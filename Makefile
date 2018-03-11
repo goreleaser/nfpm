@@ -4,13 +4,17 @@ TEST_OPTIONS?=
 
 # Install all the build and lint dependencies
 setup:
-	go get -u github.com/alecthomas/gometalinter
-	go get -u github.com/golang/dep/cmd/dep
 	go get -u golang.org/x/tools/cmd/cover
 	go get -u github.com/caarlos0/bandep
 	go get -u github.com/gobuffalo/packr/...
+	go get -u gopkg.in/alecthomas/gometalinter.v2
+ifeq ($(OS), Darwin)
+	brew install dep
+else
+	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+endif
 	dep ensure
-	gometalinter --install
+	gometalinter.v2 --install
 	echo "make check" > .git/hooks/pre-commit
 	chmod +x .git/hooks/pre-commit
 .PHONY: setup
@@ -36,7 +40,7 @@ fmt:
 
 # Run all the linters
 lint:
-	gometalinter --vendor ./...
+	gometalinter.v2 --vendor ./...
 .PHONY: lint
 
 # Run all the tests and code checks
@@ -57,7 +61,7 @@ todo:
 		--exclude=Makefile \
 		--text \
 		--color \
-		-nRo -E ' TODO:.*|SkipNow|nolint:.*' .
+		-nRo -E ' TODO:.*|SkipNow' .
 .PHONY: todo
 
 
