@@ -91,7 +91,7 @@ func getRpmbuildVersion() (rpmbuildVersion, error) {
 	return parseRPMbuildVersion(strings.TrimSuffix(string(bts), "\n"))
 }
 
-var versionExp = regexp.MustCompile(`RPM[- ][Vv]ersion (\d+)\.(\d+)\.(\d+)`)
+var versionExp = regexp.MustCompile(`RPM.* (\d+)\.(\d+)\.(\d+)`)
 
 func parseRPMbuildVersion(out string) (rpmbuildVersion, error) {
 	matches := versionExp.FindAllStringSubmatch(out, -1)
