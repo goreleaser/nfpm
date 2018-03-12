@@ -121,6 +121,9 @@ func TestParseRpmbuildVersion(t *testing.T) {
 	for _, version := range []string{
 		"RPM-Version 4.14.1",
 		"RPM version 4.14.1",
+		"RPM vers~ao 4.14.1",
+		"RPM versão 4.14.1",
+		"RPM-Versionzz 4.14.1",
 	} {
 		t.Run(version, func(t *testing.T) {
 			v, err := parseRPMbuildVersion(version)
@@ -134,7 +137,6 @@ func TestParseRpmbuildVersion(t *testing.T) {
 
 func TestParseRpmbuildVersionError(t *testing.T) {
 	for _, version := range []string{
-		"RPM-Versionzz 4.14.1",
 		"nooo foo bar 1.2.3",
 		"RPM version 4.14.a",
 		"RPM version 4.14",
