@@ -67,6 +67,9 @@ func WithDefaults(info Info) Info {
 	if info.Platform == "" {
 		info.Platform = "linux"
 	}
+	if info.Description == "" {
+		info.Description = "no description given"
+	}
 	info.Version = strings.TrimPrefix(info.Version, "v")
 	return info
 }
