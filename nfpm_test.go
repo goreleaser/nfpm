@@ -41,9 +41,10 @@ func TestDefaultsOnEmptyInfo(t *testing.T) {
 
 func TestDefaults(t *testing.T) {
 	info := Info{
-		Bindir:   "/usr/bin",
-		Platform: "darwin",
-		Version:  "2.4.1",
+		Bindir:      "/usr/bin",
+		Platform:    "darwin",
+		Version:     "2.4.1",
+		Description: "no description given",
 	}
 	got := WithDefaults(info)
 	assert.Equal(t, info, got)
