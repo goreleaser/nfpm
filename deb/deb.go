@@ -24,6 +24,15 @@ func init() {
 	nfpm.Register("deb", Default)
 }
 
+var goarchToDebian = map[string]string{
+	"386":    "i386",
+	"amd64":  "amd64",
+	"arm":    "armhf",
+	"arm64":  "arm64",
+	"mips":   "mips",
+	"mipsle": "mipsel",
+}
+
 // Default deb packager
 var Default = &Deb{}
 
@@ -32,6 +41,11 @@ type Deb struct{}
 
 // Package writes a new deb package to the given writer using the given info
 func (*Deb) Package(info nfpm.Info, deb io.Writer) (err error) {
+	// TODO: add acceptance tests for this
+	arch, ok := goarchToDebian[info.Arch]
+	if ok {
+		info.Arch = arch
+	}
 	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
 	if err != nil {
 		return err

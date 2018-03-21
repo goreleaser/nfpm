@@ -32,6 +32,7 @@ type RPM struct{}
 
 // Package writes a new RPM package to the given writer using the given info
 func (*RPM) Package(info nfpm.Info, w io.Writer) error {
+	// TODO: add acceptance tests for this and test other archs
 	if info.Arch == "amd64" {
 		info.Arch = "x86_64"
 	}
