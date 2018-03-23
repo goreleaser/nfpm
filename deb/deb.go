@@ -41,7 +41,6 @@ type Deb struct{}
 
 // Package writes a new deb package to the given writer using the given info
 func (*Deb) Package(info nfpm.Info, deb io.Writer) (err error) {
-	// TODO: add acceptance tests for this
 	arch, ok := goarchToDebian[info.Arch]
 	if ok {
 		info.Arch = arch
