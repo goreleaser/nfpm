@@ -24,6 +24,10 @@ func init() {
 	nfpm.Register("rpm", Default)
 }
 
+var goarchToRPM = map[string]string{
+	"amd64": "x86_64",
+}
+
 // Default deb packager
 var Default = &RPM{}
 
@@ -32,9 +36,9 @@ type RPM struct{}
 
 // Package writes a new RPM package to the given writer using the given info
 func (*RPM) Package(info nfpm.Info, w io.Writer) error {
-	// TODO: add acceptance tests for this and test other archs
-	if info.Arch == "amd64" {
-		info.Arch = "x86_64"
+	arch, ok := goarchToRPM[info.Arch]
+	if ok {
+		info.Arch = arch
 	}
 	_, err := exec.LookPath("rpmbuild")
 	if err != nil {
