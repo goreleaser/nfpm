@@ -26,10 +26,7 @@ func init() {
 
 var goarchToDebian = map[string]string{
 	"386":    "i386",
-	"amd64":  "amd64",
 	"arm":    "armhf",
-	"arm64":  "arm64",
-	"mips":   "mips",
 	"mipsle": "mipsel",
 }
 
