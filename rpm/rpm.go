@@ -26,6 +26,7 @@ func init() {
 
 var goarchToRPM = map[string]string{
 	"amd64": "x86_64",
+	"386":   "i386",
 }
 
 // Default deb packager
