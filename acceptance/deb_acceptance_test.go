@@ -16,6 +16,6 @@ func TestComplexDeb(t *testing.T) {
 		accept(t, "complex_deb", "complex.yaml", "deb", "deb.dockerfile")
 	})
 	t.Run("i386", func(t *testing.T) {
-		accept(t, "complex_deb_386", "complex.386.yaml", "deb", "deb.dockerfile")
+		accept(t, "complex_deb_386", "complex.386.yaml", "deb", "deb.386.dockerfile")
 	})
 }
