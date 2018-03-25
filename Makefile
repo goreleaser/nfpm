@@ -25,7 +25,7 @@ check:
 
 # Run all the tests
 test:
-	go test $(TEST_OPTIONS) -v -coverpkg=./... -race -failfast -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
+	go test $(TEST_OPTIONS) -v -coverpkg=./... -race -failfast -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=5m
 .PHONY: cover
 
 # Run all the tests and opens the coverage report

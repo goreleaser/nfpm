@@ -13,9 +13,9 @@ func TestSimpleRPM(t *testing.T) {
 
 func TestComplexRPM(t *testing.T) {
 	t.Run("amd64", func(t *testing.T) {
-		accept(t, "complex_rpm", "complex.yaml", "rpm", "rpm.dockerfile")
+		accept(t, "complex_rpm", "complex.yaml", "rpm", "rpm.complex.dockerfile")
 	})
 	t.Run("i386", func(t *testing.T) {
-		accept(t, "complex_rpm_386", "complex.386.yaml", "rpm", "rpm.386.dockerfile")
+		accept(t, "complex_rpm_386", "complex.386.yaml", "rpm", "rpm.386.complex.dockerfile")
 	})
 }
