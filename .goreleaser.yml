@@ -16,6 +16,10 @@ builds:
 #     - '{{ .Tag }}'
 #     - 'v{{ .Major }}.{{ .Minor }}'
 #     - 'latest'
+changelog:
+  filters:
+    exclude:
+      - Merge
 archive:
   replacements:
     darwin: Darwin
