@@ -17,6 +17,7 @@ import (
 	"text/template"
 
 	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/glob"
 	"github.com/pkg/errors"
 )
 
@@ -212,9 +213,15 @@ func createTarGz(info nfpm.Info, root, file string) error {
 	defer compress.Close() // nolint: errcheck
 
 	for _, files := range []map[string]string{info.Files, info.ConfigFiles} {
-		for src, dst := range files {
-			if err := copyToTarGz(out, root, src, dst); err != nil {
+		for srcglob, dstroot := range files {
+			globbed, err := glob.Glob(srcglob, dstroot)
+			if err != nil {
 				return err
+			}
+			for src, dst := range globbed {
+				if err := copyToTarGz(out, root, src, dst); err != nil {
+					return err
+				}
 			}
 		}
 	}
