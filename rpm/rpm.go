@@ -51,7 +51,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 		return err
 	}
 	if err = createTarGz(info, temps.Folder, temps.Source); err != nil {
-		return errors.Wrap(err, "failed to create tar.gz")
+		return err
 	}
 	if err = createSpec(info, temps.Spec); err != nil {
 		return errors.Wrap(err, "failed to create rpm spec file")

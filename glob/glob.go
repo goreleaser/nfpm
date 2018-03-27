@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/mattn/go-zglob"
+	"github.com/pkg/errors"
 )
 
 // longestCommonPrefix returns the longest prefix of all strings the argument
@@ -43,10 +44,10 @@ func strlcp(a string, b string) string {
 func Glob(glob, dst string) (map[string]string, error) {
 	matches, err := zglob.Glob(glob)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, glob)
 	}
 	if len(matches) == 0 {
-		return nil, fmt.Errorf("no files matched by: %s", glob)
+		return nil, fmt.Errorf("%s: no matching files", glob)
 	}
 	files := make(map[string]string)
 	prefix := longestCommonPrefix(matches)

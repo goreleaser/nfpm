@@ -135,7 +135,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.Error(t, err)
+	assert.EqualError(t, err, "../testdata/whatever.confzzz: file does not exist")
 }
 
 func TestDebNoFiles(t *testing.T) {
