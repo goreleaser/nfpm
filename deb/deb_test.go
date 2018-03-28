@@ -63,6 +63,13 @@ func TestDeb(t *testing.T) {
 	}
 }
 
+func TestDebVersionWithDash(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0-beta"
+	var err = Default.Package(info, ioutil.Discard)
+	assert.NoError(t, err)
+}
+
 func TestControl(t *testing.T) {
 	var w bytes.Buffer
 	assert.NoError(t, writeControl(&w, controlData{
