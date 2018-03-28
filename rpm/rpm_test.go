@@ -13,43 +13,45 @@ import (
 
 var update = flag.Bool("update", false, "update .golden files")
 
-var info = nfpm.WithDefaults(nfpm.Info{
-	Name: "foo",
-	Arch: "amd64",
-	Depends: []string{
-		"bash",
-	},
-	Recommends: []string{
-		"git",
-	},
-	Suggests: []string{
-		"bash",
-	},
-	Replaces: []string{
-		"svn",
-	},
-	Provides: []string{
-		"bzr",
-	},
-	Conflicts: []string{
-		"zsh",
-	},
-	Description: "Foo does things",
-	Priority:    "extra",
-	Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
-	Version:     "1.0.0",
-	Section:     "default",
-	Homepage:    "http://carlosbecker.com",
-	Vendor:      "nope",
-	License:     "MIT",
-	Bindir:      "/usr/local/bin",
-	Files: map[string]string{
-		"../testdata/fake": "/usr/local/bin/fake",
-	},
-	ConfigFiles: map[string]string{
-		"../testdata/whatever.conf": "/etc/fake/fake.conf",
-	},
-})
+func exampleInfo() nfpm.Info {
+	return nfpm.WithDefaults(nfpm.Info{
+		Name: "foo",
+		Arch: "amd64",
+		Depends: []string{
+			"bash",
+		},
+		Recommends: []string{
+			"git",
+		},
+		Suggests: []string{
+			"bash",
+		},
+		Replaces: []string{
+			"svn",
+		},
+		Provides: []string{
+			"bzr",
+		},
+		Conflicts: []string{
+			"zsh",
+		},
+		Description: "Foo does things",
+		Priority:    "extra",
+		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
+		Version:     "1.0.0",
+		Section:     "default",
+		Homepage:    "http://carlosbecker.com",
+		Vendor:      "nope",
+		License:     "MIT",
+		Bindir:      "/usr/local/bin",
+		Files: map[string]string{
+			"../testdata/fake": "/usr/local/bin/fake",
+		},
+		ConfigFiles: map[string]string{
+			"../testdata/whatever.conf": "/etc/fake/fake.conf",
+		},
+	})
+}
 
 func TestSpec(t *testing.T) {
 	for golden, vs := range map[string]rpmbuildVersion{
@@ -59,7 +61,7 @@ func TestSpec(t *testing.T) {
 	} {
 		t.Run(golden, func(tt *testing.T) {
 			var w bytes.Buffer
-			assert.NoError(tt, writeSpec(&w, info, vs))
+			assert.NoError(tt, writeSpec(&w, exampleInfo(), vs))
 			if *update {
 				ioutil.WriteFile(golden, w.Bytes(), 0655)
 			}
@@ -71,30 +73,16 @@ func TestSpec(t *testing.T) {
 }
 
 func TestRPM(t *testing.T) {
-	var err = Default.Package(info, ioutil.Discard)
+	var err = Default.Package(exampleInfo(), ioutil.Discard)
 	assert.NoError(t, err)
 }
 
-func TestNoFiles(t *testing.T) {
-	var err = Default.Package(
-		nfpm.WithDefaults(nfpm.Info{
-			Name: "foo",
-			Arch: "amd64",
-			Depends: []string{
-				"bash",
-			},
-			Description: "Foo does things",
-			Priority:    "extra",
-			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
-			Version:     "1.0.0",
-			Section:     "default",
-			Homepage:    "http://carlosbecker.com",
-			Vendor:      "nope",
-			License:     "MIT",
-			Bindir:      "/usr/local/bin",
-		}),
-		ioutil.Discard,
-	)
+func TestRPMNoFiles(t *testing.T) {
+	info := exampleInfo()
+	info.Files = map[string]string{}
+	info.ConfigFiles = map[string]string{}
+	var err = Default.Package(info, ioutil.Discard)
+	// TODO: better deal with this error
 	assert.Error(t, err)
 }
 
@@ -109,7 +97,7 @@ func TestRPMBuildNotInPath(t *testing.T) {
 	assert.EqualError(t, err, `rpmbuild not present in $PATH`)
 }
 
-func TestRpmBuildVersion(t *testing.T) {
+func TestRPMBuildVersion(t *testing.T) {
 	v, err := getRpmbuildVersion()
 	assert.NoError(t, err)
 	assert.Equal(t, 4, v.Major)
@@ -118,29 +106,14 @@ func TestRpmBuildVersion(t *testing.T) {
 }
 
 func TestRPMFileDoesNotExist(t *testing.T) {
-	var err = Default.Package(
-		nfpm.WithDefaults(nfpm.Info{
-			Name: "foo",
-			Arch: "amd64",
-			Depends: []string{
-				"bash",
-			},
-			Description: "Foo does things",
-			Priority:    "extra",
-			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
-			Version:     "1.0.0",
-			Section:     "default",
-			Homepage:    "http://carlosbecker.com",
-			Vendor:      "nope",
-			Files: map[string]string{
-				"../testdata/": "/usr/local/bin/fake",
-			},
-			ConfigFiles: map[string]string{
-				"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
-			},
-		}),
-		ioutil.Discard,
-	)
+	info := exampleInfo()
+	info.Files = map[string]string{
+		"../testdata/": "/usr/local/bin/fake",
+	}
+	info.ConfigFiles = map[string]string{
+		"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
+	}
+	var err = Default.Package(info, ioutil.Discard)
 	assert.EqualError(t, err, "../testdata/whatever.confzzz: file does not exist")
 }
 
