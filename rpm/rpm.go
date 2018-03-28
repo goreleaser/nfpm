@@ -42,6 +42,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if ok {
 		info.Arch = arch
 	}
+	info.Version = strings.Replace(info.Version, "-", "_", -1)
 	_, err := exec.LookPath("rpmbuild")
 	if err != nil {
 		return fmt.Errorf("rpmbuild not present in $PATH")
