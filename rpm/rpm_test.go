@@ -77,6 +77,13 @@ func TestRPM(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRPMVersionWithDash(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0-beta"
+	var err = Default.Package(info, ioutil.Discard)
+	assert.NoError(t, err)
+}
+
 func TestRPMNoFiles(t *testing.T) {
 	info := exampleInfo()
 	info.Files = map[string]string{}
