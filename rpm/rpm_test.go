@@ -117,6 +117,33 @@ func TestRpmBuildVersion(t *testing.T) {
 	assert.True(t, v.Path >= 0)
 }
 
+func TestRPMFileDoesNotExist(t *testing.T) {
+	var err = Default.Package(
+		nfpm.WithDefaults(nfpm.Info{
+			Name: "foo",
+			Arch: "amd64",
+			Depends: []string{
+				"bash",
+			},
+			Description: "Foo does things",
+			Priority:    "extra",
+			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
+			Version:     "1.0.0",
+			Section:     "default",
+			Homepage:    "http://carlosbecker.com",
+			Vendor:      "nope",
+			Files: map[string]string{
+				"../testdata/": "/usr/local/bin/fake",
+			},
+			ConfigFiles: map[string]string{
+				"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
+			},
+		}),
+		ioutil.Discard,
+	)
+	assert.EqualError(t, err, "../testdata/whatever.confzzz: file does not exist")
+}
+
 func TestParseRpmbuildVersion(t *testing.T) {
 	for _, version := range []string{
 		"RPM-Version 4.14.1",
