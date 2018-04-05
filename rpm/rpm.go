@@ -278,10 +278,14 @@ Name: {{ .Info.Name }}
 Summary: {{ first_line .Info.Description }}
 Version: {{ .Info.Version }}
 Release: 1
-License: {{ .Info.License }}
+{{- with .Info.License }}
+License: {{ . }}
+{{- end }}
 Group: Development/Tools
 SOURCE0 : %{name}-%{version}.tar.gz
-URL: {{ .Info.Homepage }}
+{{- with .Info.Homepage }}
+URL: {{ . }}
+{{- end }}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 {{ range $index, $element := .Info.Replaces }}

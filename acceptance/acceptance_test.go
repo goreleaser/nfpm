@@ -31,6 +31,8 @@ func accept(t *testing.T, name, conf, format, dockerfile string) {
 	var info nfpm.Info
 	err = yaml.Unmarshal(bts, &info)
 	require.NoError(t, err)
+	require.NoError(t, nfpm.Validate(info))
+
 	pkg, err := nfpm.Get(format)
 	require.NoError(t, err)
 

@@ -19,3 +19,9 @@ func TestComplexDeb(t *testing.T) {
 		accept(t, "complex_deb_386", "complex.386.yaml", "deb", "deb.386.complex.dockerfile")
 	})
 }
+
+func TestMinDeb(t *testing.T) {
+	t.Run("amd64", func(t *testing.T) {
+		accept(t, "min_deb", "min.yaml", "deb", "deb.min.dockerfile")
+	})
+}
