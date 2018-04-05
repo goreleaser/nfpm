@@ -1,0 +1,6 @@
+name: foo
+arch: amd64
+version: 1.2.3
+license: MIT
+files:
+  ../testdata/fake: "/usr/local/bin/fake"

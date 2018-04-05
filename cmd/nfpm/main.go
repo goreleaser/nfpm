@@ -68,6 +68,9 @@ func doPackage(config, target string) error {
 	if err != nil {
 		return err
 	}
+	if err := nfpm.Validate(info); err != nil {
+		return err
+	}
 	fmt.Printf("using %s packager...\n", format)
 	pkg, err := nfpm.Get(format)
 	if err != nil {

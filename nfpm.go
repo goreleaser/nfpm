@@ -59,6 +59,23 @@ type Info struct {
 	ConfigFiles map[string]string `yaml:"config_files,omitempty"`
 }
 
+// Validate the given Info and returns an error if it is invalid.
+func Validate(info Info) error {
+	if info.Name == "" {
+		return fmt.Errorf("package name cannot be empty")
+	}
+	if info.Arch == "" {
+		return fmt.Errorf("package arch must be provided")
+	}
+	if info.Version == "" {
+		return fmt.Errorf("package version must be provided")
+	}
+	if len(info.Files)+len(info.ConfigFiles) == 0 {
+		return fmt.Errorf("no files were provided")
+	}
+	return nil
+}
+
 // WithDefaults set some sane defaults into the given Info
 func WithDefaults(info Info) Info {
 	if info.Bindir == "" {

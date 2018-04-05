@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRegister(t *testing.T) {
@@ -48,6 +49,47 @@ func TestDefaults(t *testing.T) {
 	}
 	got := WithDefaults(info)
 	assert.Equal(t, info, got)
+}
+
+func TestValidate(t *testing.T) {
+	require.NoError(t, Validate(Info{
+		Name:    "as",
+		Arch:    "asd",
+		Version: "1.2.3",
+		Files: map[string]string{
+			"asa": "asd",
+		},
+	}))
+	require.NoError(t, Validate(Info{
+		Name:    "as",
+		Arch:    "asd",
+		Version: "1.2.3",
+		ConfigFiles: map[string]string{
+			"asa": "asd",
+		},
+	}))
+}
+
+func TestValidateError(t *testing.T) {
+	for err, info := range map[string]Info{
+		"package name cannot be empty": Info{},
+		"package arch must be provided": Info{
+			Name: "fo",
+		},
+		"package version must be provided": Info{
+			Name: "as",
+			Arch: "asd",
+		},
+		"no files were provided": Info{
+			Name:    "as",
+			Arch:    "asd",
+			Version: "1.2.3",
+		},
+	} {
+		t.Run(err, func(t *testing.T) {
+			require.EqualError(t, Validate(info), err)
+		})
+	}
 }
 
 type fakePackager struct{}
