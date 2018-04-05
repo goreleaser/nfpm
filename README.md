@@ -50,8 +50,7 @@ a look at the [nfpm piper on GoReleaser](https://github.com/goreleaser/gorelease
 
 ## Status
 
-* both deb and rpm packaging are working but there are some missing features;
-* we need a suite of acceptance tests to make sure everything works.
+* both deb and rpm packaging are working but there are some missing features.
 
 
 ## Donate
