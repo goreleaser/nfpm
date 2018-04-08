@@ -3,8 +3,10 @@ package deb
 import (
 	"bytes"
 	"flag"
+	"strconv"
 	"fmt"
 	"io/ioutil"
+	"archive/tar"
 	"testing"
 
 	"github.com/goreleaser/nfpm"
@@ -83,6 +85,26 @@ func TestControl(t *testing.T) {
 	bts, err := ioutil.ReadFile(golden)
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
+}
+
+func TestScripts(t *testing.T) {
+	var w bytes.Buffer
+	var out = tar.NewWriter(&w)
+	path := "../testdata/script.sh"
+	assert.Error(t, newScriptInsideTarGz(out, "doesnotexit", "preinst"))
+	assert.NoError(t, newScriptInsideTarGz(out, path, "preinst"))
+	var in = tar.NewReader(&w)
+	header, err := in.Next()
+	assert.NoError(t, err)
+	assert.Equal(t, "preinst", header.FileInfo().Name())
+	mode, err := strconv.ParseInt("0755", 8, 64)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(header.FileInfo().Mode()), mode)
+	data, err := ioutil.ReadAll(in)
+	assert.NoError(t, err)
+	org, err := ioutil.ReadFile(path)
+	assert.NoError(t, err)
+	assert.Equal(t, data, org)
 }
 
 func TestNoJoinsControl(t *testing.T) {

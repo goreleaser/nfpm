@@ -245,7 +245,7 @@ func newScriptInsideTarGz(out *tar.Writer, path string, dest string) error {
 	return newItemInsideTarGz(out, content, tar.Header{
 		Name:     dest,
 		Size:     int64(len(content)),
-		Mode:     0655,
+		Mode:     0755,
 		ModTime:  time.Now(),
 		Typeflag: tar.TypeReg,
 		Format:   tar.FormatGNU,

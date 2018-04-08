@@ -22,3 +22,8 @@ files:
   ./testdata/folder/**/*: "/usr/share/whatever/folder/"
 config_files:
   ../testdata/whatever.conf: "/etc/foo/whatever.conf"
+scripts:
+  preinstall: ./testdata/scripts/preinstall.sh
+  postinstall: ./testdata/scripts/postinstall.sh
+  preremove: ./testdata/scripts/preremove.sh
+  postremove: ./testdata/scripts/postremove.sh
