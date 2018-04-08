@@ -12,7 +12,7 @@ import (
 	"github.com/goreleaser/nfpm"
 	_ "github.com/goreleaser/nfpm/deb"
 	_ "github.com/goreleaser/nfpm/rpm"
-	yaml "gopkg.in/yaml.v1"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -64,7 +64,7 @@ func doPackage(config, target string) error {
 	}
 
 	var info nfpm.Info
-	err = yaml.Unmarshal(bts, &info)
+	err = yaml.UnmarshalStrict(bts, &info)
 	if err != nil {
 		return err
 	}
