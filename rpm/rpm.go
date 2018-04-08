@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -172,18 +171,11 @@ func writeSpec(w io.Writer, info nfpm.Info, vs rpmbuildVersion) error {
 }
 
 func readScripts(info nfpm.Info) (scripts scripts, err error) {
-	defer func() {
-		if err := recover(); err != nil {
-			return
-		}
-	}()
-
-	// order of slice must match order of fields in scripts struct
-	for i, script := range []string{
-		info.Scripts.PreInstall,
-		info.Scripts.PostInstall,
-		info.Scripts.PreRemove,
-		info.Scripts.PostRemove,
+	for script, dest := range map[string]*string{
+		info.Scripts.PreInstall:  &scripts.Pre,
+		info.Scripts.PostInstall: &scripts.Post,
+		info.Scripts.PreRemove:   &scripts.Preun,
+		info.Scripts.PostRemove:  &scripts.Postun,
 	} {
 		if script == "" {
 			continue
@@ -192,7 +184,7 @@ func readScripts(info nfpm.Info) (scripts scripts, err error) {
 		if data, err = ioutil.ReadFile(script); err != nil {
 			return
 		}
-		reflect.ValueOf(&scripts).Elem().Field(i).SetString(string(data))
+		*dest = string(data)
 	}
 	return scripts, nil
 }
