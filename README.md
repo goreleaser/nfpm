@@ -14,18 +14,24 @@
   </p>
 </p>
 
+## Why
+
+While [fpm][] is great, for me it is a bummer that it depends on Ruby, tar
+and probably other software.
+
+I wanted something that could be used as a binary and/or as a lib on go-software,
+so I hacked this together and it works!
 
 ## Goals
 
-* be simple to use
-* provide packaging for the most common linux packaging systems (at very least deb and rpm)
-* be distributed as a single binary
-* reproducible results
-  * depend on the fewer external things as possible (namely `rpmbuild`)
-  * generate packages based on yaml files (maybe also json and toml?)
-* be possible to use it as a lib in other go projects (namely [goreleaser] itself)
-
-[goreleaser]: https://goreleaser.com/#linux_packages.nfpm
+* [x] be simple to use
+* [x] provide packaging for the most common linux packaging systems (at very least deb and rpm)
+* [x] be distributed as a single binary
+* [x] reproducible results
+  * [x] depend on the fewer external things as possible (namely `rpmbuild`)
+  * [x] generate packages based on yaml files (maybe also json and toml?)
+* [x] be possible to use it as a lib in other go projects (namely [goreleaser][] itself)
+* [ ] support complex packages and power users
 
 ## Usage
 
@@ -52,6 +58,9 @@ a look at the [nfpm piper on GoReleaser](https://github.com/goreleaser/gorelease
 
 * both deb and rpm packaging are working but there are some missing features.
 
+## Special thanks
+
+Thanks to the [fpm][] authors for fpm, which inspires nfpm a lot.
 
 ## Donate
 
@@ -66,3 +75,6 @@ easy and will surely help the developers at least buy some ☕️ or 🍺!
 ---
 
 Would you like to fix something in the documentation? Feel free to open an [issue](https://github.com/goreleaser/nfpm/issues).
+
+[goreleaser]: https://goreleaser.com/#linux_packages.nfpm
+[fpm]: https://github.com/jordansissel/fpm
