@@ -73,5 +73,17 @@ rm -rf %{buildroot}
 %config(noreplace) /etc/fake/fake.conf
 
 
+%pre
+# noop
+
+%post
+# noop
+
+%preun
+# noop
+
+%postun
+# noop
+
 %changelog
 # noop

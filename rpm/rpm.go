@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -136,6 +137,19 @@ func createSpec(info nfpm.Info, path string) error {
 	return writeSpec(file, info, vs)
 }
 
+type data struct {
+	Info    nfpm.Info
+	Scripts scripts
+	RPM413  bool
+}
+
+type scripts struct {
+	Pre    string
+	Post   string
+	Preun  string
+	Postun string
+}
+
 func writeSpec(w io.Writer, info nfpm.Info, vs rpmbuildVersion) error {
 	var tmpl = template.New("spec")
 	tmpl.Funcs(template.FuncMap{
@@ -143,17 +157,44 @@ func writeSpec(w io.Writer, info nfpm.Info, vs rpmbuildVersion) error {
 			return strings.Split(str, "\n")[0]
 		},
 	})
-	type data struct {
-		Info   nfpm.Info
-		RPM413 bool
+	scriptdata, err := readScripts(info)
+	if err != nil {
+		return err
 	}
 	if err := template.Must(tmpl.Parse(specTemplate)).Execute(w, data{
-		Info:   info,
-		RPM413: vs.Major >= 4 && vs.Minor >= 13,
+		Info:    info,
+		Scripts: scriptdata,
+		RPM413:  vs.Major >= 4 && vs.Minor >= 13,
 	}); err != nil {
 		return errors.Wrap(err, "failed to parse spec template")
 	}
 	return nil
+}
+
+func readScripts(info nfpm.Info) (scripts scripts, err error) {
+	defer func() {
+		if err := recover(); err != nil {
+			return
+		}
+	}()
+
+	// order of slice must match order of fields in scripts struct
+	for i, script := range []string{
+		info.Scripts.PreInstall,
+		info.Scripts.PostInstall,
+		info.Scripts.PreRemove,
+		info.Scripts.PostRemove,
+	} {
+		if script == "" {
+			continue
+		}
+		var data []byte
+		if data, err = ioutil.ReadFile(script); err != nil {
+			return
+		}
+		reflect.ValueOf(&scripts).Elem().Field(i).SetString(string(data))
+	}
+	return scripts, nil
 }
 
 type tempFiles struct {
@@ -345,6 +386,18 @@ rm -rf %{buildroot}
 {{ range $index, $element := .Info.ConfigFiles }}
 %config(noreplace) {{ . }}
 {{ end }}
+
+%pre
+{{ if .Scripts.Pre }}{{ .Scripts.Pre }}{{ else }}# noop{{ end }}
+
+%post
+{{ if .Scripts.Post }}{{ .Scripts.Post }}{{ else }}# noop{{ end }}
+
+%preun
+{{ if .Scripts.Preun }}{{ .Scripts.Preun }}{{ else }}# noop{{ end }}
+
+%postun
+{{ if .Scripts.Postun }}{{ .Scripts.Postun }}{{ else }}# noop{{ end }}
 
 %changelog
 # noop
