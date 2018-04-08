@@ -5,6 +5,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"io/ioutil"
 	"path/filepath"
 	// #nosec
 	"crypto/md5"
@@ -189,6 +190,19 @@ func createControl(instSize int64, md5sums []byte, info nfpm.Info) (controlTarGz
 		}
 	}
 
+	for script, dest := range map[string]string{
+		info.Scripts.PreInstall:  "preinst",
+		info.Scripts.PostInstall: "postinst",
+		info.Scripts.PreRemove:   "prerm",
+		info.Scripts.PostRemove:  "postrm",
+	} {
+		if script != "" {
+			if err := newScriptInsideTarGz(out, script, dest); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	if err := out.Close(); err != nil {
 		return nil, errors.Wrap(err, "closing control.tar.gz")
 	}
@@ -198,22 +212,44 @@ func createControl(instSize int64, md5sums []byte, info nfpm.Info) (controlTarGz
 	return buf.Bytes(), nil
 }
 
+func newItemInsideTarGz(out *tar.Writer, content []byte, header tar.Header) error {
+	if err := out.WriteHeader(&header); err != nil {
+		return errors.Wrapf(err, "cannot write header of %s file to control.tar.gz", header.Name)
+	}
+	if _, err := out.Write(content); err != nil {
+		return errors.Wrapf(err, "cannot write %s file to control.tar.gz", header.Name)
+	}
+	return nil
+}
+
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
-	var header = tar.Header{
+	return newItemInsideTarGz(out, content, tar.Header{
 		Name:     name,
 		Size:     int64(len(content)),
 		Mode:     0644,
 		ModTime:  time.Now(),
 		Typeflag: tar.TypeReg,
 		Format:   tar.FormatGNU,
+	})
+}
+
+func newScriptInsideTarGz(out *tar.Writer, path string, dest string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
 	}
-	if err := out.WriteHeader(&header); err != nil {
-		return errors.Wrapf(err, "cannot write header of %s file to control.tar.gz", name)
+	content, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
 	}
-	if _, err := out.Write(content); err != nil {
-		return errors.Wrapf(err, "cannot write %s file to control.tar.gz", name)
-	}
-	return nil
+	return newItemInsideTarGz(out, content, tar.Header{
+		Name:     dest,
+		Size:     int64(len(content)),
+		Mode:     0655,
+		ModTime:  time.Now(),
+		Typeflag: tar.TypeReg,
+		Format:   tar.FormatGNU,
+	})
 }
 
 // this is needed because the data.tar.gz file should have the empty folders

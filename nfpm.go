@@ -57,6 +57,15 @@ type Info struct {
 	Bindir      string            `yaml:"bindir,omitempty"`
 	Files       map[string]string `yaml:"files,omitempty"`
 	ConfigFiles map[string]string `yaml:"config_files,omitempty"`
+	Scripts     Scripts           `yaml:"scripts,omitempty"`
+}
+
+// Scripts contains information about maintainer scripts for packages
+type Scripts struct {
+	PreInstall  string `yaml:"preinstall,omitempty"`
+	PostInstall string `yaml:"postinstall,omitempty"`
+	PreRemove   string `yaml:"preremove,omitempty"`
+	PostRemove  string `yaml:"postremove,omitempty"`
 }
 
 // Validate the given Info and returns an error if it is invalid.
