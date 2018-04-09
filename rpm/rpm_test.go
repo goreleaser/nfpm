@@ -50,6 +50,12 @@ func exampleInfo() nfpm.Info {
 		ConfigFiles: map[string]string{
 			"../testdata/whatever.conf": "/etc/fake/fake.conf",
 		},
+		Scripts: nfpm.Scripts{
+			PreInstall:  "../testdata/scripts/preinstall.sh",
+			PostInstall: "../testdata/scripts/postinstall.sh",
+			PreRemove:   "../testdata/scripts/preremove.sh",
+			PostRemove:  "../testdata/scripts/postremove.sh",
+		},
 	})
 }
 
@@ -82,6 +88,22 @@ func TestRPMVersionWithDash(t *testing.T) {
 	info.Version = "1.0.0-beta"
 	var err = Default.Package(info, ioutil.Discard)
 	assert.NoError(t, err)
+}
+
+func TestRPMScripts(t *testing.T) {
+	info := exampleInfo()
+	scripts, err := readScripts(info)
+	assert.NoError(t, err)
+	for actual, src := range map[string]string{
+		scripts.Pre:    info.Scripts.PreInstall,
+		scripts.Post:   info.Scripts.PostInstall,
+		scripts.Preun:  info.Scripts.PreRemove,
+		scripts.Postun: info.Scripts.PostRemove,
+	} {
+		data, err := ioutil.ReadFile(src)
+		assert.NoError(t, err)
+		assert.Equal(t, string(data), actual)
+	}
 }
 
 func TestRPMNoFiles(t *testing.T) {

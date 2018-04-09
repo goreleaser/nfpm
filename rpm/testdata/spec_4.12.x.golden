@@ -66,16 +66,28 @@ rm -rf %{buildroot}
 
 
 %pre
-# noop
+#!/bin/bash
+
+echo "Preinstall" > /dev/null
+
 
 %post
-# noop
+#!/bin/bash
+
+echo "Postinstall" > /dev/null
+
 
 %preun
-# noop
+#!/bin/bash
+
+echo "Preremove" > /dev/null
+
 
 %postun
-# noop
+#!/bin/bash
+
+echo "Postremove" > /dev/null
+
 
 %changelog
 # noop

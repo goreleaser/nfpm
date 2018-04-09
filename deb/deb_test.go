@@ -90,7 +90,7 @@ func TestControl(t *testing.T) {
 func TestScripts(t *testing.T) {
 	var w bytes.Buffer
 	var out = tar.NewWriter(&w)
-	path := "../testdata/script.sh"
+	path := "../testdata/scripts/preinstall.sh"
 	assert.Error(t, newScriptInsideTarGz(out, "doesnotexit", "preinst"))
 	assert.NoError(t, newScriptInsideTarGz(out, path, "preinst"))
 	var in = tar.NewReader(&w)
