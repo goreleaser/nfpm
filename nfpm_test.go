@@ -92,6 +92,36 @@ func TestValidateError(t *testing.T) {
 	}
 }
 
+func TestOverrides(t *testing.T) {
+	file := "./testdata/overrides.yaml"
+	config, err := ParseFile(file)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo", config.Name)
+	assert.Equal(t, "amd64", config.Arch)
+
+	// deb overrides
+	deb, err := config.Get("deb")
+	assert.NoError(t, err)
+	assert.Equal(t, "deb_foo", deb.Name)
+	assert.Contains(t, deb.Depends, "deb_depend")
+	assert.NotContains(t, deb.Depends, "rpm_depend")
+	assert.Contains(t, deb.ConfigFiles, "deb.conf")
+	assert.NotContains(t, deb.ConfigFiles, "rpm.conf")
+	assert.Contains(t, deb.ConfigFiles, "whatever.conf")
+	assert.Equal(t, "amd64", deb.Arch)
+
+	// rpm overrides
+	rpm, err := config.Get("rpm")
+	assert.NoError(t, err)
+	assert.Equal(t, "rpm_foo", rpm.Name)
+	assert.Contains(t, rpm.Depends, "rpm_depend")
+	assert.NotContains(t, rpm.Depends, "deb_depend")
+	assert.Contains(t, rpm.ConfigFiles, "rpm.conf")
+	assert.NotContains(t, rpm.ConfigFiles, "deb.conf")
+	assert.Contains(t, rpm.ConfigFiles, "whatever.conf")
+	assert.Equal(t, "amd64", rpm.Arch)
+}
+
 type fakePackager struct{}
 
 func (*fakePackager) Package(info Info, w io.Writer) error {

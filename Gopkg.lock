@@ -41,6 +41,12 @@
   version = "v1.10.8"
 
 [[projects]]
+  name = "github.com/imdario/mergo"
+  packages = ["."]
+  revision = "9d5f1277e9a8ed20c3684bda8fde67c05628518c"
+  version = "v0.3.4"
+
+[[projects]]
   branch = "master"
   name = "github.com/mattn/go-zglob"
   packages = [
@@ -48,6 +54,12 @@
     "fastwalk"
   ]
   revision = "4959821b481786922ac53e7ef25c61ae19fb7c36"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -85,6 +97,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a3b83909c2da207f16c59d71aca77e645c82fe6aaf739b5b8ebe44ae7e8255d7"
+  inputs-digest = "bdbd43efb9697cd62c6fdb405edf13bd3fb8ba009ec886310ffa606fd47b7ccd"
   solver-name = "gps-cdcl"
   solver-version = 1

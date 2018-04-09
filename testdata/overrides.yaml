@@ -1,0 +1,19 @@
+# Configuration file used to unit test overrides
+name: "foo"
+arch: "amd64"
+version: "v1.2.3"
+config_files:
+  whatever.conf: "/etc/foo/whatever.conf"
+overrides:
+  deb:
+    name: "deb_foo"
+    depends:
+      - deb_depend
+    config_files:
+      deb.conf: "/deb/path"
+  rpm:
+    name: "rpm_foo"
+    depends:
+      - rpm_depend
+    config_files:
+      rpm.conf: "/rpm/path"

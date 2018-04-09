@@ -21,3 +21,11 @@
 [[constraint]]
   branch = "master"
   name = "github.com/mattn/go-zglob"
+
+[[constraint]]
+  name = "github.com/imdario/mergo"
+  version = "0.3.4"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"

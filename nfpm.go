@@ -5,8 +5,14 @@ package nfpm
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"sync"
+
+	"github.com/imdario/mergo"
+	"github.com/mitchellh/mapstructure"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -30,12 +36,66 @@ func Get(format string) (Packager, error) {
 	return p, nil
 }
 
+// Parse decodes YAML data from an io.Reader into a configuration struct
+func Parse(in io.Reader) (config Config, err error) {
+	dec := yaml.NewDecoder(in)
+	dec.SetStrict(true)
+	err = dec.Decode(&config)
+	return
+}
+
+// ParseFile decodes YAML data from a file path into a configuration struct
+func ParseFile(path string) (config Config, err error) {
+	var file *os.File
+	file, err = os.Open(path)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+	return Parse(file)
+}
+
 // Packager represents any packager implementation
 type Packager interface {
 	Package(info Info, w io.Writer) error
 }
 
-// Info contains information about the package
+// Config contains the top level configuration for packages
+type Config struct {
+	Info      `yaml:",inline"`
+	Overrides map[string]interface{} `yaml:"overrides,omitempty"`
+}
+
+// Get returns the Info struct for the given packager format. Overrides
+// for the given format are merged into the final struct
+func (c Config) Get(format string) (info Info, err error) {
+	if err = mergo.Merge(&info, c.Info); err != nil {
+		return
+	}
+	data, ok := c.Overrides[format]
+	if !ok {
+		// no overrides
+		return
+	}
+	var override Info
+	config := &mapstructure.DecoderConfig{
+		Result:  &override,
+		TagName: "yaml",
+	}
+	var dec *mapstructure.Decoder
+	if dec, err = mapstructure.NewDecoder(config); err != nil {
+		return
+	}
+	if err = dec.Decode(data); err != nil {
+		return
+	}
+	if err = mergo.Merge(&info, override, mergo.WithOverride); err != nil {
+		return
+	}
+	return
+}
+
+// Info contains information about a single package
 type Info struct {
 	Name        string            `yaml:"name,omitempty"`
 	Arch        string            `yaml:"arch,omitempty"`
