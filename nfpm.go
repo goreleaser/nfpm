@@ -51,7 +51,7 @@ func ParseFile(path string) (config Config, err error) {
 	if err != nil {
 		return
 	}
-	defer file.Close()
+	defer file.Close() // nolint: errcheck
 	return Parse(file)
 }
 
