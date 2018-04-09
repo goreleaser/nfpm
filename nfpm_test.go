@@ -72,15 +72,15 @@ func TestValidate(t *testing.T) {
 
 func TestValidateError(t *testing.T) {
 	for err, info := range map[string]Info{
-		"package name cannot be empty": Info{},
-		"package arch must be provided": Info{
+		"package name cannot be empty": {},
+		"package arch must be provided": {
 			Name: "fo",
 		},
-		"package version must be provided": Info{
+		"package version must be provided": {
 			Name: "as",
 			Arch: "asd",
 		},
-		"no files were provided": Info{
+		"no files were provided": {
 			Name:    "as",
 			Arch:    "asd",
 			Version: "1.2.3",

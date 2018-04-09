@@ -1,12 +1,12 @@
 package deb
 
 import (
+	"archive/tar"
 	"bytes"
 	"flag"
-	"strconv"
 	"fmt"
 	"io/ioutil"
-	"archive/tar"
+	"strconv"
 	"testing"
 
 	"github.com/goreleaser/nfpm"
@@ -204,9 +204,9 @@ func TestConffiles(t *testing.T) {
 
 func TestPathsToCreate(t *testing.T) {
 	for path, parts := range map[string][]string{
-		"/usr/share/doc/whatever/foo.md": []string{"usr", "usr/share", "usr/share/doc", "usr/share/doc/whatever"},
-		"/var/moises":                    []string{"var"},
-		"/":                              []string{},
+		"/usr/share/doc/whatever/foo.md": {"usr", "usr/share", "usr/share/doc", "usr/share/doc/whatever"},
+		"/var/moises":                    {"var"},
+		"/":                              {},
 	} {
 		t.Run(fmt.Sprintf("path: '%s'", path), func(t *testing.T) {
 			assert.Equal(t, parts, pathsToCreate(path))
