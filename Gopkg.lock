@@ -37,8 +37,8 @@
 [[projects]]
   name = "github.com/gobuffalo/packr"
   packages = ["."]
-  revision = "6434a292ac52e6964adebfdce3f9ce6d9f16be01"
-  version = "v1.10.4"
+  revision = "1018a9837bae97af99f32e1f6283cd62d4d61ba2"
+  version = "v1.10.8"
 
 [[projects]]
   branch = "master"
