@@ -6,13 +6,11 @@ config_files:
   whatever.conf: "/etc/foo/whatever.conf"
 overrides:
   deb:
-    name: "deb_foo"
     depends:
       - deb_depend
     config_files:
       deb.conf: "/deb/path"
   rpm:
-    name: "rpm_foo"
     depends:
       - rpm_depend
     config_files:

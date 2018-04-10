@@ -2,6 +2,7 @@ package nfpm
 
 import (
 	"io"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -56,16 +57,20 @@ func TestValidate(t *testing.T) {
 		Name:    "as",
 		Arch:    "asd",
 		Version: "1.2.3",
-		Files: map[string]string{
-			"asa": "asd",
+		Overridables: Overridables{
+			Files: map[string]string{
+				"asa": "asd",
+			},
 		},
 	}))
 	require.NoError(t, Validate(Info{
 		Name:    "as",
 		Arch:    "asd",
 		Version: "1.2.3",
-		ConfigFiles: map[string]string{
-			"asa": "asd",
+		Overridables: Overridables{
+			ConfigFiles: map[string]string{
+				"asa": "asd",
+			},
 		},
 	}))
 }
@@ -92,6 +97,13 @@ func TestValidateError(t *testing.T) {
 	}
 }
 
+func TestParseFile(t *testing.T) {
+	_, noerr := ParseFile("./testdata/overrides.yaml")
+	assert.NoError(t, noerr)
+	_, err := ParseFile("./testdata/doesnotexist.yaml")
+	assert.Error(t, err)
+}
+
 func TestOverrides(t *testing.T) {
 	file := "./testdata/overrides.yaml"
 	config, err := ParseFile(file)
@@ -102,7 +114,6 @@ func TestOverrides(t *testing.T) {
 	// deb overrides
 	deb, err := config.Get("deb")
 	assert.NoError(t, err)
-	assert.Equal(t, "deb_foo", deb.Name)
 	assert.Contains(t, deb.Depends, "deb_depend")
 	assert.NotContains(t, deb.Depends, "rpm_depend")
 	assert.Contains(t, deb.ConfigFiles, "deb.conf")
@@ -113,13 +124,17 @@ func TestOverrides(t *testing.T) {
 	// rpm overrides
 	rpm, err := config.Get("rpm")
 	assert.NoError(t, err)
-	assert.Equal(t, "rpm_foo", rpm.Name)
 	assert.Contains(t, rpm.Depends, "rpm_depend")
 	assert.NotContains(t, rpm.Depends, "deb_depend")
 	assert.Contains(t, rpm.ConfigFiles, "rpm.conf")
 	assert.NotContains(t, rpm.ConfigFiles, "deb.conf")
 	assert.Contains(t, rpm.ConfigFiles, "whatever.conf")
 	assert.Equal(t, "amd64", rpm.Arch)
+
+	// no overrides
+	info, err := config.Get("doesnotexist")
+	assert.NoError(t, err)
+	assert.True(t, reflect.DeepEqual(config.Info, info))
 }
 
 type fakePackager struct{}

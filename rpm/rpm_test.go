@@ -17,24 +17,6 @@ func exampleInfo() nfpm.Info {
 	return nfpm.WithDefaults(nfpm.Info{
 		Name: "foo",
 		Arch: "amd64",
-		Depends: []string{
-			"bash",
-		},
-		Recommends: []string{
-			"git",
-		},
-		Suggests: []string{
-			"bash",
-		},
-		Replaces: []string{
-			"svn",
-		},
-		Provides: []string{
-			"bzr",
-		},
-		Conflicts: []string{
-			"zsh",
-		},
 		Description: "Foo does things",
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
@@ -44,17 +26,37 @@ func exampleInfo() nfpm.Info {
 		Vendor:      "nope",
 		License:     "MIT",
 		Bindir:      "/usr/local/bin",
-		Files: map[string]string{
-			"../testdata/fake": "/usr/local/bin/fake",
-		},
-		ConfigFiles: map[string]string{
-			"../testdata/whatever.conf": "/etc/fake/fake.conf",
-		},
-		Scripts: nfpm.Scripts{
-			PreInstall:  "../testdata/scripts/preinstall.sh",
-			PostInstall: "../testdata/scripts/postinstall.sh",
-			PreRemove:   "../testdata/scripts/preremove.sh",
-			PostRemove:  "../testdata/scripts/postremove.sh",
+		Overridables: nfpm.Overridables{
+			Depends: []string{
+				"bash",
+			},
+			Recommends: []string{
+				"git",
+			},
+			Suggests: []string{
+				"bash",
+			},
+			Replaces: []string{
+				"svn",
+			},
+			Provides: []string{
+				"bzr",
+			},
+			Conflicts: []string{
+				"zsh",
+			},
+			Files: map[string]string{
+				"../testdata/fake": "/usr/local/bin/fake",
+			},
+			ConfigFiles: map[string]string{
+				"../testdata/whatever.conf": "/etc/fake/fake.conf",
+			},
+			Scripts: nfpm.Scripts{
+				PreInstall:  "../testdata/scripts/preinstall.sh",
+				PostInstall: "../testdata/scripts/postinstall.sh",
+				PreRemove:   "../testdata/scripts/preremove.sh",
+				PostRemove:  "../testdata/scripts/postremove.sh",
+			},
 		},
 	})
 }
