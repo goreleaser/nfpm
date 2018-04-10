@@ -12,7 +12,6 @@ import (
 	"github.com/goreleaser/nfpm"
 	_ "github.com/goreleaser/nfpm/deb"
 	_ "github.com/goreleaser/nfpm/rpm"
-	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -56,19 +55,18 @@ func initFile(config string) error {
 	return ioutil.WriteFile(config, box.Bytes("."), 0666)
 }
 
-func doPackage(config, target string) error {
+func doPackage(path, target string) error {
 	format := filepath.Ext(target)[1:]
-	bts, err := ioutil.ReadFile(config)
+	config, err := nfpm.ParseFile(path)
 	if err != nil {
 		return err
 	}
 
-	var info nfpm.Info
-	err = yaml.UnmarshalStrict(bts, &info)
+	info, err := config.Get(format)
 	if err != nil {
 		return err
 	}
-	if err := nfpm.Validate(info); err != nil {
+	if err = nfpm.Validate(info); err != nil {
 		return err
 	}
 	fmt.Printf("using %s packager...\n", format)
