@@ -15,8 +15,8 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func exampleInfo() nfpm.Info {
 	return nfpm.WithDefaults(nfpm.Info{
-		Name: "foo",
-		Arch: "amd64",
+		Name:        "foo",
+		Arch:        "amd64",
 		Description: "Foo does things",
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
