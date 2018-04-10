@@ -1,7 +1,5 @@
 builds:
 - main: ./cmd/nfpm
-  hooks:
-    pre: packr
   env:
   - CGO_ENABLED=0
   goos:
@@ -33,18 +31,18 @@ brew:
     name: homebrew-tap
   folder: Formula
   homepage:  https://github.com/goreleaser/nfpm
-  description: NFPM is not FPM
+  description: nFPM is not FPM
   test: |
     system "#{bin}/nfpm -v"
 nfpm:
   name_template: '{{ .ProjectName }}_{{ .Arch }}'
   homepage:  https://github.com/goreleaser/nfpm
-  description: NFPM is not FPM
+  description: nFPM is not FPM
   maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
   license: MIT
   vendor: GoReleaser
   formats:
-    - deb
-    - rpm
+  - deb
+  - rpm
   recommends:
-    - rpm
+  - rpm

@@ -6,7 +6,6 @@ TEST_OPTIONS?=
 setup:
 	go get -u golang.org/x/tools/cmd/cover
 	go get -u github.com/caarlos0/bandep
-	go get -u github.com/gobuffalo/packr/...
 	go get -u gopkg.in/alecthomas/gometalinter.v2
 ifeq ($(OS), Darwin)
 	brew install dep
