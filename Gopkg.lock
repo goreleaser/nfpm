@@ -35,12 +35,6 @@
   version = "v1.1.0"
 
 [[projects]]
-  name = "github.com/gobuffalo/packr"
-  packages = ["."]
-  revision = "1018a9837bae97af99f32e1f6283cd62d4d61ba2"
-  version = "v1.10.8"
-
-[[projects]]
   branch = "master"
   name = "github.com/mattn/go-zglob"
   packages = [
@@ -85,6 +79,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a3b83909c2da207f16c59d71aca77e645c82fe6aaf739b5b8ebe44ae7e8255d7"
+  inputs-digest = "139d9e95060fb9956f9c7c33e17af1c239cfab390c01483d033dc6fe27b52dd5"
   solver-name = "gps-cdcl"
   solver-version = 1

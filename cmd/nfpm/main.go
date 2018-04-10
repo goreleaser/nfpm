@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/gobuffalo/packr"
 	"github.com/goreleaser/nfpm"
 	_ "github.com/goreleaser/nfpm/deb"
 	_ "github.com/goreleaser/nfpm/rpm"
@@ -52,8 +51,7 @@ func main() {
 }
 
 func initFile(config string) error {
-	box := packr.NewBox("./nfpm.yaml.example")
-	return ioutil.WriteFile(config, box.Bytes("."), 0666)
+	return ioutil.WriteFile(config, []byte(example), 0666)
 }
 
 func doPackage(config, target string) error {
@@ -83,3 +81,41 @@ func doPackage(config, target string) error {
 	}
 	return pkg.Package(nfpm.WithDefaults(info), f)
 }
+
+const example = `# nfpm example config file
+name: "foo"
+arch: "amd64"
+platform: "linux"
+version: "1.0.0"
+section: "default"
+priority: "extra"
+replaces:
+- foobar
+provides:
+- bar
+depends:
+- foo
+- bar
+# recommends on rpm packages requires rpmbuild >= 4.13
+recommends:
+- whatever
+# suggests on rpm packages requires rpmbuild >= 4.13
+suggests:
+- something-else
+conflicts:
+- not-foo
+- not-bar
+maintainer: "John Doe <john@example.com>"
+description: |
+  FooBar is the great foo and bar software.
+    And this can be in multiple lines!
+vendor: "FooBarCorp"
+homepage: "http://eaxmple.com"
+license: "MIT"
+bindir: "/usr/local/bin"
+files:
+  ./foo: "/usr/local/bin/foo"
+  ./bar: "/usr/local/bin/bar"
+config_files:
+  ./foobar.conf: "/etc/foobar.conf"
+`

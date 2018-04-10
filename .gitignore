@@ -4,4 +4,3 @@ coverage.txt
 dist
 nfpm.yaml
 .DS_Store
-cmd/nfpm/main-packr.go
