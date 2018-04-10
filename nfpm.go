@@ -42,7 +42,7 @@ func Parse(in io.Reader) (config Config, err error) {
 	if err = dec.Decode(&config); err != nil {
 		return
 	}
-	err = config.validate()
+	err = config.Validate()
 	return
 }
 
@@ -87,7 +87,8 @@ func (c *Config) Get(format string) (info Info, err error) {
 	return
 }
 
-func (c *Config) validate() error {
+// Validate ensures that the config is well typed
+func (c *Config) Validate() error {
 	for format := range c.Overrides {
 		if _, err := Get(format); err != nil {
 			return err
