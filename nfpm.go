@@ -39,7 +39,10 @@ func Get(format string) (Packager, error) {
 func Parse(in io.Reader) (config Config, err error) {
 	dec := yaml.NewDecoder(in)
 	dec.SetStrict(true)
-	err = dec.Decode(&config)
+	if err = dec.Decode(&config); err != nil {
+		return
+	}
+	err = config.validate()
 	return
 }
 
@@ -67,7 +70,7 @@ type Config struct {
 
 // Get returns the Info struct for the given packager format. Overrides
 // for the given format are merged into the final struct
-func (c Config) Get(format string) (info Info, err error) {
+func (c *Config) Get(format string) (info Info, err error) {
 	// make a deep copy of info
 	if err = mergo.Merge(&info, c.Info); err != nil {
 		return
@@ -82,6 +85,15 @@ func (c Config) Get(format string) (info Info, err error) {
 		return
 	}
 	return
+}
+
+func (c *Config) validate() error {
+	for format := range c.Overrides {
+		if _, err := Get(format); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Info contains information about a single package

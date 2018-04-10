@@ -98,9 +98,14 @@ func TestValidateError(t *testing.T) {
 }
 
 func TestParseFile(t *testing.T) {
-	_, noerr := ParseFile("./testdata/overrides.yaml")
-	assert.NoError(t, noerr)
-	_, err := ParseFile("./testdata/doesnotexist.yaml")
+	packagers = map[string]Packager{}
+	_, err := ParseFile("./testdata/overrides.yaml")
+	assert.Error(t, err)
+	Register("deb", &fakePackager{})
+	Register("rpm", &fakePackager{})
+	_, err = ParseFile("./testdata/overrides.yaml")
+	assert.NoError(t, err)
+	_, err = ParseFile("./testdata/doesnotexist.yaml")
 	assert.Error(t, err)
 }
 
