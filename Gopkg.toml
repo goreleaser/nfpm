@@ -11,10 +11,6 @@
   name = "github.com/blakesmith/ar"
 
 [[constraint]]
-  branch = "v1"
-  name = "gopkg.in/yaml.v1"
-
-[[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.1"
 
