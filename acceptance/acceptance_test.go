@@ -1,14 +1,12 @@
 package acceptance
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v1"
 
 	"github.com/goreleaser/nfpm"
 	// shut up
@@ -17,7 +15,7 @@ import (
 )
 
 func accept(t *testing.T, name, conf, format, dockerfile string) {
-	var config = filepath.Join("./testdata", conf)
+	var configFile = filepath.Join("./testdata", conf)
 	tmp, err := filepath.Abs("./testdata/tmp")
 	require.NoError(t, err)
 	var packageName = name + "." + format
@@ -25,11 +23,10 @@ func accept(t *testing.T, name, conf, format, dockerfile string) {
 
 	require.NoError(t, os.MkdirAll(tmp, 0700))
 
-	bts, err := ioutil.ReadFile(config)
+	config, err := nfpm.ParseFile(configFile)
 	require.NoError(t, err)
 
-	var info nfpm.Info
-	err = yaml.Unmarshal(bts, &info)
+	info, err := config.Get(format)
 	require.NoError(t, err)
 	require.NoError(t, nfpm.Validate(info))
 
@@ -39,7 +36,7 @@ func accept(t *testing.T, name, conf, format, dockerfile string) {
 	f, err := os.Create(target)
 	require.NoError(t, err)
 	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
-	bts, _ = exec.Command("pwd").CombinedOutput()
+	bts, _ := exec.Command("pwd").CombinedOutput()
 	t.Log(string(bts))
 	cmd := exec.Command(
 		"docker",

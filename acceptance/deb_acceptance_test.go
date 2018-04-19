@@ -20,6 +20,12 @@ func TestComplexDeb(t *testing.T) {
 	})
 }
 
+func TestComplexOverridesDeb(t *testing.T) {
+	t.Run("amd64", func(t *testing.T) {
+		accept(t, "overrides_deb", "overrides.yaml", "deb", "deb.overrides.dockerfile")
+	})
+}
+
 func TestMinDeb(t *testing.T) {
 	t.Run("amd64", func(t *testing.T) {
 		accept(t, "min_deb", "min.yaml", "deb", "deb.min.dockerfile")

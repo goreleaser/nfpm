@@ -20,6 +20,12 @@ func TestComplexRPM(t *testing.T) {
 	})
 }
 
+func TestComplexOverridesRPM(t *testing.T) {
+	t.Run("amd64", func(t *testing.T) {
+		accept(t, "overrides_rpm", "overrides.yaml", "rpm", "rpm.overrides.dockerfile")
+	})
+}
+
 func TestMinRPM(t *testing.T) {
 	t.Run("amd64", func(t *testing.T) {
 		accept(t, "min_rpm", "min.yaml", "rpm", "rpm.min.dockerfile")
