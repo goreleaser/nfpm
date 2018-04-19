@@ -17,26 +17,8 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func exampleInfo() nfpm.Info {
 	return nfpm.WithDefaults(nfpm.Info{
-		Name: "foo",
-		Arch: "amd64",
-		Depends: []string{
-			"bash",
-		},
-		Recommends: []string{
-			"git",
-		},
-		Suggests: []string{
-			"bash",
-		},
-		Replaces: []string{
-			"svn",
-		},
-		Provides: []string{
-			"bzr",
-		},
-		Conflicts: []string{
-			"zsh",
-		},
+		Name:        "foo",
+		Arch:        "amd64",
 		Description: "Foo does things",
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
@@ -44,12 +26,32 @@ func exampleInfo() nfpm.Info {
 		Section:     "default",
 		Homepage:    "http://carlosbecker.com",
 		Vendor:      "nope",
-		Files: map[string]string{
-			"../testdata/fake":          "/usr/local/bin/fake",
-			"../testdata/whatever.conf": "/usr/share/doc/fake/fake.txt",
-		},
-		ConfigFiles: map[string]string{
-			"../testdata/whatever.conf": "/etc/fake/fake.conf",
+		Overridables: nfpm.Overridables{
+			Depends: []string{
+				"bash",
+			},
+			Recommends: []string{
+				"git",
+			},
+			Suggests: []string{
+				"bash",
+			},
+			Replaces: []string{
+				"svn",
+			},
+			Provides: []string{
+				"bzr",
+			},
+			Conflicts: []string{
+				"zsh",
+			},
+			Files: map[string]string{
+				"../testdata/fake":          "/usr/local/bin/fake",
+				"../testdata/whatever.conf": "/usr/share/doc/fake/fake.txt",
+			},
+			ConfigFiles: map[string]string{
+				"../testdata/whatever.conf": "/etc/fake/fake.conf",
+			},
 		},
 	})
 }
@@ -113,12 +115,6 @@ func TestNoJoinsControl(t *testing.T) {
 		Info: nfpm.WithDefaults(nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
-			Depends:     []string{},
-			Recommends:  []string{},
-			Suggests:    []string{},
-			Replaces:    []string{},
-			Provides:    []string{},
-			Conflicts:   []string{},
 			Description: "Foo does things",
 			Priority:    "extra",
 			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
@@ -126,8 +122,16 @@ func TestNoJoinsControl(t *testing.T) {
 			Section:     "default",
 			Homepage:    "http://carlosbecker.com",
 			Vendor:      "nope",
-			Files:       map[string]string{},
-			ConfigFiles: map[string]string{},
+			Overridables: nfpm.Overridables{
+				Depends:     []string{},
+				Recommends:  []string{},
+				Suggests:    []string{},
+				Replaces:    []string{},
+				Provides:    []string{},
+				Conflicts:   []string{},
+				Files:       map[string]string{},
+				ConfigFiles: map[string]string{},
+			},
 		}),
 		InstalledSize: 10,
 	}))
@@ -143,11 +147,8 @@ func TestNoJoinsControl(t *testing.T) {
 func TestDebFileDoesNotExist(t *testing.T) {
 	var err = Default.Package(
 		nfpm.WithDefaults(nfpm.Info{
-			Name: "foo",
-			Arch: "amd64",
-			Depends: []string{
-				"bash",
-			},
+			Name:        "foo",
+			Arch:        "amd64",
 			Description: "Foo does things",
 			Priority:    "extra",
 			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
@@ -155,11 +156,16 @@ func TestDebFileDoesNotExist(t *testing.T) {
 			Section:     "default",
 			Homepage:    "http://carlosbecker.com",
 			Vendor:      "nope",
-			Files: map[string]string{
-				"../testdata/": "/usr/local/bin/fake",
-			},
-			ConfigFiles: map[string]string{
-				"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
+			Overridables: nfpm.Overridables{
+				Depends: []string{
+					"bash",
+				},
+				Files: map[string]string{
+					"../testdata/": "/usr/local/bin/fake",
+				},
+				ConfigFiles: map[string]string{
+					"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
+				},
 			},
 		}),
 		ioutil.Discard,
@@ -170,11 +176,8 @@ func TestDebFileDoesNotExist(t *testing.T) {
 func TestDebNoFiles(t *testing.T) {
 	var err = Default.Package(
 		nfpm.WithDefaults(nfpm.Info{
-			Name: "foo",
-			Arch: "amd64",
-			Depends: []string{
-				"bash",
-			},
+			Name:        "foo",
+			Arch:        "amd64",
 			Description: "Foo does things",
 			Priority:    "extra",
 			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
@@ -182,6 +185,11 @@ func TestDebNoFiles(t *testing.T) {
 			Section:     "default",
 			Homepage:    "http://carlosbecker.com",
 			Vendor:      "nope",
+			Overridables: nfpm.Overridables{
+				Depends: []string{
+					"bash",
+				},
+			},
 		}),
 		ioutil.Discard,
 	)
@@ -195,8 +203,10 @@ func TestDebNoInfo(t *testing.T) {
 
 func TestConffiles(t *testing.T) {
 	out := conffiles(nfpm.Info{
-		ConfigFiles: map[string]string{
-			"fake": "/etc/fake",
+		Overridables: nfpm.Overridables{
+			ConfigFiles: map[string]string{
+				"fake": "/etc/fake",
+			},
 		},
 	})
 	assert.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")

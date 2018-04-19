@@ -5,8 +5,13 @@ package nfpm
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"sync"
+
+	"github.com/imdario/mergo"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -30,31 +35,93 @@ func Get(format string) (Packager, error) {
 	return p, nil
 }
 
+// Parse decodes YAML data from an io.Reader into a configuration struct
+func Parse(in io.Reader) (config Config, err error) {
+	dec := yaml.NewDecoder(in)
+	dec.SetStrict(true)
+	if err = dec.Decode(&config); err != nil {
+		return
+	}
+	err = config.Validate()
+	return
+}
+
+// ParseFile decodes YAML data from a file path into a configuration struct
+func ParseFile(path string) (config Config, err error) {
+	var file *os.File
+	file, err = os.Open(path)
+	if err != nil {
+		return
+	}
+	defer file.Close() // nolint: errcheck
+	return Parse(file)
+}
+
 // Packager represents any packager implementation
 type Packager interface {
 	Package(info Info, w io.Writer) error
 }
 
-// Info contains information about the package
+// Config contains the top level configuration for packages
+type Config struct {
+	Info      `yaml:",inline"`
+	Overrides map[string]Overridables `yaml:"overrides,omitempty"`
+}
+
+// Get returns the Info struct for the given packager format. Overrides
+// for the given format are merged into the final struct
+func (c *Config) Get(format string) (info Info, err error) {
+	// make a deep copy of info
+	if err = mergo.Merge(&info, c.Info); err != nil {
+		return
+	}
+	override, ok := c.Overrides[format]
+	if !ok {
+		// no overrides
+		return
+	}
+	err = mergo.Merge(&info.Overridables, override, mergo.WithOverride)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// Validate ensures that the config is well typed
+func (c *Config) Validate() error {
+	for format := range c.Overrides {
+		if _, err := Get(format); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Info contains information about a single package
 type Info struct {
-	Name        string            `yaml:"name,omitempty"`
-	Arch        string            `yaml:"arch,omitempty"`
-	Platform    string            `yaml:"platform,omitempty"`
-	Version     string            `yaml:"version,omitempty"`
-	Section     string            `yaml:"section,omitempty"`
-	Priority    string            `yaml:"priority,omitempty"`
+	Overridables `yaml:",inline"`
+	Name         string `yaml:"name,omitempty"`
+	Arch         string `yaml:"arch,omitempty"`
+	Platform     string `yaml:"platform,omitempty"`
+	Version      string `yaml:"version,omitempty"`
+	Section      string `yaml:"section,omitempty"`
+	Priority     string `yaml:"priority,omitempty"`
+	Maintainer   string `yaml:"maintainer,omitempty"`
+	Description  string `yaml:"description,omitempty"`
+	Vendor       string `yaml:"vendor,omitempty"`
+	Homepage     string `yaml:"homepage,omitempty"`
+	License      string `yaml:"license,omitempty"`
+	Bindir       string `yaml:"bindir,omitempty"`
+}
+
+// Overridables contain the field which are overridable in a package
+type Overridables struct {
 	Replaces    []string          `yaml:"replaces,omitempty"`
 	Provides    []string          `yaml:"provides,omitempty"`
 	Depends     []string          `yaml:"depends,omitempty"`
 	Recommends  []string          `yaml:"recommends,omitempty"`
 	Suggests    []string          `yaml:"suggests,omitempty"`
 	Conflicts   []string          `yaml:"conflicts,omitempty"`
-	Maintainer  string            `yaml:"maintainer,omitempty"`
-	Description string            `yaml:"description,omitempty"`
-	Vendor      string            `yaml:"vendor,omitempty"`
-	Homepage    string            `yaml:"homepage,omitempty"`
-	License     string            `yaml:"license,omitempty"`
-	Bindir      string            `yaml:"bindir,omitempty"`
 	Files       map[string]string `yaml:"files,omitempty"`
 	ConfigFiles map[string]string `yaml:"config_files,omitempty"`
 	Scripts     Scripts           `yaml:"scripts,omitempty"`
