@@ -95,6 +95,14 @@ func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64,
 	defer compress.Close() // nolint: errcheck
 
 	var created = map[string]bool{}
+	for _, folder := range info.EmptyFolders {
+		// this .nope is actually not created, because createTree ignore the
+		// last part of the path, assuming it is a file.
+		// TODO: should probably refactor this
+		if err := createTree(out, filepath.Join(folder, ".nope"), created); err != nil {
+			return nil, nil, 0, err
+		}
+	}
 
 	var md5buf bytes.Buffer
 	for _, files := range []map[string]string{
@@ -288,7 +296,7 @@ func pathsToCreate(dst string) []string {
 		paths = append(paths, base)
 	}
 	// we don't really need to create those things in order apparently, but,
-	// it looks really weird if we do.
+	// it looks really weird if we don't.
 	var result = []string{}
 	for i := len(paths) - 1; i >= 0; i-- {
 		result = append(result, paths[i])
