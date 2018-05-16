@@ -51,6 +51,10 @@ func exampleInfo() nfpm.Info {
 			ConfigFiles: map[string]string{
 				"../testdata/whatever.conf": "/etc/fake/fake.conf",
 			},
+			EmptyFolders: []string{
+				"/var/log/whatever",
+				"/usr/share/whatever",
+			},
 			Scripts: nfpm.Scripts{
 				PreInstall:  "../testdata/scripts/preinstall.sh",
 				PostInstall: "../testdata/scripts/postinstall.sh",
