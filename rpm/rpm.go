@@ -358,7 +358,10 @@ Suggests: {{ . }}
 
 %install
 rm -rf %{buildroot}
-mkdir -p  %{buildroot}
+mkdir -vp %{buildroot}
+{{ range $index, $element :=  .Info.EmptyFolders }}
+mkdir -vp %{buildroot}{{ . }}
+{{ end }}
 
 # in builddir
 cp -a * %{buildroot}
@@ -377,6 +380,9 @@ rm -rf %{buildroot}
 {{ end }}
 {{ range $index, $element := .Info.ConfigFiles }}
 %config(noreplace) {{ . }}
+{{ end }}
+{{ range $index, $element :=  .Info.EmptyFolders }}
+{{ . }}
 {{ end }}
 
 %pre

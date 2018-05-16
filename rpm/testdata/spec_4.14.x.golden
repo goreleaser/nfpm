@@ -52,7 +52,12 @@ Foo does things
 
 %install
 rm -rf %{buildroot}
-mkdir -p  %{buildroot}
+mkdir -vp %{buildroot}
+
+mkdir -vp %{buildroot}/var/log/whatever
+
+mkdir -vp %{buildroot}/usr/share/whatever
+
 
 # in builddir
 cp -a * %{buildroot}
@@ -71,6 +76,11 @@ rm -rf %{buildroot}
 
 
 %config(noreplace) /etc/fake/fake.conf
+
+
+/var/log/whatever
+
+/usr/share/whatever
 
 
 %pre
