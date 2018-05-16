@@ -39,14 +39,12 @@ func accept(t *testing.T, name, conf, format, dockerfile string) {
 	bts, _ := exec.Command("pwd").CombinedOutput()
 	t.Log(string(bts))
 	cmd := exec.Command(
-		"docker",
-		"build",
-		"-f",
-		filepath.Join("./testdata", dockerfile),
-		"--build-arg",
-		"package="+filepath.Join("tmp", packageName),
-		"./testdata",
+		"docker", "build",
+		"-f", dockerfile,
+		"--build-arg", "package="+filepath.Join("tmp", packageName),
+		".",
 	)
+	cmd.Dir = "./testdata"
 	t.Log("will exec:", cmd.Args)
 	bts, err = cmd.CombinedOutput()
 	t.Log("output:", string(bts))
