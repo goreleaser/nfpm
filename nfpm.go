@@ -116,15 +116,16 @@ type Info struct {
 
 // Overridables contain the field which are overridable in a package
 type Overridables struct {
-	Replaces    []string          `yaml:"replaces,omitempty"`
-	Provides    []string          `yaml:"provides,omitempty"`
-	Depends     []string          `yaml:"depends,omitempty"`
-	Recommends  []string          `yaml:"recommends,omitempty"`
-	Suggests    []string          `yaml:"suggests,omitempty"`
-	Conflicts   []string          `yaml:"conflicts,omitempty"`
-	Files       map[string]string `yaml:"files,omitempty"`
-	ConfigFiles map[string]string `yaml:"config_files,omitempty"`
-	Scripts     Scripts           `yaml:"scripts,omitempty"`
+	Replaces     []string          `yaml:"replaces,omitempty"`
+	Provides     []string          `yaml:"provides,omitempty"`
+	Depends      []string          `yaml:"depends,omitempty"`
+	Recommends   []string          `yaml:"recommends,omitempty"`
+	Suggests     []string          `yaml:"suggests,omitempty"`
+	Conflicts    []string          `yaml:"conflicts,omitempty"`
+	Files        map[string]string `yaml:"files,omitempty"`
+	ConfigFiles  map[string]string `yaml:"config_files,omitempty"`
+	EmptyFolders []string          `yaml:"empty_folders,omitempty"`
+	Scripts      Scripts           `yaml:"scripts,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages
