@@ -4,3 +4,4 @@ coverage.txt
 dist
 nfpm.yaml
 .DS_Store
+bin

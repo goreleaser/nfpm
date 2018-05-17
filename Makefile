@@ -2,18 +2,20 @@ SOURCE_FILES?=./...
 TEST_PATTERN?=.
 TEST_OPTIONS?=
 
+export PATH := ./bin:$(PATH)
+
 # Install all the build and lint dependencies
 setup:
 	go get -u golang.org/x/tools/cmd/cover
-	go get -u github.com/caarlos0/bandep
-	go get -u gopkg.in/alecthomas/gometalinter.v2
+	curl -sfL https://install.goreleaser.com/github.com/caarlos0/bandep.sh | sh
+	curl -sfL https://install.goreleaser.com/github.com/alecthomas/gometalinter.sh | sh
 ifeq ($(OS), Darwin)
 	brew install dep
 else
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 endif
 	dep ensure
-	gometalinter.v2 --install
+	gometalinter --install
 	echo "make check" > .git/hooks/pre-commit
 	chmod +x .git/hooks/pre-commit
 .PHONY: setup
@@ -39,7 +41,7 @@ fmt:
 
 # Run all the linters
 lint:
-	gometalinter.v2 --vendor ./...
+	gometalinter --vendor ./...
 .PHONY: lint
 
 # Run all the tests and code checks
