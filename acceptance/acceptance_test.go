@@ -39,7 +39,7 @@ func accept(t *testing.T, name, conf, format, dockerfile string) {
 	bts, _ := exec.Command("pwd").CombinedOutput()
 	t.Log(string(bts))
 	cmd := exec.Command(
-		"docker", "build",
+		"docker", "build", "--rm", "--force-rm",
 		"-f", dockerfile,
 		"--build-arg", "package="+filepath.Join("tmp", packageName),
 		".",
