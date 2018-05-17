@@ -95,36 +95,13 @@ func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64,
 	defer compress.Close() // nolint: errcheck
 
 	var created = map[string]bool{}
-	for _, folder := range info.EmptyFolders {
-		// this .nope is actually not created, because createTree ignore the
-		// last part of the path, assuming it is a file.
-		// TODO: should probably refactor this
-		if err := createTree(out, filepath.Join(folder, ".nope"), created); err != nil {
-			return nil, nil, 0, err
-		}
+	if err := createEmptyFoldersInsideTarGz(info, out, created); err != nil {
+		return nil, nil, 0, err
 	}
 
-	var md5buf bytes.Buffer
-	for _, files := range []map[string]string{
-		info.Files,
-		info.ConfigFiles,
-	} {
-		for srcglob, dstroot := range files {
-			globbed, err := glob.Glob(srcglob, dstroot)
-			if err != nil {
-				return nil, nil, 0, err
-			}
-			for src, dst := range globbed {
-				if err := createTree(out, dst, created); err != nil {
-					return nil, nil, 0, err
-				}
-				size, err := copyToTarAndDigest(out, &md5buf, src, dst)
-				if err != nil {
-					return nil, nil, 0, err
-				}
-				instSize += size
-			}
-		}
+	md5buf, instSize, err := createFilesInsideTarGz(info, out, created)
+	if err != nil {
+		return nil, nil, 0, err
 	}
 
 	if err := out.Close(); err != nil {
@@ -135,6 +112,45 @@ func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64,
 	}
 
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
+}
+
+func createFilesInsideTarGz(info nfpm.Info, out *tar.Writer, created map[string]bool) (bytes.Buffer, int64, error) {
+	var md5buf bytes.Buffer
+	var instSize int64
+	for _, files := range []map[string]string{
+		info.Files,
+		info.ConfigFiles,
+	} {
+		for srcglob, dstroot := range files {
+			globbed, err := glob.Glob(srcglob, dstroot)
+			if err != nil {
+				return md5buf, 0, err
+			}
+			for src, dst := range globbed {
+				if err := createTree(out, dst, created); err != nil {
+					return md5buf, 0, err
+				}
+				size, err := copyToTarAndDigest(out, &md5buf, src, dst)
+				if err != nil {
+					return md5buf, 0, err
+				}
+				instSize += size
+			}
+		}
+	}
+	return md5buf, instSize, nil
+}
+
+func createEmptyFoldersInsideTarGz(info nfpm.Info, out *tar.Writer, created map[string]bool) error {
+	for _, folder := range info.EmptyFolders {
+		// this .nope is actually not created, because createTree ignore the
+		// last part of the path, assuming it is a file.
+		// TODO: should probably refactor this
+		if err := createTree(out, filepath.Join(folder, ".nope"), created); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int64, error) {
