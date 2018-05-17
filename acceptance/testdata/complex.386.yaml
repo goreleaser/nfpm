@@ -22,6 +22,9 @@ files:
   ./testdata/folder/**/*: "/usr/share/whatever/folder/"
 config_files:
   ../testdata/whatever.conf: "/etc/foo/whatever.conf"
+empty_folders:
+- /var/log/whatever
+- /usr/share/foo
 scripts:
   preinstall: ./testdata/scripts/preinstall.sh
   postinstall: ./testdata/scripts/postinstall.sh
