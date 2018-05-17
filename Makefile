@@ -15,7 +15,6 @@ else
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 endif
 	dep ensure
-	gometalinter --install
 	echo "make check" > .git/hooks/pre-commit
 	chmod +x .git/hooks/pre-commit
 .PHONY: setup
