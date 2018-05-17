@@ -95,7 +95,7 @@ func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64,
 	defer compress.Close() // nolint: errcheck
 
 	var created = map[string]bool{}
-	if err := createEmptyFoldersInsideTarGz(info, out, created); err != nil {
+	if err = createEmptyFoldersInsideTarGz(info, out, created); err != nil {
 		return nil, nil, 0, err
 	}
 
