@@ -23,7 +23,11 @@ check:
 	bandep --ban github.com/tj/assert
 .PHONY: check
 
-test:
+pull_test_imgs:
+	grep FROM ./acceptance/testdata/*.dockerfile | cut -f2 -d' ' | sort | uniq | while read -r img; do docker pull "$$img"; done
+.PHONY: pull_test_imgs
+
+test: pull_test_imgs
 	go test $(TEST_OPTIONS) -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.out $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
 .PHONY: test
 
