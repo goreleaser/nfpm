@@ -5,13 +5,12 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"io/ioutil"
-	"path/filepath"
-	// #nosec
-	"crypto/md5"
+	"crypto/md5" // nolint:gas
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -178,8 +177,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 	if err := tarw.WriteHeader(&header); err != nil {
 		return 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", header)
 	}
-	// #nosec
-	var digest = md5.New()
+	var digest = md5.New() // nolint:gas
 	if _, err := io.Copy(tarw, io.TeeReader(file, digest)); err != nil {
 		return 0, errors.Wrap(err, "failed to copy")
 	}

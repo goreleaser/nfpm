@@ -5,3 +5,5 @@ dist
 nfpm.yaml
 .DS_Store
 bin
+coverage.out
+nfpm
