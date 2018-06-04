@@ -116,4 +116,13 @@ files:
   ./bar: "/usr/local/bin/bar"
 config_files:
   ./foobar.conf: "/etc/foobar.conf"
+overrides:
+  rpm:
+    scripts:
+      preinstall: ./scripts/preinstall.sh
+      postremove: ./scripts/postremove.sh
+  deb:
+    scripts:
+      postinstall: ./scripts/postinstall.sh
+      preremove: ./scripts/preremove.sh
 `
