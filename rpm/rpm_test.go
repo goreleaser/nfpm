@@ -75,7 +75,7 @@ func TestSpec(t *testing.T) {
 			var w bytes.Buffer
 			assert.NoError(tt, writeSpec(&w, exampleInfo(), vs))
 			if *update {
-				ioutil.WriteFile(golden, w.Bytes(), 0655)
+				ioutil.WriteFile(golden, w.Bytes(), 0655) //nolint:errcheck
 			}
 			bts, err := ioutil.ReadFile(golden)
 			assert.NoError(tt, err)

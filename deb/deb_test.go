@@ -86,7 +86,7 @@ func TestControl(t *testing.T) {
 	}))
 	var golden = "testdata/control.golden"
 	if *update {
-		ioutil.WriteFile(golden, w.Bytes(), 0655)
+		ioutil.WriteFile(golden, w.Bytes(), 0655) //nolint:errcheck
 	}
 	bts, err := ioutil.ReadFile(golden)
 	assert.NoError(t, err)
@@ -141,7 +141,7 @@ func TestNoJoinsControl(t *testing.T) {
 	}))
 	var golden = "testdata/control2.golden"
 	if *update {
-		ioutil.WriteFile(golden, w.Bytes(), 0655)
+		ioutil.WriteFile(golden, w.Bytes(), 0655) //nolint:errcheck
 	}
 	bts, err := ioutil.ReadFile(golden)
 	assert.NoError(t, err)
