@@ -47,6 +47,18 @@ NFPM will guess which packager to use based on the target file extension.
 
 And that's it!
 
+## Usage as a docker image
+
+You can run it with docker as well:
+
+```sh
+docker run --rm \
+  -v $PWD:/tmp/pkg \
+  goreleaser/nfpm pkg --config /tmp/pkg/foo.yml --target /tmp/pkg/foo.rpm
+```
+
+That's it!
+
 ## Usage as lib
 
 You can look at the code of nfpm itself to see how to use it as a library, or, take
