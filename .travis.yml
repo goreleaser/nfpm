@@ -14,7 +14,7 @@ script:
   - make ci
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  # - test -n "$TRAVIS_TAG" && docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+  - test -n "$TRAVIS_TAG" && docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
 notifications:
   email: false
 deploy:
