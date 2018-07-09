@@ -71,7 +71,7 @@ func (*Deb) Package(info nfpm.Info, deb io.Writer) (err error) {
 
 func addArFile(w *ar.Writer, name string, body []byte) error {
 	var header = ar.Header{
-		Name:    name,
+		Name:    filepath.ToSlash(name),
 		Size:    int64(len(body)),
 		Mode:    0644,
 		ModTime: time.Now(),
@@ -168,7 +168,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		return 0, nil
 	}
 	var header = tar.Header{
-		Name:    dst[1:],
+		Name:    filepath.ToSlash(dst[1:]),
 		Size:    info.Size(),
 		Mode:    int64(info.Mode()),
 		ModTime: time.Now(),
@@ -248,7 +248,7 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header tar.Header) erro
 
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	return newItemInsideTarGz(out, content, tar.Header{
-		Name:     name,
+		Name:     filepath.ToSlash(name),
 		Size:     int64(len(content)),
 		Mode:     0644,
 		ModTime:  time.Now(),
@@ -267,7 +267,7 @@ func newScriptInsideTarGz(out *tar.Writer, path string, dest string) error {
 		return err
 	}
 	return newItemInsideTarGz(out, content, tar.Header{
-		Name:     dest,
+		Name:     filepath.ToSlash(dest),
 		Size:     int64(len(content)),
 		Mode:     0755,
 		ModTime:  time.Now(),
@@ -286,7 +286,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 			continue
 		}
 		if err := tarw.WriteHeader(&tar.Header{
-			Name:     path + "/",
+			Name:     filepath.ToSlash(path + "/"),
 			Mode:     0755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
