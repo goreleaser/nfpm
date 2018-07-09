@@ -21,11 +21,21 @@ func TestSimple(t *testing.T) {
 	for _, format := range formats {
 		t.Run("amd64", func(t *testing.T) {
 			t.Parallel()
-			accept(t, fmt.Sprintf("simple_%s", format), "simple.yaml", format, fmt.Sprintf("%s.dockerfile", format))
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("simple_%s", format),
+				Conf:       "simple.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.dockerfile", format),
+			})
 		})
 		t.Run("i386", func(t *testing.T) {
 			t.Parallel()
-			accept(t, fmt.Sprintf("simple_%s_386", format), "simple.386.yaml", format, fmt.Sprintf("%s.386.dockerfile", format))
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("simple_%s_386", format),
+				Conf:       "simple.386.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.386.dockerfile", format),
+			})
 		})
 	}
 }
@@ -34,11 +44,21 @@ func TestComplex(t *testing.T) {
 	for _, format := range formats {
 		t.Run("amd64", func(t *testing.T) {
 			t.Parallel()
-			accept(t, fmt.Sprintf("complex_%s", format), "complex.yaml", format, fmt.Sprintf("%s.complex.dockerfile", format))
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("complex_%s", format),
+				Conf:       "complex.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.complex.dockerfile", format),
+			})
 		})
 		t.Run("i386", func(t *testing.T) {
 			t.Parallel()
-			accept(t, fmt.Sprintf("complex_%s_386", format), "complex.386.yaml", format, fmt.Sprintf("%s.386.complex.dockerfile", format))
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("complex_%s_386", format),
+				Conf:       "complex.386.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.386.complex.dockerfile", format),
+			})
 		})
 	}
 }
@@ -47,7 +67,12 @@ func TestComplexOverridesDeb(t *testing.T) {
 	for _, format := range formats {
 		t.Run("amd64", func(t *testing.T) {
 			t.Parallel()
-			accept(t, fmt.Sprintf("overrides_%s", format), "overrides.yaml", format, fmt.Sprintf("%s.overrides.dockerfile", format))
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("overrides_%s", format),
+				Conf:       "overrides.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.overrides.dockerfile", format),
+			})
 		})
 	}
 }
@@ -56,16 +81,28 @@ func TestMinDeb(t *testing.T) {
 	for _, format := range formats {
 		t.Run("amd64", func(t *testing.T) {
 			t.Parallel()
-			accept(t, fmt.Sprintf("min_%s", format), "min.yaml", format, fmt.Sprintf("%s.min.dockerfile", format))
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("min_%s", format),
+				Conf:       "min.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.min.dockerfile", format),
+			})
 		})
 	}
 }
 
-func accept(t *testing.T, name, conf, format, dockerfile string) {
-	var configFile = filepath.Join("./testdata", conf)
+type acceptParms struct {
+	Name       string
+	Conf       string
+	Format     string
+	Dockerfile string
+}
+
+func accept(t *testing.T, params acceptParms) {
+	var configFile = filepath.Join("./testdata", params.Conf)
 	tmp, err := filepath.Abs("./testdata/tmp")
 	require.NoError(t, err)
-	var packageName = name + "." + format
+	var packageName = params.Name + "." + params.Format
 	var target = filepath.Join(tmp, packageName)
 
 	require.NoError(t, os.MkdirAll(tmp, 0700))
@@ -73,11 +110,11 @@ func accept(t *testing.T, name, conf, format, dockerfile string) {
 	config, err := nfpm.ParseFile(configFile)
 	require.NoError(t, err)
 
-	info, err := config.Get(format)
+	info, err := config.Get(params.Format)
 	require.NoError(t, err)
 	require.NoError(t, nfpm.Validate(info))
 
-	pkg, err := nfpm.Get(format)
+	pkg, err := nfpm.Get(params.Format)
 	require.NoError(t, err)
 
 	f, err := os.Create(target)
@@ -87,7 +124,7 @@ func accept(t *testing.T, name, conf, format, dockerfile string) {
 	t.Log(string(bts))
 	cmd := exec.Command(
 		"docker", "build", "--rm", "--force-rm",
-		"-f", dockerfile,
+		"-f", params.Dockerfile,
 		"--build-arg", "package="+filepath.Join("tmp", packageName),
 		".",
 	)
