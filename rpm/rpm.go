@@ -86,7 +86,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 }
 
 type rpmbuildVersion struct {
-	Major, Minor, Path int
+	Major, Minor, Patch int
 }
 
 func getRpmbuildVersion() (rpmbuildVersion, error) {
@@ -120,7 +120,7 @@ func parseRPMbuildVersion(out string) (rpmbuildVersion, error) {
 	return rpmbuildVersion{
 		Major: v[0],
 		Minor: v[1],
-		Path:  v[2],
+		Patch: v[2],
 	}, nil
 }
 

@@ -67,9 +67,9 @@ func exampleInfo() nfpm.Info {
 
 func TestSpec(t *testing.T) {
 	for golden, vs := range map[string]rpmbuildVersion{
-		"testdata/spec_4.14.x.golden": {4, 14, 2},
-		"testdata/spec_4.13.x.golden": {4, 13, 1},
-		"testdata/spec_4.12.x.golden": {4, 12, 9},
+		"testdata/spec_4.14.x.golden": {Major: 4, Minor: 14, Patch: 2},
+		"testdata/spec_4.13.x.golden": {Major: 4, Minor: 13, Patch: 1},
+		"testdata/spec_4.12.x.golden": {Major: 4, Minor: 12, Patch: 9},
 	} {
 		t.Run(golden, func(tt *testing.T) {
 			var w bytes.Buffer
@@ -137,7 +137,7 @@ func TestRPMBuildVersion(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 4, v.Major)
 	assert.True(t, v.Minor >= 11)
-	assert.True(t, v.Path >= 0)
+	assert.True(t, v.Patch >= 0)
 }
 
 func TestRPMFileDoesNotExist(t *testing.T) {
@@ -165,7 +165,7 @@ func TestParseRpmbuildVersion(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, 4, v.Major)
 			assert.Equal(t, 14, v.Minor)
-			assert.Equal(t, 1, v.Path)
+			assert.Equal(t, 1, v.Patch)
 		})
 	}
 }
