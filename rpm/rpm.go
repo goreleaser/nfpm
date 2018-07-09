@@ -286,7 +286,7 @@ func copyToTarGz(out *tar.Writer, root, src, dst string) error {
 		return nil
 	}
 	var header = tar.Header{
-		Name:    filepath.Join(root, dst),
+		Name:    filepath.ToSlash(filepath.Join(root, dst)),
 		Size:    info.Size(),
 		Mode:    int64(info.Mode()),
 		ModTime: info.ModTime(),
