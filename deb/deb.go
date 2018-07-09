@@ -319,7 +319,7 @@ func pathsToCreate(dst string) []string {
 }
 
 func conffiles(info nfpm.Info) []byte {
-	// nolint: preallocate
+	// nolint: prealloc
 	var confs []string
 	for _, dst := range info.ConfigFiles {
 		confs = append(confs, dst)
