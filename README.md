@@ -62,7 +62,7 @@ That's it!
 ## Usage as lib
 
 You can look at the code of nfpm itself to see how to use it as a library, or, take
-a look at the [nfpm piper on GoReleaser](https://github.com/goreleaser/goreleaser/tree/master/pipeline/nfpm).
+a look at the [nfpm piper on GoReleaser](https://github.com/goreleaser/goreleaser/tree/master/internal/pipeline/nfpm).
 
 > **Attention**: GoReleaser `deb` packager only compiles with go1.10+.
 
