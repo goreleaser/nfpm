@@ -59,6 +59,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	}
 
 	var args = []string{
+		"--verbose",
 		"--define", fmt.Sprintf("_topdir %s", temps.Root),
 		"--define", fmt.Sprintf("_tmppath %s/tmp", temps.Root),
 		"--target", fmt.Sprintf("%s-unknown-%s", info.Arch, info.Platform),
