@@ -175,7 +175,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		Format:  tar.FormatGNU,
 	}
 	if err := tarw.WriteHeader(&header); err != nil {
-		return 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", header)
+		return 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", src)
 	}
 	var digest = md5.New() // nolint:gas
 	if _, err := io.Copy(tarw, io.TeeReader(file, digest)); err != nil {
