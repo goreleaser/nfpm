@@ -9,6 +9,7 @@ import (
 
 	"github.com/goreleaser/nfpm"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -75,9 +76,9 @@ func TestSpec(t *testing.T) {
 			var w bytes.Buffer
 			assert.NoError(tt, writeSpec(&w, exampleInfo(), vs))
 			if *update {
-				ioutil.WriteFile(golden, w.Bytes(), 0655) //nolint:errcheck
+				require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 			}
-			bts, err := ioutil.ReadFile(golden)
+			bts, err := ioutil.ReadFile(golden) //nolint:gosec
 			assert.NoError(tt, err)
 			assert.Equal(tt, string(bts), w.String())
 		})
@@ -106,7 +107,7 @@ func TestRPMScripts(t *testing.T) {
 		scripts.Preun:  info.Scripts.PreRemove,
 		scripts.Postun: info.Scripts.PostRemove,
 	} {
-		data, err := ioutil.ReadFile(src)
+		data, err := ioutil.ReadFile(src) //nolint:gosec
 		assert.NoError(t, err)
 		assert.Equal(t, string(data), actual)
 	}

@@ -153,7 +153,7 @@ func createEmptyFoldersInsideTarGz(info nfpm.Info, out *tar.Writer, created map[
 }
 
 func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int64, error) {
-	file, err := os.OpenFile(src, os.O_RDONLY, 0600)
+	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
 		return 0, errors.Wrap(err, "could not add file to the archive")
 	}
@@ -258,7 +258,7 @@ func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 }
 
 func newScriptInsideTarGz(out *tar.Writer, path string, dest string) error {
-	file, err := os.Open(path)
+	file, err := os.Open(path) //nolint:gosec
 	if err != nil {
 		return err
 	}

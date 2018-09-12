@@ -66,8 +66,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 		"-ba",
 		"SPECS/" + info.Name + ".spec",
 	}
-	// #nosec
-	cmd := exec.Command("rpmbuild", args...)
+	cmd := exec.Command("rpmbuild", args...) //nolint:gosec
 	cmd.Dir = temps.Root
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -91,8 +90,7 @@ type rpmbuildVersion struct {
 }
 
 func getRpmbuildVersion() (rpmbuildVersion, error) {
-	// #nosec
-	bts, err := exec.Command("rpmbuild", "--version").CombinedOutput()
+	bts, err := exec.Command("rpmbuild", "--version").CombinedOutput() //nolint:gosec
 	if err != nil {
 		return rpmbuildVersion{}, errors.Wrap(err, "failed to get rpmbuild version")
 	}
@@ -182,7 +180,7 @@ func readScripts(info nfpm.Info) (scripts scripts, err error) {
 			continue
 		}
 		var data []byte
-		if data, err = ioutil.ReadFile(script); err != nil {
+		if data, err = ioutil.ReadFile(script); err != nil { //nolint:gosec
 			return
 		}
 		*dest = string(data)

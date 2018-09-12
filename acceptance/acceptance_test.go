@@ -120,8 +120,7 @@ func accept(t *testing.T, params acceptParms) {
 	f, err := os.Create(target)
 	require.NoError(t, err)
 	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
-	bts, _ := exec.Command("pwd").CombinedOutput()
-	t.Log(string(bts))
+	//nolint:gosec
 	cmd := exec.Command(
 		"docker", "build", "--rm", "--force-rm",
 		"-f", params.Dockerfile,
@@ -130,7 +129,7 @@ func accept(t *testing.T, params acceptParms) {
 	)
 	cmd.Dir = "./testdata"
 	t.Log("will exec:", cmd.Args)
-	bts, err = cmd.CombinedOutput()
+	bts, err := cmd.CombinedOutput()
 	t.Log("output:", string(bts))
 	require.NoError(t, err)
 }

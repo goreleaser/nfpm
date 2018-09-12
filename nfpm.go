@@ -49,7 +49,7 @@ func Parse(in io.Reader) (config Config, err error) {
 // ParseFile decodes YAML data from a file path into a configuration struct
 func ParseFile(path string) (config Config, err error) {
 	var file *os.File
-	file, err = os.Open(path)
+	file, err = os.Open(path) //nolint:gosec
 	if err != nil {
 		return
 	}

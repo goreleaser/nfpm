@@ -11,6 +11,7 @@ import (
 
 	"github.com/goreleaser/nfpm"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -86,9 +87,9 @@ func TestControl(t *testing.T) {
 	}))
 	var golden = "testdata/control.golden"
 	if *update {
-		ioutil.WriteFile(golden, w.Bytes(), 0655) //nolint:errcheck
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 	}
-	bts, err := ioutil.ReadFile(golden)
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
 }
@@ -141,9 +142,9 @@ func TestNoJoinsControl(t *testing.T) {
 	}))
 	var golden = "testdata/control2.golden"
 	if *update {
-		ioutil.WriteFile(golden, w.Bytes(), 0655) //nolint:errcheck
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 	}
-	bts, err := ioutil.ReadFile(golden)
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
 }
