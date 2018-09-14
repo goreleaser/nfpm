@@ -84,7 +84,7 @@ const example = `# nfpm example config file
 name: "foo"
 arch: "amd64"
 platform: "linux"
-version: "1.0.0"
+version: "v${MY_APP_VERSION}"
 section: "default"
 priority: "extra"
 replaces:
