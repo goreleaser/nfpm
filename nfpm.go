@@ -42,6 +42,9 @@ func Parse(in io.Reader) (config Config, err error) {
 	if err = dec.Decode(&config); err != nil {
 		return
 	}
+	if strings.HasPrefix(config.Info.Version, "$") {
+		config.Info.Version = os.Getenv(strings.TrimLeft(config.Info.Version, "$"))
+	}
 	err = config.Validate()
 	return
 }
