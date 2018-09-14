@@ -1,7 +1,9 @@
 package nfpm
 
 import (
+	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"testing"
 
@@ -107,6 +109,9 @@ func TestParseFile(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = ParseFile("./testdata/doesnotexist.yaml")
 	assert.Error(t, err)
+	config, err := ParseFile("./testdata/versionenv.yaml")
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
 }
 
 func TestOverrides(t *testing.T) {
