@@ -4,24 +4,14 @@ TEST_OPTIONS?=
 OS=$(shell uname -s)
 
 export PATH := ./bin:$(PATH)
+export GO111MODULE := on
 
 # Install all the build and lint dependencies
 setup:
-	curl -sfL https://install.goreleaser.com/github.com/caarlos0/bandep.sh | sh
 	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
-ifeq ($(OS), Darwin)
-	brew install dep
-else
-	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-endif
-	dep ensure -vendor-only
-	echo "make check" > .git/hooks/pre-commit
-	chmod +x .git/hooks/pre-commit
+	go mod download
 .PHONY: setup
 
-check:
-	bandep --ban github.com/tj/assert
-.PHONY: check
 
 pull_test_imgs:
 	grep FROM ./acceptance/testdata/*.dockerfile | cut -f2 -d' ' | sort | uniq | while read -r img; do docker pull "$$img"; done
@@ -40,7 +30,7 @@ fmt:
 .PHONY: fmt
 
 lint: check
-	golangci-lint run --enable-all ./...
+	./bin/golangci-lint run --enable-all ./...
 .PHONY: check
 
 ci: build lint test
