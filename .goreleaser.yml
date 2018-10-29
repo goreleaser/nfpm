@@ -1,3 +1,6 @@
+before:
+  hooks:
+  - go mod download
 builds:
 - main: ./cmd/nfpm
   env:
