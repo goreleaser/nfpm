@@ -10,14 +10,12 @@ conduct](/CODE_OF_CONDUCT.md).
 Prerequisites:
 
 * `make`
-* [Go 1.10+](https://golang.org/doc/install)
+* [Go 1.11+](https://golang.org/doc/install)
 * rpm (`apt-get intall rpm`/`brew install rpm`)
 
-Clone `nfpm` from source into `$GOPATH`:
+Clone `nfpm` from source:
 
 ```sh
-$ mkdir -p $GOPATH/src/github.com/goreleaser/nfpm
-$ cd $_
 $ git clone git@github.com:goreleaser/nfpm.git
 $ cd nfpm
 ```
