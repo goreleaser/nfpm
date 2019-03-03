@@ -1,0 +1,7 @@
+Package: minimal
+Version: 1.0.0
+Section: default
+Priority: extra
+Architecture: arm64
+Installed-Size: 0
+Description: Minimal does nothing

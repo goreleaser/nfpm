@@ -228,3 +228,24 @@ func TestPathsToCreate(t *testing.T) {
 		})
 	}
 }
+
+func TestMinimalFields(t *testing.T) {
+	var w bytes.Buffer
+	assert.NoError(t, writeControl(&w, controlData{
+		Info: nfpm.WithDefaults(nfpm.Info{
+			Name:        "minimal",
+			Arch:        "arm64",
+			Description: "Minimal does nothing",
+			Priority:    "extra",
+			Version:     "1.0.0",
+			Section:     "default",
+		}),
+	}))
+	var golden = "testdata/minimal.golden"
+	if *update {
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+	}
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	assert.NoError(t, err)
+	assert.Equal(t, string(bts), w.String())
+}
