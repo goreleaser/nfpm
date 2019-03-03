@@ -327,13 +327,20 @@ func conffiles(info nfpm.Info) []byte {
 	return []byte(strings.Join(confs, "\n") + "\n")
 }
 
-var controlTemplate = `Package: {{.Info.Name}}
+var controlTemplate = `
+{{- /* Mandatory fields */ -}}
+Package: {{.Info.Name}}
 Version: {{.Info.Version}}
 Section: {{.Info.Section}}
 Priority: {{.Info.Priority}}
 Architecture: {{.Info.Arch}}
+{{- /* Optional fields */ -}}
+{{- if .Info.Maintainer}}
 Maintainer: {{.Info.Maintainer}}
+{{- end }}
+{{- if .Info.Vendor}}
 Vendor: {{.Info.Vendor}}
+{{- end }}
 Installed-Size: {{.InstalledSize}}
 {{- with .Info.Replaces}}
 Replaces: {{join .}}
@@ -353,7 +360,10 @@ Suggests: {{join .}}
 {{- with .Info.Conflicts}}
 Conflicts: {{join .}}
 {{- end }}
+{{- if .Info.Homepage}}
 Homepage: {{.Info.Homepage}}
+{{- end }}
+{{- /* Mandatory fields */}}
 Description: {{.Info.Description}}
 `
 
