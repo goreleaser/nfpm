@@ -13,11 +13,10 @@ builds:
   goarch:
   - amd64
 dockers:
-  - image: goreleaser/nfpm
-    tag_templates:
-    - '{{ .Tag }}'
-    - 'v{{ .Major }}.{{ .Minor }}'
-    - 'latest'
+  - image_templates:
+    - 'goreleaser/nfpm:{{ .Tag }}'
+    - 'goreleaser/nfpm:v{{ .Major }}.{{ .Minor }}'
+    - 'goreleaser/nfpm:latest'
 changelog:
   filters:
     exclude:
