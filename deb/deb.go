@@ -21,10 +21,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+// nolint: gochecknoinits
 func init() {
 	nfpm.Register("deb", Default)
 }
 
+// nolint: gochecknoglobals
 var goarchToDebian = map[string]string{
 	"386":    "i386",
 	"arm":    "armhf",
@@ -34,6 +36,7 @@ var goarchToDebian = map[string]string{
 }
 
 // Default deb packager
+// nolint: gochecknoglobals
 var Default = &Deb{}
 
 // Deb is a deb packager implementation
@@ -327,7 +330,7 @@ func conffiles(info nfpm.Info) []byte {
 	return []byte(strings.Join(confs, "\n") + "\n")
 }
 
-var controlTemplate = `
+const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 Package: {{.Info.Name}}
 Version: {{.Info.Version}}

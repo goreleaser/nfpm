@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// nolint: gochecknoglobals
 var update = flag.Bool("update", false, "update .golden files")
 
 func exampleInfo() nfpm.Info {
@@ -63,6 +64,7 @@ func exampleInfo() nfpm.Info {
 
 func TestDeb(t *testing.T) {
 	for _, arch := range []string{"386", "amd64"} {
+		arch := arch
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
@@ -223,6 +225,8 @@ func TestPathsToCreate(t *testing.T) {
 		"/var/moises":                    {"var"},
 		"/":                              {},
 	} {
+		parts := parts
+		path := path
 		t.Run(fmt.Sprintf("path: '%s'", path), func(t *testing.T) {
 			assert.Equal(t, parts, pathsToCreate(path))
 		})

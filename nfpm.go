@@ -14,6 +14,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// nolint: gochecknoglobals
 var (
 	packagers = map[string]Packager{}
 	lock      sync.Mutex

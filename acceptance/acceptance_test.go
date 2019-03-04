@@ -15,10 +15,12 @@ import (
 	_ "github.com/goreleaser/nfpm/rpm"
 )
 
+// nolint: gochecknoglobals
 var formats = []string{"deb", "rpm"}
 
 func TestSimple(t *testing.T) {
 	for _, format := range formats {
+		format := format
 		t.Run("amd64", func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
@@ -42,6 +44,7 @@ func TestSimple(t *testing.T) {
 
 func TestComplex(t *testing.T) {
 	for _, format := range formats {
+		format := format
 		t.Run("amd64", func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
@@ -65,6 +68,7 @@ func TestComplex(t *testing.T) {
 
 func TestComplexOverridesDeb(t *testing.T) {
 	for _, format := range formats {
+		format := format
 		t.Run("amd64", func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
@@ -79,6 +83,7 @@ func TestComplexOverridesDeb(t *testing.T) {
 
 func TestMinDeb(t *testing.T) {
 	for _, format := range formats {
+		format := format
 		t.Run("amd64", func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{

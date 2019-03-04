@@ -13,6 +13,7 @@ import (
 	_ "github.com/goreleaser/nfpm/rpm"
 )
 
+// nolint: gochecknoglobals
 var (
 	version = "master"
 

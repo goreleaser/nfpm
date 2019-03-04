@@ -93,6 +93,8 @@ func TestValidateError(t *testing.T) {
 			Version: "1.2.3",
 		},
 	} {
+		err := err
+		info := info
 		t.Run(err, func(t *testing.T) {
 			require.EqualError(t, Validate(info), err)
 		})

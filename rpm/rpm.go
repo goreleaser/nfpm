@@ -21,16 +21,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+// nolint: gochecknoinits
 func init() {
 	nfpm.Register("rpm", Default)
 }
 
+// nolint: gochecknoglobals
 var goarchToRPM = map[string]string{
 	"amd64": "x86_64",
 	"386":   "i386",
 }
 
 // Default deb packager
+// nolint: gochecknoglobals
 var Default = &RPM{}
 
 // RPM is a RPM packager implementation
@@ -97,6 +100,7 @@ func getRpmbuildVersion() (rpmbuildVersion, error) {
 	return parseRPMbuildVersion(strings.TrimSuffix(string(bts), "\n"))
 }
 
+// nolint: gochecknoglobals
 var versionExp = regexp.MustCompile(`RPM.* (\d+)\.(\d+)\.(\d+)`)
 
 func parseRPMbuildVersion(out string) (rpmbuildVersion, error) {

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// nolint: gochecknoglobals
 var update = flag.Bool("update", false, "update .golden files")
 
 func exampleInfo() nfpm.Info {
@@ -72,6 +73,8 @@ func TestSpec(t *testing.T) {
 		"testdata/spec_4.13.x.golden": {Major: 4, Minor: 13, Patch: 1},
 		"testdata/spec_4.12.x.golden": {Major: 4, Minor: 12, Patch: 9},
 	} {
+		vs := vs
+		golden := golden
 		t.Run(golden, func(tt *testing.T) {
 			var w bytes.Buffer
 			assert.NoError(tt, writeSpec(&w, exampleInfo(), vs))
@@ -161,6 +164,7 @@ func TestParseRpmbuildVersion(t *testing.T) {
 		"RPM versão 4.14.1",
 		"RPM-Versionzz 4.14.1",
 	} {
+		version := version
 		t.Run(version, func(t *testing.T) {
 			v, err := parseRPMbuildVersion(version)
 			assert.NoError(t, err)
@@ -177,6 +181,7 @@ func TestParseRpmbuildVersionError(t *testing.T) {
 		"RPM version 4.14.a",
 		"RPM version 4.14",
 	} {
+		version := version
 		t.Run(version, func(t *testing.T) {
 			_, err := parseRPMbuildVersion(version)
 			assert.Error(t, err)
