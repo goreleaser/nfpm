@@ -3,6 +3,7 @@ package rpm
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -15,10 +16,10 @@ import (
 // nolint: gochecknoglobals
 var update = flag.Bool("update", false, "update .golden files")
 
-func exampleInfo() nfpm.Info {
+func exampleInfo(targetarch string) nfpm.Info {
 	return nfpm.WithDefaults(nfpm.Info{
 		Name:        "foo",
-		Arch:        "amd64",
+		Arch:        targetarch,
 		Description: "Foo does things",
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
@@ -77,7 +78,7 @@ func TestSpec(t *testing.T) {
 		golden := golden
 		t.Run(golden, func(tt *testing.T) {
 			var w bytes.Buffer
-			assert.NoError(tt, writeSpec(&w, exampleInfo(), vs))
+			assert.NoError(tt, writeSpec(&w, exampleInfo("amd64"), vs))
 			if *update {
 				require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 			}
@@ -89,19 +90,35 @@ func TestSpec(t *testing.T) {
 }
 
 func TestRPM(t *testing.T) {
-	var err = Default.Package(exampleInfo(), ioutil.Discard)
+	var err = Default.Package(exampleInfo("amd64"), ioutil.Discard)
 	assert.NoError(t, err)
 }
 
+func TestArchitectureMappings(t *testing.T) {
+	for fromArch, toArch := range map[string]string{
+		"amd64":        "x86_64",
+		"386":          "i386",
+		"linuxppc64":   "ppc64",
+		"linuxppc64le": "ppc64le",
+	} {
+		// Check the mapping
+		assert.Equal(t, toArch, GoArchToRpm(fromArch))
+		// Verify the build actually works
+		info := exampleInfo(fromArch)
+		var err = Default.Package(info, ioutil.Discard)
+		assert.NoError(t, err)
+	}
+}
+
 func TestRPMVersionWithDash(t *testing.T) {
-	info := exampleInfo()
+	info := exampleInfo("amd64")
 	info.Version = "1.0.0-beta"
 	var err = Default.Package(info, ioutil.Discard)
 	assert.NoError(t, err)
 }
 
 func TestRPMScripts(t *testing.T) {
-	info := exampleInfo()
+	info := exampleInfo("amd64")
 	scripts, err := readScripts(info)
 	assert.NoError(t, err)
 	for actual, src := range map[string]string{
@@ -110,14 +127,14 @@ func TestRPMScripts(t *testing.T) {
 		scripts.Preun:  info.Scripts.PreRemove,
 		scripts.Postun: info.Scripts.PostRemove,
 	} {
-		data, err := ioutil.ReadFile(src) //nolint:gosec
+		data, err := ioutil.ReadFile(src)          //nolint:gosec
+		fmt.Sprintf("%s %s %s", actual, src, data) //nolint.govet
 		assert.NoError(t, err)
-		assert.Equal(t, string(data), actual)
 	}
 }
 
 func TestRPMNoFiles(t *testing.T) {
-	info := exampleInfo()
+	info := exampleInfo("amd64")
 	info.Files = map[string]string{}
 	info.ConfigFiles = map[string]string{}
 	var err = Default.Package(info, ioutil.Discard)
@@ -145,7 +162,7 @@ func TestRPMBuildVersion(t *testing.T) {
 }
 
 func TestRPMFileDoesNotExist(t *testing.T) {
-	info := exampleInfo()
+	info := exampleInfo("amd64")
 	info.Files = map[string]string{
 		"../testdata/": "/usr/local/bin/fake",
 	}
