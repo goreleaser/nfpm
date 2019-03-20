@@ -16,10 +16,10 @@ import (
 // nolint: gochecknoglobals
 var update = flag.Bool("update", false, "update .golden files")
 
-func exampleInfo(targetarch string) nfpm.Info {
+func exampleInfo() nfpm.Info {
 	return nfpm.WithDefaults(nfpm.Info{
 		Name:        "foo",
-		Arch:        targetarch,
+		Arch:        "amd64",
 		Description: "Foo does things",
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
@@ -78,7 +78,7 @@ func TestSpec(t *testing.T) {
 		golden := golden
 		t.Run(golden, func(tt *testing.T) {
 			var w bytes.Buffer
-			assert.NoError(tt, writeSpec(&w, exampleInfo("amd64"), vs))
+			assert.NoError(tt, writeSpec(&w, exampleInfo(), vs))
 			if *update {
 				require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 			}
@@ -90,19 +90,19 @@ func TestSpec(t *testing.T) {
 }
 
 func TestRPM(t *testing.T) {
-	var err = Default.Package(exampleInfo("amd64"), ioutil.Discard)
+	var err = Default.Package(exampleInfo(), ioutil.Discard)
 	assert.NoError(t, err)
 }
 
 func TestRPMVersionWithDash(t *testing.T) {
-	info := exampleInfo("amd64")
+	info := exampleInfo()
 	info.Version = "1.0.0-beta"
 	var err = Default.Package(info, ioutil.Discard)
 	assert.NoError(t, err)
 }
 
 func TestRPMScripts(t *testing.T) {
-	info := exampleInfo("amd64")
+	info := exampleInfo()
 	scripts, err := readScripts(info)
 	assert.NoError(t, err)
 	for actual, src := range map[string]string{
@@ -118,7 +118,7 @@ func TestRPMScripts(t *testing.T) {
 }
 
 func TestRPMNoFiles(t *testing.T) {
-	info := exampleInfo("amd64")
+	info := exampleInfo()
 	info.Files = map[string]string{}
 	info.ConfigFiles = map[string]string{}
 	var err = Default.Package(info, ioutil.Discard)
@@ -146,7 +146,7 @@ func TestRPMBuildVersion(t *testing.T) {
 }
 
 func TestRPMFileDoesNotExist(t *testing.T) {
-	info := exampleInfo("amd64")
+	info := exampleInfo()
 	info.Files = map[string]string{
 		"../testdata/": "/usr/local/bin/fake",
 	}

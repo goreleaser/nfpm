@@ -33,6 +33,7 @@ var Default = &RPM{}
 // RPM is a RPM packager implementation
 type RPM struct{}
 
+// nolint: gochecknoglobals
 var archToRPM = map[string]string{
 	"amd64": "x86_64",
 	"386":   "i386",
