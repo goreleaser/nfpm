@@ -94,22 +94,6 @@ func TestRPM(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestArchitectureMappings(t *testing.T) {
-	for fromArch, toArch := range map[string]string{
-		"amd64":        "x86_64",
-		"386":          "i386",
-		"linuxppc64":   "ppc64",
-		"linuxppc64le": "ppc64le",
-	} {
-		// Check the mapping
-		assert.Equal(t, toArch, GoArchToRpm(fromArch))
-		// Verify the build actually works
-		info := exampleInfo(fromArch)
-		var err = Default.Package(info, ioutil.Discard)
-		assert.NoError(t, err)
-	}
-}
-
 func TestRPMVersionWithDash(t *testing.T) {
 	info := exampleInfo("amd64")
 	info.Version = "1.0.0-beta"

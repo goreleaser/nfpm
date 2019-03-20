@@ -1,4 +1,4 @@
-FROM i386/centos:6
+FROM i386/centos
 ARG package
 COPY ${package} /tmp/foo.rpm
 RUN rpm -ivh /tmp/foo.rpm

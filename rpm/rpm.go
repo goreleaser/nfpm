@@ -33,24 +33,17 @@ var Default = &RPM{}
 // RPM is a RPM packager implementation
 type RPM struct{}
 
-// GoArchToRpm converts a goarch to an RPM compatible arch
-func GoArchToRpm(goArch string) string {
-	switch {
-	case strings.Contains(goArch, "amd64"):
-		return "x86_64"
-	case strings.Contains(goArch, "386"):
-		return "i386"
-	case strings.Contains(goArch, "ppc64le"):
-		return "ppc64le"
-	case strings.Contains(goArch, "ppc64"):
-		return "ppc64"
-	}
-	return goArch
+var archToRPM = map[string]string{
+	"amd64": "x86_64",
+	"386":   "i386",
 }
 
 // Package writes a new RPM package to the given writer using the given info
 func (*RPM) Package(info nfpm.Info, w io.Writer) error {
-	info.Arch = GoArchToRpm(info.Arch)
+	arch, ok := archToRPM[info.Arch]
+	if ok {
+		info.Arch = arch
+	}
 	info.Version = strings.Replace(info.Version, "-", "_", -1)
 	_, err := exec.LookPath("rpmbuild")
 	if err != nil {

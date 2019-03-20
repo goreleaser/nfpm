@@ -27,12 +27,13 @@ func init() {
 }
 
 // nolint: gochecknoglobals
-var goarchToDebian = map[string]string{
-	"386":    "i386",
-	"arm":    "armhf",
-	"arm6":   "armel",
-	"arm7":   "armhf",
-	"mipsle": "mipsel",
+var archToDebian = map[string]string{
+	"386":     "i386",
+	"arm":     "armhf",
+	"arm6":    "armel",
+	"arm7":    "armhf",
+	"mipsle":  "mipsel",
+	"ppc64le": "ppc64el",
 }
 
 // Default deb packager
@@ -44,7 +45,7 @@ type Deb struct{}
 
 // Package writes a new deb package to the given writer using the given info
 func (*Deb) Package(info nfpm.Info, deb io.Writer) (err error) {
-	arch, ok := goarchToDebian[info.Arch]
+	arch, ok := archToDebian[info.Arch]
 	if ok {
 		info.Arch = arch
 	}

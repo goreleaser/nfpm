@@ -1,10 +1,10 @@
-FROM i386/centos
+FROM ppc64le/ubuntu
 ARG package
-COPY ${package} /tmp/foo.rpm
-RUN rpm -ivh /tmp/foo.rpm
+COPY ${package} /tmp/foo.deb
+RUN dpkg -i /tmp/foo.deb
 RUN test -e /usr/local/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN echo wat >> /etc/foo/whatever.conf
-RUN rpm -e foo
-RUN test -f /etc/foo/whatever.conf.rpmsave
+RUN dpkg -r foo
+RUN test -f /etc/foo/whatever.conf
 RUN test ! -f /usr/local/bin/fake
