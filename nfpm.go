@@ -11,7 +11,7 @@ import (
 
 	"github.com/imdario/mergo"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // nolint: gochecknoglobals
@@ -137,6 +137,7 @@ type Scripts struct {
 	PostInstall string `yaml:"postinstall,omitempty"`
 	PreRemove   string `yaml:"preremove,omitempty"`
 	PostRemove  string `yaml:"postremove,omitempty"`
+	Rules       string `yaml:"rules,omitempty"`
 }
 
 // Validate the given Info and returns an error if it is invalid.
