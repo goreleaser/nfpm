@@ -11,7 +11,7 @@ Prerequisites:
 
 * `make`
 * [Go 1.11+](https://golang.org/doc/install)
-* rpm (`apt-get intall rpm`/`brew install rpm`)
+* rpm (`apt-get install rpm`/`brew install rpm`)
 
 Clone `nfpm` from source:
 
