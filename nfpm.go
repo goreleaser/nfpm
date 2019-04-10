@@ -107,6 +107,7 @@ type Info struct {
 	Arch         string `yaml:"arch,omitempty"`
 	Platform     string `yaml:"platform,omitempty"`
 	Version      string `yaml:"version,omitempty"`
+	Release      string `yaml:"release,omitempty"`
 	Section      string `yaml:"section,omitempty"`
 	Priority     string `yaml:"priority,omitempty"`
 	Maintainer   string `yaml:"maintainer,omitempty"`

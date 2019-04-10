@@ -50,6 +50,9 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("rpmbuild not present in $PATH")
 	}
+	if s := info.Release; s == "" {
+		info.Release = "1"
+	}
 	temps, err := setupTempFiles(info)
 	if err != nil {
 		return err
@@ -219,7 +222,7 @@ func setupTempFiles(info nfpm.Info) (tempFiles, error) {
 		Folder: folder,
 		Source: filepath.Join(root, "SOURCES", folder+".tar.gz"),
 		Spec:   filepath.Join(root, "SPECS", info.Name+".spec"),
-		RPM:    filepath.Join(root, "RPMS", info.Arch, fmt.Sprintf("%s-1.%s.rpm", folder, info.Arch)),
+		RPM:    filepath.Join(root, "RPMS", info.Arch, fmt.Sprintf("%s-%s.%s.rpm", folder, info.Release, info.Arch)),
 	}, nil
 }
 
@@ -313,7 +316,7 @@ const specTemplate = `
 Name: {{ .Info.Name }}
 Summary: {{ first_line .Info.Description }}
 Version: {{ .Info.Version }}
-Release: 1
+Release: {{ .Info.Release }}
 {{- with .Info.License }}
 License: {{ . }}
 {{- end }}
