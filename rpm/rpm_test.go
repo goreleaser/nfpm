@@ -24,6 +24,7 @@ func exampleInfo() nfpm.Info {
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
 		Version:     "1.0.0",
+		Release:     "1",
 		Section:     "default",
 		Homepage:    "http://carlosbecker.com",
 		Vendor:      "nope",
