@@ -54,6 +54,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	defer os.RemoveAll(temps.Root)
 	if err = createTarGz(info, temps.Folder, temps.Source); err != nil {
 		return err
 	}
@@ -84,6 +85,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return errors.Wrap(err, "failed open rpm file")
 	}
+	defer rpm.Close()
 	_, err = io.Copy(w, rpm)
 	return errors.Wrap(err, "failed to copy rpm file to writer")
 }
