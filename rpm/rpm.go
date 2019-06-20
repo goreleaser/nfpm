@@ -37,6 +37,7 @@ type RPM struct{}
 var archToRPM = map[string]string{
 	"amd64": "x86_64",
 	"386":   "i386",
+	"arm64": "aarch64",
 }
 
 // Package writes a new RPM package to the given writer using the given info
