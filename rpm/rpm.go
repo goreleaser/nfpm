@@ -314,6 +314,9 @@ const specTemplate = `
 
 Name: {{ .Info.Name }}
 Summary: {{ first_line .Info.Description }}
+{{- with .Info.Epoch}}
+Epoch: {{ . }}
+{{- end }}
 Version: {{ .Info.Version }}
 Release: 1
 {{- with .Info.License }}
