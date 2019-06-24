@@ -324,6 +324,9 @@ SOURCE0 : %{name}-%{version}.tar.gz
 {{- with .Info.Homepage }}
 URL: {{ . }}
 {{- end }}
+{{- with .Info.Maintainer}}
+Packager: {{ . }}
+{{- end }}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 {{ range $index, $element := .Info.Replaces }}
