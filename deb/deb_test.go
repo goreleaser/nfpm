@@ -253,3 +253,25 @@ func TestMinimalFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
 }
+
+func TestDebEpoch(t *testing.T) {
+	var w bytes.Buffer
+	assert.NoError(t, writeControl(&w, controlData{
+		Info: nfpm.WithDefaults(nfpm.Info{
+			Name:        "withepoch",
+			Arch:        "arm64",
+			Description: "Has an epoch added to it's version",
+			Priority:    "extra",
+			Epoch:       "2",
+			Version:     "1.0.0",
+			Section:     "default",
+		}),
+	}))
+	var golden = "testdata/withepoch.golden"
+	if *update {
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+	}
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	assert.NoError(t, err)
+	assert.Equal(t, string(bts), w.String())
+}

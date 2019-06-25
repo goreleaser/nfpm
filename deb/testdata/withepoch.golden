@@ -1,0 +1,7 @@
+Package: withepoch
+Version: 2:1.0.0
+Section: default
+Priority: extra
+Architecture: arm64
+Installed-Size: 0
+Description: Has an epoch added to it's version

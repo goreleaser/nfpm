@@ -314,6 +314,9 @@ const specTemplate = `
 
 Name: {{ .Info.Name }}
 Summary: {{ first_line .Info.Description }}
+{{- with .Info.Epoch}}
+Epoch: {{ . }}
+{{- end }}
 Version: {{ .Info.Version }}
 Release: 1
 {{- with .Info.License }}
@@ -323,6 +326,9 @@ Group: Development/Tools
 SOURCE0 : %{name}-%{version}.tar.gz
 {{- with .Info.Homepage }}
 URL: {{ . }}
+{{- end }}
+{{- with .Info.Maintainer}}
+Packager: {{ . }}
 {{- end }}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
