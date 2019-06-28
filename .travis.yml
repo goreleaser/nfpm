@@ -1,3 +1,5 @@
+# acceptance does not work with current default trusty
+dist: xenial
 addons:
   apt:
     packages:
