@@ -66,6 +66,8 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 		"--verbose",
 		"--define", fmt.Sprintf("_topdir %s", temps.Root),
 		"--define", fmt.Sprintf("_tmppath %s/tmp", temps.Root),
+		"--define", fmt.Sprintf("_rpmfilename %s", filepath.Join(info.Arch, filepath.Base(temps.RPM))),
+		"--define", fmt.Sprintf("_sourcedir %s", filepath.Dir(temps.Source)),
 		"--target", fmt.Sprintf("%s-unknown-%s", info.Arch, info.Platform),
 		"-ba",
 		"SPECS/" + info.Name + ".spec",
