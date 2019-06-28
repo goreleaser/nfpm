@@ -40,12 +40,17 @@ var archToRPM = map[string]string{
 	"arm64": "aarch64",
 }
 
-// Package writes a new RPM package to the given writer using the given info
-func (*RPM) Package(info nfpm.Info, w io.Writer) error {
+func ensureValidArch(info nfpm.Info) nfpm.Info {
 	arch, ok := archToRPM[info.Arch]
 	if ok {
 		info.Arch = arch
 	}
+	return info
+}
+
+// Package writes a new RPM package to the given writer using the given info
+func (*RPM) Package(info nfpm.Info, w io.Writer) error {
+	info = ensureValidArch(info)
 	info.Version = strings.Replace(info.Version, "-", "_", -1)
 	_, err := exec.LookPath("rpmbuild")
 	if err != nil {
