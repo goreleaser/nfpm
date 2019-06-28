@@ -1,4 +1,6 @@
-addons:
+# acceptance does not work with current default trusty
+dist: xenial
+addons:     
   apt:
     packages:
     - rpm
@@ -6,6 +8,8 @@ language: go
 go: '1.12.x'
 services:
   - docker
+before_install:
+  - sudo docker run --privileged linuxkit/binfmt:v0.7
 install:
   - make setup
 before_script:

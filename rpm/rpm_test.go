@@ -189,3 +189,13 @@ func TestParseRpmbuildVersionError(t *testing.T) {
 		})
 	}
 }
+
+func TestRPMMultiArch(t *testing.T) {
+	info := exampleInfo()
+
+	for k := range archToRPM {
+		info.Arch = k
+		info = ensureValidArch(info)
+		assert.Equal(t, archToRPM[k], info.Arch)
+	}
+}
