@@ -49,6 +49,15 @@ func TestSimple(t *testing.T) {
 				Dockerfile: fmt.Sprintf("%s.ppc64le.dockerfile", format),
 			})
 		})
+		t.Run("arm64", func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("simple_%s_arm64", format),
+				Conf:       "simple.arm64.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.arm64.dockerfile", format),
+			})
+		})
 	}
 }
 

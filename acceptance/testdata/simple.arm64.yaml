@@ -1,0 +1,15 @@
+name: "foo"
+arch: "arm64"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar"
+description: |
+  Foo bar
+    Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+files:
+  ../testdata/fake: "/usr/local/bin/fake"
+config_files:
+  ../testdata/whatever.conf: "/etc/foo/whatever.conf"
