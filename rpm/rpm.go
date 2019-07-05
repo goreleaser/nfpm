@@ -324,7 +324,11 @@ Release: 1
 {{- with .Info.License }}
 License: {{ . }}
 {{- end }}
+{{- with .Info.Group }}
+Group: {{ . }}
+{{- else }}
 Group: Development/Tools
+{{- end }}
 SOURCE0 : %{name}-%{version}.tar.gz
 {{- with .Info.Homepage }}
 URL: {{ . }}
@@ -333,6 +337,9 @@ URL: {{ . }}
 Packager: {{ . }}
 {{- end }}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+{{- with .Info.Prefix }}
+Prefix: {{ . }}
+{{- end }}
 
 {{ range $index, $element := .Info.Replaces }}
 Obsoletes: {{ . }}

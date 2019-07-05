@@ -109,6 +109,7 @@ type Info struct {
 	Epoch        string `yaml:"epoch,omitempty"`
 	Version      string `yaml:"version,omitempty"`
 	Section      string `yaml:"section,omitempty"`
+	Group        string `yaml:"group,omitempty"`
 	Priority     string `yaml:"priority,omitempty"`
 	Maintainer   string `yaml:"maintainer,omitempty"`
 	Description  string `yaml:"description,omitempty"`
@@ -116,6 +117,7 @@ type Info struct {
 	Homepage     string `yaml:"homepage,omitempty"`
 	License      string `yaml:"license,omitempty"`
 	Bindir       string `yaml:"bindir,omitempty"`
+	Prefix       string `yaml:"prefix,omitempty"`
 }
 
 // Overridables contain the field which are overridable in a package
