@@ -94,6 +94,14 @@ func TestRPM(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestWithRPMTags(t *testing.T) {
+	var info = exampleInfo()
+	info.RPM = nfpm.RPM{
+		Group:  "default",
+		Prefix: "/usr",
+	}
+}
+
 func TestRPMVersionWithDash(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0-beta"
