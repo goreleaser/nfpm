@@ -324,7 +324,7 @@ Release: 1
 {{- with .Info.License }}
 License: {{ . }}
 {{- end }}
-{{- with .Info.Group }}
+{{- with .Info.RPM.Group }}
 Group: {{ . }}
 {{- else }}
 Group: Development/Tools
@@ -337,7 +337,7 @@ URL: {{ . }}
 Packager: {{ . }}
 {{- end }}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-{{- with .Info.Prefix }}
+{{- with .Info.RPM.Prefix }}
 Prefix: {{ . }}
 {{- end }}
 
