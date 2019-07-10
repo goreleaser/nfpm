@@ -100,6 +100,8 @@ func TestWithRPMTags(t *testing.T) {
 		Group:  "default",
 		Prefix: "/usr",
 	}
+	var err = Default.Package(info, ioutil.Discard)
+	assert.NoError(t, err)
 }
 
 func TestRPMVersionWithDash(t *testing.T) {
