@@ -111,8 +111,8 @@ func TestRPMScripts(t *testing.T) {
 		scripts.Preun:  info.Scripts.PreRemove,
 		scripts.Postun: info.Scripts.PostRemove,
 	} {
-		data, err := ioutil.ReadFile(src)          //nolint:gosec
-		fmt.Sprintf("%s %s %s", actual, src, data) //nolint.govet
+		data, err := ioutil.ReadFile(src)         //nolint:gosec
+		fmt.Printf("%s %s %s", actual, src, data) //nolint.govet
 		assert.NoError(t, err)
 	}
 }
