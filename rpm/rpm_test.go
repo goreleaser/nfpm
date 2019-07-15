@@ -104,6 +104,26 @@ func TestWithRPMTags(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRPMTagsSpec(t *testing.T) {
+	var info = exampleInfo()
+	info.RPM = nfpm.RPM{
+		Group:  "default",
+		Prefix: "/usr",
+	}
+
+	vs := rpmbuildVersion{Major: 4, Minor: 15, Patch: 2}
+	golden := "testdata/spec_4.15.x.golden"
+
+	var w bytes.Buffer
+	assert.NoError(t, writeSpec(&w, info, vs))
+	if *update {
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+	}
+	bts, err := ioutil.ReadFile(golden)
+	assert.NoError(t, err)
+	assert.Equal(t, string(bts), w.String())
+}
+
 func TestRPMVersionWithDash(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0-beta"
