@@ -116,6 +116,7 @@ type Info struct {
 	Homepage     string `yaml:"homepage,omitempty"`
 	License      string `yaml:"license,omitempty"`
 	Bindir       string `yaml:"bindir,omitempty"`
+	RPM          RPM    `yaml:"rpm,omitempty"`
 }
 
 // Overridables contain the field which are overridable in a package
@@ -130,6 +131,11 @@ type Overridables struct {
 	ConfigFiles  map[string]string `yaml:"config_files,omitempty"`
 	EmptyFolders []string          `yaml:"empty_folders,omitempty"`
 	Scripts      Scripts           `yaml:"scripts,omitempty"`
+}
+
+type RPM struct {
+	Group  string `yaml:"group,omitempty"`
+	Prefix string `yaml:"prefix,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages
