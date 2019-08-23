@@ -115,6 +115,22 @@ func TestMinDeb(t *testing.T) {
 	}
 }
 
+func TestRPMCompression(t *testing.T) {
+	compressFormats := []string{"gzip", "xz", "lzma"}
+	for _, format := range compressFormats {
+		format := format
+		t.Run(format, func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("%s_compression_rpm", format),
+				Conf:       fmt.Sprintf("%s.compression.yaml", format),
+				Format:     "rpm",
+				Dockerfile: fmt.Sprintf("%s.rpm.compression.dockerfile", format),
+			})
+		})
+	}
+}
+
 type acceptParms struct {
 	Name       string
 	Conf       string

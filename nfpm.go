@@ -134,8 +134,9 @@ type Overridables struct {
 }
 
 type RPM struct {
-	Group  string `yaml:"group,omitempty"`
-	Prefix string `yaml:"prefix,omitempty"`
+	Group       string `yaml:"group,omitempty"`
+	Prefix      string `yaml:"prefix,omitempty"`
+	Compression string `yaml:"compression,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages
