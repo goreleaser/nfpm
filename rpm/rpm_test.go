@@ -24,7 +24,6 @@ func exampleInfo() nfpm.Info {
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
 		Version:     "1.0.0",
-		Release:     "1",
 		Section:     "default",
 		Homepage:    "http://carlosbecker.com",
 		Vendor:      "nope",
@@ -98,8 +97,9 @@ func TestRPM(t *testing.T) {
 func TestWithRPMTags(t *testing.T) {
 	var info = exampleInfo()
 	info.RPM = nfpm.RPM{
-		Group:  "default",
-		Prefix: "/usr",
+		Group:   "default",
+		Prefix:  "/usr",
+		Release: "3",
 	}
 	var err = Default.Package(info, ioutil.Discard)
 	assert.NoError(t, err)
@@ -108,8 +108,9 @@ func TestWithRPMTags(t *testing.T) {
 func TestRPMTagsSpec(t *testing.T) {
 	var info = exampleInfo()
 	info.RPM = nfpm.RPM{
-		Group:  "default",
-		Prefix: "/usr",
+		Group:   "default",
+		Prefix:  "/usr",
+		Release: "5",
 	}
 
 	vs := rpmbuildVersion{Major: 4, Minor: 15, Patch: 2}
