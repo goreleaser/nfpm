@@ -8,7 +8,7 @@
 Name: foo
 Summary: Foo does things
 Version: 1.0.0
-Release: 1
+Release: 5
 License: MIT
 Group: default
 SOURCE0 : %{name}-%{version}.tar.gz

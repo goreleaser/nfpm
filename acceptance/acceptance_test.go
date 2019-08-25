@@ -131,6 +131,15 @@ func TestRPMCompression(t *testing.T) {
 	}
 }
 
+func TestRPMRelease(t *testing.T) {
+	accept(t, acceptParms{
+		Name:       "release_rpm",
+		Conf:       "release.rpm.yaml",
+		Format:     "rpm",
+		Dockerfile: "release.rpm.dockerfile",
+	})
+}
+
 type acceptParms struct {
 	Name       string
 	Conf       string
