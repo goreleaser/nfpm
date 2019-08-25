@@ -56,9 +56,6 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("rpmbuild not present in $PATH")
 	}
-	if s := info.RPM.Release; s == "" {
-		info.RPM.Release = "1"
-	}
 	temps, err := setupTempFiles(info)
 	if err != nil {
 		return err
@@ -341,7 +338,11 @@ Summary: {{ first_line .Info.Description }}
 Epoch: {{ . }}
 {{- end }}
 Version: {{ .Info.Version }}
-Release: {{ .Info.RPM.Release }}
+{{- with .Info.RPM.Release }}
+Release: {{ . }}
+{{- else }}
+Release: 1
+{{- end }}
 {{- with .Info.License }}
 License: {{ . }}
 {{- end }}
