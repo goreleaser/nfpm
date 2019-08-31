@@ -323,11 +323,11 @@ const specTemplate = `
 %define _source_payload w9.gzdio
 %define _binary_payload w9.gzdio
 {{- end}}
-{{- if eq .Overridables.Compression "xz"}}
+{{- if eq .Overridables.RPM.Compression "xz"}}
 %define _source_payload w6.xzdio
 %define _binary_payload w6.xzdio
 {{- end}}
-{{- if eq .Overridables.Compression "lzma"}}
+{{- if eq .Overridables.RPM.Compression "lzma"}}
 %define _source_payload w6.lzdio
 %define _binary_payload w6.lzdio
 {{- end}}
@@ -338,7 +338,7 @@ Summary: {{ first_line .Info.Description }}
 Epoch: {{ . }}
 {{- end }}
 Version: {{ .Info.Version }}
-{{- with .Overridables.Release }}
+{{- with .Overridables.RPM.Release }}
 Release: {{ . }}
 {{- else }}
 Release: 1
@@ -346,7 +346,7 @@ Release: 1
 {{- with .Info.License }}
 License: {{ . }}
 {{- end }}
-{{- with .Overridables.Group }}
+{{- with .Overridables.RPM.Group }}
 Group: {{ . }}
 {{- else }}
 Group: Development/Tools
@@ -359,7 +359,7 @@ URL: {{ . }}
 Packager: {{ . }}
 {{- end }}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-{{- with .Overridables.Prefix }}
+{{- with .Overridables.RPM.Prefix }}
 Prefix: {{ . }}
 {{- end }}
 
