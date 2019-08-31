@@ -3,7 +3,6 @@ package rpm
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -131,22 +130,6 @@ func TestRPMVersionWithDash(t *testing.T) {
 	info.Version = "1.0.0-beta"
 	var err = Default.Package(info, ioutil.Discard)
 	assert.NoError(t, err)
-}
-
-func TestRPMScripts(t *testing.T) {
-	info := exampleInfo()
-	scripts, err := readScripts(info)
-	assert.NoError(t, err)
-	for actual, src := range map[string]string{
-		scripts.Pre:    info.Scripts.PreInstall,
-		scripts.Post:   info.Scripts.PostInstall,
-		scripts.Preun:  info.Scripts.PreRemove,
-		scripts.Postun: info.Scripts.PostRemove,
-	} {
-		data, err := ioutil.ReadFile(src)         //nolint:gosec
-		fmt.Printf("%s %s %s", actual, src, data) //nolint.govet
-		assert.NoError(t, err)
-	}
 }
 
 func TestRPMNoFiles(t *testing.T) {
