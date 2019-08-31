@@ -319,15 +319,15 @@ const specTemplate = `
 %define __os_install_post %{_dbpath}/brp-compress
 %define _arch {{ .Info.Arch }}
 %define _bindir {{ .Info.Bindir }}
-{{- if eq .Info.RPM.Compression "gzip"}}
+{{- if eq .Info.Overridables.RPM.Compression "gzip"}}
 %define _source_payload w9.gzdio
 %define _binary_payload w9.gzdio
 {{- end}}
-{{- if eq .Info.RPM.Compression "xz"}}
+{{- if eq .Overridables.Compression "xz"}}
 %define _source_payload w6.xzdio
 %define _binary_payload w6.xzdio
 {{- end}}
-{{- if eq .Info.RPM.Compression "lzma"}}
+{{- if eq .Overridables.Compression "lzma"}}
 %define _source_payload w6.lzdio
 %define _binary_payload w6.lzdio
 {{- end}}
@@ -338,7 +338,7 @@ Summary: {{ first_line .Info.Description }}
 Epoch: {{ . }}
 {{- end }}
 Version: {{ .Info.Version }}
-{{- with .Info.RPM.Release }}
+{{- with .Overridables.Release }}
 Release: {{ . }}
 {{- else }}
 Release: 1
@@ -346,7 +346,7 @@ Release: 1
 {{- with .Info.License }}
 License: {{ . }}
 {{- end }}
-{{- with .Info.RPM.Group }}
+{{- with .Overridables.Group }}
 Group: {{ . }}
 {{- else }}
 Group: Development/Tools
@@ -359,7 +359,7 @@ URL: {{ . }}
 Packager: {{ . }}
 {{- end }}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-{{- with .Info.RPM.Prefix }}
+{{- with .Overridables.Prefix }}
 Prefix: {{ . }}
 {{- end }}
 

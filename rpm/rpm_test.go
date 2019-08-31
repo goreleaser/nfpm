@@ -96,7 +96,7 @@ func TestRPM(t *testing.T) {
 
 func TestWithRPMTags(t *testing.T) {
 	var info = exampleInfo()
-	info.RPM = nfpm.RPM{
+	info.Overridables.RPM = nfpm.RPM{
 		Group:   "default",
 		Prefix:  "/usr",
 		Release: "3",
@@ -107,7 +107,7 @@ func TestWithRPMTags(t *testing.T) {
 
 func TestRPMTagsSpec(t *testing.T) {
 	var info = exampleInfo()
-	info.RPM = nfpm.RPM{
+	info.Overridables.RPM = nfpm.RPM{
 		Group:   "default",
 		Prefix:  "/usr",
 		Release: "5",

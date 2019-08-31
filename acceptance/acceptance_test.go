@@ -140,6 +140,15 @@ func TestRPMRelease(t *testing.T) {
 	})
 }
 
+func TestDebRules(t *testing.T) {
+	accept(t, acceptParms{
+		Name:       "rules.deb",
+		Conf:       "rules.deb.yaml",
+		Format:     "deb",
+		Dockerfile: "rules.deb.dockerfile",
+	})
+}
+
 type acceptParms struct {
 	Name       string
 	Conf       string
