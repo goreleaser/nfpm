@@ -223,6 +223,7 @@ func createControl(instSize int64, md5sums []byte, info nfpm.Info) (controlTarGz
 		info.Scripts.PostInstall: "postinst",
 		info.Scripts.PreRemove:   "prerm",
 		info.Scripts.PostRemove:  "postrm",
+		info.Scripts.Rules:       "rules",
 	} {
 		if script != "" {
 			if err := newScriptInsideTarGz(out, script, dest); err != nil {
