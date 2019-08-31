@@ -142,10 +142,12 @@ type RPM struct {
 	Release     string `yaml:"release,omitempty"`
 }
 
+// Deb is custom configs that are only available on deb packages
 type Deb struct {
 	Scripts DebScripts `yaml:"scripts,omitempty"`
 }
 
+// DebScripts is scripts only available on deb packages
 type DebScripts struct {
 	Rules string `yaml:"rules,omitempty"`
 }
