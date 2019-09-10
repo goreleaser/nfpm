@@ -101,7 +101,7 @@ func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
 	}
 
 	if info.Scripts.PostRemove != "" {
-		data, err := ioutil.ReadFile(info.Scripts.PostInstall)
+		data, err := ioutil.ReadFile(info.Scripts.PostRemove)
 		if err != nil {
 			return err
 		}
