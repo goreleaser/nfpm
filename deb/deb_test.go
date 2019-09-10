@@ -275,3 +275,32 @@ func TestDebEpoch(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
 }
+
+func TestDebRules(t *testing.T) {
+	var w bytes.Buffer
+	assert.NoError(t, writeControl(&w, controlData{
+		Info: nfpm.WithDefaults(nfpm.Info{
+			Name:        "lala",
+			Arch:        "arm64",
+			Description: "Has rules script",
+			Priority:    "extra",
+			Epoch:       "2",
+			Version:     "1.2.0",
+			Section:     "default",
+			Overridables: nfpm.Overridables{
+				Deb: nfpm.Deb{
+					Scripts: nfpm.DebScripts{
+						Rules: "foo.sh",
+					},
+				},
+			},
+		}),
+	}))
+	var golden = "testdata/rules.golden"
+	if *update {
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+	}
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	assert.NoError(t, err)
+	assert.Equal(t, string(bts), w.String())
+}

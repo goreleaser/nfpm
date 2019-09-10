@@ -11,7 +11,7 @@ import (
 
 	"github.com/imdario/mergo"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // nolint: gochecknoglobals
@@ -116,7 +116,6 @@ type Info struct {
 	Homepage     string `yaml:"homepage,omitempty"`
 	License      string `yaml:"license,omitempty"`
 	Bindir       string `yaml:"bindir,omitempty"`
-	RPM          RPM    `yaml:"rpm,omitempty"`
 }
 
 // Overridables contain the field which are overridable in a package
@@ -131,13 +130,26 @@ type Overridables struct {
 	ConfigFiles  map[string]string `yaml:"config_files,omitempty"`
 	EmptyFolders []string          `yaml:"empty_folders,omitempty"`
 	Scripts      Scripts           `yaml:"scripts,omitempty"`
+	RPM          RPM               `yaml:"rpm,omitempty"`
+	Deb          Deb               `yaml:"deb,omitempty"`
 }
 
+// RPM is custom configs that are only available on RPM packages
 type RPM struct {
 	Group       string `yaml:"group,omitempty"`
 	Prefix      string `yaml:"prefix,omitempty"`
 	Compression string `yaml:"compression,omitempty"`
 	Release     string `yaml:"release,omitempty"`
+}
+
+// Deb is custom configs that are only available on deb packages
+type Deb struct {
+	Scripts DebScripts `yaml:"scripts,omitempty"`
+}
+
+// DebScripts is scripts only available on deb packages
+type DebScripts struct {
+	Rules string `yaml:"rules,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages
