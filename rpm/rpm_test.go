@@ -1,7 +1,6 @@
 package rpm
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
