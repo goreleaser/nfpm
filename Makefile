@@ -9,7 +9,7 @@ export GOPROXY := https://gocenter.io
 # Install all the build and lint dependencies
 setup:
 	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
-	go mod download
+	go mod tidy
 .PHONY: setup
 
 
