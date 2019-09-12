@@ -66,6 +66,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 		Replaces: info.Replaces,
 		Suggests: info.Suggests,
 		Conflicts: info.Conflicts,
+		Compressor: info.RPM.Compression,
 	})
 	if err != nil {
 		return err
