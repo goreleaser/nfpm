@@ -17,9 +17,9 @@ require (
 	github.com/sassoftware/go-rpmutils v0.0.0-20190420191620-a8f1baeba37b
 	github.com/stretchr/testify v1.4.0
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	golang.org/x/crypto v0.0.0-20190909091759-094676da4a83 // indirect
+	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )
 
-replace github.com/google/rpmpack => ../rpmpack
+replace github.com/google/rpmpack => github.com/djgilcrease/rpmpack v0.0.0-20190910013225-fdb15abcdff1
