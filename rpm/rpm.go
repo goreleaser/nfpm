@@ -51,22 +51,22 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	vInfo := strings.SplitN(info.Version, "-", 2)
 	vInfo = append(vInfo, "")
 	rpm, err := rpmpack.NewRPM(rpmpack.RPMMetaData{
-		Name:    info.Name,
+		Name:        info.Name,
 		Description: info.Description,
-		Version: vInfo[0],
-		Release: vInfo[1],
-		Arch:    info.Arch,
-		Platform: info.Platform,
-		Licence: info.License,
-		URL: info.Homepage,
-		Vendor: info.Vendor,
-		Packager: info.Maintainer,
-		Provides: info.Provides,
-		Depends: info.Depends,
-		Replaces: info.Replaces,
-		Suggests: info.Suggests,
-		Conflicts: info.Conflicts,
-		Compressor: info.RPM.Compression,
+		Version:     vInfo[0],
+		Release:     vInfo[1],
+		Arch:        info.Arch,
+		Platform:    info.Platform,
+		Licence:     info.License,
+		URL:         info.Homepage,
+		Vendor:      info.Vendor,
+		Packager:    info.Maintainer,
+		Provides:    info.Provides,
+		Depends:     info.Depends,
+		Replaces:    info.Replaces,
+		Suggests:    info.Suggests,
+		Conflicts:   info.Conflicts,
+		Compressor:  info.RPM.Compression,
 	})
 	if err != nil {
 		return err
@@ -141,8 +141,8 @@ func createFilesInsideRPM(info nfpm.Info, rpm *rpmpack.RPM) error {
 				return err
 			}
 			for src, dst := range globbed {
-					err := copyToRPM(rpm, src, dst, config)
-					if err != nil {
+				err := copyToRPM(rpm, src, dst, config)
+				if err != nil {
 					return err
 				}
 			}

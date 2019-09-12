@@ -3,8 +3,6 @@ package acceptance
 import (
 	"fmt"
 	"io/ioutil"
-
-	//"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -118,21 +116,21 @@ func TestMin(t *testing.T) {
 	}
 }
 
-//func TestRPMCompression(t *testing.T) {
-//	compressFormats := []string{"gzip", "xz", "lzma"}
-//	for _, format := range compressFormats {
-//		format := format
-//		t.Run(format, func(t *testing.T) {
-//			t.Parallel()
-//			accept(t, acceptParms{
-//				Name:       fmt.Sprintf("%s_compression_rpm", format),
-//				Conf:       fmt.Sprintf("%s.compression.yaml", format),
-//				Format:     "rpm",
-//				Dockerfile: fmt.Sprintf("%s.rpm.compression.dockerfile", format),
-//			})
-//		})
-//	}
-//}
+func TestRPMCompression(t *testing.T) {
+	compressFormats := []string{"gzip", "xz", "lzma"}
+	for _, format := range compressFormats {
+		format := format
+		t.Run(format, func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("%s_compression_rpm", format),
+				Conf:       fmt.Sprintf("%s.compression.yaml", format),
+				Format:     "rpm",
+				Dockerfile: fmt.Sprintf("%s.rpm.compression.dockerfile", format),
+			})
+		})
+	}
+}
 
 func TestRPMRelease(t *testing.T) {
 	accept(t, acceptParms{
