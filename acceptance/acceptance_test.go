@@ -2,6 +2,9 @@ package acceptance
 
 import (
 	"fmt"
+	"io/ioutil"
+
+	//"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,7 +24,7 @@ var formats = []string{"deb", "rpm"}
 func TestSimple(t *testing.T) {
 	for _, format := range formats {
 		format := format
-		t.Run("amd64", func(t *testing.T) {
+		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("simple_%s", format),
@@ -30,7 +33,7 @@ func TestSimple(t *testing.T) {
 				Dockerfile: fmt.Sprintf("%s.dockerfile", format),
 			})
 		})
-		t.Run("i386", func(t *testing.T) {
+		t.Run(fmt.Sprintf("i386-%s", format), func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("simple_%s_386", format),
@@ -39,7 +42,7 @@ func TestSimple(t *testing.T) {
 				Dockerfile: fmt.Sprintf("%s.386.dockerfile", format),
 			})
 		})
-		t.Run("ppc64le", func(t *testing.T) {
+		t.Run(fmt.Sprintf("ppc64le-%s", format), func(t *testing.T) {
 			t.Skip("for some reason travis fails to run those")
 			t.Parallel()
 			accept(t, acceptParms{
@@ -49,7 +52,7 @@ func TestSimple(t *testing.T) {
 				Dockerfile: fmt.Sprintf("%s.ppc64le.dockerfile", format),
 			})
 		})
-		t.Run("arm64", func(t *testing.T) {
+		t.Run(fmt.Sprintf("arm64-%s", format), func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("simple_%s_arm64", format),
@@ -64,7 +67,7 @@ func TestSimple(t *testing.T) {
 func TestComplex(t *testing.T) {
 	for _, format := range formats {
 		format := format
-		t.Run("amd64", func(t *testing.T) {
+		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("complex_%s", format),
@@ -73,7 +76,7 @@ func TestComplex(t *testing.T) {
 				Dockerfile: fmt.Sprintf("%s.complex.dockerfile", format),
 			})
 		})
-		t.Run("i386", func(t *testing.T) {
+		t.Run(fmt.Sprintf("i386-%s", format), func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("complex_%s_386", format),
@@ -85,10 +88,10 @@ func TestComplex(t *testing.T) {
 	}
 }
 
-func TestComplexOverridesDeb(t *testing.T) {
+func TestComplexOverrides(t *testing.T) {
 	for _, format := range formats {
 		format := format
-		t.Run("amd64", func(t *testing.T) {
+		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("overrides_%s", format),
@@ -100,10 +103,10 @@ func TestComplexOverridesDeb(t *testing.T) {
 	}
 }
 
-func TestMinDeb(t *testing.T) {
+func TestMin(t *testing.T) {
 	for _, format := range formats {
 		format := format
-		t.Run("amd64", func(t *testing.T) {
+		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("min_%s", format),
@@ -115,21 +118,21 @@ func TestMinDeb(t *testing.T) {
 	}
 }
 
-func TestRPMCompression(t *testing.T) {
-	compressFormats := []string{"gzip", "xz", "lzma"}
-	for _, format := range compressFormats {
-		format := format
-		t.Run(format, func(t *testing.T) {
-			t.Parallel()
-			accept(t, acceptParms{
-				Name:       fmt.Sprintf("%s_compression_rpm", format),
-				Conf:       fmt.Sprintf("%s.compression.yaml", format),
-				Format:     "rpm",
-				Dockerfile: fmt.Sprintf("%s.rpm.compression.dockerfile", format),
-			})
-		})
-	}
-}
+//func TestRPMCompression(t *testing.T) {
+//	compressFormats := []string{"gzip", "xz", "lzma"}
+//	for _, format := range compressFormats {
+//		format := format
+//		t.Run(format, func(t *testing.T) {
+//			t.Parallel()
+//			accept(t, acceptParms{
+//				Name:       fmt.Sprintf("%s_compression_rpm", format),
+//				Conf:       fmt.Sprintf("%s.compression.yaml", format),
+//				Format:     "rpm",
+//				Dockerfile: fmt.Sprintf("%s.rpm.compression.dockerfile", format),
+//			})
+//		})
+//	}
+//}
 
 func TestRPMRelease(t *testing.T) {
 	accept(t, acceptParms{
@@ -186,8 +189,22 @@ func accept(t *testing.T, params acceptParms) {
 		".",
 	)
 	cmd.Dir = "./testdata"
+	stdout, err := cmd.StdoutPipe()
+	require.NoError(t, err)
+	stderr, err := cmd.StderrPipe()
+	require.NoError(t, err)
 	t.Log("will exec:", cmd.Args)
-	bts, err := cmd.CombinedOutput()
-	t.Log("output:", string(bts))
+	err = cmd.Start()
+
+	slurp, _ := ioutil.ReadAll(stderr)
+	if len(slurp) > 0 {
+		t.Log("stderr:", string(slurp))
+	}
+	slurp, _ = ioutil.ReadAll(stdout)
+	if len(slurp) > 0 {
+		t.Log("stdout:", string(slurp))
+	}
+	require.NoError(t, err)
+	err = cmd.Wait()
 	require.NoError(t, err)
 }

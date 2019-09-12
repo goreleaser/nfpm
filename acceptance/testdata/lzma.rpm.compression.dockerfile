@@ -1,4 +1,4 @@
-FROM fedora
+FROM centos
 ARG package
 COPY ${package} /tmp/foo.rpm
 RUN test "lzma" = "$(rpm -qp --qf '%{PAYLOADCOMPRESSOR}' /tmp/foo.rpm)"

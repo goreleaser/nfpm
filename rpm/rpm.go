@@ -71,7 +71,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-
+	addEmptyDirsRPM(info, rpm)
 	if err = createFilesInsideRPM(info, rpm); err != nil {
 		return err
 	}
@@ -121,6 +121,16 @@ func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
 	}
 
 	return nil
+}
+
+func addEmptyDirsRPM(info nfpm.Info, rpm *rpmpack.RPM) {
+	for _, dir := range info.EmptyFolders {
+		rpm.AddFile(
+			rpmpack.RPMFile{
+				Name: dir,
+				Mode: uint(1 | 040000),
+			})
+	}
 }
 
 func createFilesInsideRPM(info nfpm.Info, rpm *rpmpack.RPM) error {

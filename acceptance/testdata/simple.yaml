@@ -1,7 +1,7 @@
 name: "foo"
 arch: "amd64"
 platform: "linux"
-version: "v1.2.3"
+version: "v1.2.3-A"
 maintainer: "Foo Bar"
 description: |
   Foo bar
