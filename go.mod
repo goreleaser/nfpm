@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20190910110746-680d30ca3117 // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/google/rpmpack v0.0.0-20190910013225-b032be71f28f
+	github.com/google/rpmpack v0.0.0-20191003003711-4fb3ac7015e6
 	github.com/imdario/mergo v0.3.7
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-zglob v0.0.1
