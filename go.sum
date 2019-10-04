@@ -20,6 +20,8 @@ github.com/google/rpmpack v0.0.0-20190910013225-b032be71f28f h1:M/cAtGVU3tfh1JtM
 github.com/google/rpmpack v0.0.0-20190910013225-b032be71f28f/go.mod h1:qd5Uhb4CKNb+vivVcX0z7uF4bfw8TQK3eMCsQ4DYZAU=
 github.com/google/rpmpack v0.0.0-20191003003711-4fb3ac7015e6 h1:UPi9181lN81VAnoyCrpFRN9NpOGTT7ZiLh0jcCzHaAk=
 github.com/google/rpmpack v0.0.0-20191003003711-4fb3ac7015e6/go.mod h1:RaTPr0KUf2K7fnZYLNDrr8rxAamWs3iNywJLtQ2AzBg=
+github.com/google/rpmpack v0.0.0-20191004000632-07246cf402fe h1:465GSygXcdjtvc7bEe30+3KZ9yWLUNBo3C0Vp7yTbaw=
+github.com/google/rpmpack v0.0.0-20191004000632-07246cf402fe/go.mod h1:RaTPr0KUf2K7fnZYLNDrr8rxAamWs3iNywJLtQ2AzBg=
 github.com/imdario/mergo v0.3.7 h1:Y+UAYTZ7gDEuOfhxKWy+dvb5dRQ6rJjFSdX2HZY1/gI=
 github.com/imdario/mergo v0.3.7/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
