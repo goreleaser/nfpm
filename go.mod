@@ -8,8 +8,8 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/google/rpmpack v0.0.0-20191003003711-4fb3ac7015e6
-	github.com/imdario/mergo v0.3.7
+	github.com/google/rpmpack v0.0.0-20191004000632-07246cf402fe
+	github.com/imdario/mergo v0.3.8
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-zglob v0.0.1
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
@@ -19,5 +19,5 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/crypto v0.0.0-20190909091759-094676da4a83 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/yaml.v2 v2.2.2
+	gopkg.in/yaml.v2 v2.2.4
 )
