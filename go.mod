@@ -17,7 +17,7 @@ require (
 	github.com/sassoftware/go-rpmutils v0.0.0-20190420191620-a8f1baeba37b
 	github.com/stretchr/testify v1.4.0
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	golang.org/x/crypto v0.0.0-20190909091759-094676da4a83 // indirect
+	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.4
 )
