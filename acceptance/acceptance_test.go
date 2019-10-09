@@ -193,16 +193,21 @@ func accept(t *testing.T, params acceptParms) {
 	require.NoError(t, err)
 	t.Log("will exec:", cmd.Args)
 	err = cmd.Start()
+	require.NoError(t, err)
 
-	slurp, _ := ioutil.ReadAll(stderr)
+	var slurp []byte
+	slurp, err = ioutil.ReadAll(stderr)
 	if len(slurp) > 0 {
 		t.Log("stderr:", string(slurp))
 	}
-	slurp, _ = ioutil.ReadAll(stdout)
+	require.NoError(t, err)
+
+	slurp, err = ioutil.ReadAll(stdout)
 	if len(slurp) > 0 {
 		t.Log("stdout:", string(slurp))
 	}
 	require.NoError(t, err)
+
 	err = cmd.Wait()
 	require.NoError(t, err)
 }

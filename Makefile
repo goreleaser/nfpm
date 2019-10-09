@@ -18,7 +18,7 @@ pull_test_imgs:
 .PHONY: pull_test_imgs
 
 test: pull_test_imgs
-	go test $(TEST_OPTIONS) -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.out $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=25m
+	go test $(TEST_OPTIONS) -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.out $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=5m
 .PHONY: test
 
 cover: test
