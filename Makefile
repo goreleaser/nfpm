@@ -30,7 +30,7 @@ fmt:
 .PHONY: fmt
 
 lint: check
-	./bin/golangci-lint run --disable godox --enable-all ./...
+	./bin/golangci-lint run --disable wsl --disable godox --enable-all ./...
 .PHONY: check
 
 ci: build lint test

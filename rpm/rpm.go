@@ -42,24 +42,24 @@ func ensureValidArch(info nfpm.Info) nfpm.Info {
 
 // Package writes a new RPM package to the given writer using the given info
 func (*RPM) Package(info nfpm.Info, w io.Writer) error {
+	var (
+		err  error
+		meta *rpmpack.RPMMetaData
+		rpm  *rpmpack.RPM
+	)
 	info = ensureValidArch(info)
-	err := nfpm.Validate(info)
-	if err != nil {
+	if err = nfpm.Validate(info); err != nil {
 		return err
 	}
 
-	vInfo := strings.SplitN(info.Version, "-", 1)
-	vInfo = append(vInfo, "")
-	rpm, err := rpmpack.NewRPM(rpmpack.RPMMetaData{
-		Name:    info.Name,
-		Version: vInfo[0],
-		Release: vInfo[1],
-		Arch:    info.Arch,
-	})
-	if err != nil {
+	if meta, err = buildRPMMeta(info); err != nil {
+		return err
+	}
+	if rpm, err = rpmpack.NewRPM(*meta); err != nil {
 		return err
 	}
 
+	addEmptyDirsRPM(info, rpm)
 	if err = createFilesInsideRPM(info, rpm); err != nil {
 		return err
 	}
@@ -73,6 +73,65 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	}
 
 	return nil
+}
+
+func buildRPMMeta(info nfpm.Info) (*rpmpack.RPMMetaData, error) {
+	var (
+		err error
+		provides,
+		depends,
+		replaces,
+		suggests,
+		conflicts rpmpack.Relations
+	)
+	vInfo := strings.SplitN(info.Version, "-", 2)
+	vInfo = append(vInfo, info.RPM.Release)
+
+	if provides, err = toRelation(info.Provides); err != nil {
+		return nil, err
+	}
+	if depends, err = toRelation(info.Depends); err != nil {
+		return nil, err
+	}
+	if replaces, err = toRelation(info.Replaces); err != nil {
+		return nil, err
+	}
+	if suggests, err = toRelation(info.Suggests); err != nil {
+		return nil, err
+	}
+	if conflicts, err = toRelation(info.Conflicts); err != nil {
+		return nil, err
+	}
+
+	return &rpmpack.RPMMetaData{
+		Name:        info.Name,
+		Description: info.Description,
+		Version:     vInfo[0],
+		Release:     vInfo[1],
+		Arch:        info.Arch,
+		OS:          info.Platform,
+		Licence:     info.License,
+		URL:         info.Homepage,
+		Vendor:      info.Vendor,
+		Packager:    info.Maintainer,
+		Provides:    provides,
+		Requires:    depends,
+		Obsoletes:   replaces,
+		Suggests:    suggests,
+		Conflicts:   conflicts,
+		Compressor:  info.RPM.Compression,
+	}, nil
+}
+
+func toRelation(items []string) (rpmpack.Relations, error) {
+	relations := make(rpmpack.Relations, 0)
+	for idx := range items {
+		if err := relations.Set(items[idx]); err != nil {
+			return nil, err
+		}
+	}
+
+	return relations, nil
 }
 
 func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
@@ -101,7 +160,7 @@ func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
 	}
 
 	if info.Scripts.PostRemove != "" {
-		data, err := ioutil.ReadFile(info.Scripts.PostInstall)
+		data, err := ioutil.ReadFile(info.Scripts.PostRemove)
 		if err != nil {
 			return err
 		}
@@ -111,28 +170,45 @@ func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
 	return nil
 }
 
+func addEmptyDirsRPM(info nfpm.Info, rpm *rpmpack.RPM) {
+	for _, dir := range info.EmptyFolders {
+		rpm.AddFile(
+			rpmpack.RPMFile{
+				Name: dir,
+				Mode: uint(1 | 040000),
+			})
+	}
+}
+
 func createFilesInsideRPM(info nfpm.Info, rpm *rpmpack.RPM) error {
-	for _, files := range []map[string]string{
-		info.Files,
-		info.ConfigFiles,
-	} {
+	copy := func(files map[string]string, config bool) error {
 		for srcglob, dstroot := range files {
 			globbed, err := glob.Glob(srcglob, dstroot)
 			if err != nil {
 				return err
 			}
 			for src, dst := range globbed {
-				err := copyToRPM(rpm, src, dst)
+				err := copyToRPM(rpm, src, dst, config)
 				if err != nil {
 					return err
 				}
 			}
 		}
+
+		return nil
+	}
+	err := copy(info.Files, false)
+	if err != nil {
+		return err
+	}
+	err = copy(info.ConfigFiles, true)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func copyToRPM(rpm *rpmpack.RPM, src, dst string) error {
+func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
 		return errors.Wrap(err, "could not add file to the archive")
@@ -152,12 +228,17 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string) error {
 		return err
 	}
 
-	rpm.AddFile(
-		rpmpack.RPMFile{
-			Name: dst,
-			Body: data,
-			Mode: uint(info.Mode()),
-		})
+	rpmFile := rpmpack.RPMFile{
+		Name: dst,
+		Body: data,
+		Mode: uint(info.Mode()),
+	}
+
+	if config {
+		rpmFile.Type = rpmpack.ConfigFile
+	}
+
+	rpm.AddFile(rpmFile)
 
 	return nil
 }
