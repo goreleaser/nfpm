@@ -28,7 +28,7 @@ so I hacked this together and it works!
 * [x] provide packaging for the most common linux packaging systems (at very least deb and rpm)
 * [x] be distributed as a single binary
 * [x] reproducible results
-  * [x] depend on the fewer external things as possible (namely `rpmbuild`)
+  * [x] depend on the fewer external things as possible
   * [x] generate packages based on yaml files (maybe also json and toml?)
 * [x] be possible to use it as a lib in other go projects (namely [goreleaser][] itself)
 * [ ] support complex packages and power users

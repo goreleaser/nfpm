@@ -1,4 +1,5 @@
-// Package rpm implements nfpm.Packager providing .rpm bindings through rpmbuild.
+// Package rpm implements nfpm.Packager providing .rpm bindings using
+// google/rpmpack.
 package rpm
 
 import (
