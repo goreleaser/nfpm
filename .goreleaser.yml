@@ -48,5 +48,3 @@ nfpm:
   formats:
   - deb
   - rpm
-  recommends:
-  - rpm
