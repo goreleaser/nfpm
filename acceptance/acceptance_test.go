@@ -86,6 +86,22 @@ func TestComplex(t *testing.T) {
 	}
 }
 
+func TestEnvVarVersion(t *testing.T) {
+	for _, format := range formats {
+		format := format
+		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
+			t.Parallel()
+			os.Setenv("SEMVER", "v1.0.0-0.1.b1+git.abcdefgh")
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("env-var-version_%s", format),
+				Conf:       "env-var-version.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.env-var-version.dockerfile", format),
+			})
+		})
+	}
+}
+
 func TestComplexOverrides(t *testing.T) {
 	for _, format := range formats {
 		format := format
