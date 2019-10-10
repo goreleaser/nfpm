@@ -9,16 +9,17 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/goreleaser/nfpm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/goreleaser/nfpm"
 )
 
 // nolint: gochecknoglobals
 var update = flag.Bool("update", false, "update .golden files")
 
-func exampleInfo() nfpm.Info {
-	return nfpm.WithDefaults(nfpm.Info{
+func exampleInfo() *nfpm.Info {
+	return nfpm.WithDefaults(&nfpm.Info{
 		Name:        "foo",
 		Arch:        "amd64",
 		Description: "Foo does things",
@@ -119,7 +120,7 @@ func TestScripts(t *testing.T) {
 func TestNoJoinsControl(t *testing.T) {
 	var w bytes.Buffer
 	assert.NoError(t, writeControl(&w, controlData{
-		Info: nfpm.WithDefaults(nfpm.Info{
+		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
 			Description: "Foo does things",
@@ -153,7 +154,7 @@ func TestNoJoinsControl(t *testing.T) {
 
 func TestDebFileDoesNotExist(t *testing.T) {
 	var err = Default.Package(
-		nfpm.WithDefaults(nfpm.Info{
+		nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
 			Description: "Foo does things",
@@ -182,7 +183,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 
 func TestDebNoFiles(t *testing.T) {
 	var err = Default.Package(
-		nfpm.WithDefaults(nfpm.Info{
+		nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
 			Description: "Foo does things",
@@ -204,12 +205,12 @@ func TestDebNoFiles(t *testing.T) {
 }
 
 func TestDebNoInfo(t *testing.T) {
-	var err = Default.Package(nfpm.WithDefaults(nfpm.Info{}), ioutil.Discard)
+	var err = Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
 	assert.NoError(t, err)
 }
 
 func TestConffiles(t *testing.T) {
-	out := conffiles(nfpm.Info{
+	out := conffiles(&nfpm.Info{
 		Overridables: nfpm.Overridables{
 			ConfigFiles: map[string]string{
 				"fake": "/etc/fake",
@@ -236,7 +237,7 @@ func TestPathsToCreate(t *testing.T) {
 func TestMinimalFields(t *testing.T) {
 	var w bytes.Buffer
 	assert.NoError(t, writeControl(&w, controlData{
-		Info: nfpm.WithDefaults(nfpm.Info{
+		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "minimal",
 			Arch:        "arm64",
 			Description: "Minimal does nothing",
@@ -257,7 +258,7 @@ func TestMinimalFields(t *testing.T) {
 func TestDebEpoch(t *testing.T) {
 	var w bytes.Buffer
 	assert.NoError(t, writeControl(&w, controlData{
-		Info: nfpm.WithDefaults(nfpm.Info{
+		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "withepoch",
 			Arch:        "arm64",
 			Description: "Has an epoch added to it's version",
@@ -279,7 +280,7 @@ func TestDebEpoch(t *testing.T) {
 func TestDebRules(t *testing.T) {
 	var w bytes.Buffer
 	assert.NoError(t, writeControl(&w, controlData{
-		Info: nfpm.WithDefaults(nfpm.Info{
+		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "lala",
 			Arch:        "arm64",
 			Description: "Has rules script",

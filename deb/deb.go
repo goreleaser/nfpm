@@ -16,9 +16,10 @@ import (
 	"time"
 
 	"github.com/blakesmith/ar"
+	"github.com/pkg/errors"
+
 	"github.com/goreleaser/nfpm"
 	"github.com/goreleaser/nfpm/glob"
-	"github.com/pkg/errors"
 )
 
 // nolint: gochecknoinits
@@ -44,7 +45,7 @@ var Default = &Deb{}
 type Deb struct{}
 
 // Package writes a new deb package to the given writer using the given info
-func (*Deb) Package(info nfpm.Info, deb io.Writer) (err error) {
+func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 	arch, ok := archToDebian[info.Arch]
 	if ok {
 		info.Arch = arch
@@ -87,7 +88,7 @@ func addArFile(w *ar.Writer, name string, body []byte) error {
 	return err
 }
 
-func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64, err error) {
+func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64, err error) {
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
 	var out = tar.NewWriter(compress)
@@ -117,7 +118,7 @@ func createDataTarGz(info nfpm.Info) (dataTarGz, md5sums []byte, instSize int64,
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
 }
 
-func createFilesInsideTarGz(info nfpm.Info, out *tar.Writer, created map[string]bool) (bytes.Buffer, int64, error) {
+func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) (bytes.Buffer, int64, error) {
 	var md5buf bytes.Buffer
 	var instSize int64
 	for _, files := range []map[string]string{
@@ -144,7 +145,7 @@ func createFilesInsideTarGz(info nfpm.Info, out *tar.Writer, created map[string]
 	return md5buf, instSize, nil
 }
 
-func createEmptyFoldersInsideTarGz(info nfpm.Info, out *tar.Writer, created map[string]bool) error {
+func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
 	for _, folder := range info.EmptyFolders {
 		// this .nope is actually not created, because createTree ignore the
 		// last part of the path, assuming it is a file.
@@ -191,7 +192,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 	return info.Size(), nil
 }
 
-func createControl(instSize int64, md5sums []byte, info nfpm.Info) (controlTarGz []byte, err error) {
+func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarGz []byte, err error) {
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
 	var out = tar.NewWriter(compress)
@@ -241,8 +242,8 @@ func createControl(instSize int64, md5sums []byte, info nfpm.Info) (controlTarGz
 	return buf.Bytes(), nil
 }
 
-func newItemInsideTarGz(out *tar.Writer, content []byte, header tar.Header) error {
-	if err := out.WriteHeader(&header); err != nil {
+func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) error {
+	if err := out.WriteHeader(header); err != nil {
 		return errors.Wrapf(err, "cannot write header of %s file to control.tar.gz", header.Name)
 	}
 	if _, err := out.Write(content); err != nil {
@@ -252,7 +253,7 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header tar.Header) erro
 }
 
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
-	return newItemInsideTarGz(out, content, tar.Header{
+	return newItemInsideTarGz(out, content, &tar.Header{
 		Name:     filepath.ToSlash(name),
 		Size:     int64(len(content)),
 		Mode:     0644,
@@ -262,7 +263,7 @@ func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	})
 }
 
-func newScriptInsideTarGz(out *tar.Writer, path string, dest string) error {
+func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 	file, err := os.Open(path) //nolint:gosec
 	if err != nil {
 		return err
@@ -271,7 +272,7 @@ func newScriptInsideTarGz(out *tar.Writer, path string, dest string) error {
 	if err != nil {
 		return err
 	}
-	return newItemInsideTarGz(out, content, tar.Header{
+	return newItemInsideTarGz(out, content, &tar.Header{
 		Name:     filepath.ToSlash(dest),
 		Size:     int64(len(content)),
 		Mode:     0755,
@@ -323,7 +324,7 @@ func pathsToCreate(dst string) []string {
 	return result
 }
 
-func conffiles(info nfpm.Info) []byte {
+func conffiles(info *nfpm.Info) []byte {
 	// nolint: prealloc
 	var confs []string
 	for _, dst := range info.ConfigFiles {
@@ -375,7 +376,7 @@ Description: {{.Info.Description}}
 `
 
 type controlData struct {
-	Info          nfpm.Info
+	Info          *nfpm.Info
 	InstalledSize int64
 }
 

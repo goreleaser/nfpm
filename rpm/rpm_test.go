@@ -6,9 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/goreleaser/nfpm"
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/goreleaser/nfpm"
 )
 
 const (
@@ -18,8 +19,8 @@ const (
 	tagPostun = 0x0402 // 1026
 )
 
-func exampleInfo() nfpm.Info {
-	return nfpm.WithDefaults(nfpm.Info{
+func exampleInfo() *nfpm.Info {
+	return nfpm.WithDefaults(&nfpm.Info{
 		Name:        "foo",
 		Arch:        "amd64",
 		Description: "Foo does things",
@@ -98,7 +99,8 @@ func TestRPMScripts(t *testing.T) {
 	f, err := ioutil.TempFile(".", fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))
 	defer func() {
 		_ = f.Close()
-		os.Remove(f.Name())
+		err = os.Remove(f.Name())
+		assert.NoError(t, err)
 	}()
 	assert.NoError(t, err)
 	err = Default.Package(info, f)

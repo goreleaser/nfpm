@@ -8,9 +8,10 @@ import (
 	"os"
 
 	"github.com/google/rpmpack"
+	"github.com/pkg/errors"
+
 	"github.com/goreleaser/nfpm"
 	"github.com/goreleaser/nfpm/glob"
-	"github.com/pkg/errors"
 )
 
 // nolint: gochecknoinits
@@ -32,7 +33,7 @@ var archToRPM = map[string]string{
 	"arm64": "aarch64",
 }
 
-func ensureValidArch(info nfpm.Info) nfpm.Info {
+func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	arch, ok := archToRPM[info.Arch]
 	if ok {
 		info.Arch = arch
@@ -41,7 +42,7 @@ func ensureValidArch(info nfpm.Info) nfpm.Info {
 }
 
 // Package writes a new RPM package to the given writer using the given info
-func (*RPM) Package(info nfpm.Info, w io.Writer) error {
+func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	var (
 		err  error
 		meta *rpmpack.RPMMetaData
@@ -75,7 +76,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	return nil
 }
 
-func buildRPMMeta(info nfpm.Info) (*rpmpack.RPMMetaData, error) {
+func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 	var (
 		err error
 		provides,
@@ -131,7 +132,7 @@ func toRelation(items []string) (rpmpack.Relations, error) {
 	return relations, nil
 }
 
-func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
+func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	if info.Scripts.PreInstall != "" {
 		data, err := ioutil.ReadFile(info.Scripts.PreInstall)
 		if err != nil {
@@ -167,7 +168,7 @@ func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
 	return nil
 }
 
-func addEmptyDirsRPM(info nfpm.Info, rpm *rpmpack.RPM) {
+func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 	for _, dir := range info.EmptyFolders {
 		rpm.AddFile(
 			rpmpack.RPMFile{
@@ -177,8 +178,8 @@ func addEmptyDirsRPM(info nfpm.Info, rpm *rpmpack.RPM) {
 	}
 }
 
-func createFilesInsideRPM(info nfpm.Info, rpm *rpmpack.RPM) error {
-	copy := func(files map[string]string, config bool) error {
+func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
+	copyFunc := func(files map[string]string, config bool) error {
 		for srcglob, dstroot := range files {
 			globbed, err := glob.Glob(srcglob, dstroot)
 			if err != nil {
@@ -194,11 +195,11 @@ func createFilesInsideRPM(info nfpm.Info, rpm *rpmpack.RPM) error {
 
 		return nil
 	}
-	err := copy(info.Files, false)
+	err := copyFunc(info.Files, false)
 	if err != nil {
 		return err
 	}
-	err = copy(info.ConfigFiles, true)
+	err = copyFunc(info.ConfigFiles, true)
 	if err != nil {
 		return err
 	}
