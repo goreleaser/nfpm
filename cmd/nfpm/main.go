@@ -36,16 +36,19 @@ func main() {
 	app.Version(version)
 	app.VersionFlag.Short('v')
 	app.HelpFlag.Short('h')
+
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case initCmd.FullCommand():
 		if err := initFile(*config); err != nil {
 			kingpin.Fatalf(err.Error())
 		}
+
 		fmt.Printf("created config file from example: %s\n", *config)
 	case pkgCmd.FullCommand():
 		if err := doPackage(*config, *target); err != nil {
 			kingpin.Fatalf(err.Error())
 		}
+
 		fmt.Printf("created package: %s\n", *target)
 	}
 }
@@ -55,20 +58,24 @@ func initFile(config string) error {
 }
 
 func doPackage(path, target string) error {
-	format := filepath.Ext(target)[1:]
 	config, err := nfpm.ParseFile(path)
 	if err != nil {
 		return err
 	}
 
+	format := filepath.Ext(target)[1:]
+
 	info, err := config.Get(format)
 	if err != nil {
 		return err
 	}
+
 	if err = nfpm.Validate(info); err != nil {
 		return err
 	}
+
 	fmt.Printf("using %s packager...\n", format)
+
 	pkg, err := nfpm.Get(format)
 	if err != nil {
 		return err
@@ -78,6 +85,7 @@ func doPackage(path, target string) error {
 	if err != nil {
 		return err
 	}
+
 	return pkg.Package(nfpm.WithDefaults(info), f)
 }
 

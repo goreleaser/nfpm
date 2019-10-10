@@ -23,10 +23,11 @@ func TestRegister(t *testing.T) {
 func TestGet(t *testing.T) {
 	format := "TestGet"
 	got, err := Get(format)
+	pkgr := &fakePackager{}
+
 	assert.Error(t, err)
 	assert.EqualError(t, err, "no packager registered for the format "+format)
 	assert.Nil(t, got)
-	pkgr := &fakePackager{}
 	Register(format, pkgr)
 	got, err = Get(format)
 	assert.NoError(t, err)
@@ -95,6 +96,7 @@ func TestValidateError(t *testing.T) {
 	} {
 		err := err
 		info := info
+
 		t.Run(err, func(t *testing.T) {
 			require.EqualError(t, Validate(info), err)
 		})
@@ -107,10 +109,13 @@ func TestParseFile(t *testing.T) {
 	assert.Error(t, err)
 	Register("deb", &fakePackager{})
 	Register("rpm", &fakePackager{})
+
 	_, err = ParseFile("./testdata/overrides.yaml")
 	assert.NoError(t, err)
+
 	_, err = ParseFile("./testdata/doesnotexist.yaml")
 	assert.Error(t, err)
+
 	config, err := ParseFile("./testdata/versionenv.yaml")
 	assert.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)

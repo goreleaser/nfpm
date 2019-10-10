@@ -72,6 +72,7 @@ func exampleInfo() nfpm.Info {
 
 func TestRPM(t *testing.T) {
 	var err = Default.Package(exampleInfo(), ioutil.Discard)
+
 	assert.NoError(t, err)
 }
 
@@ -82,24 +83,31 @@ func TestWithRPMTags(t *testing.T) {
 		Prefix:  "/usr",
 		Release: "3",
 	}
+
 	var err = Default.Package(info, ioutil.Discard)
+
 	assert.NoError(t, err)
 }
 
 func TestRPMVersionWithDash(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0-beta"
+
 	var err = Default.Package(info, ioutil.Discard)
+
 	assert.NoError(t, err)
 }
 
 func TestRPMScripts(t *testing.T) {
 	info := exampleInfo()
+
 	f, err := ioutil.TempFile(".", fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))
+
 	defer func() {
 		_ = f.Close()
 		os.Remove(f.Name())
 	}()
+
 	assert.NoError(t, err)
 	err = Default.Package(info, f)
 	assert.NoError(t, err)
@@ -107,7 +115,6 @@ func TestRPMScripts(t *testing.T) {
 	assert.NoError(t, err)
 	rpm, err := rpmutils.ReadRpm(file)
 	assert.NoError(t, err)
-
 	data, err := rpm.Header.GetString(tagPrein)
 	assert.NoError(t, err)
 	assert.Equal(t, `#!/bin/bash
@@ -141,7 +148,9 @@ func TestRPMNoFiles(t *testing.T) {
 	info := exampleInfo()
 	info.Files = map[string]string{}
 	info.ConfigFiles = map[string]string{}
+
 	var err = Default.Package(info, ioutil.Discard)
+
 	// TODO: better deal with this error
 	assert.Error(t, err)
 }
@@ -154,7 +163,9 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 	info.ConfigFiles = map[string]string{
 		"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
 	}
+
 	var err = Default.Package(info, ioutil.Discard)
+
 	assert.EqualError(t, err, "../testdata/whatever.confzzz: file does not exist")
 }
 

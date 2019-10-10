@@ -65,6 +65,7 @@ func exampleInfo() nfpm.Info {
 func TestDeb(t *testing.T) {
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
+
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
@@ -77,40 +78,53 @@ func TestDeb(t *testing.T) {
 func TestDebVersionWithDash(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0-beta"
+
 	var err = Default.Package(info, ioutil.Discard)
+
 	assert.NoError(t, err)
 }
 
 func TestControl(t *testing.T) {
 	var w bytes.Buffer
+
 	assert.NoError(t, writeControl(&w, controlData{
 		Info:          exampleInfo(),
 		InstalledSize: 10,
 	}))
+
 	var golden = "testdata/control.golden"
+
 	if *update {
 		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 	}
+
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
 }
 
 func TestScripts(t *testing.T) {
-	var w bytes.Buffer
-	var out = tar.NewWriter(&w)
-	path := "../testdata/scripts/preinstall.sh"
+	var (
+		w    bytes.Buffer
+		out  = tar.NewWriter(&w)
+		in   = tar.NewReader(&w)
+		path = "../testdata/scripts/preinstall.sh"
+	)
+
 	assert.Error(t, newScriptInsideTarGz(out, "doesnotexit", "preinst"))
 	assert.NoError(t, newScriptInsideTarGz(out, path, "preinst"))
-	var in = tar.NewReader(&w)
+
 	header, err := in.Next()
 	assert.NoError(t, err)
 	assert.Equal(t, "preinst", header.FileInfo().Name())
+
 	mode, err := strconv.ParseInt("0755", 8, 64)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(header.FileInfo().Mode()), mode)
+
 	data, err := ioutil.ReadAll(in)
 	assert.NoError(t, err)
+
 	org, err := ioutil.ReadFile(path)
 	assert.NoError(t, err)
 	assert.Equal(t, data, org)
@@ -118,6 +132,7 @@ func TestScripts(t *testing.T) {
 
 func TestNoJoinsControl(t *testing.T) {
 	var w bytes.Buffer
+
 	assert.NoError(t, writeControl(&w, controlData{
 		Info: nfpm.WithDefaults(nfpm.Info{
 			Name:        "foo",
@@ -142,10 +157,13 @@ func TestNoJoinsControl(t *testing.T) {
 		}),
 		InstalledSize: 10,
 	}))
+
 	var golden = "testdata/control2.golden"
+
 	if *update {
 		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 	}
+
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
@@ -177,6 +195,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
+
 	assert.EqualError(t, err, "../testdata/whatever.confzzz: file does not exist")
 }
 
@@ -200,11 +219,13 @@ func TestDebNoFiles(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
+
 	assert.NoError(t, err)
 }
 
 func TestDebNoInfo(t *testing.T) {
 	var err = Default.Package(nfpm.WithDefaults(nfpm.Info{}), ioutil.Discard)
+
 	assert.NoError(t, err)
 }
 
@@ -216,6 +237,7 @@ func TestConffiles(t *testing.T) {
 			},
 		},
 	})
+
 	assert.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
 }
 
@@ -235,6 +257,7 @@ func TestPathsToCreate(t *testing.T) {
 
 func TestMinimalFields(t *testing.T) {
 	var w bytes.Buffer
+
 	assert.NoError(t, writeControl(&w, controlData{
 		Info: nfpm.WithDefaults(nfpm.Info{
 			Name:        "minimal",
@@ -245,10 +268,13 @@ func TestMinimalFields(t *testing.T) {
 			Section:     "default",
 		}),
 	}))
+
 	var golden = "testdata/minimal.golden"
+
 	if *update {
 		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 	}
+
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
@@ -256,6 +282,7 @@ func TestMinimalFields(t *testing.T) {
 
 func TestDebEpoch(t *testing.T) {
 	var w bytes.Buffer
+
 	assert.NoError(t, writeControl(&w, controlData{
 		Info: nfpm.WithDefaults(nfpm.Info{
 			Name:        "withepoch",
@@ -267,10 +294,13 @@ func TestDebEpoch(t *testing.T) {
 			Section:     "default",
 		}),
 	}))
+
 	var golden = "testdata/withepoch.golden"
+
 	if *update {
 		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 	}
+
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
@@ -278,6 +308,7 @@ func TestDebEpoch(t *testing.T) {
 
 func TestDebRules(t *testing.T) {
 	var w bytes.Buffer
+
 	assert.NoError(t, writeControl(&w, controlData{
 		Info: nfpm.WithDefaults(nfpm.Info{
 			Name:        "lala",
@@ -296,10 +327,13 @@ func TestDebRules(t *testing.T) {
 			},
 		}),
 	}))
+
 	var golden = "testdata/rules.golden"
+
 	if *update {
 		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
 	}
+
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())

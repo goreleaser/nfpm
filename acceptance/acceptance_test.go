@@ -175,9 +175,12 @@ type acceptParms struct {
 
 func accept(t *testing.T, params acceptParms) {
 	var configFile = filepath.Join("./testdata", params.Conf)
+
 	tmp, err := filepath.Abs("./testdata/tmp")
 	require.NoError(t, err)
+
 	var packageName = params.Name + "." + params.Format
+
 	var target = filepath.Join(tmp, packageName)
 
 	require.NoError(t, os.MkdirAll(tmp, 0700))
@@ -212,16 +215,19 @@ func accept(t *testing.T, params acceptParms) {
 	require.NoError(t, err)
 
 	var slurp []byte
+
 	slurp, err = ioutil.ReadAll(stderr)
 	if len(slurp) > 0 {
 		t.Log("stderr:", string(slurp))
 	}
+
 	require.NoError(t, err)
 
 	slurp, err = ioutil.ReadAll(stdout)
 	if len(slurp) > 0 {
 		t.Log("stdout:", string(slurp))
 	}
+
 	require.NoError(t, err)
 
 	err = cmd.Wait()

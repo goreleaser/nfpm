@@ -37,6 +37,7 @@ func ensureValidArch(info nfpm.Info) nfpm.Info {
 	if ok {
 		info.Arch = arch
 	}
+
 	return info
 }
 
@@ -47,6 +48,7 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 		meta *rpmpack.RPMMetaData
 		rpm  *rpmpack.RPM
 	)
+
 	info = ensureValidArch(info)
 	if err = nfpm.Validate(info); err != nil {
 		return err
@@ -55,11 +57,13 @@ func (*RPM) Package(info nfpm.Info, w io.Writer) error {
 	if meta, err = buildRPMMeta(info); err != nil {
 		return err
 	}
+
 	if rpm, err = rpmpack.NewRPM(*meta); err != nil {
 		return err
 	}
 
 	addEmptyDirsRPM(info, rpm)
+
 	if err = createFilesInsideRPM(info, rpm); err != nil {
 		return err
 	}
@@ -84,18 +88,23 @@ func buildRPMMeta(info nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		suggests,
 		conflicts rpmpack.Relations
 	)
+
 	if provides, err = toRelation(info.Provides); err != nil {
 		return nil, err
 	}
+
 	if depends, err = toRelation(info.Depends); err != nil {
 		return nil, err
 	}
+
 	if replaces, err = toRelation(info.Replaces); err != nil {
 		return nil, err
 	}
+
 	if suggests, err = toRelation(info.Suggests); err != nil {
 		return nil, err
 	}
+
 	if conflicts, err = toRelation(info.Conflicts); err != nil {
 		return nil, err
 	}
@@ -122,6 +131,7 @@ func buildRPMMeta(info nfpm.Info) (*rpmpack.RPMMetaData, error) {
 
 func toRelation(items []string) (rpmpack.Relations, error) {
 	relations := make(rpmpack.Relations, 0)
+
 	for idx := range items {
 		if err := relations.Set(items[idx]); err != nil {
 			return nil, err
@@ -137,6 +147,7 @@ func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
 		if err != nil {
 			return err
 		}
+
 		rpm.AddPrein(string(data))
 	}
 
@@ -145,6 +156,7 @@ func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
 		if err != nil {
 			return err
 		}
+
 		rpm.AddPreun(string(data))
 	}
 
@@ -153,6 +165,7 @@ func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
 		if err != nil {
 			return err
 		}
+
 		rpm.AddPostin(string(data))
 	}
 
@@ -161,6 +174,7 @@ func addScriptFiles(info nfpm.Info, rpm *rpmpack.RPM) error {
 		if err != nil {
 			return err
 		}
+
 		rpm.AddPostun(string(data))
 	}
 
@@ -184,6 +198,7 @@ func createFilesInsideRPM(info nfpm.Info, rpm *rpmpack.RPM) error {
 			if err != nil {
 				return err
 			}
+
 			for src, dst := range globbed {
 				err := copyToRPM(rpm, src, dst, config)
 				if err != nil {
@@ -194,14 +209,17 @@ func createFilesInsideRPM(info nfpm.Info, rpm *rpmpack.RPM) error {
 
 		return nil
 	}
+
 	err := copy(info.Files, false)
 	if err != nil {
 		return err
 	}
+
 	err = copy(info.ConfigFiles, true)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -210,16 +228,20 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
 	if err != nil {
 		return errors.Wrap(err, "could not add file to the archive")
 	}
+
 	// don't care if it errs while closing...
 	defer file.Close() // nolint: errcheck
+
 	info, err := file.Stat()
 	if err != nil {
 		return err
 	}
+
 	if info.IsDir() {
 		// TODO: this should probably return an error
 		return nil
 	}
+
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return err

@@ -34,6 +34,7 @@ func Get(format string) (Packager, error) {
 	if !ok {
 		return nil, fmt.Errorf("no packager registered for the format %s", format)
 	}
+
 	return p, nil
 }
 
@@ -41,6 +42,7 @@ func Get(format string) (Packager, error) {
 func Parse(in io.Reader) (config Config, err error) {
 	dec := yaml.NewDecoder(in)
 	dec.SetStrict(true)
+
 	if err = dec.Decode(&config); err != nil {
 		return
 	}
@@ -49,29 +51,36 @@ func Parse(in io.Reader) (config Config, err error) {
 	if config.Info.RPM.Release != "" && config.Info.Release == "" {
 		config.Info.Release = os.ExpandEnv(config.Info.RPM.Release)
 	}
-	config.Info.Release = os.ExpandEnv(config.Info.Release)
 
+	config.Info.Release = os.ExpandEnv(config.Info.Release)
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
+
 	// parse the version as a semver so we can properly split the parts and support proper ordering for both rpm and deb
 	if v, err := semver.NewVersion(config.Info.Version); err == nil {
 		config.Info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
 		if config.Info.Release == "" {
 			config.Info.Release = v.Prerelease()
 		}
+
 		config.Info.Deb.VersionMetadata = v.Metadata()
 	}
+
 	err = config.Validate()
+
 	return
 }
 
 // ParseFile decodes YAML data from a file path into a configuration struct
 func ParseFile(path string) (config Config, err error) {
 	var file *os.File
+
 	file, err = os.Open(path) //nolint:gosec
 	if err != nil {
 		return
 	}
+
 	defer file.Close() // nolint: errcheck
+
 	return Parse(file)
 }
 
@@ -93,15 +102,18 @@ func (c *Config) Get(format string) (info Info, err error) {
 	if err = mergo.Merge(&info, c.Info); err != nil {
 		return
 	}
+
 	override, ok := c.Overrides[format]
 	if !ok {
 		// no overrides
 		return
 	}
+
 	err = mergo.Merge(&info.Overridables, override, mergo.WithOverride)
 	if err != nil {
 		return
 	}
+
 	return
 }
 
@@ -112,6 +124,7 @@ func (c *Config) Validate() error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -182,15 +195,19 @@ func Validate(info Info) error {
 	if info.Name == "" {
 		return fmt.Errorf("package name cannot be empty")
 	}
+
 	if info.Arch == "" {
 		return fmt.Errorf("package arch must be provided")
 	}
+
 	if info.Version == "" {
 		return fmt.Errorf("package version must be provided")
 	}
+
 	if len(info.Files)+len(info.ConfigFiles) == 0 {
 		return fmt.Errorf("no files were provided")
 	}
+
 	return nil
 }
 
@@ -199,12 +216,16 @@ func WithDefaults(info Info) Info {
 	if info.Bindir == "" {
 		info.Bindir = "/usr/local/bin"
 	}
+
 	if info.Platform == "" {
 		info.Platform = "linux"
 	}
+
 	if info.Description == "" {
 		info.Description = "no description given"
 	}
+
 	info.Version = strings.TrimPrefix(info.Version, "v")
+
 	return info
 }
