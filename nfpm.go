@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/imdario/mergo"
 
 	"gopkg.in/yaml.v2"
@@ -44,7 +45,21 @@ func Parse(in io.Reader) (config Config, err error) {
 		return
 	}
 
+	// preserver backwards compatibility
+	if config.Info.RPM.Release != "" && config.Info.Release == "" {
+		config.Info.Release = os.ExpandEnv(config.Info.RPM.Release)
+	}
+	config.Info.Release = os.ExpandEnv(config.Info.Release)
+
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
+	// parse the version as a semver so we can properly split the parts and support proper ordering for both rpm and deb
+	if v, err := semver.NewVersion(config.Info.Version); err == nil {
+		config.Info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
+		if config.Info.Release == "" {
+			config.Info.Release = v.Prerelease()
+		}
+		config.Info.Deb.VersionMetadata = v.Metadata()
+	}
 	err = config.Validate()
 	return
 }
@@ -108,6 +123,7 @@ type Info struct {
 	Platform     string `yaml:"platform,omitempty"`
 	Epoch        string `yaml:"epoch,omitempty"`
 	Version      string `yaml:"version,omitempty"`
+	Release      string `yaml:"release,omitempty"`
 	Section      string `yaml:"section,omitempty"`
 	Priority     string `yaml:"priority,omitempty"`
 	Maintainer   string `yaml:"maintainer,omitempty"`
@@ -144,7 +160,8 @@ type RPM struct {
 
 // Deb is custom configs that are only available on deb packages
 type Deb struct {
-	Scripts DebScripts `yaml:"scripts,omitempty"`
+	Scripts         DebScripts `yaml:"scripts,omitempty"`
+	VersionMetadata string     `yaml:"metadata,omitempty"`
 }
 
 // DebScripts is scripts only available on deb packages

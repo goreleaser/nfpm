@@ -335,11 +335,9 @@ func conffiles(info nfpm.Info) []byte {
 const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 Package: {{.Info.Name}}
-{{- if .Info.Epoch}}
-Version: {{ .Info.Epoch }}:{{.Info.Version}}
-{{- else }}
-Version: {{.Info.Version}}
-{{- end }}
+Version: {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
+         {{- if .Info.Release}}~{{ .Info.Release }}{{- end }}
+         {{- if .Info.Deb.VersionMetadata}}+{{ .Info.Deb.VersionMetadata }}{{- end }}
 Section: {{.Info.Section}}
 Priority: {{.Info.Priority}}
 Architecture: {{.Info.Arch}}

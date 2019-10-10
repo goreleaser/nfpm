@@ -1,6 +1,7 @@
 SOURCE_FILES?=./...
 TEST_PATTERN?=.
 TEST_OPTIONS?=
+TEST_TIMEOUT?=5m
 
 export PATH := ./bin:$(PATH)
 export GO111MODULE := on
@@ -18,7 +19,7 @@ pull_test_imgs:
 .PHONY: pull_test_imgs
 
 test: pull_test_imgs
-	go test $(TEST_OPTIONS) -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.out $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=5m
+	go test $(TEST_OPTIONS) -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.out $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=$(TEST_TIMEOUT)
 .PHONY: test
 
 cover: test

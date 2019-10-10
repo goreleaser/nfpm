@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
 
 	"github.com/google/rpmpack"
 	"github.com/goreleaser/nfpm"
@@ -85,9 +84,6 @@ func buildRPMMeta(info nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		suggests,
 		conflicts rpmpack.Relations
 	)
-	vInfo := strings.SplitN(info.Version, "-", 2)
-	vInfo = append(vInfo, info.RPM.Release)
-
 	if provides, err = toRelation(info.Provides); err != nil {
 		return nil, err
 	}
@@ -107,8 +103,8 @@ func buildRPMMeta(info nfpm.Info) (*rpmpack.RPMMetaData, error) {
 	return &rpmpack.RPMMetaData{
 		Name:        info.Name,
 		Description: info.Description,
-		Version:     vInfo[0],
-		Release:     vInfo[1],
+		Version:     info.Version,
+		Release:     info.Release,
 		Arch:        info.Arch,
 		OS:          info.Platform,
 		Licence:     info.License,
