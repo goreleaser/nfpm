@@ -94,7 +94,7 @@ func (c *Config) Get(format string) (info *Info, err error) {
 	info = &Info{}
 	// make a deep copy of info
 	if err = mergo.Merge(info, c.Info); err != nil {
-		return nil, errors.Wrap(err, "Failed to merge config into info")
+		return nil, errors.Wrap(err, "failed to merge config into info")
 	}
 	override, ok := c.Overrides[format]
 	if !ok {
@@ -102,7 +102,7 @@ func (c *Config) Get(format string) (info *Info, err error) {
 		return info, nil
 	}
 	if err = mergo.Merge(&info.Overridables, override, mergo.WithOverride); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to merge overrides into info")
 	}
 	return info, nil
 }
