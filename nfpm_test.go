@@ -34,7 +34,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestDefaultsOnEmptyInfo(t *testing.T) {
-	info := Info{
+	info := &Info{
 		Version: "2.4.1",
 	}
 	info = WithDefaults(info)
@@ -44,7 +44,7 @@ func TestDefaultsOnEmptyInfo(t *testing.T) {
 }
 
 func TestDefaults(t *testing.T) {
-	info := Info{
+	info := &Info{
 		Bindir:      "/usr/bin",
 		Platform:    "darwin",
 		Version:     "2.4.1",
@@ -55,7 +55,7 @@ func TestDefaults(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	require.NoError(t, Validate(Info{
+	require.NoError(t, Validate(&Info{
 		Name:    "as",
 		Arch:    "asd",
 		Version: "1.2.3",
@@ -65,7 +65,7 @@ func TestValidate(t *testing.T) {
 			},
 		},
 	}))
-	require.NoError(t, Validate(Info{
+	require.NoError(t, Validate(&Info{
 		Name:    "as",
 		Arch:    "asd",
 		Version: "1.2.3",
@@ -96,7 +96,7 @@ func TestValidateError(t *testing.T) {
 		err := err
 		info := info
 		t.Run(err, func(t *testing.T) {
-			require.EqualError(t, Validate(info), err)
+			require.EqualError(t, Validate(&info), err)
 		})
 	}
 }
@@ -146,11 +146,11 @@ func TestOverrides(t *testing.T) {
 	// no overrides
 	info, err := config.Get("doesnotexist")
 	assert.NoError(t, err)
-	assert.True(t, reflect.DeepEqual(config.Info, info))
+	assert.True(t, reflect.DeepEqual(&config.Info, info))
 }
 
 type fakePackager struct{}
 
-func (*fakePackager) Package(info Info, w io.Writer) error {
+func (*fakePackager) Package(info *Info, w io.Writer) error {
 	return nil
 }

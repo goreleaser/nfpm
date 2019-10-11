@@ -23,7 +23,7 @@ func longestCommonPrefix(strs []string) string {
 	return lcp
 }
 
-func strlcp(a string, b string) string {
+func strlcp(a, b string) string {
 	var min int
 	if len(a) > len(b) {
 		min = len(b)

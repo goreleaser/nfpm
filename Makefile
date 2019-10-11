@@ -11,6 +11,7 @@ export GOPROXY := https://proxy.golang.org,https://gocenter.io,direct
 setup:
 	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
 	go mod tidy
+	git config core.hooksPath .githooks
 .PHONY: setup
 
 
@@ -31,7 +32,7 @@ fmt:
 .PHONY: fmt
 
 lint: check
-	./bin/golangci-lint run --disable wsl --disable godox --enable-all ./...
+	./bin/golangci-lint run --exclude-use-default=false --fix -v
 .PHONY: check
 
 ci: build lint test
@@ -40,6 +41,12 @@ ci: build lint test
 build:
 	go build -o nfpm ./cmd/nfpm/main.go
 .PHONY: build
+
+deps:
+	go get -u
+	go mod tidy
+	go mod verify
+.PHONY: deps
 
 todo:
 	@grep \
