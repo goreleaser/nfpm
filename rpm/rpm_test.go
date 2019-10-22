@@ -102,8 +102,7 @@ func TestWithRPMTags(t *testing.T) {
 	var info = exampleInfo()
 	info.Release = "3"
 	info.RPM = nfpm.RPM{
-		Group:  "default",
-		Prefix: "/usr",
+		Group: "default",
 	}
 	assert.NoError(t, Default.Package(info, f))
 
