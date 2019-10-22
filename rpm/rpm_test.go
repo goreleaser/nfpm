@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	tagPrein  = 0x03ff // 1023
-	tagPostin = 0x0400 // 1024
-	tagPreun  = 0x0401 // 1025
-	tagPostun = 0x0402 // 1026
+	tagRelease = 0x03ea // 1002
+	tagPrein   = 0x03ff // 1023
+	tagPostin  = 0x0400 // 1024
+	tagPreun   = 0x0401 // 1025
+	tagPostun  = 0x0402 // 1026
 )
 
 func exampleInfo() *nfpm.Info {
@@ -72,19 +73,47 @@ func exampleInfo() *nfpm.Info {
 }
 
 func TestRPM(t *testing.T) {
-	var err = Default.Package(exampleInfo(), ioutil.Discard)
+	f, err := ioutil.TempFile("", "test.rpm")
+	defer func() {
+		_ = f.Close()
+		err = os.Remove(f.Name())
+		assert.NoError(t, err)
+	}()
+
+	assert.NoError(t, Default.Package(exampleInfo(), f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
 	assert.NoError(t, err)
+	rpm, err := rpmutils.ReadRpm(file)
+	assert.NoError(t, err)
+	release, err := rpm.Header.GetString(tagRelease)
+	assert.NoError(t, err)
+	assert.Equal(t, "1", release)
 }
 
 func TestWithRPMTags(t *testing.T) {
+	f, err := ioutil.TempFile("", "test.rpm")
+	defer func() {
+		_ = f.Close()
+		err = os.Remove(f.Name())
+		assert.NoError(t, err)
+	}()
+
 	var info = exampleInfo()
+	info.Release = "3"
 	info.RPM = nfpm.RPM{
-		Group:   "default",
-		Prefix:  "/usr",
-		Release: "3",
+		Group:  "default",
+		Prefix: "/usr",
 	}
-	var err = Default.Package(info, ioutil.Discard)
+	assert.NoError(t, Default.Package(info, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
 	assert.NoError(t, err)
+	rpm, err := rpmutils.ReadRpm(file)
+	assert.NoError(t, err)
+	release, err := rpm.Header.GetString(tagRelease)
+	assert.NoError(t, err)
+	assert.Equal(t, "3", release)
 }
 
 func TestRPMVersionWithDash(t *testing.T) {
