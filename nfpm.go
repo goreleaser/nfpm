@@ -155,7 +155,6 @@ type Overridables struct {
 // RPM is custom configs that are only available on RPM packages
 type RPM struct {
 	Group       string `yaml:"group,omitempty"`
-	Prefix      string `yaml:"prefix,omitempty"`
 	Compression string `yaml:"compression,omitempty"`
 	Release     string `yaml:"release,omitempty"`
 }
