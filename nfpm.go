@@ -46,13 +46,9 @@ func Parse(in io.Reader) (config Config, err error) {
 		return
 	}
 
-	// preserver backwards compatibility
-	if config.Info.RPM.Release != "" && config.Info.Release == "" {
-		config.Info.Release = os.ExpandEnv(config.Info.RPM.Release)
-	}
 	config.Info.Release = os.ExpandEnv(config.Info.Release)
-
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
+
 	// parse the version as a semver so we can properly split the parts and support proper ordering for both rpm and deb
 	var v *semver.Version
 	if v, err = semver.NewVersion(config.Info.Version); err == nil {
@@ -156,7 +152,6 @@ type Overridables struct {
 type RPM struct {
 	Group       string `yaml:"group,omitempty"`
 	Compression string `yaml:"compression,omitempty"`
-	Release     string `yaml:"release,omitempty"`
 }
 
 // Deb is custom configs that are only available on deb packages
