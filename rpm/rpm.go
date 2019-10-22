@@ -181,7 +181,8 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 			rpmpack.RPMFile{
 				Name: dir,
 				Mode: uint(1 | 040000),
-			})
+			},
+		)
 	}
 }
 
