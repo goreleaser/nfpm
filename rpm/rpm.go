@@ -105,7 +105,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Name:        info.Name,
 		Description: info.Description,
 		Version:     info.Version,
-		Release:     info.Release,
+		Release:     defaultTo(info.Release, "1"),
 		Arch:        info.Arch,
 		OS:          info.Platform,
 		Licence:     info.License,
@@ -119,6 +119,13 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Conflicts:   conflicts,
 		Compressor:  info.RPM.Compression,
 	}, nil
+}
+
+func defaultTo(in, def string) string {
+	if in == "" {
+		return def
+	}
+	return in
 }
 
 func toRelation(items []string) (rpmpack.Relations, error) {
