@@ -14,6 +14,7 @@ import (
 
 const (
 	tagRelease = 0x03ea // 1002
+	tagGroup   = 0x03f8 // 1016
 	tagPrein   = 0x03ff // 1023
 	tagPostin  = 0x0400 // 1024
 	tagPreun   = 0x0401 // 1025
@@ -108,11 +109,17 @@ func TestWithRPMTags(t *testing.T) {
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
 	assert.NoError(t, err)
+
 	rpm, err := rpmutils.ReadRpm(file)
 	assert.NoError(t, err)
+
 	release, err := rpm.Header.GetString(tagRelease)
 	assert.NoError(t, err)
 	assert.Equal(t, "3", release)
+
+	group, err := rpm.Header.GetString(tagGroup)
+	assert.NoError(t, err)
+	assert.Equal(t, "default", group)
 }
 
 func TestRPMVersionWithDash(t *testing.T) {
