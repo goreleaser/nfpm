@@ -4,6 +4,8 @@ arch: "amd64"
 version: "v1.2.3"
 config_files:
   whatever.conf: "/etc/foo/whatever.conf"
+rpm:
+  group: foo
 overrides:
   deb:
     depends:
