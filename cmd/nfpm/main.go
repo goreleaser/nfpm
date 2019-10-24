@@ -110,7 +110,7 @@ description: |
   FooBar is the great foo and bar software.
     And this can be in multiple lines!
 vendor: "FooBarCorp"
-homepage: "http://eaxmple.com"
+homepage: "http://example.com"
 license: "MIT"
 bindir: "/usr/local/bin"
 files:
