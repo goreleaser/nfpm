@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/google/rpmpack"
 	"github.com/pkg/errors"
@@ -180,8 +181,9 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 	for _, dir := range info.EmptyFolders {
 		rpm.AddFile(
 			rpmpack.RPMFile{
-				Name: dir,
-				Mode: uint(1 | 040000),
+				Name:  dir,
+				Mode:  uint(040755),
+				MTime: uint32(time.Now().Unix()),
 			},
 		)
 	}
@@ -236,9 +238,10 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
 	}
 
 	rpmFile := rpmpack.RPMFile{
-		Name: dst,
-		Body: data,
-		Mode: uint(info.Mode()),
+		Name:  dst,
+		Body:  data,
+		Mode:  uint(info.Mode()),
+		MTime: uint32(info.ModTime().Unix()),
 	}
 
 	if config {
