@@ -54,7 +54,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 	if info.SystemdUnit != "" {
 		unit := filepath.Base(info.SystemdUnit)
 		dst := filepath.Join("/lib/systemd/system/", unit)
-		info.Files[info.SystemdUnit] = dst
+		info.Files[info.SystemdUnit] = fmt.Sprintf("%s:root", dst)
 		info.Depends = append(info.Depends, "systemd")
 	}
 
@@ -134,6 +134,10 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 		info.ConfigFiles,
 	} {
 		for srcglob, dstroot := range files {
+			dstroot, user, _ := getFilesAttr(dstroot)
+			if user == "" {
+				user = info.User
+			}
 			globbed, err := glob.Glob(srcglob, dstroot)
 			if err != nil {
 				return md5buf, 0, err
@@ -142,7 +146,7 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 				if err := createTree(out, dst, created); err != nil {
 					return md5buf, 0, err
 				}
-				size, err := copyToTarAndDigest(out, &md5buf, src, dst)
+				size, err := copyToTarAndDigest(out, &md5buf, src, dst, user)
 				if err != nil {
 					return md5buf, 0, err
 				}
@@ -165,7 +169,7 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 	return nil
 }
 
-func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int64, error) {
+func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst, user string) (int64, error) {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
 		return 0, errors.Wrap(err, "could not add file to the archive")
@@ -186,6 +190,8 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		Mode:    int64(info.Mode()),
 		ModTime: time.Now(),
 		Format:  tar.FormatGNU,
+		Uname:   user,
+		Gname:   user,
 	}
 	if err := tarw.WriteHeader(&header); err != nil {
 		return 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", src)
@@ -474,4 +480,20 @@ func writeControl(w io.Writer, data controlData) error {
 		},
 	})
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
+}
+
+func getFilesAttr(raw string) (string, string, string) {
+	parts := strings.Split(raw, ":")
+	name, user, mode := raw, "", ""
+	if len(parts) > 0 {
+		name = parts[0]
+	}
+	if len(parts) > 1 {
+		user = parts[1]
+	}
+	if len(parts) > 2 {
+		mode = parts[2]
+	}
+
+	return name, user, mode
 }

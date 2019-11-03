@@ -230,12 +230,16 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	copyFunc := func(files map[string]string, config bool) error {
 		for srcglob, dstroot := range files {
+			dstroot, user, _ := getFilesAttr(dstroot)
+			if user == "" {
+				user = info.User
+			}
 			globbed, err := glob.Glob(srcglob, dstroot)
 			if err != nil {
 				return err
 			}
 			for src, dst := range globbed {
-				err := copyToRPM(rpm, src, dst, config, info.User)
+				err := copyToRPM(rpm, src, dst, config, user)
 				if err != nil {
 					return err
 				}
@@ -291,4 +295,20 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool, user string) erro
 	rpm.AddFile(rpmFile)
 
 	return nil
+}
+
+func getFilesAttr(raw string) (string, string, string) {
+	parts := strings.Split(raw, ":")
+	name, user, mode := raw, "", ""
+	if len(parts) > 0 {
+		name = parts[0]
+	}
+	if len(parts) > 1 {
+		user = parts[1]
+	}
+	if len(parts) > 2 {
+		mode = parts[2]
+	}
+
+	return name, user, mode
 }
