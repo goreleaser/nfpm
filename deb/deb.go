@@ -232,63 +232,8 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 			return nil, err
 		}
 	}
-
-	scripts := make(map[string]*bytes.Buffer)
-	for _, dest := range []string{"preinst", "postinst", "prerm", "postrm", "rules"} {
-		scripts[dest] = new(bytes.Buffer)
-	}
-
-	if info.SystemdUnit != "" {
-		unit := filepath.Base(info.SystemdUnit)
-		if err := addScriptFromString(scripts["postinst"], "#!/bin/sh\n\nset -e\n\n"); err != nil {
-			return nil, err
-		}
-		if err := addScriptFromString(scripts["prerm"], "#!/bin/sh\n\nset -e\n\n"); err != nil {
-			return nil, err
-		}
-		if err := addScriptFromString(scripts["postrm"], "#!/bin/sh\n\nset -e\n\n"); err != nil {
-			return nil, err
-		}
-		if err := addScriptFromString(scripts["postinst"], strings.ReplaceAll(scriptSystemdPostinst, "#UNITFILE#", unit)); err != nil {
-			return nil, err
-		}
-		if err := addScriptFromString(scripts["prerm"], strings.ReplaceAll(scriptSystemdPrerm, "#UNITFILE#", unit)); err != nil {
-			return nil, err
-		}
-		if err := addScriptFromString(scripts["postrm"], strings.ReplaceAll(scriptSystemdPostrm, "#UNITFILE#", unit)); err != nil {
-			return nil, err
-		}
-	}
-
-	if info.User != "" {
-		if err := addScriptFromString(scripts["preinst"], "#!/bin/sh\n\nset -e\n\n"); err != nil {
-			return nil, err
-		}
-		if err := addScriptFromString(scripts["preinst"], strings.ReplaceAll(scriptCreateUser, "%{package_user}", info.User)); err != nil {
-			return nil, err
-		}
-	}
-
-	for script, dest := range map[string]string{
-		info.Scripts.PreInstall:             "preinst",
-		info.Scripts.PostInstall:            "postinst",
-		info.Scripts.PreRemove:              "prerm",
-		info.Scripts.PostRemove:             "postrm",
-		info.Overridables.Deb.Scripts.Rules: "rules",
-	} {
-		if script != "" {
-			if err := addScriptFromFile(scripts[dest], script); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	for dest, script := range scripts {
-		if script.Len() > 0 {
-			if err := newScriptInsideTarGz(out, script.Bytes(), dest); err != nil {
-				return nil, err
-			}
-		}
+	if err := addControlScripts(out, info); err != nil {
+		return nil, errors.Wrap(err, "adding contro scripts")
 	}
 
 	if err := out.Close(); err != nil {
@@ -298,6 +243,64 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		return nil, errors.Wrap(err, "closing control.tar.gz")
 	}
 	return buf.Bytes(), nil
+}
+
+func addControlScripts(out *tar.Writer, info *nfpm.Info) error {
+	scripts := make(map[string]*bytes.Buffer)
+	for _, dest := range []string{"preinst", "postinst", "prerm", "postrm", "rules"} {
+		scripts[dest] = new(bytes.Buffer)
+	}
+	if info.SystemdUnit != "" {
+		unit := filepath.Base(info.SystemdUnit)
+		if err := addScriptFromString(scripts["postinst"], "#!/bin/sh\n\nset -e\n\n"); err != nil {
+			return err
+		}
+		if err := addScriptFromString(scripts["prerm"], "#!/bin/sh\n\nset -e\n\n"); err != nil {
+			return err
+		}
+		if err := addScriptFromString(scripts["postrm"], "#!/bin/sh\n\nset -e\n\n"); err != nil {
+			return err
+		}
+		if err := addScriptFromString(scripts["postinst"], strings.ReplaceAll(scriptSystemdPostinst, "#UNITFILE#", unit)); err != nil {
+			return err
+		}
+		if err := addScriptFromString(scripts["prerm"], strings.ReplaceAll(scriptSystemdPrerm, "#UNITFILE#", unit)); err != nil {
+			return err
+		}
+		if err := addScriptFromString(scripts["postrm"], strings.ReplaceAll(scriptSystemdPostrm, "#UNITFILE#", unit)); err != nil {
+			return err
+		}
+	}
+	if info.User != "" {
+		if err := addScriptFromString(scripts["preinst"], "#!/bin/sh\n\nset -e\n\n"); err != nil {
+			return err
+		}
+		if err := addScriptFromString(scripts["preinst"], strings.ReplaceAll(scriptCreateUser, "%{package_user}", info.User)); err != nil {
+			return err
+		}
+	}
+	for script, dest := range map[string]string{
+		info.Scripts.PreInstall:             "preinst",
+		info.Scripts.PostInstall:            "postinst",
+		info.Scripts.PreRemove:              "prerm",
+		info.Scripts.PostRemove:             "postrm",
+		info.Overridables.Deb.Scripts.Rules: "rules",
+	} {
+		if script != "" {
+			if err := addScriptFromFile(scripts[dest], script); err != nil {
+				return err
+			}
+		}
+	}
+	for dest, script := range scripts {
+		if script.Len() > 0 {
+			if err := newScriptInsideTarGz(out, script.Bytes(), dest); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) error {
