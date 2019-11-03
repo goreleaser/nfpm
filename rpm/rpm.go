@@ -312,5 +312,5 @@ func getFilesAttr(raw string) (name, user, mode string) {
 		mode = parts[2]
 	}
 
-	return
+	return name, user, mode
 }

@@ -324,7 +324,7 @@ func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	})
 }
 
-func addScriptFromString(dest *bytes.Buffer, script string) error {
+func addScriptFromString(dest *bytes.Buffer, script string) error { //nolint:interfacer
 	_, err := dest.WriteString(script)
 	if err != nil {
 		return err
@@ -338,7 +338,7 @@ func addScriptFromString(dest *bytes.Buffer, script string) error {
 	return nil
 }
 
-func addScriptFromFile(dest *bytes.Buffer, path string) error {
+func addScriptFromFile(dest *bytes.Buffer, path string) error { //nolint:interfacer
 	file, err := os.Open(path) //nolint:gosec
 	if err != nil {
 		return err
@@ -500,5 +500,5 @@ func getFilesAttr(raw string) (name, user, mode string) {
 		mode = parts[2]
 	}
 
-	return
+	return name, user, mode
 }
