@@ -3,9 +3,11 @@
 package rpm
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/google/rpmpack"
@@ -67,6 +69,10 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	}
 
 	if err = addScriptFiles(info, rpm); err != nil {
+		return err
+	}
+
+	if err = addSystemdUnit(info, rpm); err != nil {
 		return err
 	}
 
@@ -172,6 +178,25 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 			return err
 		}
 		rpm.AddPostun(string(data))
+	}
+
+	return nil
+}
+
+func addSystemdUnit(info *nfpm.Info, rpm *rpmpack.RPM) error {
+	if info.SystemdUnit != "" {
+		unit := filepath.Base(info.SystemdUnit)
+		dst := filepath.Join("/lib/systemd/system/", unit)
+		err := copyToRPM(rpm, info.SystemdUnit, dst, false)
+		if err != nil {
+			return err
+		}
+		rpm.AddPostin(fmt.Sprintf("%%systemd_post %s", unit))
+		rpm.AddPreun(fmt.Sprintf("%%systemd_preun %s", unit))
+		rpm.AddPostun(fmt.Sprintf("%%systemd_postun %s", unit))
+		// TODO: it would be much better to use `Requires(pre):`, etc...,
+		// but the option missing from rpmpack public api
+		info.Depends = append(info.Depends, "systemd")
 	}
 
 	return nil
