@@ -1,5 +1,7 @@
 vendor
 *.rpm
+*.deb
+*.service
 coverage.txt
 dist
 nfpm.yaml
