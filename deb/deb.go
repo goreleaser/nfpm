@@ -143,7 +143,7 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 				return md5buf, 0, err
 			}
 			for src, dst := range globbed {
-				if err := createTree(out, dst, created); err != nil {
+				if err := createTree(out, dst, created, ""); err != nil {
 					return md5buf, 0, err
 				}
 				size, err := copyToTarAndDigest(out, &md5buf, src, dst, user)
@@ -162,7 +162,7 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 		// this .nope is actually not created, because createTree ignore the
 		// last part of the path, assuming it is a file.
 		// TODO: should probably refactor this
-		if err := createTree(out, filepath.Join(folder, ".nope"), created); err != nil {
+		if err := createTree(out, filepath.Join(folder, ".nope"), created, info.User); err != nil {
 			return err
 		}
 	}
@@ -376,7 +376,7 @@ func newScriptInsideTarGz(out *tar.Writer, content []byte, dest string) error {
 
 // this is needed because the data.tar.gz file should have the empty folders
 // as well, so we walk through the dst and create all subfolders.
-func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
+func createTree(tarw *tar.Writer, dst string, created map[string]bool, user string) error {
 	for _, path := range pathsToCreate(dst) {
 		if created[path] {
 			// skipping dir that was previously created inside the archive
@@ -389,6 +389,8 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
 			ModTime:  time.Now(),
+			Uname:    user,
+			Gname:    user,
 		}); err != nil {
 			return errors.Wrap(err, "failed to create folder")
 		}
