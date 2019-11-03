@@ -254,6 +254,15 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		}
 	}
 
+	if info.User != "" {
+		if err := addScriptFromString(scripts["preinst"], "#!/bin/sh\n\nset -e\n\n"); err != nil {
+			return nil, err
+		}
+		if err := addScriptFromString(scripts["preinst"], strings.ReplaceAll(scriptCreateUser, "%{package_user}", info.User)); err != nil {
+			return nil, err
+		}
+	}
+
 	for script, dest := range map[string]string{
 		info.Scripts.PreInstall:             "preinst",
 		info.Scripts.PostInstall:            "postinst",
