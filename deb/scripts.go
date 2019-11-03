@@ -45,4 +45,7 @@ if [ "$1" = "purge" ]; then
 		deb-systemd-helper unmask #UNITFILE# >/dev/null || true
 	fi
 fi
+if [ -d /run/systemd/system ]; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
 `
