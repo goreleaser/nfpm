@@ -97,12 +97,25 @@ func TestControl(t *testing.T) {
 	assert.Equal(t, string(bts), w.String())
 }
 
+func newScriptInsideTarGzFromFile(out *tar.Writer, path, dest string) error {
+	var buf = bytes.Buffer{}
+	if err := addScriptFromFile(&buf, path); err != nil {
+		return err
+	}
+	if err := newScriptInsideTarGz(out, buf.Bytes(), dest); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// test adding script as file
 func TestScripts(t *testing.T) {
 	var w bytes.Buffer
 	var out = tar.NewWriter(&w)
 	path := "../testdata/scripts/preinstall.sh"
-	assert.Error(t, newScriptInsideTarGz(out, "doesnotexit", "preinst"))
-	assert.NoError(t, newScriptInsideTarGz(out, path, "preinst"))
+	assert.Error(t, newScriptInsideTarGzFromFile(out, "doesnotexit", "preinst"))
+	assert.NoError(t, newScriptInsideTarGzFromFile(out, path, "preinst"))
 	var in = tar.NewReader(&w)
 	header, err := in.Next()
 	assert.NoError(t, err)
@@ -114,7 +127,64 @@ func TestScripts(t *testing.T) {
 	assert.NoError(t, err)
 	org, err := ioutil.ReadFile(path)
 	assert.NoError(t, err)
-	assert.Equal(t, data, org)
+	assert.Equal(t, org, data)
+}
+
+// test adding script as string
+func TestScripts2(t *testing.T) {
+	var w bytes.Buffer
+	var out = tar.NewWriter(&w)
+	script := "#!/bin/sh\n"
+
+	buf := bytes.Buffer{}
+	assert.NoError(t, addScriptFromString(&buf, script))
+	assert.NoError(t, newScriptInsideTarGz(out, buf.Bytes(), "preinst"))
+
+	var in = tar.NewReader(&w)
+	header, err := in.Next()
+	assert.NoError(t, err)
+	assert.Equal(t, "preinst", header.FileInfo().Name())
+	mode, err := strconv.ParseInt("0755", 8, 64)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(header.FileInfo().Mode()), mode)
+	data, err := ioutil.ReadAll(in)
+	assert.NoError(t, err)
+
+	buf = bytes.Buffer{}
+	buf.WriteString(script)
+	buf.WriteString("\n")
+	assert.Equal(t, buf.Bytes(), data)
+}
+
+// test adding script as string and file
+func TestScripts3(t *testing.T) {
+	var w bytes.Buffer
+	var out = tar.NewWriter(&w)
+	path := "../testdata/scripts/preinstall.sh"
+	script := "#!/bin/sh\n"
+
+	buf := bytes.Buffer{}
+	assert.NoError(t, addScriptFromString(&buf, script))
+	assert.NoError(t, addScriptFromFile(&buf, path))
+	assert.NoError(t, newScriptInsideTarGz(out, buf.Bytes(), "preinst"))
+
+	var in = tar.NewReader(&w)
+	header, err := in.Next()
+	assert.NoError(t, err)
+	assert.Equal(t, "preinst", header.FileInfo().Name())
+	mode, err := strconv.ParseInt("0755", 8, 64)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(header.FileInfo().Mode()), mode)
+	data, err := ioutil.ReadAll(in)
+	assert.NoError(t, err)
+
+	org, err := ioutil.ReadFile(path)
+	assert.NoError(t, err)
+	buf = bytes.Buffer{}
+	buf.WriteString(script)
+	buf.WriteString("\n")
+	buf.Write(org)
+	assert.Equal(t, buf.Bytes(), data)
 }
 
 func TestNoJoinsControl(t *testing.T) {
