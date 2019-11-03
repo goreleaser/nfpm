@@ -192,7 +192,7 @@ func addSystemdUnit(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	if info.SystemdUnit != "" {
 		unit := filepath.Base(info.SystemdUnit)
 		dst := filepath.Join("/lib/systemd/system/", unit)
-		err := copyToRPM(rpm, info.SystemdUnit, dst, false)
+		err := copyToRPM(rpm, info.SystemdUnit, dst, false, "root")
 		if err != nil {
 			return err
 		}
@@ -235,7 +235,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 				return err
 			}
 			for src, dst := range globbed {
-				err := copyToRPM(rpm, src, dst, config)
+				err := copyToRPM(rpm, src, dst, config, info.User)
 				if err != nil {
 					return err
 				}
@@ -255,7 +255,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	return nil
 }
 
-func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
+func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool, user string) error {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
 		return errors.Wrap(err, "could not add file to the archive")
@@ -280,6 +280,8 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
 		Body:  data,
 		Mode:  uint(info.Mode()),
 		MTime: uint32(info.ModTime().Unix()),
+		Owner: user,
+		Group: user,
 	}
 
 	if config {
