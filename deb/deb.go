@@ -133,8 +133,8 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 		info.Files,
 		info.ConfigFiles,
 	} {
-		for srcglob, dstroot := range files {
-			dstroot, user, _ := getFilesAttr(dstroot)
+		for srcglob, dstraw := range files {
+			dstroot, user, _ := getFilesAttr(dstraw)
 			if user == "" {
 				user = info.User
 			}
@@ -484,9 +484,9 @@ func writeControl(w io.Writer, data controlData) error {
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
 }
 
-func getFilesAttr(raw string) (string, string, string) {
+func getFilesAttr(raw string) (name, user, mode string) {
 	parts := strings.Split(raw, ":")
-	name, user, mode := raw, "", ""
+	name, user, mode = raw, "", ""
 	if len(parts) > 0 {
 		name = parts[0]
 	}
@@ -497,5 +497,5 @@ func getFilesAttr(raw string) (string, string, string) {
 		mode = parts[2]
 	}
 
-	return name, user, mode
+	return
 }
