@@ -3,7 +3,6 @@
 package rpm
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -196,9 +195,9 @@ func addSystemdUnit(info *nfpm.Info, rpm *rpmpack.RPM) error {
 		if err != nil {
 			return err
 		}
-		rpm.AddPostin(fmt.Sprintf("%%systemd_post %s", unit))
-		rpm.AddPreun(fmt.Sprintf("%%systemd_preun %s", unit))
-		rpm.AddPostun(fmt.Sprintf("%%systemd_postun %s", unit))
+		rpm.AddPostin(strings.ReplaceAll(scriptSystemdPostinst, "%{package_unit}", unit))
+		rpm.AddPreun(strings.ReplaceAll(scriptSystemdPreun, "%{package_unit}", unit))
+		rpm.AddPostun(strings.ReplaceAll(scriptSystemdPostun, "%{package_unit}", unit))
 		// TODO: it would be much better to use `Requires(pre):`, etc...,
 		// but the option is missing from rpmpack public api
 		info.Depends = append(info.Depends, "systemd")
