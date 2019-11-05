@@ -43,7 +43,7 @@ build:
 .PHONY: build
 
 deps:
-	go get -u
+	go get -u ./...
 	go mod tidy
 	go mod verify
 .PHONY: deps

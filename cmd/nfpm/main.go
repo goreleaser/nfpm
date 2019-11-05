@@ -74,6 +74,11 @@ func doPackage(path, target string) error {
 	}
 
 	fmt.Printf("using %s packager...\n", format)
+
+	if _, err = info.GetChangeLog(); err != nil {
+		return err
+	}
+
 	pkg, err := nfpm.Get(format)
 	if err != nil {
 		return err

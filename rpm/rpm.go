@@ -8,9 +8,11 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/google/rpmpack"
+	"github.com/goreleaser/chglog"
 	"github.com/pkg/errors"
 
 	"github.com/goreleaser/nfpm"
@@ -72,9 +74,68 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
+	if err = addChgLog(info, rpm); err != nil {
+		return err
+	}
+
 	if err = rpm.Write(w); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func addChgLog(info *nfpm.Info, rpm *rpmpack.RPM) error {
+	var (
+		err       error
+		pkgChglog *chglog.PackageChangeLog
+		tpl       *template.Template
+		data      string
+		timesEntry,
+		namesEntry,
+		textEntry *rpmpack.IndexEntry
+	)
+	if pkgChglog, err = info.GetChangeLog(); err != nil {
+		return err
+	}
+	if tpl, err = chglog.LoadTemplateData(`{{- range .Entries }}{{- range .Changes }}{{$note := splitList "\n" .Note}}
+- {{ first $note }}
+{{- range $i,$n := (rest $note) }}{{- if ne (trim $n) ""}}
+  {{$n}}{{end}}
+{{- end}}{{- end}}{{end}}
+`); err != nil {
+		return err
+	}
+	entries := make([]string, len(pkgChglog.Entries))
+	names := make([]string, len(pkgChglog.Entries))
+	times := make([]uint32, len(pkgChglog.Entries))
+	for idx, entry := range pkgChglog.Entries {
+		if data, err = chglog.FormatChangelog(&chglog.PackageChangeLog{
+			Name:    pkgChglog.Name,
+			Entries: chglog.ChangeLogEntries{entry},
+		}, tpl); err != nil {
+			return err
+		}
+		entries[idx] = strings.TrimSpace(data)
+		times[idx] = uint32(entry.Date.Unix())
+		names[idx] = fmt.Sprintf("%s - %s", entry.Packager, entry.Semver)
+	}
+
+	if timesEntry, err = rpmpack.NewIndexEntry(times); err != nil {
+		return err
+	}
+	if namesEntry, err = rpmpack.NewIndexEntry(names); err != nil {
+		return err
+	}
+	if textEntry, err = rpmpack.NewIndexEntry(entries); err != nil {
+		return err
+	}
+	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L152
+	rpm.AddTag(1080, timesEntry)
+	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L153
+	rpm.AddTag(1081, namesEntry)
+	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L154
+	rpm.AddTag(1082, textEntry)
 
 	return nil
 }

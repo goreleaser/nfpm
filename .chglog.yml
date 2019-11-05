@@ -1,0 +1,9 @@
+conventional-commits: false
+deb:
+  distribution:
+    - unstable
+    - stable
+  urgency: low
+debug: false
+owner: Carlos Alexandro Becker <root@carlosbecker.com>
+package-name: nfpm

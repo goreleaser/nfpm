@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/blakesmith/ar"
+	"github.com/goreleaser/chglog"
 	"github.com/pkg/errors"
 
 	"github.com/goreleaser/nfpm"
@@ -58,6 +59,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 	if err != nil {
 		return err
 	}
+
 	var w = ar.NewWriter(deb)
 	if err := w.WriteGlobalHeader(); err != nil {
 		return errors.Wrap(err, "cannot write ar header to deb file")
@@ -71,6 +73,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 	if err := addArFile(w, "data.tar.gz", dataTarGz); err != nil {
 		return errors.Wrap(err, "cannot add data.tar.gz to deb")
 	}
+
 	return nil
 }
 
@@ -145,6 +148,24 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 			}
 		}
 	}
+
+	chglogData, err := createChangelog(info)
+	if err != nil {
+		return md5buf, 0, err
+	}
+	chglogName := fmt.Sprintf("/usr/share/doc/%s/changelog.Debian.gz", info.Name)
+	if err = createTree(out, chglogName, created); err != nil {
+		return md5buf, 0, err
+	}
+	var digest = md5.New() // nolint:gas
+	if _, err = fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(nil), chglogData); err != nil {
+		return md5buf, instSize, err
+	}
+	if err = newFileInsideTarGz(out, chglogName, chglogData); err != nil {
+		return md5buf, instSize, err
+	}
+	instSize += int64(len(chglogData))
+
 	return md5buf, instSize, nil
 }
 
@@ -195,20 +216,69 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 	return info.Size(), nil
 }
 
-func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarGz []byte, err error) {
+func createChangelog(info *nfpm.Info) (chglogTarGz []byte, err error) {
 	var buf bytes.Buffer
-	var compress = gzip.NewWriter(&buf)
-	var out = tar.NewWriter(compress)
+	var out = gzip.NewWriter(&buf)
+	var chglogData string
+	// the writers are properly closed later, this is just in case that we have
+	// an error in another part of the code.
+	defer out.Close() // nolint: errcheck
+
+	if chglogData, err = formatChgLog(info); err != nil {
+		return nil, err
+	}
+	if _, err = out.Write([]byte(chglogData)); err != nil {
+		return nil, err
+	}
+
+	if err := out.Close(); err != nil {
+		return nil, errors.Wrap(err, "closing changelog.gz")
+	}
+
+	return buf.Bytes(), nil
+}
+
+func formatChgLog(info *nfpm.Info) (string, error) {
+	var (
+		err        error
+		chglogData string
+		pkgChglog  *chglog.PackageChangeLog
+		tpl        *template.Template
+	)
+	if pkgChglog, err = info.GetChangeLog(); err != nil {
+		return "", err
+	}
+	if tpl, err = chglog.DebTemplate(); err != nil {
+		return "", err
+	}
+	if chglogData, err = chglog.FormatChangelog(pkgChglog, tpl); err != nil {
+		return "", err
+	}
+
+	return chglogData, nil
+}
+
+func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarGz []byte, err error) {
+	var (
+		buf        bytes.Buffer
+		compress   = gzip.NewWriter(&buf)
+		out        = tar.NewWriter(compress)
+		chglogData string
+	)
 	// the writers are properly closed later, this is just in case that we have
 	// an error in another part of the code.
 	defer out.Close()      // nolint: errcheck
 	defer compress.Close() // nolint: errcheck
 
 	var body bytes.Buffer
-	if err := writeControl(&body, controlData{
+	if err = writeControl(&body, controlData{
 		Info:          info,
 		InstalledSize: instSize / 1024,
 	}); err != nil {
+		return nil, err
+	}
+
+	if chglogData, err = formatChgLog(info); err != nil {
 		return nil, err
 	}
 
@@ -216,8 +286,9 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		"control":   body.Bytes(),
 		"md5sums":   md5sums,
 		"conffiles": conffiles(info),
+		"changelog": []byte(chglogData),
 	} {
-		if err := newFileInsideTarGz(out, name, content); err != nil {
+		if err = newFileInsideTarGz(out, name, content); err != nil {
 			return nil, err
 		}
 	}
@@ -230,16 +301,16 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		info.Overridables.Deb.Scripts.Rules: "rules",
 	} {
 		if script != "" {
-			if err := newScriptInsideTarGz(out, script, dest); err != nil {
+			if err = newScriptInsideTarGz(out, script, dest); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	if err := out.Close(); err != nil {
+	if err = out.Close(); err != nil {
 		return nil, errors.Wrap(err, "closing control.tar.gz")
 	}
-	if err := compress.Close(); err != nil {
+	if err = compress.Close(); err != nil {
 		return nil, errors.Wrap(err, "closing control.tar.gz")
 	}
 	return buf.Bytes(), nil

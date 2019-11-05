@@ -3,7 +3,6 @@ arch: "amd64"
 platform: "linux"
 version: "v1.2.3"
 release: "simple"
-maintainer: "Foo Bar"
 description: |
   Foo bar
     Multiple lines

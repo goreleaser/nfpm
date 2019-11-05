@@ -6,11 +6,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/goreleaser/chglog"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
+	"gopkg.in/src-d/go-git.v4"
+	gitConfig "gopkg.in/src-d/go-git.v4/config"
 
 	"gopkg.in/yaml.v2"
 )
@@ -76,7 +81,9 @@ type Config struct {
 // Get returns the Info struct for the given packager format. Overrides
 // for the given format are merged into the final struct
 func (c *Config) Get(format string) (info *Info, err error) {
-	info = &Info{}
+	info = &Info{
+		semver: c.Info.semver,
+	}
 	// make a deep copy of info
 	if err = mergo.Merge(info, c.Info); err != nil {
 		return nil, errors.Wrap(err, "failed to merge config into info")
@@ -105,21 +112,24 @@ func (c *Config) Validate() error {
 // Info contains information about a single package
 type Info struct {
 	Overridables `yaml:",inline"`
-	Name         string `yaml:"name,omitempty"`
-	Arch         string `yaml:"arch,omitempty"`
-	Platform     string `yaml:"platform,omitempty"`
-	Epoch        string `yaml:"epoch,omitempty"`
-	Version      string `yaml:"version,omitempty"`
-	Release      string `yaml:"release,omitempty"`
-	Section      string `yaml:"section,omitempty"`
-	Priority     string `yaml:"priority,omitempty"`
-	Maintainer   string `yaml:"maintainer,omitempty"`
-	Description  string `yaml:"description,omitempty"`
-	Vendor       string `yaml:"vendor,omitempty"`
-	Homepage     string `yaml:"homepage,omitempty"`
-	License      string `yaml:"license,omitempty"`
-	Bindir       string `yaml:"bindir,omitempty"`
-	Target       string `yaml:"-"`
+	Name         string                   `yaml:"name,omitempty"`
+	Arch         string                   `yaml:"arch,omitempty"`
+	Platform     string                   `yaml:"platform,omitempty"`
+	Epoch        string                   `yaml:"epoch,omitempty"`
+	Version      string                   `yaml:"version,omitempty"`
+	Release      string                   `yaml:"release,omitempty"`
+	Section      string                   `yaml:"section,omitempty"`
+	Priority     string                   `yaml:"priority,omitempty"`
+	Maintainer   string                   `yaml:"maintainer,omitempty"`
+	Description  string                   `yaml:"description,omitempty"`
+	Vendor       string                   `yaml:"vendor,omitempty"`
+	Homepage     string                   `yaml:"homepage,omitempty"`
+	License      string                   `yaml:"license,omitempty"`
+	Bindir       string                   `yaml:"bindir,omitempty"`
+	Chglog       string                   `yaml:"chglog,omitempty"`
+	Target       string                   `yaml:"-"`
+	chglogData   *chglog.PackageChangeLog `yaml:"-"`
+	semver       *semver.Version          `yaml:"-"`
 }
 
 // Overridables contain the field which are overridable in a package
@@ -148,6 +158,8 @@ type RPM struct {
 type Deb struct {
 	Scripts         DebScripts `yaml:"scripts,omitempty"`
 	VersionMetadata string     `yaml:"metadata,omitempty"`
+	Distribution    []string   `yaml:"distribution,omitempty"`
+	Urgency         string     `yaml:"urgency,omitempty"`
 }
 
 // DebScripts is scripts only available on deb packages
@@ -191,6 +203,34 @@ func WithDefaults(info *Info) *Info {
 	if info.Description == "" {
 		info.Description = "no description given"
 	}
+	if info.Chglog == "" {
+		info.Chglog = "changelog.yml"
+	}
+	if info.Deb.Urgency == "" {
+		info.Deb.Urgency = "low"
+	}
+	if len(info.Deb.Distribution) == 0 {
+		info.Deb.Distribution = append(info.Deb.Distribution, "unstable")
+	}
+	if info.Maintainer == "" {
+		info.Maintainer = "UNKNOWN <UNKNOWN>"
+		var (
+			repo *git.Repository
+			err  error
+			cwd  string
+		)
+		if cwd, err = os.Getwd(); err == nil {
+			if repo, err = chglog.GitRepo(cwd, true); err == nil {
+				var repoCfg *gitConfig.Config
+				if repoCfg, err = repo.Config(); err == nil {
+					info.Maintainer = fmt.Sprintf("%s <%s>", repoCfg.User.Name, repoCfg.User.Email)
+				}
+			}
+		}
+		if err != nil {
+			fmt.Println(err, cwd)
+		}
+	}
 
 	// parse the version as a semver so we can properly split the parts
 	// and support proper ordering for both rpm and deb
@@ -201,6 +241,44 @@ func WithDefaults(info *Info) *Info {
 			info.Release = v.Prerelease()
 		}
 		info.Deb.VersionMetadata = v.Metadata()
+		info.semver = v
 	}
 	return info
+}
+
+// GetChangeLog Get the properly formatted changelog data
+func (i *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
+	if i.chglogData != nil {
+		return i.chglogData, nil
+	}
+
+	now := time.Now()
+	blankEntry := &chglog.ChangeLog{
+		Semver:   i.semver.String(),
+		Date:     now,
+		Packager: i.Maintainer,
+		Changes: chglog.ChangeLogChanges{
+			&chglog.ChangeLogChange{
+				Note: fmt.Sprintf("packaged on %s", now),
+			},
+		},
+	}
+	blankEntry.Deb = &chglog.ChangelogDeb{Urgency: i.Deb.Urgency, Distributions: i.Deb.Distribution}
+	if !strings.Contains(blankEntry.Packager, "<") && !strings.Contains(blankEntry.Packager, ">") {
+		blankEntry.Packager = fmt.Sprintf("%s <%s>", blankEntry.Packager, blankEntry.Packager)
+	}
+	i.chglogData = &chglog.PackageChangeLog{
+		Name:    i.Name,
+		Entries: chglog.ChangeLogEntries{blankEntry},
+	}
+
+	if i.chglogData.Entries, err = chglog.Parse(i.Chglog); err != nil {
+		i.chglogData = nil
+		return nil, err
+	}
+	if len(i.chglogData.Entries) == 0 {
+		i.chglogData.Entries = append(i.chglogData.Entries, blankEntry)
+	}
+
+	return i.chglogData, nil
 }
