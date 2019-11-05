@@ -22,3 +22,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.4
 )
+
+// TODO: remove this when https://github.com/google/rpmpack/pull/33 gets merged in.
+replace github.com/google/rpmpack => github.com/caarlos0/rpmpack v0.0.0-20191105023656-ae56d4a24f9a

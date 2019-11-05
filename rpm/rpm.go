@@ -114,6 +114,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 
 	return &rpmpack.RPMMetaData{
 		Name:        info.Name,
+		Summary:     strings.Split(info.Description, "\n")[0],
 		Description: info.Description,
 		Version:     info.Version,
 		Release:     defaultTo(info.Release, "1"),
@@ -123,7 +124,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		URL:         info.Homepage,
 		Vendor:      info.Vendor,
 		Packager:    info.Maintainer,
-		Group:       info.RPM.Group,
+		Group:       defaultTo(info.RPM.Group, "Development/Tools"),
 		Provides:    provides,
 		Requires:    depends,
 		Obsoletes:   replaces,

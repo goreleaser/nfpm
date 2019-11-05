@@ -13,12 +13,14 @@ import (
 )
 
 const (
-	tagRelease = 0x03ea // 1002
-	tagGroup   = 0x03f8 // 1016
-	tagPrein   = 0x03ff // 1023
-	tagPostin  = 0x0400 // 1024
-	tagPreun   = 0x0401 // 1025
-	tagPostun  = 0x0402 // 1026
+	tagRelease     = 0x03ea // 1002
+	tagSummary     = 0x03ec // 1004
+	tagDescription = 0x03ed // 1005
+	tagGroup       = 0x03f8 // 1016
+	tagPrein       = 0x03ff // 1023
+	tagPostin      = 0x0400 // 1024
+	tagPreun       = 0x0401 // 1025
+	tagPostun      = 0x0402 // 1026
 )
 
 func exampleInfo() *nfpm.Info {
@@ -87,9 +89,22 @@ func TestRPM(t *testing.T) {
 	assert.NoError(t, err)
 	rpm, err := rpmutils.ReadRpm(file)
 	assert.NoError(t, err)
+
 	release, err := rpm.Header.GetString(tagRelease)
 	assert.NoError(t, err)
 	assert.Equal(t, "1", release)
+
+	group, err := rpm.Header.GetString(tagGroup)
+	assert.NoError(t, err)
+	assert.Equal(t, "Development/Tools", group)
+
+	summary, err := rpm.Header.GetString(tagSummary)
+	assert.NoError(t, err)
+	assert.Equal(t, "Foo does things", summary)
+
+	description, err := rpm.Header.GetString(tagDescription)
+	assert.NoError(t, err)
+	assert.Equal(t, "Foo does things", description)
 }
 
 func TestWithRPMTags(t *testing.T) {
@@ -105,6 +120,7 @@ func TestWithRPMTags(t *testing.T) {
 	info.RPM = nfpm.RPM{
 		Group: "default",
 	}
+	info.Description = "first line\nsecond line\nthird line"
 	assert.NoError(t, Default.Package(info, f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
@@ -120,6 +136,14 @@ func TestWithRPMTags(t *testing.T) {
 	group, err := rpm.Header.GetString(tagGroup)
 	assert.NoError(t, err)
 	assert.Equal(t, "default", group)
+
+	summary, err := rpm.Header.GetString(tagSummary)
+	assert.NoError(t, err)
+	assert.Equal(t, "first line", summary)
+
+	description, err := rpm.Header.GetString(tagDescription)
+	assert.NoError(t, err)
+	assert.Equal(t, info.Description, description)
 }
 
 func TestRPMVersionWithDash(t *testing.T) {
