@@ -122,7 +122,6 @@ func TestWithRPMTags(t *testing.T) {
 
 	var info = exampleInfo()
 	info.Release = "3"
-	info.Version = "v1.2.0-beta1"
 	info.RPM = nfpm.RPM{
 		Group: "default",
 	}
@@ -137,7 +136,7 @@ func TestWithRPMTags(t *testing.T) {
 
 	version, err := rpm.Header.GetString(tagVersion)
 	assert.NoError(t, err)
-	assert.Equal(t, "1.2.0_beta1", version)
+	assert.Equal(t, "1.0.0", version)
 
 	release, err := rpm.Header.GetString(tagRelease)
 	assert.NoError(t, err)
