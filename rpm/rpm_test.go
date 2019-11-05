@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	tagVersion     = 0x03e9 // 1001
 	tagRelease     = 0x03ea // 1002
 	tagSummary     = 0x03ec // 1004
 	tagDescription = 0x03ed // 1005
@@ -90,6 +91,10 @@ func TestRPM(t *testing.T) {
 	rpm, err := rpmutils.ReadRpm(file)
 	assert.NoError(t, err)
 
+	version, err := rpm.Header.GetString(tagVersion)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", version)
+
 	release, err := rpm.Header.GetString(tagRelease)
 	assert.NoError(t, err)
 	assert.Equal(t, "1", release)
@@ -117,6 +122,7 @@ func TestWithRPMTags(t *testing.T) {
 
 	var info = exampleInfo()
 	info.Release = "3"
+	info.Version = "v1.2.0-beta1"
 	info.RPM = nfpm.RPM{
 		Group: "default",
 	}
@@ -128,6 +134,10 @@ func TestWithRPMTags(t *testing.T) {
 
 	rpm, err := rpmutils.ReadRpm(file)
 	assert.NoError(t, err)
+
+	version, err := rpm.Header.GetString(tagVersion)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.2.0_beta1", version)
 
 	release, err := rpm.Header.GetString(tagRelease)
 	assert.NoError(t, err)
@@ -144,13 +154,6 @@ func TestWithRPMTags(t *testing.T) {
 	description, err := rpm.Header.GetString(tagDescription)
 	assert.NoError(t, err)
 	assert.Equal(t, info.Description, description)
-}
-
-func TestRPMVersionWithDash(t *testing.T) {
-	info := exampleInfo()
-	info.Version = "1.0.0-beta"
-	var err = Default.Package(info, ioutil.Discard)
-	assert.NoError(t, err)
 }
 
 func TestRPMScripts(t *testing.T) {
