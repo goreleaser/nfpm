@@ -119,6 +119,7 @@ type Info struct {
 	Homepage     string `yaml:"homepage,omitempty"`
 	License      string `yaml:"license,omitempty"`
 	Bindir       string `yaml:"bindir,omitempty"`
+	Target       string `yaml:"-"`
 }
 
 // Overridables contain the field which are overridable in a package

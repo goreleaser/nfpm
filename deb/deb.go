@@ -131,6 +131,9 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 				return md5buf, 0, err
 			}
 			for src, dst := range globbed {
+				if strings.Contains(src, info.Target) {
+					continue
+				}
 				if err := createTree(out, dst, created); err != nil {
 					return md5buf, 0, err
 				}
