@@ -200,7 +200,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 				return err
 			}
 			for src, dst := range globbed {
-				if strings.Contains(src, info.Target) {
+				if strings.HasSuffix(src, info.Target) {
 					fmt.Println("skipping", src)
 					continue
 				}
