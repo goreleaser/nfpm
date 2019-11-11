@@ -83,6 +83,8 @@ func doPackage(path, target string) error {
 	if err != nil {
 		return err
 	}
+
+	info.Target = target
 	return pkg.Package(info, f)
 }
 

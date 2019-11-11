@@ -194,6 +194,7 @@ func accept(t *testing.T, params acceptParms) {
 
 	f, err := os.Create(target)
 	require.NoError(t, err)
+	info.Target = target
 	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
 	//nolint:gosec
 	cmd := exec.Command(

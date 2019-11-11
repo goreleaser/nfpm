@@ -3,6 +3,7 @@
 package rpm
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -199,6 +200,10 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 				return err
 			}
 			for src, dst := range globbed {
+				if strings.HasSuffix(src, info.Target) {
+					fmt.Println("skipping", src)
+					continue
+				}
 				err := copyToRPM(rpm, src, dst, config)
 				if err != nil {
 					return err

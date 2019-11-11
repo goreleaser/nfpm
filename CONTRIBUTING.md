@@ -32,6 +32,12 @@ A good way of making sure everything is all right is running the test suite:
 $ make test
 ```
 
+If on the ARM tests you are seeing `standard_init_linux.go:211: exec user process caused "exec format error"`:
+
+```console
+$sudo docker run --rm --privileged hypriot/qemu-register
+```
+
 ## Test your change
 
 You can create a branch for your changes and try to build from the source as you go:
