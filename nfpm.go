@@ -212,6 +212,8 @@ func WithDefaults(info *Info) *Info {
 	if len(info.Deb.Distribution) == 0 {
 		info.Deb.Distribution = append(info.Deb.Distribution, "unstable")
 	}
+
+	// set the maintainer to the current git user or `UNKNOWN <UNKNOWN>` if we cannot find the current git user
 	if info.Maintainer == "" {
 		info.Maintainer = "UNKNOWN <UNKNOWN>"
 		var (
@@ -227,22 +229,22 @@ func WithDefaults(info *Info) *Info {
 				}
 			}
 		}
-		if err != nil {
-			fmt.Println(err, cwd)
-		}
 	}
 
 	// parse the version as a semver so we can properly split the parts
 	// and support proper ordering for both rpm and deb
 	if v, err := semver.NewVersion(info.Version); err == nil {
-		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if info.Release == "" {
-			// maybe we should concat the previous info.Release with v.Prerelease?
-			info.Release = v.Prerelease()
-		}
-		info.Deb.VersionMetadata = v.Metadata()
 		info.semver = v
+	} else {
+		info.semver, _ = semver.NewVersion("0.0.0-0")
 	}
+	info.Version = fmt.Sprintf("%d.%d.%d", info.semver.Major(), info.semver.Minor(), info.semver.Patch())
+	if info.Release == "" {
+		// maybe we should concat the previous info.Release with v.Prerelease?
+		info.Release = info.semver.Prerelease()
+	}
+	info.Deb.VersionMetadata = info.semver.Metadata()
+
 	return info
 }
 
