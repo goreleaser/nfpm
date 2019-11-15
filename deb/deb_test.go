@@ -244,6 +244,7 @@ func TestMinimalFields(t *testing.T) {
 			Priority:    "extra",
 			Version:     "1.0.0",
 			Section:     "default",
+			Maintainer: "Soandso <soandso@example.com>",
 		}),
 	}))
 	var golden = "testdata/minimal.golden"
@@ -266,6 +267,7 @@ func TestDebEpoch(t *testing.T) {
 			Epoch:       "2",
 			Version:     "1.0.0",
 			Section:     "default",
+			Maintainer: "Soandso <soandso@example.com>",
 		}),
 	}))
 	var golden = "testdata/withepoch.golden"
@@ -288,6 +290,7 @@ func TestDebRules(t *testing.T) {
 			Epoch:       "2",
 			Version:     "1.2.0",
 			Section:     "default",
+			Maintainer: "Soandso <soandso@example.com>",
 			Overridables: nfpm.Overridables{
 				Deb: nfpm.Deb{
 					Scripts: nfpm.DebScripts{
