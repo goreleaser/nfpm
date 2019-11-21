@@ -200,8 +200,11 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 				return err
 			}
 			for src, dst := range globbed {
-				if strings.HasSuffix(src, info.Target) {
-					fmt.Println("skipping", src)
+				// when used as a lib, target may not be set.
+				// in that case, src will always have the empty sufix, and all
+				// files will be ignored.
+				if info.Target != "" && strings.HasSuffix(src, info.Target) {
+					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
 					continue
 				}
 				err := copyToRPM(rpm, src, dst, config)
