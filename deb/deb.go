@@ -131,7 +131,11 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 				return md5buf, 0, err
 			}
 			for src, dst := range globbed {
-				if strings.HasSuffix(src, info.Target) {
+				// when used as a lib, target may not be set.
+				// in that case, src will always have the empty sufix, and all
+				// files will be ignored.
+				if info.Target != "" && strings.HasSuffix(src, info.Target) {
+					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
 					continue
 				}
 				if err := createTree(out, dst, created); err != nil {
