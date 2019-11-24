@@ -9,7 +9,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/google/rpmpack v0.0.0-20191101142923-13d81472ccfe
+	github.com/google/rpmpack v0.0.0-20191123225850-3293c964e1e6
 	github.com/imdario/mergo v0.3.8
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-zglob v0.0.1
@@ -22,6 +22,3 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.7
 )
-
-// TODO: remove this when https://github.com/google/rpmpack/pull/33 gets merged in.
-replace github.com/google/rpmpack => github.com/caarlos0/rpmpack v0.0.0-20191106130752-24a815bfaee0

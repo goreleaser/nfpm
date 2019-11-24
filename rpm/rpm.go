@@ -104,6 +104,11 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		return nil, err
 	}
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
 	return &rpmpack.RPMMetaData{
 		Name:        info.Name,
 		Summary:     strings.Split(info.Description, "\n")[0],
@@ -123,6 +128,8 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Suggests:    suggests,
 		Conflicts:   conflicts,
 		Compressor:  info.RPM.Compression,
+		BuildTime:   time.Now(),
+		BuildHost:   hostname,
 	}, nil
 }
 
