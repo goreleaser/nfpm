@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
@@ -49,17 +48,7 @@ func Parse(in io.Reader) (config Config, err error) {
 	config.Info.Release = os.ExpandEnv(config.Info.Release)
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
 
-	// parse the version as a semver so we can properly split the parts and support proper ordering for both rpm and deb
-	var v *semver.Version
-	if v, err = semver.NewVersion(config.Info.Version); err == nil {
-		config.Info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if config.Info.Release == "" {
-			config.Info.Release = v.Prerelease()
-		}
-		config.Info.Deb.VersionMetadata = v.Metadata()
-	}
-	err = config.Validate()
-	return config, err
+	return config, config.Validate()
 }
 
 // ParseFile decodes YAML data from a file path into a configuration struct
@@ -130,6 +119,7 @@ type Info struct {
 	Homepage     string `yaml:"homepage,omitempty"`
 	License      string `yaml:"license,omitempty"`
 	Bindir       string `yaml:"bindir,omitempty"`
+	Target       string `yaml:"-"`
 }
 
 // Overridables contain the field which are overridable in a package
@@ -203,6 +193,16 @@ func WithDefaults(info *Info) *Info {
 	if info.Description == "" {
 		info.Description = "no description given"
 	}
-	info.Version = strings.TrimPrefix(info.Version, "v")
+
+	// parse the version as a semver so we can properly split the parts
+	// and support proper ordering for both rpm and deb
+	if v, err := semver.NewVersion(info.Version); err == nil {
+		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
+		if info.Release == "" {
+			// maybe we should concat the previous info.Release with v.Prerelease?
+			info.Release = v.Prerelease()
+		}
+		info.Deb.VersionMetadata = v.Metadata()
+	}
 	return info
 }

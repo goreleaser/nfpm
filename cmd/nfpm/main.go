@@ -66,9 +66,13 @@ func doPackage(path, target string) error {
 	if err != nil {
 		return err
 	}
+
+	info = nfpm.WithDefaults(info)
+
 	if err = nfpm.Validate(info); err != nil {
 		return err
 	}
+
 	fmt.Printf("using %s packager...\n", format)
 	pkg, err := nfpm.Get(format)
 	if err != nil {
@@ -79,7 +83,9 @@ func doPackage(path, target string) error {
 	if err != nil {
 		return err
 	}
-	return pkg.Package(nfpm.WithDefaults(info), f)
+
+	info.Target = target
+	return pkg.Package(info, f)
 }
 
 const example = `# nfpm example config file

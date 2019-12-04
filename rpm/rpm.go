@@ -3,6 +3,7 @@
 package rpm
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -112,6 +113,11 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		return nil, err
 	}
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
 	return &rpmpack.RPMMetaData{
 		Name:        info.Name,
 		Summary:     strings.Split(info.Description, "\n")[0],
@@ -131,6 +137,8 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Suggests:    suggests,
 		Conflicts:   conflicts,
 		Compressor:  info.RPM.Compression,
+		BuildTime:   time.Now(),
+		BuildHost:   hostname,
 	}, nil
 }
 
@@ -241,6 +249,13 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 				return err
 			}
 			for src, dst := range globbed {
+				// when used as a lib, target may not be set.
+				// in that case, src will always have the empty sufix, and all
+				// files will be ignored.
+				if info.Target != "" && strings.HasSuffix(src, info.Target) {
+					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
+					continue
+				}
 				err := copyToRPM(rpm, src, dst, config, user)
 				if err != nil {
 					return err
