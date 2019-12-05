@@ -14,6 +14,8 @@ import (
 	"github.com/pkg/errors"
 
 	"gopkg.in/yaml.v2"
+
+	valid "github.com/asaskevich/govalidator"
 )
 
 // nolint: gochecknoglobals
@@ -53,8 +55,11 @@ func Parse(in io.Reader) (config Config, err error) {
 	var v *semver.Version
 	if v, err = semver.NewVersion(config.Info.Version); err == nil {
 		config.Info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if config.Info.Release == "" {
+		if config.Info.Release == "" && valid.IsInt(v.Prerelease()) {
 			config.Info.Release = v.Prerelease()
+		}
+		if config.Info.Prerelease == "" && !valid.IsInt(v.Prerelease()) {
+			config.Info.Prerelease = v.Prerelease()
 		}
 		config.Info.Deb.VersionMetadata = v.Metadata()
 	}
@@ -122,6 +127,7 @@ type Info struct {
 	Epoch        string `yaml:"epoch,omitempty"`
 	Version      string `yaml:"version,omitempty"`
 	Release      string `yaml:"release,omitempty"`
+	Prerelease   string `yaml:"prerelease,omitempty"`
 	Section      string `yaml:"section,omitempty"`
 	Priority     string `yaml:"priority,omitempty"`
 	Maintainer   string `yaml:"maintainer,omitempty"`

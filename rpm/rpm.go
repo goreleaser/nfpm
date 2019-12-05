@@ -3,6 +3,7 @@
 package rpm
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -102,11 +103,18 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		return nil, err
 	}
 
+	var release = ""
+	if info.Prerelease == "" {
+		release = defaultTo(info.Release, "1")
+	} else {
+		release = fmt.Sprintf("%s.%s", defaultTo(info.Release, "0.1"), info.Prerelease)
+	}
+
 	return &rpmpack.RPMMetaData{
 		Name:        info.Name,
 		Description: info.Description,
 		Version:     info.Version,
-		Release:     defaultTo(info.Release, "1"),
+		Release:     release,
 		Arch:        info.Arch,
 		OS:          info.Platform,
 		Licence:     info.License,

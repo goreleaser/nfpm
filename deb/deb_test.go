@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -75,11 +76,64 @@ func TestDeb(t *testing.T) {
 	}
 }
 
+func extractDebVersion(deb *bytes.Buffer) string {
+	for _, s := range strings.Split(deb.String(), "\n") {
+		if strings.Contains(s, "Version: ") {
+			return strings.TrimPrefix(s, "Version: ")
+		}
+	}
+	return ""
+}
+
 func TestDebVersionWithDash(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0-beta"
 	var err = Default.Package(info, ioutil.Discard)
 	assert.NoError(t, err)
+}
+
+func TestDebVersion(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0"
+	var buf bytes.Buffer
+	var err = writeControl(&buf, controlData{info, 0})
+	assert.NoError(t, err)
+	var v = extractDebVersion(&buf)
+	assert.Equal(t, "1.0.0", v)
+}
+
+func TestDebVersionWithRelease(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0"
+	info.Release = "1"
+	var buf bytes.Buffer
+	var err = writeControl(&buf, controlData{info, 0})
+	assert.NoError(t, err)
+	var v = extractDebVersion(&buf)
+	assert.Equal(t, "1.0.0-1", v)
+}
+
+func TestDebVersionWithPrerelease(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0"
+	info.Prerelease = "1"
+	var buf bytes.Buffer
+	var err = writeControl(&buf, controlData{info, 0})
+	assert.NoError(t, err)
+	var v = extractDebVersion(&buf)
+	assert.Equal(t, "1.0.0~1", v)
+}
+
+func TestDebVersionWithReleaseAndPrerelease(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0"
+	info.Release = "2"
+	info.Prerelease = "rc1"
+	var buf bytes.Buffer
+	var err = writeControl(&buf, controlData{info, 0})
+	assert.NoError(t, err)
+	var v = extractDebVersion(&buf)
+	assert.Equal(t, "1.0.0-2~rc1", v)
 }
 
 func TestControl(t *testing.T) {

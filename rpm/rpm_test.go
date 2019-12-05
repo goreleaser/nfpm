@@ -129,6 +129,48 @@ func TestRPMVersionWithDash(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRPMVersion(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0"
+	meta, err := buildRPMMeta(info)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", meta.Version)
+	assert.Equal(t, "1", meta.Release)
+}
+
+func TestRPMVersionWithRelease(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0"
+	info.Release = "2"
+	meta, err := buildRPMMeta(info)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", meta.Version)
+	assert.Equal(t, "2", meta.Release)
+}
+
+func TestRPMVersionWithPrerelease(t *testing.T) {
+	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
+	info := exampleInfo()
+	info.Version = "1.0.0"
+	info.Prerelease = "rc1"
+	meta, err := buildRPMMeta(info)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", meta.Version)
+	assert.Equal(t, "0.1.rc1", meta.Release)
+}
+
+func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
+	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
+	info := exampleInfo()
+	info.Version = "1.0.0"
+	info.Release = "0.2"
+	info.Prerelease = "rc1"
+	meta, err := buildRPMMeta(info)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", meta.Version)
+	assert.Equal(t, "0.2.rc1", meta.Release)
+}
+
 func TestRPMScripts(t *testing.T) {
 	info := exampleInfo()
 	f, err := ioutil.TempFile(".", fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))

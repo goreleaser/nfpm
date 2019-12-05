@@ -1,6 +1,7 @@
 package nfpm
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -114,6 +115,48 @@ func TestParseFile(t *testing.T) {
 	config, err := ParseFile("./testdata/versionenv.yaml")
 	assert.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
+}
+
+func TestVersionParse(t *testing.T) {
+	var buf bytes.Buffer
+	buf.WriteString(`{ version: v1.0.0 }`)
+	config, err := Parse(&buf)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", config.Version)
+	assert.Equal(t, "", config.Release)
+	assert.Equal(t, "", config.Prerelease)
+
+	buf.Reset()
+	buf.WriteString(`{ version: v1.0.0-rc1 }`)
+	config, err = Parse(&buf)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", config.Version)
+	assert.Equal(t, "", config.Release)
+	assert.Equal(t, "rc1", config.Prerelease)
+
+	buf.Reset()
+	buf.WriteString(`{ version: v1.0.0-1 }`)
+	config, err = Parse(&buf)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", config.Version)
+	assert.Equal(t, "1", config.Release)
+	assert.Equal(t, "", config.Prerelease)
+
+	buf.Reset()
+	buf.WriteString(`{ version: v1.0.0-1, release: "2", prerelease: "beta1" }`)
+	config, err = Parse(&buf)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", config.Version)
+	assert.Equal(t, "2", config.Release)
+	assert.Equal(t, "beta1", config.Prerelease)
+
+	buf.Reset()
+	buf.WriteString(`{ version: v1.0.0-rc1, release: "2", prerelease: "beta1" }`)
+	config, err = Parse(&buf)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", config.Version)
+	assert.Equal(t, "2", config.Release)
+	assert.Equal(t, "beta1", config.Prerelease)
 }
 
 func TestOverrides(t *testing.T) {
