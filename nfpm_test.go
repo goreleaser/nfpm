@@ -34,14 +34,27 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, pkgr, got)
 }
 
-func TestDefaultsOnEmptyInfo(t *testing.T) {
+func TestDefaultsVersion(t *testing.T) {
 	info := &Info{
-		Version: "2.4.1",
+		Version: "v2.4.1-beta3",
 	}
 	info = WithDefaults(info)
 	assert.NotEmpty(t, info.Bindir)
 	assert.NotEmpty(t, info.Platform)
 	assert.Equal(t, "2.4.1", info.Version)
+	assert.Equal(t, "beta3", info.Release)
+}
+
+func TestDefaultsVersionWithRelease(t *testing.T) {
+	info := &Info{
+		Version: "v2.4.1-beta3",
+		Release: "4",
+	}
+	info = WithDefaults(info)
+	assert.NotEmpty(t, info.Bindir)
+	assert.NotEmpty(t, info.Platform)
+	assert.Equal(t, "2.4.1", info.Version)
+	assert.Equal(t, "4", info.Release)
 }
 
 func TestDefaults(t *testing.T) {

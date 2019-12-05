@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/rpmpack"
@@ -103,15 +104,21 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		return nil, err
 	}
 
+  hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
 	var release = ""
 	if info.Prerelease == "" {
 		release = defaultTo(info.Release, "1")
 	} else {
 		release = fmt.Sprintf("%s.%s", defaultTo(info.Release, "0.1"), info.Prerelease)
-	}
-
+  }
+  
 	return &rpmpack.RPMMetaData{
 		Name:        info.Name,
+		Summary:     strings.Split(info.Description, "\n")[0],
 		Description: info.Description,
 		Version:     info.Version,
 		Release:     release,
@@ -121,13 +128,15 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		URL:         info.Homepage,
 		Vendor:      info.Vendor,
 		Packager:    info.Maintainer,
-		Group:       info.RPM.Group,
+		Group:       defaultTo(info.RPM.Group, "Development/Tools"),
 		Provides:    provides,
 		Requires:    depends,
 		Obsoletes:   replaces,
 		Suggests:    suggests,
 		Conflicts:   conflicts,
 		Compressor:  info.RPM.Compression,
+		BuildTime:   time.Now(),
+		BuildHost:   hostname,
 	}, nil
 }
 
@@ -205,6 +214,13 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 				return err
 			}
 			for src, dst := range globbed {
+				// when used as a lib, target may not be set.
+				// in that case, src will always have the empty sufix, and all
+				// files will be ignored.
+				if info.Target != "" && strings.HasSuffix(src, info.Target) {
+					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
+					continue
+				}
 				err := copyToRPM(rpm, src, dst, config)
 				if err != nil {
 					return err
