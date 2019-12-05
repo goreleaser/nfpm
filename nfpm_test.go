@@ -1,7 +1,6 @@
 package nfpm
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -36,25 +35,51 @@ func TestGet(t *testing.T) {
 
 func TestDefaultsVersion(t *testing.T) {
 	info := &Info{
-		Version: "v2.4.1-beta3",
+		Version: "v1.0.0",
 	}
 	info = WithDefaults(info)
 	assert.NotEmpty(t, info.Bindir)
 	assert.NotEmpty(t, info.Platform)
-	assert.Equal(t, "2.4.1", info.Version)
-	assert.Equal(t, "beta3", info.Release)
-}
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "", info.Release)
+	assert.Equal(t, "", info.Prerelease)
 
-func TestDefaultsVersionWithRelease(t *testing.T) {
-	info := &Info{
-		Version: "v2.4.1-beta3",
-		Release: "4",
+	info = &Info{
+		Version: "v1.0.0-rc1",
 	}
 	info = WithDefaults(info)
-	assert.NotEmpty(t, info.Bindir)
-	assert.NotEmpty(t, info.Platform)
-	assert.Equal(t, "2.4.1", info.Version)
-	assert.Equal(t, "4", info.Release)
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "", info.Release)
+	assert.Equal(t, "rc1", info.Prerelease)
+
+	info = &Info{
+		Version: "v1.0.0-1",
+	}
+	info = WithDefaults(info)
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "1", info.Release)
+	assert.Equal(t, "", info.Prerelease)
+
+	info = &Info{
+		Version:    "v1.0.0-1",
+		Release:    "2",
+		Prerelease: "beta1",
+	}
+	info = WithDefaults(info)
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "2", info.Release)
+	assert.Equal(t, "beta1", info.Prerelease)
+
+	info = &Info{
+		Version:    "v1.0.0-1",
+		Release:    "2",
+		Prerelease: "beta1",
+	}
+	info = WithDefaults(info)
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "2", info.Release)
+	assert.Equal(t, "beta1", info.Prerelease)
+
 }
 
 func TestDefaults(t *testing.T) {
@@ -128,48 +153,6 @@ func TestParseFile(t *testing.T) {
 	config, err := ParseFile("./testdata/versionenv.yaml")
 	assert.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
-}
-
-func TestVersionParse(t *testing.T) {
-	var buf bytes.Buffer
-	buf.WriteString(`{ version: v1.0.0 }`)
-	config, err := Parse(&buf)
-	assert.NoError(t, err)
-	assert.Equal(t, "1.0.0", config.Version)
-	assert.Equal(t, "", config.Release)
-	assert.Equal(t, "", config.Prerelease)
-
-	buf.Reset()
-	buf.WriteString(`{ version: v1.0.0-rc1 }`)
-	config, err = Parse(&buf)
-	assert.NoError(t, err)
-	assert.Equal(t, "1.0.0", config.Version)
-	assert.Equal(t, "", config.Release)
-	assert.Equal(t, "rc1", config.Prerelease)
-
-	buf.Reset()
-	buf.WriteString(`{ version: v1.0.0-1 }`)
-	config, err = Parse(&buf)
-	assert.NoError(t, err)
-	assert.Equal(t, "1.0.0", config.Version)
-	assert.Equal(t, "1", config.Release)
-	assert.Equal(t, "", config.Prerelease)
-
-	buf.Reset()
-	buf.WriteString(`{ version: v1.0.0-1, release: "2", prerelease: "beta1" }`)
-	config, err = Parse(&buf)
-	assert.NoError(t, err)
-	assert.Equal(t, "1.0.0", config.Version)
-	assert.Equal(t, "2", config.Release)
-	assert.Equal(t, "beta1", config.Prerelease)
-
-	buf.Reset()
-	buf.WriteString(`{ version: v1.0.0-rc1, release: "2", prerelease: "beta1" }`)
-	config, err = Parse(&buf)
-	assert.NoError(t, err)
-	assert.Equal(t, "1.0.0", config.Version)
-	assert.Equal(t, "2", config.Release)
-	assert.Equal(t, "beta1", config.Prerelease)
 }
 
 func TestOverrides(t *testing.T) {

@@ -104,18 +104,16 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		return nil, err
 	}
 
-  hostname, err := os.Hostname()
+	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 
-	var release = ""
-	if info.Prerelease == "" {
-		release = defaultTo(info.Release, "1")
-	} else {
+	var release = defaultTo(info.Release, "1")
+	if info.Prerelease != "" {
 		release = fmt.Sprintf("%s.%s", defaultTo(info.Release, "0.1"), info.Prerelease)
-  }
-  
+	}
+
 	return &rpmpack.RPMMetaData{
 		Name:        info.Name,
 		Summary:     strings.Split(info.Description, "\n")[0],

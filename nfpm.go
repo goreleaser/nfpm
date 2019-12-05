@@ -9,12 +9,11 @@ import (
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/goreleaser/nfpm/internal/helpers"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 
 	"gopkg.in/yaml.v2"
-
-	valid "github.com/asaskevich/govalidator"
 )
 
 // nolint: gochecknoglobals
@@ -50,18 +49,6 @@ func Parse(in io.Reader) (config Config, err error) {
 	config.Info.Release = os.ExpandEnv(config.Info.Release)
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
 
-	// parse the version as a semver so we can properly split the parts and support proper ordering for both rpm and deb
-	var v *semver.Version
-	if v, err = semver.NewVersion(config.Info.Version); err == nil {
-		config.Info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if config.Info.Release == "" && valid.IsInt(v.Prerelease()) {
-			config.Info.Release = v.Prerelease()
-		}
-		if config.Info.Prerelease == "" && !valid.IsInt(v.Prerelease()) {
-			config.Info.Prerelease = v.Prerelease()
-		}
-		config.Info.Deb.VersionMetadata = v.Metadata()
-	}
 	return config, config.Validate()
 }
 
@@ -211,11 +198,14 @@ func WithDefaults(info *Info) *Info {
 	// and support proper ordering for both rpm and deb
 	if v, err := semver.NewVersion(info.Version); err == nil {
 		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if info.Release == "" {
-			// maybe we should concat the previous info.Release with v.Prerelease?
+		if info.Release == "" && helpers.IsInt(v.Prerelease()) {
 			info.Release = v.Prerelease()
+		}
+		if info.Prerelease == "" && !helpers.IsInt(v.Prerelease()) {
+			info.Prerelease = v.Prerelease()
 		}
 		info.Deb.VersionMetadata = v.Metadata()
 	}
+
 	return info
 }
