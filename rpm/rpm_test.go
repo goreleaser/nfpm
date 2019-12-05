@@ -157,7 +157,7 @@ func TestWithRPMTags(t *testing.T) {
 
 func TestRPMVersion(t *testing.T) {
 	info := exampleInfo()
-	info.Version = "1.0.0"
+	info.Version = "1.0.0" //nolint:golint,goconst
 	meta, err := buildRPMMeta(info)
 	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", meta.Version)
@@ -166,7 +166,7 @@ func TestRPMVersion(t *testing.T) {
 
 func TestRPMVersionWithRelease(t *testing.T) {
 	info := exampleInfo()
-	info.Version = "1.0.0"
+	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Release = "2"
 	meta, err := buildRPMMeta(info)
 	assert.NoError(t, err)
@@ -177,7 +177,7 @@ func TestRPMVersionWithRelease(t *testing.T) {
 func TestRPMVersionWithPrerelease(t *testing.T) {
 	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
 	info := exampleInfo()
-	info.Version = "1.0.0"
+	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Prerelease = "rc1"
 	meta, err := buildRPMMeta(info)
 	assert.NoError(t, err)
@@ -188,7 +188,7 @@ func TestRPMVersionWithPrerelease(t *testing.T) {
 func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
 	info := exampleInfo()
-	info.Version = "1.0.0"
+	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Release = "0.2"
 	info.Prerelease = "rc1"
 	meta, err := buildRPMMeta(info)

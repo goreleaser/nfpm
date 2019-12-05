@@ -94,7 +94,7 @@ func TestDebVersionWithDash(t *testing.T) {
 
 func TestDebVersion(t *testing.T) {
 	info := exampleInfo()
-	info.Version = "1.0.0"
+	info.Version = "1.0.0" //nolint:golint,goconst
 	var buf bytes.Buffer
 	var err = writeControl(&buf, controlData{info, 0})
 	assert.NoError(t, err)
@@ -104,7 +104,7 @@ func TestDebVersion(t *testing.T) {
 
 func TestDebVersionWithRelease(t *testing.T) {
 	info := exampleInfo()
-	info.Version = "1.0.0"
+	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Release = "1"
 	var buf bytes.Buffer
 	var err = writeControl(&buf, controlData{info, 0})
@@ -115,7 +115,7 @@ func TestDebVersionWithRelease(t *testing.T) {
 
 func TestDebVersionWithPrerelease(t *testing.T) {
 	info := exampleInfo()
-	info.Version = "1.0.0"
+	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Prerelease = "1"
 	var buf bytes.Buffer
 	var err = writeControl(&buf, controlData{info, 0})
@@ -126,7 +126,7 @@ func TestDebVersionWithPrerelease(t *testing.T) {
 
 func TestDebVersionWithReleaseAndPrerelease(t *testing.T) {
 	info := exampleInfo()
-	info.Version = "1.0.0"
+	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Release = "2"
 	info.Prerelease = "rc1"
 	var buf bytes.Buffer
