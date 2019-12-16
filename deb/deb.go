@@ -31,7 +31,8 @@ func init() {
 var archToDebian = map[string]string{
 	"386":     "i386",
 	"arm":     "armhf",
-	"arm6":    "armel",
+	"arm5":    "armel",
+	"arm6":    "armhf",
 	"arm7":    "armhf",
 	"mipsle":  "mipsel",
 	"ppc64le": "ppc64el",
