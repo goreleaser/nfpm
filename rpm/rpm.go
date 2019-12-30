@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -81,13 +82,17 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 
 func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 	var (
-		err error
+		err   error
+		epoch uint64
 		provides,
 		depends,
 		replaces,
 		suggests,
 		conflicts rpmpack.Relations
 	)
+	if epoch, err = strconv.ParseUint(defaultTo(info.Epoch, "0"), 10, 32); err != nil {
+		return nil, err
+	}
 	if provides, err = toRelation(info.Provides); err != nil {
 		return nil, err
 	}
@@ -115,6 +120,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Description: info.Description,
 		Version:     info.Version,
 		Release:     defaultTo(info.Release, "1"),
+		Epoch:       uint32(epoch),
 		Arch:        info.Arch,
 		OS:          info.Platform,
 		Licence:     info.License,
