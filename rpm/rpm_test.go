@@ -171,6 +171,24 @@ func TestWithRPMTags(t *testing.T) {
 	assert.Equal(t, info.Description, description)
 }
 
+func TestWithInvalidEpoch(t *testing.T) {
+	f, err := ioutil.TempFile("", "test.rpm")
+	defer func() {
+		_ = f.Close()
+		err = os.Remove(f.Name())
+		assert.NoError(t, err)
+	}()
+
+	var info = exampleInfo()
+	info.Release = "3"
+	info.Epoch = "-1"
+	info.RPM = nfpm.RPM{
+		Group: "default",
+	}
+	info.Description = "first line\nsecond line\nthird line"
+	assert.Error(t, Default.Package(info, f))
+}
+
 func TestRPMScripts(t *testing.T) {
 	info := exampleInfo()
 	f, err := ioutil.TempFile(".", fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))
