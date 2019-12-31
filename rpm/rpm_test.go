@@ -15,6 +15,7 @@ import (
 const (
 	tagVersion     = 0x03e9 // 1001
 	tagRelease     = 0x03ea // 1002
+	tagEpoch       = 0x03eb // 1003
 	tagSummary     = 0x03ec // 1004
 	tagDescription = 0x03ed // 1005
 	tagGroup       = 0x03f8 // 1016
@@ -99,6 +100,13 @@ func TestRPM(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "1", release)
 
+	epoch, err := rpm.Header.Get(tagEpoch)
+	assert.NoError(t, err)
+	epochUint32, ok := epoch.([]uint32)
+	assert.Len(t, epochUint32, 1)
+	assert.True(t, ok)
+	assert.Equal(t, uint32(0), epochUint32[0])
+
 	group, err := rpm.Header.GetString(tagGroup)
 	assert.NoError(t, err)
 	assert.Equal(t, "Development/Tools", group)
@@ -122,6 +130,7 @@ func TestWithRPMTags(t *testing.T) {
 
 	var info = exampleInfo()
 	info.Release = "3"
+	info.Epoch = "42"
 	info.RPM = nfpm.RPM{
 		Group: "default",
 	}
@@ -141,6 +150,13 @@ func TestWithRPMTags(t *testing.T) {
 	release, err := rpm.Header.GetString(tagRelease)
 	assert.NoError(t, err)
 	assert.Equal(t, "3", release)
+
+	epoch, err := rpm.Header.Get(tagEpoch)
+	assert.NoError(t, err)
+	epochUint32, ok := epoch.([]uint32)
+	assert.Len(t, epochUint32, 1)
+	assert.True(t, ok)
+	assert.Equal(t, uint32(42), epochUint32[0])
 
 	group, err := rpm.Header.GetString(tagGroup)
 	assert.NoError(t, err)
