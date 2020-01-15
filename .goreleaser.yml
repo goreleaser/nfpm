@@ -22,15 +22,15 @@ changelog:
   filters:
     exclude:
       - Merge
-archive:
-  replacements:
+archives:
+- replacements:
     darwin: Darwin
     linux: Linux
     windows: Windows
     386: i386
     amd64: x86_64
-brew:
-  github:
+brews:
+- github:
     owner: goreleaser
     name: homebrew-tap
   folder: Formula
@@ -38,8 +38,8 @@ brew:
   description: nFPM is not FPM
   test: |
     system "#{bin}/nfpm -v"
-nfpm:
-  name_template: '{{ .ProjectName }}_{{ .Arch }}'
+nfpms:
+- name_template: '{{ .ProjectName }}_{{ .Arch }}'
   homepage:  https://github.com/goreleaser/nfpm
   description: nFPM is not FPM
   maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
