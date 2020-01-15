@@ -200,6 +200,8 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 				Name:  dir,
 				Mode:  uint(040755),
 				MTime: uint32(time.Now().Unix()),
+				Owner: "root",
+				Group: "root",
 			},
 		)
 	}
@@ -265,6 +267,8 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
 		Body:  data,
 		Mode:  uint(info.Mode()),
 		MTime: uint32(info.ModTime().Unix()),
+		Owner: "root",
+		Group: "root",
 	}
 
 	if config {
