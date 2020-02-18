@@ -79,7 +79,6 @@ func TestDefaultsVersion(t *testing.T) {
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "2", info.Release)
 	assert.Equal(t, "beta1", info.Prerelease)
-
 }
 
 func TestDefaults(t *testing.T) {

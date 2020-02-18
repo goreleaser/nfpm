@@ -171,7 +171,6 @@ func TestWithRPMTags(t *testing.T) {
 	assert.Equal(t, info.Description, description)
 }
 
-
 func TestRPMVersion(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0" //nolint:golint,goconst

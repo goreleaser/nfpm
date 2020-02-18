@@ -9,9 +9,10 @@ import (
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/goreleaser/nfpm/internal/helpers"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
+
+	"github.com/goreleaser/nfpm/internal/helpers"
 
 	"gopkg.in/yaml.v2"
 )
