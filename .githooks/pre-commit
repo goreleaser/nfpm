@@ -1,4 +1,0 @@
-#!/bin/bash
-FILES=$(git diff --staged --diff-filter=AM --no-renames --name-only)
-export TEST_PATTERN=TestSimple
-make fmt lint test && git add $FILES

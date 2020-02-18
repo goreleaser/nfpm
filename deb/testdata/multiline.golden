@@ -1,0 +1,9 @@
+Package: multiline
+Version: 1.0.0
+Section: default
+Priority: extra
+Architecture: riscv64
+Installed-Size: 0
+Description: This field is a
+  multiline field
+  that should work.

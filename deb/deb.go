@@ -31,7 +31,8 @@ func init() {
 var archToDebian = map[string]string{
 	"386":     "i386",
 	"arm":     "armhf",
-	"arm6":    "armel",
+	"arm5":    "armel",
+	"arm6":    "armhf",
 	"arm7":    "armhf",
 	"mipsle":  "mipsel",
 	"ppc64le": "ppc64el",
@@ -380,7 +381,7 @@ Conflicts: {{join .}}
 Homepage: {{.Info.Homepage}}
 {{- end }}
 {{- /* Mandatory fields */}}
-Description: {{.Info.Description}}
+Description: {{multiline .Info.Description}}
 `
 
 type controlData struct {
@@ -393,6 +394,10 @@ func writeControl(w io.Writer, data controlData) error {
 	tmpl.Funcs(template.FuncMap{
 		"join": func(strs []string) string {
 			return strings.Trim(strings.Join(strs, ", "), " ")
+		},
+		"multiline": func(strs string) string {
+			ret := strings.ReplaceAll(strs, "\n", "\n  ")
+			return strings.Trim(ret, " \n")
 		},
 	})
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
