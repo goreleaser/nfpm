@@ -171,6 +171,49 @@ func TestWithRPMTags(t *testing.T) {
 	assert.Equal(t, info.Description, description)
 }
 
+
+func TestRPMVersion(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0" //nolint:golint,goconst
+	meta, err := buildRPMMeta(info)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", meta.Version)
+	assert.Equal(t, "1", meta.Release)
+}
+
+func TestRPMVersionWithRelease(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0" //nolint:golint,goconst
+	info.Release = "2"
+	meta, err := buildRPMMeta(info)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", meta.Version)
+	assert.Equal(t, "2", meta.Release)
+}
+
+func TestRPMVersionWithPrerelease(t *testing.T) {
+	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
+	info := exampleInfo()
+	info.Version = "1.0.0" //nolint:golint,goconst
+	info.Prerelease = "rc1"
+	meta, err := buildRPMMeta(info)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", meta.Version)
+	assert.Equal(t, "0.1.rc1", meta.Release)
+}
+
+func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
+	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
+	info := exampleInfo()
+	info.Version = "1.0.0" //nolint:golint,goconst
+	info.Release = "0.2"
+	info.Prerelease = "rc1"
+	meta, err := buildRPMMeta(info)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", meta.Version)
+	assert.Equal(t, "0.2.rc1", meta.Release)
+}
+
 func TestWithInvalidEpoch(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
 	defer func() {

@@ -345,7 +345,8 @@ const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 Package: {{.Info.Name}}
 Version: {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
-         {{- if .Info.Release}}~{{ .Info.Release }}{{- end }}
+         {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
+         {{- if .Info.Prerelease}}~{{ .Info.Prerelease }}{{- end }}
          {{- if .Info.Deb.VersionMetadata}}+{{ .Info.Deb.VersionMetadata }}{{- end }}
 Section: {{.Info.Section}}
 Priority: {{.Info.Priority}}

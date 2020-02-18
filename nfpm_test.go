@@ -35,25 +35,51 @@ func TestGet(t *testing.T) {
 
 func TestDefaultsVersion(t *testing.T) {
 	info := &Info{
-		Version: "v2.4.1-beta3",
+		Version: "v1.0.0",
 	}
 	info = WithDefaults(info)
 	assert.NotEmpty(t, info.Bindir)
 	assert.NotEmpty(t, info.Platform)
-	assert.Equal(t, "2.4.1", info.Version)
-	assert.Equal(t, "beta3", info.Release)
-}
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "", info.Release)
+	assert.Equal(t, "", info.Prerelease)
 
-func TestDefaultsVersionWithRelease(t *testing.T) {
-	info := &Info{
-		Version: "v2.4.1-beta3",
-		Release: "4",
+	info = &Info{
+		Version: "v1.0.0-rc1",
 	}
 	info = WithDefaults(info)
-	assert.NotEmpty(t, info.Bindir)
-	assert.NotEmpty(t, info.Platform)
-	assert.Equal(t, "2.4.1", info.Version)
-	assert.Equal(t, "4", info.Release)
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "", info.Release)
+	assert.Equal(t, "rc1", info.Prerelease)
+
+	info = &Info{
+		Version: "v1.0.0-1",
+	}
+	info = WithDefaults(info)
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "1", info.Release)
+	assert.Equal(t, "", info.Prerelease)
+
+	info = &Info{
+		Version:    "v1.0.0-1",
+		Release:    "2",
+		Prerelease: "beta1",
+	}
+	info = WithDefaults(info)
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "2", info.Release)
+	assert.Equal(t, "beta1", info.Prerelease)
+
+	info = &Info{
+		Version:    "v1.0.0-1",
+		Release:    "2",
+		Prerelease: "beta1",
+	}
+	info = WithDefaults(info)
+	assert.Equal(t, "1.0.0", info.Version)
+	assert.Equal(t, "2", info.Release)
+	assert.Equal(t, "beta1", info.Prerelease)
+
 }
 
 func TestDefaults(t *testing.T) {

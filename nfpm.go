@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/goreleaser/nfpm/internal/helpers"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 
@@ -111,6 +112,7 @@ type Info struct {
 	Epoch        string `yaml:"epoch,omitempty"`
 	Version      string `yaml:"version,omitempty"`
 	Release      string `yaml:"release,omitempty"`
+	Prerelease   string `yaml:"prerelease,omitempty"`
 	Section      string `yaml:"section,omitempty"`
 	Priority     string `yaml:"priority,omitempty"`
 	Maintainer   string `yaml:"maintainer,omitempty"`
@@ -196,11 +198,14 @@ func WithDefaults(info *Info) *Info {
 	// and support proper ordering for both rpm and deb
 	if v, err := semver.NewVersion(info.Version); err == nil {
 		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if info.Release == "" {
-			// maybe we should concat the previous info.Release with v.Prerelease?
+		if info.Release == "" && helpers.IsInt(v.Prerelease()) {
 			info.Release = v.Prerelease()
+		}
+		if info.Prerelease == "" && !helpers.IsInt(v.Prerelease()) {
+			info.Prerelease = v.Prerelease()
 		}
 		info.Deb.VersionMetadata = v.Metadata()
 	}
+
 	return info
 }
