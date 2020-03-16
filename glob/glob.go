@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mattn/go-zglob"
 	"github.com/pkg/errors"
@@ -51,8 +52,8 @@ func Glob(glob, dst string) (map[string]string, error) {
 	}
 	files := make(map[string]string)
 	prefix := longestCommonPrefix(matches)
-	// the prefix may not be a complete path, in that case use the parent directory
-	if _, err := os.Stat(prefix); os.IsNotExist(err) {
+	// the prefix may not be a complete path or may use glob patterns, in that case use the parent directory
+	if _, err := os.Stat(prefix); os.IsNotExist(err) || strings.ContainsAny(glob, "*") {
 		prefix = filepath.Dir(prefix)
 	}
 	for _, src := range matches {
