@@ -10,7 +10,7 @@ require (
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/rpmpack v0.0.0-20191226140753-aa36bfddb3a0
-	github.com/imdario/mergo v0.3.8
+	github.com/imdario/mergo v0.3.9
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-zglob v0.0.1
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
