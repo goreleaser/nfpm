@@ -31,7 +31,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
@@ -153,7 +152,7 @@ func writeTgz(w io.Writer, kind tarKind, builder func(tw *tar.Writer) error, dig
 
 	increase := alignedSize - size
 	if increase > 0 {
-		b := make([]byte, increase, increase)
+		b := make([]byte, increase)
 		_, err = cw.Write(b)
 		if err != nil {
 			return nil, err
@@ -186,7 +185,7 @@ func parseRsaPrivateKeyFromPemStr(privPEM string) (*rsa.PrivateKey, error) {
 }
 */
 
-func runit(pathToFiles string, pathToKey string, workDir string, target string) (err error) {
+func runit(pathToFiles, pathToKey, workDir, target string) (err error) {
 	signatureTgz, err := os.Create(path.Join(workDir, "apk_signatures.tgz"))
 	if err != nil {
 		return err
@@ -236,7 +235,7 @@ func runit(pathToFiles string, pathToKey string, workDir string, target string) 
 			} else {
 				fmt.Println("file:", path)
 
-				file, err := os.Open(path)
+				file, err := os.Open(filepath.Clean(path))
 				if err != nil {
 					return err
 				}
@@ -293,7 +292,7 @@ datahash = %s
 		}
 
 		return nil
-	}, sha1.New())
+	}, sha256.New())
 	if err != nil {
 		return err
 	}
@@ -301,7 +300,7 @@ datahash = %s
 
 	// pemBytes, err := ioutil.ReadFile("../alpine/user.rsa")
 	// pemBytes, err := ioutil.ReadFile("/home/appuser/.ssh/id_rsa")
-	pemBytes, err := ioutil.ReadFile(pathToKey)
+	pemBytes, err := ioutil.ReadFile(filepath.Clean(pathToKey))
 	if err != nil {
 		return err
 	}
@@ -309,7 +308,7 @@ datahash = %s
 	if err != nil {
 		return err
 	}
-	signed, err := priv.Sign(rand.Reader, controlDigest, crypto.SHA1)
+	signed, err := priv.Sign(rand.Reader, controlDigest, crypto.SHA256)
 	if err != nil {
 		return err
 	}
@@ -333,7 +332,7 @@ datahash = %s
 		}
 
 		return nil
-	}, sha1.New())
+	}, sha256.New())
 
 	// combine
 	file, err := os.Create(target)
