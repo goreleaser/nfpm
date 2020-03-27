@@ -24,7 +24,9 @@ func TestRunit(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		assert.Nil(t, os.RemoveAll(tempDir))
+	}()
 
 	apkFileToCreate := path.Join(tempDir, "apkToCreate.apk")
 

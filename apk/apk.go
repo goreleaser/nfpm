@@ -296,13 +296,13 @@ datahash = %s
 	}
 	fmt.Println("data sha1  :", hex.EncodeToString(controlDigest))
 
-	//pem, err := ioutil.ReadFile("../alpine/user.rsa")
-	//pem, err := ioutil.ReadFile("/home/appuser/.ssh/id_rsa")
-	pem, err := ioutil.ReadFile(pathToKey)
+	//pemBytes, err := ioutil.ReadFile("../alpine/user.rsa")
+	//pemBytes, err := ioutil.ReadFile("/home/appuser/.ssh/id_rsa")
+	pemBytes, err := ioutil.ReadFile(pathToKey)
 	if err != nil {
 		return err
 	}
-	priv, err := ParseRsaPrivateKeyFromPemStr(string(pem))
+	priv, err := ParseRsaPrivateKeyFromPemStr(string(pemBytes))
 	if err != nil {
 		return err
 	}
