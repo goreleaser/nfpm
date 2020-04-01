@@ -39,15 +39,15 @@ func TestRunit(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	verifyNonEmptyFile(apkFileToCreate, t)
+	verifyFileSize(t, apkFileToCreate, 1384)
 
-	verifyNonEmptyFile(path.Join(tempDir, "apk_control.tgz"), t)
-	verifyNonEmptyFile(path.Join(tempDir, "apk_data.tgz"), t)
-	verifyNonEmptyFile(path.Join(tempDir, "apk_signatures.tgz"), t)
+	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 302)
+	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 416)
+	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 666)
 }
 
-func verifyNonEmptyFile(fileToCreate string, t *testing.T) {
-	fi, err := os.Stat(fileToCreate)
+func verifyFileSize(t *testing.T, fileToVerify string, expectedSize int64) {
+	fi, err := os.Stat(fileToVerify)
 	assert.Nil(t, err)
-	assert.NotEqual(t, 0, fi.Size())
+	assert.Equal(t, expectedSize, fi.Size())
 }
