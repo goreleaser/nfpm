@@ -39,15 +39,20 @@ func TestRunit(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	verifyFileSize(t, apkFileToCreate, 1384)
+	verifyFileSize(t, apkFileToCreate, 1384, 1375)
 
-	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 302)
-	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 416)
-	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 666)
+	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 302, 303)
+	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 416, 407)
+	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 666, 665)
 }
 
-func verifyFileSize(t *testing.T, fileToVerify string, expectedSize int64) {
+func verifyFileSize(t *testing.T, fileToVerify string, expectedSize int64, expectedSizeCi int64) {
 	fi, err := os.Stat(fileToVerify)
 	assert.Nil(t, err)
-	assert.Equal(t, expectedSize, fi.Size())
+	ciEnv := os.Getenv("CIRCLECI")
+	if ciEnv != "" {
+		assert.Equal(t, expectedSizeCi, fi.Size())
+	} else {
+		assert.Equal(t, expectedSize, fi.Size())
+	}
 }
