@@ -52,8 +52,8 @@ func verifyFileSize(t *testing.T, fileToVerify string, expectedSize, expectedSiz
 	ciEnv := os.Getenv("CI")
 	if ciEnv != "" {
 		assert.True(t, (expectedSizeCiMin <= fi.Size()) && (fi.Size() <= expectedSizeCiMax),
-			"bad value range: expectedSizeCiMin: %d, expectedSizeCiMax: %d, actual: %d", expectedSizeCiMin, expectedSizeCiMax, fi.Size()) // yuck
+			"bad value range: expectedSizeCiMin: %d, expectedSizeCiMax: %d, actual: %d, file: %s", expectedSizeCiMin, expectedSizeCiMax, fi.Size(), fileToVerify) // yuck
 	} else {
-		assert.Equal(t, expectedSize, fi.Size())
+		assert.Equal(t, expectedSize, fi.Size(), "bad file size, file: %s", fileToVerify)
 	}
 }
