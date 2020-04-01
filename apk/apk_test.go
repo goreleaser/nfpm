@@ -46,7 +46,7 @@ func TestRunit(t *testing.T) {
 	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 666, 665)
 }
 
-func verifyFileSize(t *testing.T, fileToVerify string, expectedSize int64, expectedSizeCi int64) {
+func verifyFileSize(t *testing.T, fileToVerify string, expectedSize, expectedSizeCi int64) {
 	fi, err := os.Stat(fileToVerify)
 	assert.Nil(t, err)
 	ciEnv := os.Getenv("CIRCLECI")
