@@ -49,7 +49,7 @@ func TestRunit(t *testing.T) {
 func verifyFileSize(t *testing.T, fileToVerify string, expectedSize, expectedSizeCi int64) {
 	fi, err := os.Stat(fileToVerify)
 	assert.Nil(t, err)
-	ciEnv := os.Getenv("CIRCLECI")
+	ciEnv := os.Getenv("CI")
 	if ciEnv != "" {
 		assert.Equal(t, expectedSizeCi, fi.Size())
 	} else {
