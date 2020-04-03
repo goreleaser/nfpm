@@ -107,6 +107,7 @@ func exampleInfo() *nfpm.Info {
 
 func TestArchToAlpine(t *testing.T) {
 	verifyArch(t, "", "")
+	verifyArch(t, "abc", "abc")
 	verifyArch(t, "386", "x86")
 	verifyArch(t, "amd64", "x86_64")
 	verifyArch(t, "arm", "armhf")
