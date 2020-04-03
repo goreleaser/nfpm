@@ -41,11 +41,11 @@ func TestRunit(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	verifyFileSize(t, apkFileToCreate, 1384, 1372, 1377)
+	verifyFileSize(t, apkFileToCreate, 1384, 1372, 1379)
 
-	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 302, 300, 304)
+	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 302, 300, 305)
 	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 416, 407, 407)
-	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 666, 665, 666)
+	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 666, 665, 667)
 }
 
 func verifyFileSize(t *testing.T, fileToVerify string, expectedSize, expectedSizeCiMin, expectedSizeCiMax int64) {
