@@ -47,7 +47,41 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/goreleaser/nfpm"
 )
+
+// nolint: gochecknoglobals
+var archToAlpine = map[string]string{
+	"386":   "x86",
+	"amd64": "x86_64",
+
+	"arm":   "armhf",
+	"arm6":  "armhf",
+	"arm7":  "armhf",
+	"arm64": "aarch64",
+
+	// "s390x":  "???",
+}
+
+// Default apk packager
+// nolint: gochecknoglobals
+var Default = &Apk{}
+
+// Apk is a apk packager implementation
+type Apk struct{}
+
+// Package writes a new apk package to the given writer using the given info
+func (*Apk) Package(info *nfpm.Info, deb io.Writer) (err error) {
+	arch, ok := archToAlpine[info.Arch]
+	if ok {
+		info.Arch = arch
+	}
+
+	// @todo create tgz's
+
+	return err
+}
 
 type writerCounter struct {
 	io.Writer

@@ -8,6 +8,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/goreleaser/nfpm"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,4 +58,67 @@ func verifyFileSize(t *testing.T, fileToVerify string, expectedSize, expectedSiz
 	} else {
 		assert.Equal(t, expectedSize, fi.Size(), "bad file size, file: %s", fileToVerify)
 	}
+}
+
+func exampleInfo() *nfpm.Info {
+	return nfpm.WithDefaults(&nfpm.Info{
+		Name:        "foo",
+		Arch:        "amd64",
+		Description: "Foo does things",
+		Priority:    "extra",
+		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
+		Version:     "v1.0.0",
+		Section:     "default",
+		Homepage:    "http://carlosbecker.com",
+		Vendor:      "nope",
+		Overridables: nfpm.Overridables{
+			Depends: []string{
+				"bash",
+			},
+			Recommends: []string{
+				"git",
+			},
+			Suggests: []string{
+				"bash",
+			},
+			Replaces: []string{
+				"svn",
+			},
+			Provides: []string{
+				"bzr",
+			},
+			Conflicts: []string{
+				"zsh",
+			},
+			Files: map[string]string{
+				"../testdata/fake":          "/usr/local/bin/fake",
+				"../testdata/whatever.conf": "/usr/share/doc/fake/fake.txt",
+			},
+			ConfigFiles: map[string]string{
+				"../testdata/whatever.conf": "/etc/fake/fake.conf",
+			},
+			EmptyFolders: []string{
+				"/var/log/whatever",
+				"/usr/share/whatever",
+			},
+		},
+	})
+}
+
+func TestArchToAlpine(t *testing.T) {
+	verifyArch(t, "", "")
+	verifyArch(t, "386", "x86")
+	verifyArch(t, "amd64", "x86_64")
+	verifyArch(t, "arm", "armhf")
+	verifyArch(t, "arm6", "armhf")
+	verifyArch(t, "arm7", "armhf")
+	verifyArch(t, "arm64", "aarch64")
+}
+
+func verifyArch(t *testing.T, nfpmArch, expectedArch string) {
+	info := exampleInfo()
+	info.Arch = nfpmArch
+	var err = Default.Package(info, ioutil.Discard)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedArch, info.Arch)
 }
