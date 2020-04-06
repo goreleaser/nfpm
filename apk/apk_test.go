@@ -1,7 +1,6 @@
 package apk
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,15 +13,7 @@ import (
 )
 
 func TestRunit(t *testing.T) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println(cwd)
-
-	testdata := path.Join(cwd, "testdata")
-
-	workDir := path.Join(testdata, "workdir")
+	workDir := path.Join("testdata", "workdir")
 	tempDir, err := ioutil.TempDir(workDir, "test-run")
 	if err != nil {
 		log.Fatal(err)
@@ -34,17 +25,17 @@ func TestRunit(t *testing.T) {
 	apkFileToCreate := path.Join(tempDir, "apkToCreate.apk")
 
 	err = runit(
-		path.Join(testdata, "deb"),
-		path.Join(testdata, "keyfile", "id_rsa"),
+		path.Join("testdata", "deb"),
+		path.Join("testdata", "keyfile", "id_rsa"),
 		tempDir,
 		apkFileToCreate)
 
 	assert.Nil(t, err)
 
-	verifyFileSize(t, apkFileToCreate, 1384, 1372, 1379)
+	verifyFileSize(t, apkFileToCreate, 1382, 1372, 1379)
 
-	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 302, 300, 305)
-	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 416, 407, 407)
+	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 304, 300, 305)
+	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 412, 407, 407)
 	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 666, 665, 667)
 }
 

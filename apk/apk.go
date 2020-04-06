@@ -35,7 +35,6 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -47,6 +46,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/goreleaser/nfpm"
 )
@@ -72,7 +73,7 @@ var Default = &Apk{}
 type Apk struct{}
 
 // Package writes a new apk package to the given writer using the given info
-func (*Apk) Package(info *nfpm.Info, deb io.Writer) (err error) {
+func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 	arch, ok := archToAlpine[info.Arch]
 	if ok {
 		info.Arch = arch
