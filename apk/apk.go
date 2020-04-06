@@ -283,8 +283,8 @@ func runit(pathToFiles, pathToKey, workDir, target string) (err error) {
 	return combineGzsToFile(target, signatureTgz, controlTgz, dataTgz)
 }
 
-func createGzData(dataTgz *os.File, pathToFiles string, sizep *int64, size int64) ([]byte, error) {
-	builderData := createBuilderData(dataTgz, pathToFiles, sizep)
+func createGzData(dataTgz io.Writer, pathToFiles string, sizep *int64, size int64) ([]byte, error) {
+	builderData := createBuilderData(pathToFiles, sizep)
 	dataDigest, err := writeTgz(dataTgz, tarFull, builderData, sha256.New())
 	if err != nil {
 		return nil, err
@@ -374,10 +374,8 @@ datahash = %s
 	}
 }
 
-func createBuilderData(dataTgz *os.File, pathToFiles string, sizep *int64) func(tw *tar.Writer) error {
+func createBuilderData(pathToFiles string, sizep *int64) func(tw *tar.Writer) error {
 	return func(tw *tar.Writer) error {
-		log.Printf("dataTgz: %+v, tarFull: %+v", dataTgz, tarFull)
-
 		err := filepath.Walk(pathToFiles, func(path string, info os.FileInfo, err error) error {
 			log.Printf("path: %s, info: %+v, err: %+v", path, info, err)
 			if err != nil {
