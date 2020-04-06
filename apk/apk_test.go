@@ -32,10 +32,10 @@ func TestRunit(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	verifyFileSize(t, apkFileToCreate, 1383, 1372, 1379)
+	verifyFileSize(t, apkFileToCreate, 1342, 1372, 1379)
 
 	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 304, 300, 305)
-	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 414, 407, 407)
+	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 373, 407, 407)
 	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 665, 665, 667)
 }
 
