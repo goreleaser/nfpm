@@ -20,3 +20,6 @@ RUN ssh-keygen -t rsa -b 4096 -m pem -N "" -f /home/appuser/.ssh/id_rsa
 
 USER root
 #RUN go test ./apk
+
+# can test using:
+# apk add --allow-untrusted ./apk/apkToCreate.apk
