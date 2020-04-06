@@ -25,18 +25,18 @@ func TestRunit(t *testing.T) {
 	apkFileToCreate := path.Join(tempDir, "apkToCreate.apk")
 
 	err = runit(
-		path.Join("testdata", "deb"),
+		path.Join("testdata", "files"),
 		path.Join("testdata", "keyfile", "id_rsa"),
 		tempDir,
 		apkFileToCreate)
 
 	assert.Nil(t, err)
 
-	verifyFileSize(t, apkFileToCreate, 1382, 1372, 1379)
+	verifyFileSize(t, apkFileToCreate, 1383, 1372, 1379)
 
 	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 304, 300, 305)
-	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 412, 407, 407)
-	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 666, 665, 667)
+	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 414, 407, 407)
+	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 665, 665, 667)
 }
 
 func verifyFileSize(t *testing.T, fileToVerify string, expectedSize, expectedSizeCiMin, expectedSizeCiMax int64) {
