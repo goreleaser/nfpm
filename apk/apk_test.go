@@ -19,7 +19,7 @@ func TestRunit(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	skipVerify, err := strconv.ParseBool(os.Getenv("skipVerify"))
+	skipVerify, _ := strconv.ParseBool(os.Getenv("skipVerify"))
 	// ignore env var parse error
 	defer func() {
 		if !skipVerify {
