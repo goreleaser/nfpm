@@ -281,7 +281,7 @@ func runit(pathToFiles, pathToKey, workDir, target string) (err error) {
 	_, err = writeTgz(signatureTgz, tarCut, builderSignature, sha256.New())
 
 	// combine
-	return combineGzsToFile(target, signatureTgz, controlTgz, dataTgz)
+	return combineToApk(target, signatureTgz, controlTgz, dataTgz)
 }
 
 func createData(dataTgz io.Writer, pathToFiles string, sizep *int64, size int64) ([]byte, error) {
@@ -296,7 +296,7 @@ func createData(dataTgz io.Writer, pathToFiles string, sizep *int64, size int64)
 	return dataDigest, nil
 }
 
-func combineGzsToFile(target string, signatureTgz, controlTgz, dataTgz *os.File) error {
+func combineToApk(target string, signatureTgz, controlTgz, dataTgz *os.File) error {
 	file, err := os.Create(target)
 	if err != nil {
 		return err
