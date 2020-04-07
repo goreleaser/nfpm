@@ -17,7 +17,8 @@ USER root
 
 COPY . .
 
-RUN skipVerify=true go test ./apk
+#RUN skipVerify=true go test ./apk
+RUN skipVerifyInfo=true go test ./apk
 RUN ls -Rla ./apk/testdata/workdir/test-run*
 # TODO mkdir should be removed after apk code is working better
 RUN mkdir -p /testdata/files

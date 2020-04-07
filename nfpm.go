@@ -139,6 +139,7 @@ type Overridables struct {
 	Scripts      Scripts           `yaml:"scripts,omitempty"`
 	RPM          RPM               `yaml:"rpm,omitempty"`
 	Deb          Deb               `yaml:"deb,omitempty"`
+	Apk          Apk               `yaml:"apk,omitempty"`
 }
 
 // RPM is custom configs that are only available on RPM packages
@@ -156,6 +157,11 @@ type Deb struct {
 // DebScripts is scripts only available on deb packages
 type DebScripts struct {
 	Rules string `yaml:"rules,omitempty"`
+}
+
+// Apk is custom configs that are only available on apk packages
+type Apk struct {
+	PrivateKey string `yaml:"privatekey,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages

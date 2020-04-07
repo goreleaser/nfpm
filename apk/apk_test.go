@@ -1,6 +1,8 @@
 package apk
 
 import (
+	"archive/tar"
+	"bytes"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,50 +15,55 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunit(t *testing.T) {
+func TestRunitWithNFPMInfo(t *testing.T) {
 	workDir := path.Join("testdata", "workdir")
 	tempDir, err := ioutil.TempDir(workDir, "test-run")
 	if err != nil {
 		log.Fatal(err)
 	}
-	skipVerify, _ := strconv.ParseBool(os.Getenv("skipVerify"))
+	skipVerifyInfo := isSkipVerifyInfo()
 	defer func() {
-		if !skipVerify {
+		if !skipVerifyInfo {
 			// cleanup temp files
 			assert.Nil(t, os.RemoveAll(tempDir))
 		}
 	}()
 
-	apkFileToCreate := path.Join(tempDir, "apkToCreate.apk")
-	t.Log("apk at", tempDir)
+	apkFileToCreate, err := os.Create(path.Join(tempDir, "apkToCreate.apk"))
+	assert.NoError(t, err)
+	if skipVerifyInfo {
+		t.Log("apk at", tempDir)
+	}
 
-	err = runit(
-		path.Join("testdata", "files"),
-		path.Join("testdata", "keyfile", "id_rsa"),
-		tempDir,
-		apkFileToCreate)
+	err = runit(&nfpm.Info{
+		Name: "foo",
+		Overridables: nfpm.Overridables{
+			Files: map[string]string{
+				path.Join("testdata", "files", "control.golden"): "/testdata/files/control.golden",
+			},
+			EmptyFolders: []string{
+				"/testdata/files/emptydir",
+			},
+		},
+	}, path.Join("testdata", "keyfile", "id_rsa"), apkFileToCreate)
 
 	assert.Nil(t, err)
 
-	if !skipVerify {
-		verifyFileSize(t, apkFileToCreate, 1383, 1342, 1379)
-
-		verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 304, 300, 305)
-		verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 414, 373, 407)
-		verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 665, 665, 667)
+	if !skipVerifyInfo {
+		verifyFileSizeRange(t, apkFileToCreate, 1342, 1399)
 	}
 }
 
-func verifyFileSize(t *testing.T, fileToVerify string, expectedSize, expectedSizeCiMin, expectedSizeCiMax int64) {
-	fi, err := os.Stat(fileToVerify)
+func isSkipVerifyInfo() bool {
+	skipVerifyInfo, _ := strconv.ParseBool(os.Getenv("skipVerifyInfo"))
+	return skipVerifyInfo
+}
+
+func verifyFileSizeRange(t *testing.T, fileToVerify *os.File, expectedSizeMin, expectedSizeMax int64) {
+	fi, err := fileToVerify.Stat()
 	assert.Nil(t, err)
-	ciEnv := os.Getenv("CI")
-	if ciEnv != "" {
-		assert.True(t, (expectedSizeCiMin <= fi.Size()) && (fi.Size() <= expectedSizeCiMax),
-			"bad value range: expectedSizeCiMin: %d, expectedSizeCiMax: %d, actual: %d, file: %s", expectedSizeCiMin, expectedSizeCiMax, fi.Size(), fileToVerify) // yuck
-	} else {
-		assert.Equal(t, expectedSize, fi.Size(), "bad file size, file: %s", fileToVerify)
-	}
+	assert.True(t, (expectedSizeMin <= fi.Size()) && (fi.Size() <= expectedSizeMax),
+		"bad value range: expectedSizeMin: %d, expectedSizeMax: %d, actual: %d, file: %s", expectedSizeMin, expectedSizeMax, fi.Size(), fileToVerify) // yuck
 }
 
 func exampleInfo() *nfpm.Info {
@@ -100,6 +107,9 @@ func exampleInfo() *nfpm.Info {
 				"/var/log/whatever",
 				"/usr/share/whatever",
 			},
+			Apk: nfpm.Apk{
+				PrivateKey: "asdf",
+			},
 		},
 	})
 }
@@ -117,8 +127,43 @@ func TestArchToAlpine(t *testing.T) {
 
 func verifyArch(t *testing.T, nfpmArch, expectedArch string) {
 	info := exampleInfo()
+	info.Apk = nfpm.Apk{
+		PrivateKey: path.Join("testdata", "keyfile", "id_rsa"),
+	}
+
 	info.Arch = nfpmArch
-	var err = Default.Package(info, ioutil.Discard)
-	assert.NoError(t, err)
+
+	assert.NoError(t, Default.Package(info, ioutil.Discard))
 	assert.Equal(t, expectedArch, info.Arch)
+}
+
+func TestCreateBuilderData(t *testing.T) {
+	info := exampleInfo()
+	size := int64(0)
+	builderData := createBuilderData(info, &size)
+
+	// tw := tar.NewWriter(ioutil.Discard)
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+
+	assert.NoError(t, builderData(tw))
+
+	assert.Equal(t, 1043464, buf.Len())
+}
+
+func TestCombineToApk(t *testing.T) {
+	var bufData bytes.Buffer
+	bufData.Write([]byte{1})
+
+	var bufControl bytes.Buffer
+	bufControl.Write([]byte{2})
+
+	var bufSignature bytes.Buffer
+	bufSignature.Write([]byte{3})
+
+	var bufTarget bytes.Buffer
+
+	assert.NoError(t, combineToApk(&bufTarget, &bufData, &bufControl, &bufSignature))
+
+	assert.Equal(t, 3, bufTarget.Len())
 }

@@ -41,11 +41,12 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/goreleaser/nfpm/glob"
 
 	"github.com/pkg/errors"
 
@@ -79,9 +80,30 @@ func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 		info.Arch = arch
 	}
 
-	// @todo create tgz's
+	var bufData bytes.Buffer
 
-	return err
+	size := int64(0)
+	// create the data tgz
+	dataDigest, err := createData(&bufData, info, &size)
+	if err != nil {
+		return err
+	}
+
+	// create the control tgz
+	var bufControl bytes.Buffer
+	controlDigest, err := createControl(&bufControl, dataDigest, size)
+	if err != nil {
+		return err
+	}
+
+	var bufSignature bytes.Buffer
+	err = createSignature(&bufSignature, controlDigest, info.Overridables.Apk.PrivateKey)
+	if err != nil {
+		return err
+	}
+
+	// combine
+	return combineToApk(apk, &bufData, &bufControl, &bufSignature)
 }
 
 type writerCounter struct {
@@ -104,19 +126,6 @@ func (counter *writerCounter) Write(buf []byte) (int, error) {
 
 func (counter *writerCounter) Count() uint64 {
 	return atomic.LoadUint64(&counter.count)
-}
-
-func writeDir(tw *tar.Writer, header *tar.Header) error {
-	header.ChangeTime = time.Time{}
-	header.AccessTime = time.Time{}
-	header.Format = tar.FormatUSTAR
-
-	err := tw.WriteHeader(header)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func writeFile(tw *tar.Writer, header *tar.Header, file io.Reader) error {
@@ -224,44 +233,36 @@ func parseRsaPrivateKeyFromPemStr(privPEM string) (*rsa.PrivateKey, error) {
 }
 */
 
-func runit(pathToFiles, pathToKey, workDir, target string) (err error) {
-	signatureTgz, err := os.Create(path.Join(workDir, "apk_signatures.tgz"))
-	if err != nil {
-		return err
-	}
-	defer signatureTgz.Close()
-
-	controlTgz, err := os.Create(path.Join(workDir, "apk_control.tgz"))
-	if err != nil {
-		return err
-	}
-	defer controlTgz.Close()
-
-	dataTgz, err := os.Create(path.Join(workDir, "apk_data.tgz"))
-	if err != nil {
-		return err
-	}
-	defer dataTgz.Close()
-
+func runit(info *nfpm.Info, pathToKey string, target io.Writer) (err error) {
 	size := int64(0)
-	sizep := &size
-
 	// create the data tgz
-	dataDigest, err := createData(dataTgz, pathToFiles, sizep, size)
+	var bufData bytes.Buffer
+	dataDigest, err := createData(&bufData, info, &size)
 	if err != nil {
 		return err
 	}
 
 	// create the control tgz
-	builderControl := createBuilderControl(size, dataDigest, err)
-	controlDigest, err := writeTgz(controlTgz, tarCut, builderControl, sha256.New())
+	var bufControl bytes.Buffer
+	controlDigest, err := createControl(&bufControl, dataDigest, size)
 	if err != nil {
 		return err
 	}
-	fmt.Println("data sha1  :", hex.EncodeToString(controlDigest))
 
+	var bufSignature bytes.Buffer
+	err = createSignature(&bufSignature, controlDigest, pathToKey)
+	if err != nil {
+		return err
+	}
+
+	// combine
+	return combineToApk(target, &bufData, &bufControl, &bufSignature)
+}
+
+func createSignature(signatureTgz io.Writer, controlDigest []byte, pathToKey string) error {
 	// pemBytes, err := ioutil.ReadFile("../alpine/user.rsa")
 	// pemBytes, err := ioutil.ReadFile("/home/appuser/.ssh/id_rsa")
+	// @todo Probably need to change to decode base64 encoded string here
 	pemBytes, err := ioutil.ReadFile(filepath.Clean(pathToKey))
 	if err != nil {
 		return err
@@ -274,44 +275,40 @@ func runit(pathToFiles, pathToKey, workDir, target string) (err error) {
 	if err != nil {
 		return err
 	}
-	fmt.Println("data sign  :", hex.EncodeToString(signed))
+	// fmt.Println("data sign  :", hex.EncodeToString(signed))
 
 	// create the signature tgz
 	builderSignature := createBuilderSignature(signed, err)
 	_, err = writeTgz(signatureTgz, tarCut, builderSignature, sha256.New())
-
-	// combine
-	return combineToApk(target, signatureTgz, controlTgz, dataTgz)
+	return err
 }
 
-func createData(dataTgz io.Writer, pathToFiles string, sizep *int64, size int64) ([]byte, error) {
-	builderData := createBuilderData(pathToFiles, sizep)
+func createData(dataTgz io.Writer, info *nfpm.Info, sizep *int64) ([]byte, error) {
+	builderData := createBuilderData(info, sizep)
 	dataDigest, err := writeTgz(dataTgz, tarFull, builderData, sha256.New())
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("size       :", size)
-	fmt.Println("sizep      :", *sizep)
-	fmt.Println("data sha256:", hex.EncodeToString(dataDigest))
+	// fmt.Println("sizep      :", *sizep)
+	// fmt.Println("data sha256:", hex.EncodeToString(dataDigest))
 	return dataDigest, nil
 }
 
-func combineToApk(target string, signatureTgz, controlTgz, dataTgz *os.File) error {
-	file, err := os.Create(target)
+func createControl(controlTgz io.Writer, dataDigest []byte, size int64) ([]byte, error) {
+	builderControl := createBuilderControl(size, dataDigest)
+	controlDigest, err := writeTgz(controlTgz, tarCut, builderControl, sha256.New())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer file.Close()
+	// fmt.Println("data sha1  :", hex.EncodeToString(controlDigest))
+	return controlDigest, nil
+}
 
-	tgzs := []*os.File{signatureTgz, controlTgz, dataTgz}
+func combineToApk(target io.Writer, dataTgz, controlTgz, signatureTgz io.Reader) (err error) {
+	tgzs := []io.Reader{signatureTgz, controlTgz, dataTgz}
 
 	for _, tgz := range tgzs {
-		_, err = tgz.Seek(0, 0)
-		if err != nil {
-			return err
-		}
-		_, err = io.Copy(file, tgz)
-		if err != nil {
+		if _, err = io.Copy(target, tgz); err != nil {
 			return err
 		}
 	}
@@ -340,7 +337,7 @@ func createBuilderSignature(signed []byte, err error) func(tw *tar.Writer) error
 	}
 }
 
-func createBuilderControl(size int64, dataDigest []byte, err error) func(tw *tar.Writer) error {
+func createBuilderControl(size int64, dataDigest []byte) func(tw *tar.Writer) error {
 	return func(tw *tar.Writer) error {
 		infoContent := fmt.Sprintf(`
 # Generated by abuild 3.2.0_rc1-r1
@@ -366,8 +363,7 @@ datahash = %s
 			Size: int64(len(infoContent)),
 		}
 
-		err = writeFile(tw, infoHeader, strings.NewReader(infoContent))
-		if err != nil {
+		if err := writeFile(tw, infoHeader, strings.NewReader(infoContent)); err != nil {
 			return err
 		}
 
@@ -375,50 +371,152 @@ datahash = %s
 	}
 }
 
-func createBuilderData(pathToFiles string, sizep *int64) func(tw *tar.Writer) error {
+func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error {
+	var created = map[string]bool{}
+
 	return func(tw *tar.Writer) error {
-		err := filepath.Walk(pathToFiles, func(path string, info os.FileInfo, err error) error {
-			log.Printf("path: %s, info: %+v, err: %+v", path, info, err)
+		// handle empty folders
+		if err := createEmptyFoldersInsideTarGz(info, tw, created); err != nil {
+			return err
+		}
+
+		// handle Files and ConfigFiles
+		return createFilesInsideTarGz(info, tw, created, sizep)
+	}
+}
+
+func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool, sizep *int64) error {
+	for _, files := range []map[string]string{
+		info.Files,
+		info.ConfigFiles,
+	} {
+		for srcglob, dstroot := range files {
+			globbed, err := glob.Glob(srcglob, dstroot)
 			if err != nil {
-				log.Print(err)
 				return err
 			}
+			for src, dst := range globbed {
+				// when used as a lib, target may not be set.
+				// in that case, src will always have the empty sufix, and all
+				// files will be ignored.
+				if info.Target != "" && strings.HasSuffix(src, info.Target) {
+					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
+					continue
+				}
+				if err := createTree(tw, dst, created); err != nil {
+					return err
+				}
 
-			header, err := tar.FileInfoHeader(info, path)
-			if err != nil {
-				log.Print(err)
-				return err
+				// copied from deb.go->copyToTarAndDigest()
+				err := copyToTarAndDigest(src, dst, tw, sizep, created)
+				if err != nil {
+					return err
+				}
 			}
-			header.Name = path
+		}
+	}
+	return nil
+}
 
-			if info.IsDir() {
-				fmt.Println("dir :", path)
-
-				err := writeDir(tw, header)
-				if err != nil {
-					return err
-				}
-			} else {
-				fmt.Println("file:", path)
-
-				file, err := os.Open(filepath.Clean(path))
-				if err != nil {
-					return err
-				}
-				defer file.Close()
-
-				err = writeFile(tw, header, file)
-				if err != nil {
-					return err
-				}
-
-				// size += info.Size()
-				*sizep += info.Size()
-			}
-
-			return nil
-		})
-
+func copyToTarAndDigest(src, dst string, tw *tar.Writer, sizep *int64, created map[string]bool) error {
+	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
+	if err != nil {
+		return errors.Wrap(err, "could not add file to the archive")
+	}
+	// don't care if it errs while closing...
+	defer file.Close() // nolint: errcheck
+	info, err := file.Stat()
+	if err != nil {
 		return err
 	}
+	if info.IsDir() {
+		// TODO: this should probably return an error
+		return nil
+	}
+	/*					var header = tar.Header{
+							Name:    filepath.ToSlash(dst[1:]),
+							Size:    info.Size(),
+							Mode:    int64(info.Mode()),
+							ModTime: time.Now(),
+							Format:  tar.FormatGNU,
+						}
+	*/
+	header, err := tar.FileInfoHeader(info, src)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+	header.Name = filepath.ToSlash(dst[1:])
+
+	info, err = file.Stat()
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		// TODO: this should probably return an error
+		return nil
+	}
+
+	err = writeFile(tw, header, file)
+	if err != nil {
+		return err
+	}
+
+	*sizep += info.Size()
+	created[src] = true
+	return nil
+}
+
+func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
+	for _, folder := range info.EmptyFolders {
+		// this .nope is actually not created, because createTree ignore the
+		// last part of the path, assuming it is a file.
+		// TODO: should probably refactor this
+		if err := createTree(out, filepath.Join(folder, ".nope"), created); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// this is needed because the data.tar.gz file should have the empty folders
+// as well, so we walk through the dst and create all subfolders.
+func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
+	for _, path := range pathsToCreate(dst) {
+		if created[path] {
+			// skipping dir that was previously created inside the archive
+			// (eg: usr/)
+			continue
+		}
+		if err := tarw.WriteHeader(&tar.Header{
+			Name:     filepath.ToSlash(path + "/"),
+			Mode:     0755,
+			Typeflag: tar.TypeDir,
+			Format:   tar.FormatGNU,
+			ModTime:  time.Now(),
+		}); err != nil {
+			return errors.Wrap(err, "failed to create folder")
+		}
+		created[path] = true
+	}
+	return nil
+}
+
+func pathsToCreate(dst string) []string {
+	var paths []string
+	var base = dst[1:]
+	for {
+		base = filepath.Dir(base)
+		if base == "." {
+			break
+		}
+		paths = append(paths, base)
+	}
+	// we don't really need to create those things in order apparently, but,
+	// it looks really weird if we don't.
+	var result []string
+	for i := len(paths) - 1; i >= 0; i-- {
+		result = append(result, paths[i])
+	}
+	return result
 }
