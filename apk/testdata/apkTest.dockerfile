@@ -6,22 +6,22 @@ FROM golang:1.13-alpine
 
 WORKDIR /go/src/app
 
-RUN apk add --no-cache rpm
+RUN apk add --no-cache gcc musl-dev
 
-RUN apk add --no-cache gcc musl-dev openssh-client
-
-#ENTRYPOINT ["/nfpm"]
-
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
-#RUN ssh-keygen -t rsa -b 4096 -N "" -f /home/appuser/.ssh/id_rsa
-RUN ssh-keygen -t rsa -b 4096 -m pem -N "" -f /home/appuser/.ssh/id_rsa
+#RUN apk add --no-cache openssh-client
+#RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+#USER appuser
+#RUN ssh-keygen -t rsa -b 4096 -m pem -N "" -f /home/appuser/.ssh/id_rsa
 
 USER root
 
 COPY . .
 
-#RUN go test ./apk
+RUN skipVerify=true go test ./apk
+RUN ls -Rla ./apk/testdata/workdir/test-run*
+# TODO mkdir should be removed after apk code is working better
+RUN mkdir -p /testdata/files
+RUN apk add -vvv --allow-untrusted ./apk/testdata/workdir/test-run*/apkToCreate.apk
 
 # can test using:
-# apk add --allow-untrusted ./apk/apkToCreate.apk
+# apk add --allow-untrusted ./apk/testdata/workdir/test-run*/apkToCreate.apk

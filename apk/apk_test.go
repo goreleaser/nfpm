@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"testing"
 
 	"github.com/goreleaser/nfpm"
@@ -18,11 +19,17 @@ func TestRunit(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	skipVerify, err := strconv.ParseBool(os.Getenv("skipVerify"))
+	// ignore env var parse error
 	defer func() {
-		assert.Nil(t, os.RemoveAll(tempDir))
+		if !skipVerify {
+			// cleanup temp files
+			assert.Nil(t, os.RemoveAll(tempDir))
+		}
 	}()
 
 	apkFileToCreate := path.Join(tempDir, "apkToCreate.apk")
+	t.Log("apk at", tempDir)
 
 	err = runit(
 		path.Join("testdata", "files"),
@@ -32,11 +39,13 @@ func TestRunit(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	verifyFileSize(t, apkFileToCreate, 1383, 1342, 1379)
+	if !skipVerify {
+		verifyFileSize(t, apkFileToCreate, 1383, 1342, 1379)
 
-	verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 304, 300, 305)
-	verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 414, 373, 407)
-	verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 665, 665, 667)
+		verifyFileSize(t, path.Join(tempDir, "apk_control.tgz"), 304, 300, 305)
+		verifyFileSize(t, path.Join(tempDir, "apk_data.tgz"), 414, 373, 407)
+		verifyFileSize(t, path.Join(tempDir, "apk_signatures.tgz"), 665, 665, 667)
+	}
 }
 
 func verifyFileSize(t *testing.T, fileToVerify string, expectedSize, expectedSizeCiMin, expectedSizeCiMax int64) {
