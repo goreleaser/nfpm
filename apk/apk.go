@@ -247,7 +247,7 @@ func runit(pathToFiles, pathToKey, workDir, target string) (err error) {
 	sizep := &size
 
 	// create the data tgz
-	dataDigest, err := createGzData(dataTgz, pathToFiles, sizep, size)
+	dataDigest, err := createData(dataTgz, pathToFiles, sizep, size)
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func runit(pathToFiles, pathToKey, workDir, target string) (err error) {
 	return combineGzsToFile(target, signatureTgz, controlTgz, dataTgz)
 }
 
-func createGzData(dataTgz io.Writer, pathToFiles string, sizep *int64, size int64) ([]byte, error) {
+func createData(dataTgz io.Writer, pathToFiles string, sizep *int64, size int64) ([]byte, error) {
 	builderData := createBuilderData(pathToFiles, sizep)
 	dataDigest, err := writeTgz(dataTgz, tarFull, builderData, sha256.New())
 	if err != nil {
