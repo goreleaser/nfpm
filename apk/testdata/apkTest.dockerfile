@@ -5,7 +5,6 @@
 FROM golang:1.13-alpine
 
 WORKDIR /go/src/app
-COPY . .
 
 RUN apk add --no-cache rpm
 
@@ -19,6 +18,9 @@ USER appuser
 RUN ssh-keygen -t rsa -b 4096 -m pem -N "" -f /home/appuser/.ssh/id_rsa
 
 USER root
+
+COPY . .
+
 #RUN go test ./apk
 
 # can test using:
