@@ -54,6 +54,11 @@ import (
 	"github.com/goreleaser/nfpm"
 )
 
+// nolint: gochecknoinits
+func init() {
+	nfpm.Register("apk", Default)
+}
+
 // nolint: gochecknoglobals
 var archToAlpine = map[string]string{
 	"386":   "x86",
