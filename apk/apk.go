@@ -227,39 +227,6 @@ func parseRsaPrivateKeyFromPemStr(privPEM string) (*rsa.PrivateKey, error) {
 	return priv, nil
 }
 
-/*func main() {
-	if err := runit("foo", "../alpine/user.rsa", "", os.Args[1]); err != nil {
-		log.Fatalln(err)
-	}
-}
-*/
-
-func runit(info *nfpm.Info, base64PrivateKey string, target io.Writer) (err error) {
-	size := int64(0)
-	// create the data tgz
-	var bufData bytes.Buffer
-	dataDigest, err := createData(&bufData, info, &size)
-	if err != nil {
-		return err
-	}
-
-	// create the control tgz
-	var bufControl bytes.Buffer
-	controlDigest, err := createControl(&bufControl, dataDigest, size)
-	if err != nil {
-		return err
-	}
-
-	var bufSignature bytes.Buffer
-	err = createSignature(&bufSignature, controlDigest, base64PrivateKey)
-	if err != nil {
-		return err
-	}
-
-	// combine
-	return combineToApk(target, &bufData, &bufControl, &bufSignature)
-}
-
 func fileToBase64String(file string) (string, error) {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(file))
 	if err != nil {

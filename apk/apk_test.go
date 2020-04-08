@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"crypto/sha256"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -25,7 +26,7 @@ func getBase64PrivateKey(t *testing.T) string {
 	return key
 }
 
-func TestRunitWithNFPMInfo(t *testing.T) {
+func TestDefaultWithNFPMInfo(t *testing.T) {
 	workDir := path.Join("testdata", "workdir")
 	tempDir, err := ioutil.TempDir(workDir, "test-run")
 	if err != nil {
@@ -45,7 +46,7 @@ func TestRunitWithNFPMInfo(t *testing.T) {
 		t.Log("apk at", tempDir)
 	}
 
-	err = runit(&nfpm.Info{
+	assert.NoError(t, Default.Package(&nfpm.Info{
 		Name: "foo",
 		Overridables: nfpm.Overridables{
 			Files: map[string]string{
@@ -54,13 +55,15 @@ func TestRunitWithNFPMInfo(t *testing.T) {
 			EmptyFolders: []string{
 				"/testdata/files/emptydir",
 			},
+			Apk: nfpm.Apk{
+				PrivateKey: getBase64PrivateKey(t),
+			},
 		},
-	}, getBase64PrivateKey(t), apkFileToCreate)
-
-	assert.Nil(t, err)
+	}, apkFileToCreate))
 
 	if !skipVerifyInfo {
-		verifyFileSizeRange(t, apkFileToCreate, 1342, 1399)
+		// @todo replace or remove .apk file size assertions
+		verifyFileSizeRange(t, apkFileToCreate, 1342, 1401)
 	}
 }
 
@@ -190,4 +193,90 @@ func TestCombineToApk(t *testing.T) {
 	assert.NoError(t, combineToApk(&bufTarget, &bufData, &bufControl, &bufSignature))
 
 	assert.Equal(t, 3, bufTarget.Len())
+}
+
+func TestPathsToCreate(t *testing.T) {
+	for pathToTest, parts := range map[string][]string{
+		"/usr/share/doc/whatever/foo.md": {"usr", "usr/share", "usr/share/doc", "usr/share/doc/whatever"},
+		"/var/moises":                    {"var"},
+		"/":                              []string(nil),
+	} {
+		parts := parts
+		pathToTest := pathToTest
+		t.Run(fmt.Sprintf("pathToTest: '%s'", pathToTest), func(t *testing.T) {
+			assert.Equal(t, parts, pathsToCreate(pathToTest))
+		})
+	}
+}
+
+func TestDefaultWithArch(t *testing.T) {
+	for _, arch := range []string{"386", "amd64"} {
+		arch := arch
+		t.Run(arch, func(t *testing.T) {
+			info := exampleInfo(t)
+			info.Arch = arch
+			var err = Default.Package(info, ioutil.Discard)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestNoInfo(t *testing.T) {
+	var err = Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
+	assert.EqualError(t, err, "failed to parse PEM block containing the key")
+}
+
+func TestFileDoesNotExist(t *testing.T) {
+	var err = Default.Package(
+		nfpm.WithDefaults(&nfpm.Info{
+			Name:        "foo",
+			Arch:        "amd64",
+			Description: "Foo does things",
+			Priority:    "extra",
+			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
+			Version:     "1.0.0",
+			Section:     "default",
+			Homepage:    "http://carlosbecker.com",
+			Vendor:      "nope",
+			Overridables: nfpm.Overridables{
+				Depends: []string{
+					"bash",
+				},
+				Files: map[string]string{
+					"../testdata/": "/usr/local/bin/fake",
+				},
+				ConfigFiles: map[string]string{
+					"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
+				},
+			},
+		}),
+		ioutil.Discard,
+	)
+	assert.EqualError(t, err, "../testdata/whatever.confzzz: file does not exist")
+}
+
+func TestNoFiles(t *testing.T) {
+	var err = Default.Package(
+		nfpm.WithDefaults(&nfpm.Info{
+			Name:        "foo",
+			Arch:        "amd64",
+			Description: "Foo does things",
+			Priority:    "extra",
+			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
+			Version:     "1.0.0",
+			Section:     "default",
+			Homepage:    "http://carlosbecker.com",
+			Vendor:      "nope",
+			Overridables: nfpm.Overridables{
+				Depends: []string{
+					"bash",
+				},
+				Apk: nfpm.Apk{
+					PrivateKey: getBase64PrivateKey(t),
+				},
+			},
+		}),
+		ioutil.Discard,
+	)
+	assert.NoError(t, err)
 }
