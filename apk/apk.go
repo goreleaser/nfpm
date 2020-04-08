@@ -33,6 +33,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
@@ -233,7 +234,7 @@ func parseRsaPrivateKeyFromPemStr(privPEM string) (*rsa.PrivateKey, error) {
 }
 */
 
-func runit(info *nfpm.Info, pathToKey string, target io.Writer) (err error) {
+func runit(info *nfpm.Info, base64PrivateKey string, target io.Writer) (err error) {
 	size := int64(0)
 	// create the data tgz
 	var bufData bytes.Buffer
@@ -250,7 +251,7 @@ func runit(info *nfpm.Info, pathToKey string, target io.Writer) (err error) {
 	}
 
 	var bufSignature bytes.Buffer
-	err = createSignature(&bufSignature, controlDigest, pathToKey)
+	err = createSignature(&bufSignature, controlDigest, base64PrivateKey)
 	if err != nil {
 		return err
 	}
@@ -259,11 +260,20 @@ func runit(info *nfpm.Info, pathToKey string, target io.Writer) (err error) {
 	return combineToApk(target, &bufData, &bufControl, &bufSignature)
 }
 
-func createSignature(signatureTgz io.Writer, controlDigest []byte, pathToKey string) error {
+func fileToBase64String(file string) (string, error) {
+	fileBytes, err := ioutil.ReadFile(filepath.Clean(file))
+	if err != nil {
+		return "", err
+	}
+	base64Contents := base64.StdEncoding.EncodeToString(fileBytes)
+	return base64Contents, nil
+}
+
+func createSignature(signatureTgz io.Writer, controlDigest []byte, base64PrivateKey string) error {
 	// pemBytes, err := ioutil.ReadFile("../alpine/user.rsa")
 	// pemBytes, err := ioutil.ReadFile("/home/appuser/.ssh/id_rsa")
-	// @todo Probably need to change to decode base64 encoded string here
-	pemBytes, err := ioutil.ReadFile(filepath.Clean(pathToKey))
+	// pemBytes, err := ioutil.ReadFile(filepath.Clean(pathToKey))
+	pemBytes, err := base64.StdEncoding.DecodeString(base64PrivateKey)
 	if err != nil {
 		return err
 	}
