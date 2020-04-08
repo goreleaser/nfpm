@@ -1,0 +1,10 @@
+pkgname = foo
+pkgver = 1.0.0-r1
+arch = amd64
+size = 10
+pkgdesc = Foo does things
+url = http://carlosbecker.com
+packager = Carlos A Becker <pkg@carlosbecker.com>
+provides = bzr
+depend = bash
+datahash = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

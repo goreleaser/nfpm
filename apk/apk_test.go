@@ -4,18 +4,26 @@ import (
 	"archive/tar"
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/nfpm"
 
 	"github.com/stretchr/testify/assert"
 )
+
+// nolint: gochecknoglobals
+var updateApk = flag.Bool("update-apk", false, "update apk .golden files")
 
 func getPrivateKeyFile() string {
 	return path.Join("testdata", "keyfile", "id_rsa")
@@ -63,7 +71,7 @@ func TestDefaultWithNFPMInfo(t *testing.T) {
 
 	if !skipVerifyInfo {
 		// @todo replace or remove .apk file size assertions
-		verifyFileSizeRange(t, apkFileToCreate, 1342, 1401)
+		verifyFileSizeRange(t, apkFileToCreate, 1286, 1411)
 	}
 }
 
@@ -87,6 +95,7 @@ func exampleInfo(t *testing.T) *nfpm.Info {
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
 		Version:     "v1.0.0",
+		Release:     "r1",
 		Section:     "default",
 		Homepage:    "http://carlosbecker.com",
 		Vendor:      "nope",
@@ -279,4 +288,47 @@ func TestNoFiles(t *testing.T) {
 		ioutil.Discard,
 	)
 	assert.NoError(t, err)
+}
+
+func TestCreateBuilderControl(t *testing.T) {
+	info := exampleInfo(t)
+	size := int64(12345)
+	digest := sha256.New()
+	dataDigest := digest.Sum(nil)
+	builderControl := createBuilderControl(info, size, dataDigest)
+
+	var controlTgz bytes.Buffer
+	tw := tar.NewWriter(&controlTgz)
+	assert.NoError(t, builderControl(tw))
+
+	assert.Equal(t, 781, controlTgz.Len())
+
+	stringControlTgz := controlTgz.String()
+	assert.True(t, strings.HasPrefix(stringControlTgz, ".PKGINFO"))
+	assert.Contains(t, stringControlTgz, "pkgname = "+info.Name)
+	assert.Contains(t, stringControlTgz, "pkgver = "+info.Version+"-"+info.Release)
+	assert.Contains(t, stringControlTgz, "pkgdesc = "+info.Description)
+	assert.Contains(t, stringControlTgz, "url = "+info.Homepage)
+	assert.Contains(t, stringControlTgz, "arch = "+info.Arch) // conversion using archToAlpine[info.Arch]) would occur in Package() method
+	assert.Contains(t, stringControlTgz, "size = "+strconv.Itoa(int(size)))
+	assert.Contains(t, stringControlTgz, "datahash = "+hex.EncodeToString(dataDigest))
+}
+
+func TestControl(t *testing.T) {
+	digest := sha256.New()
+	dataDigest := digest.Sum(nil)
+
+	var w bytes.Buffer
+	assert.NoError(t, writeControl(&w, controlData{
+		Info:          exampleInfo(t),
+		InstalledSize: 10,
+		Datahash:      hex.EncodeToString(dataDigest),
+	}))
+	var golden = "testdata/control.golden"
+	if *updateApk {
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+	}
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	assert.NoError(t, err)
+	assert.Equal(t, string(bts), w.String())
 }
