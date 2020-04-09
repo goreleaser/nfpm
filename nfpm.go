@@ -50,6 +50,9 @@ func Parse(in io.Reader) (config Config, err error) {
 	config.Info.Release = os.ExpandEnv(config.Info.Release)
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
 
+	config.Info.PrivateKeyBase64 = os.ExpandEnv(config.Info.PrivateKeyBase64)
+	config.Info.PrivateKeyFile = os.ExpandEnv(config.Info.PrivateKeyFile)
+
 	return config, config.Validate()
 }
 
@@ -106,23 +109,25 @@ func (c *Config) Validate() error {
 
 // Info contains information about a single package
 type Info struct {
-	Overridables `yaml:",inline"`
-	Name         string `yaml:"name,omitempty"`
-	Arch         string `yaml:"arch,omitempty"`
-	Platform     string `yaml:"platform,omitempty"`
-	Epoch        string `yaml:"epoch,omitempty"`
-	Version      string `yaml:"version,omitempty"`
-	Release      string `yaml:"release,omitempty"`
-	Prerelease   string `yaml:"prerelease,omitempty"`
-	Section      string `yaml:"section,omitempty"`
-	Priority     string `yaml:"priority,omitempty"`
-	Maintainer   string `yaml:"maintainer,omitempty"`
-	Description  string `yaml:"description,omitempty"`
-	Vendor       string `yaml:"vendor,omitempty"`
-	Homepage     string `yaml:"homepage,omitempty"`
-	License      string `yaml:"license,omitempty"`
-	Bindir       string `yaml:"bindir,omitempty"`
-	Target       string `yaml:"-"`
+	Overridables     `yaml:",inline"`
+	Name             string `yaml:"name,omitempty"`
+	Arch             string `yaml:"arch,omitempty"`
+	Platform         string `yaml:"platform,omitempty"`
+	Epoch            string `yaml:"epoch,omitempty"`
+	Version          string `yaml:"version,omitempty"`
+	Release          string `yaml:"release,omitempty"`
+	Prerelease       string `yaml:"prerelease,omitempty"`
+	Section          string `yaml:"section,omitempty"`
+	Priority         string `yaml:"priority,omitempty"`
+	Maintainer       string `yaml:"maintainer,omitempty"`
+	Description      string `yaml:"description,omitempty"`
+	Vendor           string `yaml:"vendor,omitempty"`
+	Homepage         string `yaml:"homepage,omitempty"`
+	License          string `yaml:"license,omitempty"`
+	Bindir           string `yaml:"bindir,omitempty"`
+	PrivateKeyBase64 string `yaml:"privatekeybase64,omitempty"`
+	PrivateKeyFile   string `yaml:"privatekeyfile,omitempty"`
+	Target           string `yaml:"-"`
 }
 
 // Overridables contain the field which are overridable in a package
@@ -139,7 +144,6 @@ type Overridables struct {
 	Scripts      Scripts           `yaml:"scripts,omitempty"`
 	RPM          RPM               `yaml:"rpm,omitempty"`
 	Deb          Deb               `yaml:"deb,omitempty"`
-	Apk          Apk               `yaml:"apk,omitempty"`
 }
 
 // RPM is custom configs that are only available on RPM packages
@@ -157,12 +161,6 @@ type Deb struct {
 // DebScripts is scripts only available on deb packages
 type DebScripts struct {
 	Rules string `yaml:"rules,omitempty"`
-}
-
-// Apk is custom configs that are only available on apk packages
-type Apk struct {
-	PrivateKey     string `yaml:"privatekey,omitempty"`
-	PrivateKeyFile string `yaml:"privatekeyfile,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages

@@ -243,17 +243,14 @@ func fileToBase64String(file string) (string, error) {
 }
 
 func createSignature(signatureTgz io.Writer, controlDigest []byte, info *nfpm.Info) error {
-	// pemBytes, err := ioutil.ReadFile("../alpine/user.rsa")
-	// pemBytes, err := ioutil.ReadFile("/home/appuser/.ssh/id_rsa")
-	// pemBytes, err := ioutil.ReadFile(filepath.Clean(pathToKey))
 	var pemBytes []byte
 	var err error
-	if info.Overridables.Apk.PrivateKey != "" {
-		if pemBytes, err = base64.StdEncoding.DecodeString(info.Overridables.Apk.PrivateKey); err != nil {
+	if info.PrivateKeyBase64 != "" {
+		if pemBytes, err = base64.StdEncoding.DecodeString(info.PrivateKeyBase64); err != nil {
 			return err
 		}
-	} else if info.Overridables.Apk.PrivateKeyFile != "" {
-		if pemBytes, err = ioutil.ReadFile(filepath.Clean(info.Overridables.Apk.PrivateKeyFile)); err != nil {
+	} else if info.PrivateKeyFile != "" {
+		if pemBytes, err = ioutil.ReadFile(filepath.Clean(info.PrivateKeyFile)); err != nil {
 			return err
 		}
 	}

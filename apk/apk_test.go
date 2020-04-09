@@ -55,16 +55,14 @@ func TestDefaultWithNFPMInfo(t *testing.T) {
 	}
 
 	assert.NoError(t, Default.Package(&nfpm.Info{
-		Name: "foo",
+		Name:             "foo",
+		PrivateKeyBase64: getBase64PrivateKey(t),
 		Overridables: nfpm.Overridables{
 			Files: map[string]string{
 				path.Join("testdata", "files", "control.golden"): "/testdata/files/control.golden",
 			},
 			EmptyFolders: []string{
 				"/testdata/files/emptydir",
-			},
-			Apk: nfpm.Apk{
-				PrivateKey: getBase64PrivateKey(t),
 			},
 		},
 	}, apkFileToCreate))
@@ -89,16 +87,17 @@ func verifyFileSizeRange(t *testing.T, fileToVerify *os.File, expectedSizeMin, e
 
 func exampleInfo(t *testing.T) *nfpm.Info {
 	return nfpm.WithDefaults(&nfpm.Info{
-		Name:        "foo",
-		Arch:        "amd64",
-		Description: "Foo does things",
-		Priority:    "extra",
-		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
-		Version:     "v1.0.0",
-		Release:     "r1",
-		Section:     "default",
-		Homepage:    "http://carlosbecker.com",
-		Vendor:      "nope",
+		Name:             "foo",
+		Arch:             "amd64",
+		Description:      "Foo does things",
+		Priority:         "extra",
+		Maintainer:       "Carlos A Becker <pkg@carlosbecker.com>",
+		Version:          "v1.0.0",
+		Release:          "r1",
+		Section:          "default",
+		Homepage:         "http://carlosbecker.com",
+		Vendor:           "nope",
+		PrivateKeyBase64: getBase64PrivateKey(t),
 		Overridables: nfpm.Overridables{
 			Depends: []string{
 				"bash",
@@ -128,9 +127,6 @@ func exampleInfo(t *testing.T) *nfpm.Info {
 			EmptyFolders: []string{
 				"/var/log/whatever",
 				"/usr/share/whatever",
-			},
-			Apk: nfpm.Apk{
-				PrivateKey: getBase64PrivateKey(t),
 			},
 		},
 	})
@@ -182,11 +178,7 @@ func TestCreateSignature(t *testing.T) {
 	digest := sha256.New()
 	controlDigest := digest.Sum(nil)
 	info := &nfpm.Info{
-		Overridables: nfpm.Overridables{
-			Apk: nfpm.Apk{
-				PrivateKey: getBase64PrivateKey(t),
-			},
-		},
+		PrivateKeyBase64: getBase64PrivateKey(t),
 	}
 	assert.NoError(t, createSignature(&signatureTgz, controlDigest, info))
 
@@ -199,11 +191,7 @@ func TestCreateSignatureFromKeyFile(t *testing.T) {
 	digest := sha256.New()
 	controlDigest := digest.Sum(nil)
 	info := &nfpm.Info{
-		Overridables: nfpm.Overridables{
-			Apk: nfpm.Apk{
-				PrivateKeyFile: getPrivateKeyFile(),
-			},
-		},
+		PrivateKeyFile: getPrivateKeyFile(),
 	}
 	assert.NoError(t, createSignature(&signatureTgz, controlDigest, info))
 
@@ -216,12 +204,8 @@ func TestCreateSignatureKeyPrecedence(t *testing.T) {
 	digest := sha256.New()
 	controlDigest := digest.Sum(nil)
 	info := &nfpm.Info{
-		Overridables: nfpm.Overridables{
-			Apk: nfpm.Apk{
-				PrivateKey:     getBase64PrivateKey(t),
-				PrivateKeyFile: "bogus key file",
-			},
-		},
+		PrivateKeyBase64: getBase64PrivateKey(t),
+		PrivateKeyFile:   "bogus key file",
 	}
 	assert.NoError(t, createSignature(&signatureTgz, controlDigest, info))
 
@@ -309,21 +293,19 @@ func TestFileDoesNotExist(t *testing.T) {
 func TestNoFiles(t *testing.T) {
 	var err = Default.Package(
 		nfpm.WithDefaults(&nfpm.Info{
-			Name:        "foo",
-			Arch:        "amd64",
-			Description: "Foo does things",
-			Priority:    "extra",
-			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
-			Version:     "1.0.0",
-			Section:     "default",
-			Homepage:    "http://carlosbecker.com",
-			Vendor:      "nope",
+			Name:             "foo",
+			Arch:             "amd64",
+			Description:      "Foo does things",
+			Priority:         "extra",
+			Maintainer:       "Carlos A Becker <pkg@carlosbecker.com>",
+			Version:          "1.0.0",
+			Section:          "default",
+			Homepage:         "http://carlosbecker.com",
+			Vendor:           "nope",
+			PrivateKeyBase64: getBase64PrivateKey(t),
 			Overridables: nfpm.Overridables{
 				Depends: []string{
 					"bash",
-				},
-				Apk: nfpm.Apk{
-					PrivateKey: getBase64PrivateKey(t),
 				},
 			},
 		}),
