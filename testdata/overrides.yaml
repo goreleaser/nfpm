@@ -17,3 +17,8 @@ overrides:
       - rpm_depend
     config_files:
       rpm.conf: "/rpm/path"
+  apk:
+    depends:
+      - apk_depend
+    config_files:
+      apk.conf: "/apk/path"

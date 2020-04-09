@@ -145,6 +145,7 @@ func TestParseFile(t *testing.T) {
 	assert.Error(t, err)
 	Register("deb", &fakePackager{})
 	Register("rpm", &fakePackager{})
+	Register("apk", &fakePackager{})
 	_, err = ParseFile("./testdata/overrides.yaml")
 	assert.NoError(t, err)
 	_, err = ParseFile("./testdata/doesnotexist.yaml")
