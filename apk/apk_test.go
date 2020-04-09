@@ -181,7 +181,49 @@ func TestCreateSignature(t *testing.T) {
 	var signatureTgz bytes.Buffer
 	digest := sha256.New()
 	controlDigest := digest.Sum(nil)
-	assert.NoError(t, createSignature(&signatureTgz, controlDigest, getBase64PrivateKey(t)))
+	info := &nfpm.Info{
+		Overridables: nfpm.Overridables{
+			Apk: nfpm.Apk{
+				PrivateKey: getBase64PrivateKey(t),
+			},
+		},
+	}
+	assert.NoError(t, createSignature(&signatureTgz, controlDigest, info))
+
+	assert.Equal(t, 666, signatureTgz.Len())
+	assert.Equal(t, 32, digest.Size())
+}
+
+func TestCreateSignatureFromKeyFile(t *testing.T) {
+	var signatureTgz bytes.Buffer
+	digest := sha256.New()
+	controlDigest := digest.Sum(nil)
+	info := &nfpm.Info{
+		Overridables: nfpm.Overridables{
+			Apk: nfpm.Apk{
+				PrivateKeyFile: getPrivateKeyFile(),
+			},
+		},
+	}
+	assert.NoError(t, createSignature(&signatureTgz, controlDigest, info))
+
+	assert.Equal(t, 666, signatureTgz.Len())
+	assert.Equal(t, 32, digest.Size())
+}
+
+func TestCreateSignatureKeyPrecedence(t *testing.T) {
+	var signatureTgz bytes.Buffer
+	digest := sha256.New()
+	controlDigest := digest.Sum(nil)
+	info := &nfpm.Info{
+		Overridables: nfpm.Overridables{
+			Apk: nfpm.Apk{
+				PrivateKey:     getBase64PrivateKey(t),
+				PrivateKeyFile: "bogus key file",
+			},
+		},
+	}
+	assert.NoError(t, createSignature(&signatureTgz, controlDigest, info))
 
 	assert.Equal(t, 666, signatureTgz.Len())
 	assert.Equal(t, 32, digest.Size())

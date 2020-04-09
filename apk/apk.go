@@ -104,7 +104,7 @@ func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 	}
 
 	var bufSignature bytes.Buffer
-	err = createSignature(&bufSignature, controlDigest, info.Overridables.Apk.PrivateKey)
+	err = createSignature(&bufSignature, controlDigest, info)
 	if err != nil {
 		return err
 	}
@@ -242,13 +242,20 @@ func fileToBase64String(file string) (string, error) {
 	return base64Contents, nil
 }
 
-func createSignature(signatureTgz io.Writer, controlDigest []byte, base64PrivateKey string) error {
+func createSignature(signatureTgz io.Writer, controlDigest []byte, info *nfpm.Info) error {
 	// pemBytes, err := ioutil.ReadFile("../alpine/user.rsa")
 	// pemBytes, err := ioutil.ReadFile("/home/appuser/.ssh/id_rsa")
 	// pemBytes, err := ioutil.ReadFile(filepath.Clean(pathToKey))
-	pemBytes, err := base64.StdEncoding.DecodeString(base64PrivateKey)
-	if err != nil {
-		return err
+	var pemBytes []byte
+	var err error
+	if info.Overridables.Apk.PrivateKey != "" {
+		if pemBytes, err = base64.StdEncoding.DecodeString(info.Overridables.Apk.PrivateKey); err != nil {
+			return err
+		}
+	} else if info.Overridables.Apk.PrivateKeyFile != "" {
+		if pemBytes, err = ioutil.ReadFile(filepath.Clean(info.Overridables.Apk.PrivateKeyFile)); err != nil {
+			return err
+		}
 	}
 	priv, err := parseRsaPrivateKeyFromPemStr(string(pemBytes))
 	if err != nil {

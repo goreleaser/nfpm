@@ -161,7 +161,8 @@ type DebScripts struct {
 
 // Apk is custom configs that are only available on apk packages
 type Apk struct {
-	PrivateKey string `yaml:"privatekey,omitempty"`
+	PrivateKey     string `yaml:"privatekey,omitempty"`
+	PrivateKeyFile string `yaml:"privatekeyfile,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages
