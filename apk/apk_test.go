@@ -71,7 +71,7 @@ func TestDefaultWithNFPMInfo(t *testing.T) {
 
 	if !skipVerifyInfo {
 		// @todo replace or remove .apk file size assertions
-		verifyFileSizeRange(t, apkFileToCreate, 1279, 1411)
+		verifyFileSizeRange(t, apkFileToCreate, 1275, 1411)
 	}
 }
 
