@@ -253,6 +253,8 @@ func createSignature(signatureTgz io.Writer, controlDigest []byte, info *nfpm.In
 		if pemBytes, err = ioutil.ReadFile(filepath.Clean(info.PrivateKeyFile)); err != nil {
 			return err
 		}
+	} else {
+		fmt.Printf("yaml configuration of 'privatekeybase64' or 'privatekeyfile' is required for .apk\n")
 	}
 	priv, err := parseRsaPrivateKeyFromPemStr(string(pemBytes))
 	if err != nil {
