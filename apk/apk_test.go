@@ -69,7 +69,7 @@ func TestDefaultWithNFPMInfo(t *testing.T) {
 
 	if !skipVerifyInfo {
 		// @todo replace or remove .apk file size assertions
-		verifyFileSizeRange(t, apkFileToCreate, 1275, 1411)
+		verifyFileSizeRange(t, apkFileToCreate, 1247, 1411)
 	}
 }
 
@@ -182,7 +182,7 @@ func TestCreateSignature(t *testing.T) {
 	}
 	assert.NoError(t, createSignature(&signatureTgz, controlDigest, info))
 
-	assert.Equal(t, 666, signatureTgz.Len())
+	assert.Equal(t, 626, signatureTgz.Len())
 	assert.Equal(t, 32, digest.Size())
 }
 
@@ -195,7 +195,7 @@ func TestCreateSignatureFromKeyFile(t *testing.T) {
 	}
 	assert.NoError(t, createSignature(&signatureTgz, controlDigest, info))
 
-	assert.Equal(t, 666, signatureTgz.Len())
+	assert.Equal(t, 626, signatureTgz.Len())
 	assert.Equal(t, 32, digest.Size())
 }
 
@@ -209,7 +209,7 @@ func TestCreateSignatureKeyPrecedence(t *testing.T) {
 	}
 	assert.NoError(t, createSignature(&signatureTgz, controlDigest, info))
 
-	assert.Equal(t, 666, signatureTgz.Len())
+	assert.Equal(t, 626, signatureTgz.Len())
 	assert.Equal(t, 32, digest.Size())
 }
 
@@ -385,4 +385,22 @@ func TestControl(t *testing.T) {
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
+}
+
+func TestCreateBuilderSignature(t *testing.T) {
+	keyname := "alpine-devel@lists.alpinelinux.org-4a6a0840"
+	info := &nfpm.Info{
+		KeyName: keyname,
+	}
+
+	var signed []byte
+	builderSignature := createBuilderSignature(signed, info)
+
+	var signatureTgz bytes.Buffer
+	tw := tar.NewWriter(&signatureTgz)
+	assert.NoError(t, builderSignature(tw))
+
+	stringSignatureTgz := signatureTgz.String()
+	assert.True(t, strings.HasPrefix(stringSignatureTgz, fmt.Sprintf(".SIGN.RSA.%s.rsa.pub", keyname)))
+	assert.Contains(t, stringSignatureTgz, "ustar")
 }

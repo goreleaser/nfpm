@@ -127,6 +127,7 @@ type Info struct {
 	Bindir           string `yaml:"bindir,omitempty"`
 	PrivateKeyBase64 string `yaml:"privatekeybase64,omitempty"`
 	PrivateKeyFile   string `yaml:"privatekeyfile,omitempty"`
+	KeyName          string `yaml:"keyname,omitempty"`
 	Target           string `yaml:"-"`
 }
 

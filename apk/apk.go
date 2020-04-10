@@ -268,7 +268,7 @@ func createSignature(signatureTgz io.Writer, controlDigest []byte, info *nfpm.In
 	// fmt.Println("data sign  :", hex.EncodeToString(signed))
 
 	// create the signature tgz
-	builderSignature := createBuilderSignature(signed, err)
+	builderSignature := createBuilderSignature(signed, info)
 	_, err = writeTgz(signatureTgz, tarCut, builderSignature, sha256.New())
 	return err
 }
@@ -306,9 +306,9 @@ func combineToApk(target io.Writer, dataTgz, controlTgz, signatureTgz io.Reader)
 	return err
 }
 
-func createBuilderSignature(signed []byte, err error) func(tw *tar.Writer) error {
+func createBuilderSignature(signed []byte, info *nfpm.Info) func(tw *tar.Writer) error {
 	return func(tw *tar.Writer) error {
-		keyname := "alpine-devel@lists.alpinelinux.org-4a6a0840"
+		keyname := info.KeyName
 		// needs to exist on the machine: /etc/apk/keys/<keyname>.rsa.pub
 
 		signContent := signed
@@ -318,8 +318,7 @@ func createBuilderSignature(signed []byte, err error) func(tw *tar.Writer) error
 			Size: int64(len(signContent)),
 		}
 
-		err = writeFile(tw, signHeader, bytes.NewReader(signContent))
-		if err != nil {
+		if err := writeFile(tw, signHeader, bytes.NewReader(signContent)); err != nil {
 			return err
 		}
 
