@@ -325,7 +325,7 @@ func TestCreateBuilderControl(t *testing.T) {
 	tw := tar.NewWriter(&controlTgz)
 	assert.NoError(t, builderControl(tw))
 
-	assert.Equal(t, 781, controlTgz.Len())
+	assert.Equal(t, 798, controlTgz.Len())
 
 	stringControlTgz := controlTgz.String()
 	assert.True(t, strings.HasPrefix(stringControlTgz, ".PKGINFO"))
@@ -333,6 +333,10 @@ func TestCreateBuilderControl(t *testing.T) {
 	assert.Contains(t, stringControlTgz, "pkgver = "+info.Version+"-"+info.Release)
 	assert.Contains(t, stringControlTgz, "pkgdesc = "+info.Description)
 	assert.Contains(t, stringControlTgz, "url = "+info.Homepage)
+	assert.Contains(t, stringControlTgz, "maintainer = "+info.Maintainer)
+	assert.Contains(t, stringControlTgz, "replaces = "+info.Replaces[0])
+	assert.Contains(t, stringControlTgz, "provides = "+info.Provides[0])
+	assert.Contains(t, stringControlTgz, "depend = "+info.Depends[0])
 	assert.Contains(t, stringControlTgz, "arch = "+info.Arch) // conversion using archToAlpine[info.Arch]) would occur in Package() method
 	assert.Contains(t, stringControlTgz, "size = "+strconv.Itoa(int(size)))
 	assert.Contains(t, stringControlTgz, "datahash = "+hex.EncodeToString(dataDigest))

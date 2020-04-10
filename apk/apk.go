@@ -559,7 +559,10 @@ pkgdesc = {{multiline .Info.Description}}
 url = {{.Info.Homepage}}
 {{- end }}
 {{- if .Info.Maintainer}}
-packager = {{.Info.Maintainer}}
+maintainer = {{.Info.Maintainer}}
+{{- end }}
+{{- with .Info.Replaces}}
+replaces = {{join .}}
 {{- end }}
 {{- with .Info.Provides}}
 provides = {{join .}}
