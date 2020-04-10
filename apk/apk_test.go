@@ -338,6 +338,32 @@ func TestCreateBuilderControl(t *testing.T) {
 	assert.Contains(t, stringControlTgz, "datahash = "+hex.EncodeToString(dataDigest))
 }
 
+func TestCreateBuilderControlScripts(t *testing.T) {
+	info := exampleInfo(t)
+	info.Scripts = nfpm.Scripts{
+		PreInstall:  "../testdata/scripts/preinstall.sh",
+		PostInstall: "../testdata/scripts/postinstall.sh",
+		PreRemove:   "../testdata/scripts/preremove.sh",
+		PostRemove:  "../testdata/scripts/postremove.sh",
+	}
+
+	size := int64(12345)
+	digest := sha256.New()
+	dataDigest := digest.Sum(nil)
+	builderControl := createBuilderControl(info, size, dataDigest)
+
+	var controlTgz bytes.Buffer
+	tw := tar.NewWriter(&controlTgz)
+	assert.NoError(t, builderControl(tw))
+
+	stringControlTgz := controlTgz.String()
+	assert.Contains(t, stringControlTgz, ".pre-install")
+	assert.Contains(t, stringControlTgz, ".post-install")
+	assert.Contains(t, stringControlTgz, ".pre-deinstall")
+	assert.Contains(t, stringControlTgz, ".post-deinstall")
+	assert.Contains(t, stringControlTgz, "datahash = "+hex.EncodeToString(dataDigest))
+}
+
 func TestControl(t *testing.T) {
 	digest := sha256.New()
 	dataDigest := digest.Sum(nil)

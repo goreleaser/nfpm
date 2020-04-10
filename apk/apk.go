@@ -349,8 +349,50 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 			return err
 		}
 
+		for script, dest := range map[string]string{
+			info.Scripts.PreInstall:  ".pre-install",
+			info.Scripts.PostInstall: ".post-install",
+			info.Scripts.PreRemove:   ".pre-deinstall",
+			info.Scripts.PostRemove:  ".post-deinstall",
+		} {
+			if script != "" {
+				if err := newScriptInsideTarGz(tw, script, dest); err != nil {
+					return err
+				}
+			}
+		}
+
 		return nil
 	}
+}
+
+func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
+	file, err := os.Open(path) //nolint:gosec
+	if err != nil {
+		return err
+	}
+	content, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	return newItemInsideTarGz(out, content, &tar.Header{
+		Name:     filepath.ToSlash(dest),
+		Size:     int64(len(content)),
+		Mode:     0755,
+		ModTime:  time.Now(),
+		Typeflag: tar.TypeReg,
+		Format:   tar.FormatGNU,
+	})
+}
+
+func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) error {
+	if err := out.WriteHeader(header); err != nil {
+		return errors.Wrapf(err, "cannot write header of %s file to control.tar.gz", header.Name)
+	}
+	if _, err := out.Write(content); err != nil {
+		return errors.Wrapf(err, "cannot write %s file to control.tar.gz", header.Name)
+	}
+	return nil
 }
 
 func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error {
