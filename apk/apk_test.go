@@ -8,8 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
-	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -32,57 +30,6 @@ func getBase64PrivateKey(t *testing.T) string {
 	key, err := fileToBase64String(getPrivateKeyFile())
 	assert.NoError(t, err)
 	return key
-}
-
-func TestDefaultWithNFPMInfo(t *testing.T) {
-	workDir := path.Join("testdata", "workdir")
-	tempDir, err := ioutil.TempDir(workDir, "test-run")
-	if err != nil {
-		log.Fatal(err)
-	}
-	skipVerifyInfo := isSkipVerifyInfo()
-	defer func() {
-		if !skipVerifyInfo {
-			// cleanup temp files
-			assert.Nil(t, os.RemoveAll(tempDir))
-		}
-	}()
-
-	apkFileToCreate, err := os.Create(path.Join(tempDir, "apkToCreate.apk"))
-	assert.NoError(t, err)
-	if skipVerifyInfo {
-		t.Log("apk at", tempDir)
-	}
-
-	assert.NoError(t, Default.Package(&nfpm.Info{
-		Name:             "foo",
-		PrivateKeyBase64: getBase64PrivateKey(t),
-		Overridables: nfpm.Overridables{
-			Files: map[string]string{
-				path.Join("testdata", "files", "control.golden"): "/testdata/files/control.golden",
-			},
-			EmptyFolders: []string{
-				"/testdata/files/emptydir",
-			},
-		},
-	}, apkFileToCreate))
-
-	if !skipVerifyInfo {
-		// @todo replace or remove .apk file size assertions
-		verifyFileSizeRange(t, apkFileToCreate, 1239, 1411)
-	}
-}
-
-func isSkipVerifyInfo() bool {
-	skipVerifyInfo, _ := strconv.ParseBool(os.Getenv("skipVerifyInfo"))
-	return skipVerifyInfo
-}
-
-func verifyFileSizeRange(t *testing.T, fileToVerify *os.File, expectedSizeMin, expectedSizeMax int64) {
-	fi, err := fileToVerify.Stat()
-	assert.Nil(t, err)
-	assert.True(t, (expectedSizeMin <= fi.Size()) && (fi.Size() <= expectedSizeMax),
-		"bad value range: expectedSizeMin: %d, expectedSizeMax: %d, actual: %d, file: %s", expectedSizeMin, expectedSizeMax, fi.Size(), fileToVerify) // yuck
 }
 
 func exampleInfo(t *testing.T) *nfpm.Info {

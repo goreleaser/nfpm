@@ -348,6 +348,12 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 			return err
 		}
 
+		// NOTE: Apk scripts tend to follow the pattern:
+		// #!/bin/sh
+		//
+		// bin/echo 'running preinstall.sh' // do stuff here
+		//
+		// exit 0
 		for script, dest := range map[string]string{
 			info.Scripts.PreInstall:  ".pre-install",
 			info.Scripts.PostInstall: ".post-install",

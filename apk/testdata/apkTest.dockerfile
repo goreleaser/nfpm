@@ -17,9 +17,7 @@ USER root
 
 COPY . .
 
-RUN skipVerifyInfo=true go test ./apk
-RUN ls -Rla ./apk/testdata/workdir/test-run*
-RUN apk add -vvv --allow-untrusted ./apk/testdata/workdir/test-run*/apkToCreate.apk
+RUN go test ./apk
 
-# can test using:
-# apk add --allow-untrusted ./apk/testdata/workdir/test-run*/apkToCreate.apk
+# can test a local .apk using:
+# apk add --allow-untrusted path/to/some/generated.apk
