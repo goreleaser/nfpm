@@ -576,7 +576,7 @@ provides = {{join .}}
 depend = {{join .}}
 {{- end }}
 {{- if .Info.License}}
-url = {{.Info.License}}
+license = {{.Info.License}}
 {{- end }}
 datahash = {{.Datahash}}
 `
