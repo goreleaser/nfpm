@@ -12,12 +12,13 @@ import (
 
 	"github.com/goreleaser/nfpm"
 	// shut up
+	_ "github.com/goreleaser/nfpm/apk"
 	_ "github.com/goreleaser/nfpm/deb"
 	_ "github.com/goreleaser/nfpm/rpm"
 )
 
 // nolint: gochecknoglobals
-var formats = []string{"deb", "rpm"}
+var formats = []string{"deb", "rpm", "apk"}
 
 func TestSimple(t *testing.T) {
 	for _, format := range formats {

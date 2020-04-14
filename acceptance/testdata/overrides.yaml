@@ -31,3 +31,9 @@ overrides:
     scripts:
       postinstall: ./testdata/scripts/postinstall.sh
       preremove: ./testdata/scripts/preremove.sh
+  apk:
+    scripts:
+      postinstall: ./testdata/scripts/postinstall.sh
+      preremove: ./testdata/scripts/preremove.sh
+privatekeyfile: testdata/keyfile/id_rsa
+keyname: appuser@3b1a5e094ee4

@@ -13,3 +13,5 @@ files:
   ../testdata/fake: "/usr/local/bin/fake"
 config_files:
   ../testdata/whatever.conf: "/etc/foo/whatever.conf"
+privatekeyfile: testdata/keyfile/id_rsa
+keyname: appuser@3b1a5e094ee4
