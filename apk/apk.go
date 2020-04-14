@@ -265,7 +265,6 @@ func createSignature(signatureTgz io.Writer, controlDigest []byte, info *nfpm.In
 	if err != nil {
 		return err
 	}
-	// fmt.Println("data sign  :", hex.EncodeToString(signed))
 
 	// create the signature tgz
 	builderSignature := createBuilderSignature(signed, info)
@@ -279,8 +278,6 @@ func createData(dataTgz io.Writer, info *nfpm.Info, sizep *int64) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	// fmt.Println("sizep      :", *sizep)
-	// fmt.Println("data sha256:", hex.EncodeToString(dataDigest))
 	return dataDigest, nil
 }
 
@@ -290,7 +287,6 @@ func createControl(controlTgz io.Writer, info *nfpm.Info, dataDigest []byte, siz
 	if err != nil {
 		return nil, err
 	}
-	// fmt.Println("data sha1  :", hex.EncodeToString(controlDigest))
 	return controlDigest, nil
 }
 
