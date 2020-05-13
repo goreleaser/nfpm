@@ -41,10 +41,10 @@ var archToDebian = map[string]string{
 // nolint: gochecknoglobals
 var Default = &Deb{}
 
-// Deb is a deb packager implementation
+// Deb is a deb packager implementation.
 type Deb struct{}
 
-// Package writes a new deb package to the given writer using the given info
+// Package writes a new deb package to the given writer using the given info.
 func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 	arch, ok := archToDebian[info.Arch]
 	if ok {
@@ -157,7 +157,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		return 0, errors.Wrap(err, "could not add file to the archive")
 	}
 	// don't care if it errs while closing...
-	defer file.Close() // nolint: errcheck
+	defer file.Close() // nolint: errcheck,gosec
 	info, err := file.Stat()
 	if err != nil {
 		return 0, err

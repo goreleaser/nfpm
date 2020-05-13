@@ -9,8 +9,8 @@ export GOPROXY := https://proxy.golang.org,https://gocenter.io,direct
 
 # Install all the build and lint dependencies
 setup:
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
-	go mod tidy
+	go mod download
+	go generate -v ./...
 	git config core.hooksPath .githooks
 .PHONY: setup
 
@@ -32,7 +32,7 @@ fmt:
 .PHONY: fmt
 
 lint: check
-	./bin/golangci-lint run --exclude-use-default=false --fix -v
+	golangci-lint run
 .PHONY: check
 
 ci: build lint test

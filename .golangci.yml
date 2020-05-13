@@ -4,6 +4,8 @@ linters:
     - godox
     - wsl
     - gomnd
+    - testpackage
+    - nolintlint
 linters-settings:
   maligned:
     # print struct with more effective memory layout or not, false by default
