@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 
+	"github.com/goreleaser/nfpm/glob"
 	"github.com/goreleaser/nfpm/internal/helpers"
 
 	"gopkg.in/yaml.v2"
@@ -209,4 +212,44 @@ func WithDefaults(info *Info) *Info {
 	}
 
 	return info
+}
+
+// CopiedFile describes the source and destination of one file to copy into a
+// package and whether it is a config file
+type CopiedFile struct {
+	Source      string
+	Destination string
+	Config      bool
+}
+
+func (info *Info) CopiedFiles() ([]CopiedFile, error) {
+	var files []CopiedFile
+	for i, filesMap := range []map[string]string{info.Files, info.ConfigFiles} {
+		for srcglob, dstroot := range filesMap {
+			globbed, err := glob.Glob(srcglob, dstroot)
+			if err != nil {
+				return nil, err
+			}
+			for src, dst := range globbed {
+				// avoid including a partial file with the name of the target in the target
+				// itself. when used as a lib, target may not be set. in that case, src will
+				// always have the empty sufix, and all files will be ignored.
+				if info.Target != "" && strings.HasSuffix(src, info.Target) {
+					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
+					continue
+				}
+
+				files = append(files, CopiedFile{src, dst, i == 1})
+			}
+		}
+	}
+	// sort the files for reproducibility and general cleanliness
+	sort.Slice(files, func(i, j int) bool {
+		a, b := files[i], files[j]
+		if a.Source != b.Source {
+			return a.Source < b.Source
+		}
+		return a.Destination < b.Destination
+	})
+	return files, nil
 }
