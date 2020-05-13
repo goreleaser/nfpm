@@ -31,6 +31,8 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Allow arm64 builds
+        run: sudo docker run --privileged linuxkit/binfmt:v0.7
       -
         name: Make Setup
         run: |
