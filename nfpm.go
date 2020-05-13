@@ -38,7 +38,7 @@ type ErrNoPackager struct {
 }
 
 func (e ErrNoPackager) Error() string {
-	return fmt.Sprintf("no packager registered for the format '%s'", e.format)
+	return fmt.Sprintf("no packager registered for the format %s", e.format)
 }
 
 // Get a packager for the given format.
