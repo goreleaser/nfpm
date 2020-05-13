@@ -17,5 +17,5 @@ require (
 	github.com/sassoftware/go-rpmutils v0.0.0-20190420191620-a8f1baeba37b
 	github.com/stretchr/testify v1.5.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 )
