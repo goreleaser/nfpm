@@ -12,7 +12,7 @@ import (
 )
 
 // longestCommonPrefix returns the longest prefix of all strings the argument
-// slice. If the slice is empty the empty string is returned
+
 func longestCommonPrefix(strs []string) string {
 	if len(strs) == 0 {
 		return ""

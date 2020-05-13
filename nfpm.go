@@ -1,3 +1,5 @@
+//go:generate go install github.com/golangci/golangci-lint/cmd/golangci-lint
+
 // Package nfpm provides ways to package programs in some linux packaging
 // formats.
 package nfpm
@@ -23,14 +25,14 @@ var (
 	lock      sync.Mutex
 )
 
-// Register a new packager for the given format
+// Register a format to a packager implementation.
 func Register(format string, p Packager) {
 	lock.Lock()
 	packagers[format] = p
 	lock.Unlock()
 }
 
-// Get a packager for the given format
+// Get the packager implementation for the given format.
 func Get(format string) (Packager, error) {
 	p, ok := packagers[format]
 	if !ok {
@@ -39,7 +41,7 @@ func Get(format string) (Packager, error) {
 	return p, nil
 }
 
-// Parse decodes YAML data from an io.Reader into a configuration struct
+// Parse config from a Reader.
 func Parse(in io.Reader) (config Config, err error) {
 	dec := yaml.NewDecoder(in)
 	dec.SetStrict(true)
@@ -53,14 +55,14 @@ func Parse(in io.Reader) (config Config, err error) {
 	return config, config.Validate()
 }
 
-// ParseFile decodes YAML data from a file path into a configuration struct
+// ParseFile reads the file and parses it.
 func ParseFile(path string) (config Config, err error) {
 	var file *os.File
 	file, err = os.Open(path) //nolint:gosec
 	if err != nil {
 		return
 	}
-	defer file.Close() // nolint: errcheck
+	defer file.Close() // nolint: errcheck,gosec
 	return Parse(file)
 }
 
@@ -75,8 +77,7 @@ type Config struct {
 	Overrides map[string]Overridables `yaml:"overrides,omitempty"`
 }
 
-// Get returns the Info struct for the given packager format. Overrides
-// for the given format are merged into the final struct
+// Get returns the Info struct for the given packager format.
 func (c *Config) Get(format string) (info *Info, err error) {
 	info = &Info{}
 	// make a deep copy of info
@@ -94,7 +95,7 @@ func (c *Config) Get(format string) (info *Info, err error) {
 	return info, nil
 }
 
-// Validate ensures that the config is well typed
+// Validate config.
 func (c *Config) Validate() error {
 	for format := range c.Overrides {
 		if _, err := Get(format); err != nil {
@@ -104,7 +105,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Info contains information about a single package
+// Info contains information about a single package.
 type Info struct {
 	Overridables `yaml:",inline"`
 	Name         string `yaml:"name,omitempty"`
@@ -125,7 +126,7 @@ type Info struct {
 	Target       string `yaml:"-"`
 }
 
-// Overridables contain the field which are overridable in a package
+// Overridables contain the field which are overridable in a package.
 type Overridables struct {
 	Replaces     []string          `yaml:"replaces,omitempty"`
 	Provides     []string          `yaml:"provides,omitempty"`
@@ -141,24 +142,24 @@ type Overridables struct {
 	Deb          Deb               `yaml:"deb,omitempty"`
 }
 
-// RPM is custom configs that are only available on RPM packages
+// RPM is custom configs that are only available on RPM packages.
 type RPM struct {
 	Group       string `yaml:"group,omitempty"`
 	Compression string `yaml:"compression,omitempty"`
 }
 
-// Deb is custom configs that are only available on deb packages
+// Deb is custom configs that are only available on deb packages.
 type Deb struct {
 	Scripts         DebScripts `yaml:"scripts,omitempty"`
 	VersionMetadata string     `yaml:"metadata,omitempty"`
 }
 
-// DebScripts is scripts only available on deb packages
+// DebScripts is scripts only available on deb packages.
 type DebScripts struct {
 	Rules string `yaml:"rules,omitempty"`
 }
 
-// Scripts contains information about maintainer scripts for packages
+// Scripts contains information about maintainer scripts for packages.
 type Scripts struct {
 	PreInstall  string `yaml:"preinstall,omitempty"`
 	PostInstall string `yaml:"postinstall,omitempty"`
@@ -183,7 +184,7 @@ func Validate(info *Info) error {
 	return nil
 }
 
-// WithDefaults set some sane defaults into the given Info
+// WithDefaults sets defaults on empty fields.
 func WithDefaults(info *Info) *Info {
 	if info.Bindir == "" {
 		info.Bindir = "/usr/local/bin"
