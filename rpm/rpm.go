@@ -27,7 +27,7 @@ func init() {
 // nolint: gochecknoglobals
 var Default = &RPM{}
 
-// RPM is a RPM packager implementation
+// RPM is a RPM packager implementation.
 type RPM struct{}
 
 // nolint: gochecknoglobals
@@ -45,7 +45,7 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	return info
 }
 
-// Package writes a new RPM package to the given writer using the given info
+// Package writes a new RPM package to the given writer using the given info.
 func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	var (
 		err  error
@@ -256,7 +256,7 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
 		return errors.Wrap(err, "could not add file to the archive")
 	}
 	// don't care if it errs while closing...
-	defer file.Close() // nolint: errcheck
+	defer file.Close() // nolint: errcheck,gosec
 	info, err := file.Stat()
 	if err != nil {
 		return err

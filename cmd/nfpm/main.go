@@ -52,7 +52,7 @@ func main() {
 }
 
 func initFile(config string) error {
-	return ioutil.WriteFile(config, []byte(example), 0666)
+	return ioutil.WriteFile(config, []byte(example), 0600)
 }
 
 func doPackage(path, target string) error {

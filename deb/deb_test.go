@@ -144,7 +144,7 @@ func TestControl(t *testing.T) {
 	}))
 	var golden = "testdata/control.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
@@ -199,7 +199,7 @@ func TestNoJoinsControl(t *testing.T) {
 	}))
 	var golden = "testdata/control2.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
@@ -302,7 +302,7 @@ func TestMinimalFields(t *testing.T) {
 	}))
 	var golden = "testdata/minimal.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
@@ -324,7 +324,7 @@ func TestDebEpoch(t *testing.T) {
 	}))
 	var golden = "testdata/withepoch.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
@@ -353,7 +353,7 @@ func TestDebRules(t *testing.T) {
 	}))
 	var golden = "testdata/rules.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
@@ -374,7 +374,7 @@ func TestMultilineFields(t *testing.T) {
 	}))
 	var golden = "testdata/multiline.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
