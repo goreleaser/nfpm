@@ -27,7 +27,7 @@ func init() {
 // nolint: gochecknoglobals
 var Default = &RPM{}
 
-// RPM is a RPM packager implementation
+// RPM is a RPM packager implementation.
 type RPM struct{}
 
 // nolint: gochecknoglobals

@@ -32,11 +32,20 @@ func Register(format string, p Packager) {
 	lock.Unlock()
 }
 
+// ErrNoPackager happens when no packager is registered for the given format.
+type ErrNoPackager struct {
+	format string
+}
+
+func (e ErrNoPackager) Error() string {
+	return fmt.Sprintf("no packager registered for the format '%s'", e.format)
+}
+
 // Get a packager for the given format.
 func Get(format string) (Packager, error) {
 	p, ok := packagers[format]
 	if !ok {
-		return nil, fmt.Errorf("no packager registered for the format %s", format)
+		return nil, ErrNoPackager{format}
 	}
 	return p, nil
 }
@@ -66,12 +75,12 @@ func ParseFile(path string) (config Config, err error) {
 	return Parse(file)
 }
 
-// Packager represents any packager implementation
+// Packager represents any packager implementation.
 type Packager interface {
 	Package(info *Info, w io.Writer) error
 }
 
-// Config contains the top level configuration for packages
+// Config contains the top level configuration for packages.
 type Config struct {
 	Info      `yaml:",inline"`
 	Overrides map[string]Overridables `yaml:"overrides,omitempty"`
@@ -168,19 +177,28 @@ type Scripts struct {
 	PostRemove  string `yaml:"postremove,omitempty"`
 }
 
+// ErrFieldEmpty happens when some required field is empty.
+type ErrFieldEmpty struct {
+	field string
+}
+
+func (e ErrFieldEmpty) Error() string {
+	return fmt.Sprintf("package %s must be provided", e.field)
+}
+
 // Validate the given Info and returns an error if it is invalid.
 func Validate(info *Info) error {
 	if info.Name == "" {
-		return fmt.Errorf("package name cannot be empty")
+		return ErrFieldEmpty{"name"}
 	}
 	if info.Arch == "" {
-		return fmt.Errorf("package arch must be provided")
+		return ErrFieldEmpty{"arch"}
 	}
 	if info.Version == "" {
-		return fmt.Errorf("package version must be provided")
+		return ErrFieldEmpty{"version"}
 	}
 	if len(info.Files)+len(info.ConfigFiles) == 0 {
-		return fmt.Errorf("no files were provided")
+		return ErrFieldEmpty{"files"}
 	}
 	return nil
 }

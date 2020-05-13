@@ -42,7 +42,7 @@ var archToDebian = map[string]string{
 // nolint: gochecknoglobals
 var Default = &Deb{}
 
-// Deb is a deb packager implementation
+// Deb is a deb packager implementation.
 type Deb struct{}
 
 // Package writes a new deb package to the given writer using the given info.
