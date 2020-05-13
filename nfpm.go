@@ -235,7 +235,7 @@ func WithDefaults(info *Info) *Info {
 }
 
 // CopiedFile describes the source and destination of one file to copy into a
-// package and whether it is a config file
+// package and whether it is a config file.
 type CopiedFile struct {
 	Source      string
 	Destination string
