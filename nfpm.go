@@ -25,14 +25,14 @@ var (
 	lock      sync.Mutex
 )
 
-// Register a format to a packager implementation.
+// Register a new packager for the given format.
 func Register(format string, p Packager) {
 	lock.Lock()
 	packagers[format] = p
 	lock.Unlock()
 }
 
-// Get the packager implementation for the given format.
+// Get a packager for the given format.
 func Get(format string) (Packager, error) {
 	p, ok := packagers[format]
 	if !ok {
@@ -41,7 +41,7 @@ func Get(format string) (Packager, error) {
 	return p, nil
 }
 
-// Parse config from a Reader.
+// Parse decodes YAML data from an io.Reader into a configuration struct.
 func Parse(in io.Reader) (config Config, err error) {
 	dec := yaml.NewDecoder(in)
 	dec.SetStrict(true)
@@ -55,7 +55,7 @@ func Parse(in io.Reader) (config Config, err error) {
 	return config, config.Validate()
 }
 
-// ParseFile reads the file and parses it.
+// ParseFile decodes YAML data from a file path into a configuration struct.
 func ParseFile(path string) (config Config, err error) {
 	var file *os.File
 	file, err = os.Open(path) //nolint:gosec
@@ -77,7 +77,8 @@ type Config struct {
 	Overrides map[string]Overridables `yaml:"overrides,omitempty"`
 }
 
-// Get returns the Info struct for the given packager format.
+// Get returns the Info struct for the given packager format. Overrides
+// for the given format are merged into the final struct.
 func (c *Config) Get(format string) (info *Info, err error) {
 	info = &Info{}
 	// make a deep copy of info
@@ -95,7 +96,7 @@ func (c *Config) Get(format string) (info *Info, err error) {
 	return info, nil
 }
 
-// Validate config.
+// Validate ensures that the config is well typed.
 func (c *Config) Validate() error {
 	for format := range c.Overrides {
 		if _, err := Get(format); err != nil {
@@ -184,7 +185,7 @@ func Validate(info *Info) error {
 	return nil
 }
 
-// WithDefaults sets defaults on empty fields.
+// WithDefaults set some sane defaults into the given Info.
 func WithDefaults(info *Info) *Info {
 	if info.Bindir == "" {
 		info.Bindir = "/usr/local/bin"

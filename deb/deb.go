@@ -45,7 +45,7 @@ var Default = &Deb{}
 // Deb is a deb packager implementation
 type Deb struct{}
 
-// Package implementation.
+// Package writes a new deb package to the given writer using the given info.
 func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 	arch, ok := archToDebian[info.Arch]
 	if ok {

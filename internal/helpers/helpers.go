@@ -3,7 +3,7 @@ package helpers
 
 import "strconv"
 
-// IsInt returns true if the given string is an int.
+// IsInt returns true if s is int, false otherwise.
 func IsInt(s string) bool {
 	_, err := strconv.Atoi(s)
 	return err == nil

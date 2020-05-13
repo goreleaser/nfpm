@@ -45,7 +45,7 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	return info
 }
 
-// Package implementation.
+// Package writes a new RPM package to the given writer using the given info.
 func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	var (
 		err  error
