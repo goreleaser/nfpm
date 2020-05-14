@@ -39,7 +39,7 @@ brews:
   test: |
     system "#{bin}/nfpm -v"
 nfpms:
-- name_template: '{{ .ProjectName }}_{{ .Arch }}'
+- file_name_template: '{{ .ProjectName }}_{{ .Arch }}'
   homepage:  https://github.com/goreleaser/nfpm
   description: nFPM is not FPM
   maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
