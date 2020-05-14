@@ -122,7 +122,7 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 	var md5buf bytes.Buffer
 	var instSize int64
 
-	files, err := info.CopiedFiles()
+	files, err := info.FilesToCopy()
 	if err != nil {
 		return md5buf, 0, err
 	}

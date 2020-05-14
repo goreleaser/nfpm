@@ -215,7 +215,7 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 }
 
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
-	files, err := info.CopiedFiles()
+	files, err := info.FilesToCopy()
 	if err != nil {
 		return err
 	}

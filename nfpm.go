@@ -234,16 +234,17 @@ func WithDefaults(info *Info) *Info {
 	return info
 }
 
-// CopiedFile describes the source and destination of one file to copy into a
+// FileToCopy describes the source and destination of one file to copy into a
 // package and whether it is a config file.
-type CopiedFile struct {
+type FileToCopy struct {
 	Source      string
 	Destination string
 	Config      bool
 }
 
-func (info *Info) CopiedFiles() ([]CopiedFile, error) {
-	var files []CopiedFile
+// FilesToCopy lists all of the real files to be copied into the package.
+func (info *Info) FilesToCopy() ([]FileToCopy, error) {
+	var files []FileToCopy
 	for i, filesMap := range []map[string]string{info.Files, info.ConfigFiles} {
 		for srcglob, dstroot := range filesMap {
 			globbed, err := glob.Glob(srcglob, dstroot)
@@ -259,7 +260,7 @@ func (info *Info) CopiedFiles() ([]CopiedFile, error) {
 					continue
 				}
 
-				files = append(files, CopiedFile{src, dst, i == 1})
+				files = append(files, FileToCopy{src, dst, i == 1})
 			}
 		}
 	}
