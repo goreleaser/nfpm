@@ -19,7 +19,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/goreleaser/nfpm"
-	"github.com/goreleaser/nfpm/glob"
 )
 
 // nolint: gochecknoinits
@@ -122,33 +121,20 @@ func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64
 func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) (bytes.Buffer, int64, error) {
 	var md5buf bytes.Buffer
 	var instSize int64
-	for _, files := range []map[string]string{
-		info.Files,
-		info.ConfigFiles,
-	} {
-		for srcglob, dstroot := range files {
-			globbed, err := glob.Glob(srcglob, dstroot)
-			if err != nil {
-				return md5buf, 0, err
-			}
-			for src, dst := range globbed {
-				// when used as a lib, target may not be set.
-				// in that case, src will always have the empty sufix, and all
-				// files will be ignored.
-				if info.Target != "" && strings.HasSuffix(src, info.Target) {
-					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
-					continue
-				}
-				if err := createTree(out, dst, created); err != nil {
-					return md5buf, 0, err
-				}
-				size, err := copyToTarAndDigest(out, &md5buf, src, dst)
-				if err != nil {
-					return md5buf, 0, err
-				}
-				instSize += size
-			}
+
+	files, err := info.FilesToCopy()
+	if err != nil {
+		return md5buf, 0, err
+	}
+	for _, file := range files {
+		if err := createTree(out, file.Destination, created); err != nil {
+			return md5buf, 0, err
 		}
+		size, err := copyToTarAndDigest(out, &md5buf, file.Source, file.Destination)
+		if err != nil {
+			return md5buf, 0, err
+		}
+		instSize += size
 	}
 	return md5buf, instSize, nil
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/goreleaser/nfpm"
-	"github.com/goreleaser/nfpm/glob"
 )
 
 // nolint: gochecknoinits
@@ -216,36 +215,15 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 }
 
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
-	copyFunc := func(files map[string]string, config bool) error {
-		for srcglob, dstroot := range files {
-			globbed, err := glob.Glob(srcglob, dstroot)
-			if err != nil {
-				return err
-			}
-			for src, dst := range globbed {
-				// when used as a lib, target may not be set.
-				// in that case, src will always have the empty sufix, and all
-				// files will be ignored.
-				if info.Target != "" && strings.HasSuffix(src, info.Target) {
-					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
-					continue
-				}
-				err := copyToRPM(rpm, src, dst, config)
-				if err != nil {
-					return err
-				}
-			}
+	files, err := info.FilesToCopy()
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		err := copyToRPM(rpm, file.Source, file.Destination, file.Config)
+		if err != nil {
+			return err
 		}
-
-		return nil
-	}
-	err := copyFunc(info.Files, false)
-	if err != nil {
-		return err
-	}
-	err = copyFunc(info.ConfigFiles, true)
-	if err != nil {
-		return err
 	}
 	return nil
 }
