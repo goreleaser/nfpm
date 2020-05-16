@@ -10,6 +10,7 @@ import (
 	"github.com/alecthomas/kingpin"
 
 	"github.com/goreleaser/nfpm"
+	_ "github.com/goreleaser/nfpm/arch"
 	_ "github.com/goreleaser/nfpm/deb"
 	_ "github.com/goreleaser/nfpm/rpm"
 )

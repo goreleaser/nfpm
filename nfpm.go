@@ -153,6 +153,7 @@ type Overridables struct {
 	Scripts      Scripts           `yaml:"scripts,omitempty"`
 	RPM          RPM               `yaml:"rpm,omitempty"`
 	Deb          Deb               `yaml:"deb,omitempty"`
+	ArchLinux    Arch              `yaml:"gz,omitempty"`
 }
 
 // RPM is custom configs that are only available on RPM packages.
@@ -170,6 +171,12 @@ type Deb struct {
 // DebScripts is scripts only available on deb packages.
 type DebScripts struct {
 	Rules string `yaml:"rules,omitempty"`
+}
+
+// Arch is custom configs that are only available on Arch packages.
+type Arch struct {
+	Groups        []string `yaml:"groups,omitempty"`
+	InstallScript string   `yaml:"install_script,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages.
