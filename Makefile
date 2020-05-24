@@ -48,6 +48,18 @@ deps:
 	go mod verify
 .PHONY: deps
 
+imgs:
+	wget -O www/docs/static/logo.png https://github.com/goreleaser/artwork/raw/master/goreleaserfundo.png
+	wget -O www/docs/static/card.png "https://og.caarlos0.dev/**NFPM**%20|%20A%20simple%20Deb%20and%20RPM%20packager%20written%20in%20Go.png?theme=light&md=1&fontSize=80px&images=https://github.com/goreleaser.png"
+	wget -O www/docs/static/avatar.png https://github.com/goreleaser.png
+	convert www/docs/static/avatar.png -define icon:auto-resize=64,48,32,16 www/docs/static/favicon.ico
+	convert www/docs/static/avatar.png -resize x120 www/docs/static/apple-touch-icon.png
+.PHONY: imgs
+
+serve:
+	@docker run --rm -it -p 8000:8000 -v ${PWD}/www:/docs squidfunk/mkdocs-material
+.PHONY: serve
+
 todo:
 	@grep \
 		--exclude-dir=vendor \

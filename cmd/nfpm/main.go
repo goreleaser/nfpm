@@ -119,7 +119,6 @@ description: |
 vendor: "FooBarCorp"
 homepage: "http://example.com"
 license: "MIT"
-bindir: "/usr/local/bin"
 files:
   ./foo: "/usr/local/bin/foo"
   ./bar: "/usr/local/bin/bar"

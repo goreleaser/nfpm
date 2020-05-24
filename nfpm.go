@@ -135,7 +135,6 @@ type Info struct {
 	Vendor       string `yaml:"vendor,omitempty"`
 	Homepage     string `yaml:"homepage,omitempty"`
 	License      string `yaml:"license,omitempty"`
-	Bindir       string `yaml:"bindir,omitempty"`
 	Target       string `yaml:"-"`
 }
 
@@ -215,9 +214,6 @@ func Validate(info *Info) error {
 
 // WithDefaults set some sane defaults into the given Info.
 func WithDefaults(info *Info) *Info {
-	if info.Bindir == "" {
-		info.Bindir = "/usr/local/bin"
-	}
 	if info.Platform == "" {
 		info.Platform = "linux"
 	}
