@@ -38,7 +38,6 @@ func TestDefaultsVersion(t *testing.T) {
 		Version: "v1.0.0",
 	}
 	info = WithDefaults(info)
-	assert.NotEmpty(t, info.Bindir)
 	assert.NotEmpty(t, info.Platform)
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "", info.Release)
@@ -71,7 +70,7 @@ func TestDefaultsVersion(t *testing.T) {
 	assert.Equal(t, "beta1", info.Prerelease)
 
 	info = &Info{
-		Version:    "v1.0.0-1",
+		Version:    "v1.0.0-1+xdg2",
 		Release:    "2",
 		Prerelease: "beta1",
 	}
@@ -79,11 +78,11 @@ func TestDefaultsVersion(t *testing.T) {
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "2", info.Release)
 	assert.Equal(t, "beta1", info.Prerelease)
+	assert.Equal(t, "xdg2", info.Deb.VersionMetadata)
 }
 
 func TestDefaults(t *testing.T) {
 	info := &Info{
-		Bindir:      "/usr/bin",
 		Platform:    "darwin",
 		Version:     "2.4.1",
 		Description: "no description given",

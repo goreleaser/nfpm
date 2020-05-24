@@ -7,3 +7,4 @@ nfpm.yaml
 bin
 coverage.out
 /nfpm
+www/site
