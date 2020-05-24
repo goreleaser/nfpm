@@ -29,6 +29,9 @@ var (
 		Default("/tmp/foo.deb").
 		Short('t').
 		String()
+	packager = pkgCmd.Flag("packager", "which packager implementation to use").
+			Short('p').
+			Enum("deb", "rpm")
 
 	initCmd = app.Command("init", "create an empty config file")
 )
@@ -44,7 +47,7 @@ func main() {
 		}
 		fmt.Printf("created config file from example: %s\n", *config)
 	case pkgCmd.FullCommand():
-		if err := doPackage(*config, *target); err != nil {
+		if err := doPackage(*config, *target, *packager); err != nil {
 			kingpin.Fatalf(err.Error())
 		}
 		fmt.Printf("created package: %s\n", *target)
@@ -55,14 +58,17 @@ func initFile(config string) error {
 	return ioutil.WriteFile(config, []byte(example), 0600)
 }
 
-func doPackage(path, target string) error {
-	format := filepath.Ext(target)[1:]
+func doPackage(path, target, packager string) error {
+	if packager == "" {
+		fmt.Printf("guessing packager from target file extension...")
+		packager = filepath.Ext(target)[1:]
+	}
 	config, err := nfpm.ParseFile(path)
 	if err != nil {
 		return err
 	}
 
-	info, err := config.Get(format)
+	info, err := config.Get(packager)
 	if err != nil {
 		return err
 	}
@@ -73,8 +79,8 @@ func doPackage(path, target string) error {
 		return err
 	}
 
-	fmt.Printf("using %s packager...\n", format)
-	pkg, err := nfpm.Get(format)
+	fmt.Printf("using %s packager...\n", packager)
+	pkg, err := nfpm.Get(packager)
 	if err != nil {
 		return err
 	}
