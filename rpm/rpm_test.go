@@ -37,7 +37,6 @@ func exampleInfo() *nfpm.Info {
 		Homepage:    "http://carlosbecker.com",
 		Vendor:      "nope",
 		License:     "MIT",
-		Bindir:      "/usr/local/bin",
 		Overridables: nfpm.Overridables{
 			Depends: []string{
 				"bash",
