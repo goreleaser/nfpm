@@ -135,6 +135,7 @@ type Info struct {
 	Vendor       string `yaml:"vendor,omitempty"`
 	Homepage     string `yaml:"homepage,omitempty"`
 	License      string `yaml:"license,omitempty"`
+	Bindir       string `yaml:"bindir,omitempty"` // Deprecated: this does nothing. TODO: remove.
 	Target       string `yaml:"-"`
 }
 
