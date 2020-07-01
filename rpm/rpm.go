@@ -79,12 +79,14 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	return nil
 }
 
+//nolint:funlen
 func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 	var (
 		err   error
 		epoch uint64
 		provides,
 		depends,
+		recommends,
 		replaces,
 		suggests,
 		conflicts rpmpack.Relations
@@ -96,6 +98,9 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		return nil, err
 	}
 	if depends, err = toRelation(info.Depends); err != nil {
+		return nil, err
+	}
+	if recommends, err = toRelation(info.Recommends); err != nil {
 		return nil, err
 	}
 	if replaces, err = toRelation(info.Replaces); err != nil {
@@ -128,6 +133,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Packager:    info.Maintainer,
 		Group:       defaultTo(info.RPM.Group, "Development/Tools"),
 		Provides:    provides,
+		Recommends:  recommends,
 		Requires:    depends,
 		Obsoletes:   replaces,
 		Suggests:    suggests,
