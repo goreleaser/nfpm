@@ -79,6 +79,7 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	return nil
 }
 
+//nolint:funlen
 func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 	var (
 		err   error
