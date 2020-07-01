@@ -2,6 +2,9 @@ FROM ubuntu
 ARG package
 COPY ${package} /tmp/foo.deb
 RUN dpkg -i /tmp/foo.deb
+RUN apt-cache show /tmp/foo.deb | grep "Depends: bash"
+RUN apt-cache show /tmp/foo.deb | grep "Suggests: zsh"
+RUN apt-cache show /tmp/foo.deb | grep "Recommends: fish"
 RUN test -e /usr/local/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /usr/share/whatever/
