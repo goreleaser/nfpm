@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
-	github.com/golangci/golangci-lint v1.27.0
+	github.com/golangci/golangci-lint v1.28.1
 	github.com/google/rpmpack v0.0.0-20191226140753-aa36bfddb3a0
 	github.com/imdario/mergo v0.3.9
 	github.com/mattn/go-zglob v0.0.2
