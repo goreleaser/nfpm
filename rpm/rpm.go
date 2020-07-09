@@ -51,7 +51,7 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 func (*RPM) ConventionalFileName(info *nfpm.Info) string {
 	info = ensureValidArch(info)
 	// name-version-release.architecture.rpm
-	return fmt.Sprintf("%s_%s.%s.rpm", info.Name, info.Version, info.Arch)
+	return fmt.Sprintf("%s-%s.%s.rpm", info.Name, info.Version, info.Arch)
 }
 
 // Package writes a new RPM package to the given writer using the given info.
