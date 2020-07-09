@@ -45,6 +45,15 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	return info
 }
 
+// ConventionalFileName returns a file name according
+// to the conventions for RPM packages. See:
+// http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html
+func (*RPM) ConventionalFileName(info *nfpm.Info) string {
+	info = ensureValidArch(info)
+	// name-version-release.architecture.rpm
+	return fmt.Sprintf("%s_%s.%s.rpm", info.Name, info.Version, info.Arch)
+}
+
 // Package writes a new RPM package to the given writer using the given info.
 func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	var (

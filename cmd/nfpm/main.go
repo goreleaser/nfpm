@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
@@ -25,8 +26,8 @@ var (
 		String()
 
 	pkgCmd = app.Command("pkg", "package based on the config file").Alias("package")
-	target = pkgCmd.Flag("target", "where to save the generated package").
-		Default("/tmp/foo.deb").
+	target = pkgCmd.Flag("target", "where to save the generated package (filename, folder or blank for current folder)").
+		Default("").
 		Short('t').
 		String()
 	packager = pkgCmd.Flag("packager", "which packager implementation to use").
@@ -50,7 +51,6 @@ func main() {
 		if err := doPackage(*config, *target, *packager); err != nil {
 			kingpin.Fatalf(err.Error())
 		}
-		fmt.Printf("created package: %s\n", *target)
 	}
 }
 
@@ -58,12 +58,12 @@ func initFile(config string) error {
 	return ioutil.WriteFile(config, []byte(example), 0600)
 }
 
-func doPackage(path, target, packager string) error {
+func doPackage(configPath, target, packager string) error {
 	if packager == "" {
 		fmt.Printf("guessing packager from target file extension...")
 		packager = filepath.Ext(target)[1:]
 	}
-	config, err := nfpm.ParseFile(path)
+	config, err := nfpm.ParseFile(configPath)
 	if err != nil {
 		return err
 	}
@@ -85,13 +85,36 @@ func doPackage(path, target, packager string) error {
 		return err
 	}
 
+	if target == "" {
+		// if no target was specified create a package in
+		// current directory with a conventional file name
+		target = pkg.ConventionalFileName(info)
+	} else {
+		// if a directory was specified as target, create
+		// a package with conventional file name there
+		var stat os.FileInfo
+		stat, err = os.Stat(target)
+		if err == nil && stat.IsDir() {
+			target = path.Join(target, pkg.ConventionalFileName(info))
+		}
+	}
+
 	f, err := os.Create(target)
 	if err != nil {
 		return err
 	}
 
 	info.Target = target
-	return pkg.Package(info, f)
+
+	err = pkg.Package(info, f)
+	_ = f.Close()
+	if err != nil {
+		os.Remove(target)
+		return err
+	}
+
+	fmt.Printf("created package: %s\n", target)
+	return nil
 }
 
 const example = `# nfpm example config file

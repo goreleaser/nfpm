@@ -213,6 +213,10 @@ func TestListFilesToCopy(t *testing.T) {
 
 type fakePackager struct{}
 
+func (*fakePackager) ConventionalFileName(info *Info) string {
+	return ""
+}
+
 func (*fakePackager) Package(info *Info, w io.Writer) error {
 	return nil
 }

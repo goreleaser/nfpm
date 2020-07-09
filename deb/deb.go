@@ -44,6 +44,19 @@ var Default = &Deb{}
 // Deb is a deb packager implementation.
 type Deb struct{}
 
+// ConventionalFileName returns a file name according
+// to the conventions for debian packages. See:
+// https://manpages.debian.org/buster/dpkg-dev/dpkg-name.1.en.html
+func (*Deb) ConventionalFileName(info *nfpm.Info) string {
+	arch, ok := archToDebian[info.Arch]
+	if !ok {
+		arch = info.Arch
+	}
+
+	// package_version_architecture.package-type
+	return fmt.Sprintf("%s_%s_%s.deb", info.Name, info.Version, arch)
+}
+
 // Package writes a new deb package to the given writer using the given info.
 func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 	arch, ok := archToDebian[info.Arch]
