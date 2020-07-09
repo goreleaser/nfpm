@@ -31,6 +31,7 @@ type RPM struct{}
 
 // nolint: gochecknoglobals
 var archToRPM = map[string]string{
+	"all":   "noarch",
 	"amd64": "x86_64",
 	"386":   "i386",
 	"arm64": "aarch64",
