@@ -6,6 +6,7 @@ linters:
     - gomnd
     - testpackage
     - nolintlint
+    - gofumpt
 linters-settings:
   maligned:
     # print struct with more effective memory layout or not, false by default
