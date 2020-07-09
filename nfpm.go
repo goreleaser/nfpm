@@ -200,9 +200,6 @@ func Validate(info *Info) error {
 	if info.Version == "" {
 		return ErrFieldEmpty{"version"}
 	}
-	if len(info.Files)+len(info.ConfigFiles) == 0 {
-		return ErrFieldEmpty{"files"}
-	}
 	return nil
 }
 

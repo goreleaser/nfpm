@@ -108,10 +108,8 @@ provides:
 depends:
 - foo
 - bar
-# recommends on rpm packages requires rpmbuild >= 4.13
 recommends:
 - whatever
-# suggests on rpm packages requires rpmbuild >= 4.13
 suggests:
 - something-else
 conflicts:
