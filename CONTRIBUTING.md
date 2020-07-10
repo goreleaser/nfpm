@@ -10,7 +10,7 @@ conduct](/CODE_OF_CONDUCT.md).
 Prerequisites:
 
 * `make`
-* [Go 1.11+](https://golang.org/doc/install)
+* [Go 1.14+](https://golang.org/doc/install)
 * rpm (`apt-get install rpm`/`brew install rpm`)
 
 Clone `nfpm` from source:
