@@ -81,6 +81,7 @@ func ParseFile(path string) (config Config, err error) {
 // Packager represents any packager implementation.
 type Packager interface {
 	Package(info *Info, w io.Writer) error
+	ConventionalFileName(info *Info) string
 }
 
 // Config contains the top level configuration for packages.

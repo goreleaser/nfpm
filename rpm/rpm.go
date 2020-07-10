@@ -31,6 +31,7 @@ type RPM struct{}
 
 // nolint: gochecknoglobals
 var archToRPM = map[string]string{
+	"all":   "noarch",
 	"amd64": "x86_64",
 	"386":   "i386",
 	"arm64": "aarch64",
@@ -42,6 +43,15 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 		info.Arch = arch
 	}
 	return info
+}
+
+// ConventionalFileName returns a file name according
+// to the conventions for RPM packages. See:
+// http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html
+func (*RPM) ConventionalFileName(info *nfpm.Info) string {
+	info = ensureValidArch(info)
+	// name-version-release.architecture.rpm
+	return fmt.Sprintf("%s-%s.%s.rpm", info.Name, info.Version, info.Arch)
 }
 
 // Package writes a new RPM package to the given writer using the given info.
