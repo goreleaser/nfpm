@@ -1,5 +1,7 @@
 # Configuration
 
+## Reference
+
 A commented out `nfpm.yaml` config file example:
 
 ```yaml
@@ -127,4 +129,4 @@ deb:
 Templating is not and will not be supported.
 
 If you really need it, you can build on top of NFPM, use `envsubst`, `jsonnet`
-or something apply it on top of it.
+or apply some other templating on top of it.
