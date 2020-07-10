@@ -1,8 +1,8 @@
 # Home
 
-NFPM is a simple Deb and RPM packager with 0 external dependencies.
+![](/static/banner.svg)
 
-![](https://user-images.githubusercontent.com/245435/36346100-eaaf24c0-141e-11e8-8345-100f4d3ed02d.png)
+NFPM is a simple, 0-dependencies, Deb and RPM packager.
 
 ## Why
 
@@ -15,7 +15,7 @@ was really simple.
 So I decided to create NFPM: a **simpler**, **0-dependency**,
 **as-little-assumptions-as-possible** alternative to fpm.
 
-NFPM stands for *Not FPM*.
+## NFPM is Not FPM
 
 This is a subtle way of saying it wont have all features, nor all
 formats that fpm has: it is supposed to be simpler.
