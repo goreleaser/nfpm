@@ -124,11 +124,6 @@ func TestValidateError(t *testing.T) {
 			Name: "as",
 			Arch: "asd",
 		},
-		"package files must be provided": {
-			Name:    "as",
-			Arch:    "asd",
-			Version: "1.2.3",
-		},
 	} {
 		err := err
 		info := info

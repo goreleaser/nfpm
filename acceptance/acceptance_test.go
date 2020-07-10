@@ -132,6 +132,21 @@ func TestMin(t *testing.T) {
 	}
 }
 
+func TestMeta(t *testing.T) {
+	for _, format := range formats {
+		format := format
+		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("meta_%s", format),
+				Conf:       "meta.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.meta.dockerfile", format),
+			})
+		})
+	}
+}
+
 func TestRPMCompression(t *testing.T) {
 	compressFormats := []string{"gzip", "xz", "lzma"}
 	for _, format := range compressFormats {
