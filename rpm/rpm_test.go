@@ -275,15 +275,6 @@ echo "Postremove" > /dev/null
 `, data, "Postremove script does not match")
 }
 
-func TestRPMNoFiles(t *testing.T) {
-	info := exampleInfo()
-	info.Files = map[string]string{}
-	info.ConfigFiles = map[string]string{}
-	var err = Default.Package(info, ioutil.Discard)
-	// TODO: better deal with this error
-	assert.Error(t, err)
-}
-
 func TestRPMFileDoesNotExist(t *testing.T) {
 	info := exampleInfo()
 	info.Files = map[string]string{

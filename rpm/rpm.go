@@ -62,9 +62,6 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 		rpm  *rpmpack.RPM
 	)
 	info = ensureValidArch(info)
-	if err = nfpm.Validate(info); err != nil {
-		return err
-	}
 
 	if meta, err = buildRPMMeta(info); err != nil {
 		return err
