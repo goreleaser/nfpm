@@ -15,61 +15,19 @@
 
 ## Why
 
-While [fpm][] is great, for me it is a bummer that it depends on Ruby, tar
-and probably other software.
+While [fpm][] is great, for me, it is a bummer that it depends on `ruby`, `tar`
+and other softwares.
 
-I wanted something that could be used as a binary and/or as a lib on go-software,
-so I hacked this together and it works!
+I wanted something that could be used as a binary and/or as a library and that
+was really simple.
 
-## Goals
-
-* [x] be simple to use
-* [x] provide packaging for the most common linux packaging systems (at very least deb and rpm)
-* [x] be distributed as a single binary
-* [x] reproducible results
-  * [x] depend on the fewer external things as possible
-  * [x] generate packages based on yaml files (maybe also json and toml?)
-* [x] be possible to use it as a lib in other go projects (namely [goreleaser][] itself)
-* [ ] support complex packages and power users
+So I created NFPM: a simpler, 0-dependency, as-little-assumptions-as-possible alternative to fpm.
 
 ## Usage
 
-The first steps are to run `nfpm init` to initialize a config file and edit
-the generated file according to your needs:
+Check the documentation at https://nfpm.goreleaser.com
 
-![nfpm init](https://user-images.githubusercontent.com/245435/36346101-f81cdcec-141e-11e8-8afc-a5eb93b7d510.png)
-
-The next step is to run `nfpm pkg --target mypkg.deb`.
-NFPM will guess which packager to use based on the target file extension.
-
-![nfpm pkg](https://user-images.githubusercontent.com/245435/36346100-eaaf24c0-141e-11e8-8345-100f4d3ed02d.png)
-
-And that's it!
-
-## Usage as a docker image
-
-You can run it with docker as well:
-
-```sh
-docker run --rm \
-  -v $PWD:/tmp/pkg \
-  goreleaser/nfpm pkg --config /tmp/pkg/foo.yml --target /tmp/pkg/foo.rpm
-```
-
-That's it!
-
-## Usage as lib
-
-You can look at the code of nfpm itself to see how to use it as a library, or, take
-a look at the [nfpm pipe on GoReleaser](https://github.com/goreleaser/goreleaser/blob/master/internal/pipe/nfpm/nfpm.go).
-
-> **Attention**: GoReleaser `deb` packager only compiles with go1.10+.
-
-## Status
-
-* both deb and rpm packaging are working but there are some missing features.
-
-## Special thanks
+## Special thanks 🙏
 
 Thanks to the [fpm][] authors for fpm, which inspires nfpm a lot.
 

@@ -118,10 +118,13 @@ func doPackage(configPath, target, packager string) error {
 }
 
 const example = `# nfpm example config file
+#
+# check https://nfpm.goreleaser.com/configuration for detailed usage
+#
 name: "foo"
 arch: "amd64"
 platform: "linux"
-version: "v${MY_APP_VERSION}"
+version: "v1.0.0"
 section: "default"
 priority: "extra"
 replaces:
