@@ -16,6 +16,8 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 
+	"github.com/goreleaser/chglog"
+
 	"github.com/goreleaser/nfpm/glob"
 	"github.com/goreleaser/nfpm/internal/helpers"
 
@@ -137,6 +139,7 @@ type Info struct {
 	Homepage     string `yaml:"homepage,omitempty"`
 	License      string `yaml:"license,omitempty"`
 	Bindir       string `yaml:"bindir,omitempty"` // Deprecated: this does nothing. TODO: remove.
+	Changelog    string `yaml:"changelog,omitempty"`
 	Target       string `yaml:"-"`
 }
 
@@ -268,4 +271,23 @@ func (info *Info) FilesToCopy() ([]FileToCopy, error) {
 		return a.Destination < b.Destination
 	})
 	return files, nil
+}
+
+// GetChangeLog parses the provided changelog file.
+func (info *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
+	// if the file does not exist chglog.Parse will just silently
+	// create an empty changelog but we should notify the user instead
+	if _, err = os.Stat(info.Changelog); os.IsNotExist(err) {
+		return nil, err
+	}
+
+	entries, err := chglog.Parse(info.Changelog)
+	if err != nil {
+		return nil, err
+	}
+
+	return &chglog.PackageChangeLog{
+		Name:    info.Name,
+		Entries: entries,
+	}, nil
 }

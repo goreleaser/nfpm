@@ -1,13 +1,18 @@
 package rpm
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/goreleaser/chglog"
 
 	"github.com/goreleaser/nfpm"
 )
@@ -295,4 +300,72 @@ func TestRPMMultiArch(t *testing.T) {
 		info = ensureValidArch(info)
 		assert.Equal(t, archToRPM[k], info.Arch)
 	}
+}
+
+func TestRPMChangelog(t *testing.T) {
+	info := exampleInfo()
+	info.Changelog = "../testdata/changelog.yaml"
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	assert.NoError(t, err)
+
+	rpm, err := rpmutils.ReadRpm(bytes.NewReader(rpmFileBuffer.Bytes()))
+	assert.NoError(t, err)
+
+	changelog, err := chglog.Parse(info.Changelog)
+	assert.NoError(t, err)
+
+	_times, err := rpm.Header.Get(tagChangelogTime)
+	assert.NoError(t, err)
+	times, ok := _times.([]uint32)
+	assert.True(t, ok)
+	assert.Equal(t, len(changelog), len(times))
+
+	_titles, err := rpm.Header.Get(tagChangelogName)
+	assert.NoError(t, err)
+	titles, ok := _titles.([]string)
+	assert.True(t, ok)
+	assert.Equal(t, len(changelog), len(titles))
+
+	_notes, err := rpm.Header.Get(tagChangelogText)
+	assert.NoError(t, err)
+	allNotes, ok := _notes.([]string)
+	assert.True(t, ok)
+	assert.Equal(t, len(changelog), len(allNotes))
+
+	for i, entry := range changelog {
+		timestamp := time.Unix(int64(times[i]), 0).UTC()
+		title := titles[i]
+		notes := strings.Split(allNotes[i], "\n")
+
+		assert.Equal(t, entry.Date, timestamp)
+		assert.True(t, strings.Contains(title, entry.Packager))
+		assert.True(t, strings.Contains(title, entry.Semver))
+		assert.Equal(t, len(entry.Changes), len(notes))
+
+		for j, change := range entry.Changes {
+			assert.True(t, strings.Contains(notes[j], change.Note))
+		}
+	}
+}
+
+func TestRPMNoChangelogTagsWithoutChangelogConfigured(t *testing.T) {
+	info := exampleInfo()
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	assert.NoError(t, err)
+
+	rpm, err := rpmutils.ReadRpm(bytes.NewReader(rpmFileBuffer.Bytes()))
+	assert.NoError(t, err)
+
+	_, err = rpm.Header.Get(tagChangelogTime)
+	assert.Error(t, err)
+
+	_, err = rpm.Header.Get(tagChangelogName)
+	assert.Error(t, err)
+
+	_, err = rpm.Header.Get(tagChangelogText)
+	assert.Error(t, err)
 }

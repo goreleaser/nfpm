@@ -10,6 +10,7 @@ require (
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/golangci/golangci-lint v1.28.2
 	github.com/google/rpmpack v0.0.0-20200615183209-0c831d19bd44
+	github.com/goreleaser/chglog v0.0.0-20191115023842-d969fbb05c3c
 	github.com/imdario/mergo v0.3.9
 	github.com/mattn/go-zglob v0.0.2
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect

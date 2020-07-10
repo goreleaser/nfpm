@@ -181,6 +181,21 @@ func TestDebRules(t *testing.T) {
 	})
 }
 
+func TestChangelog(t *testing.T) {
+	for _, format := range formats {
+		format := format
+		t.Run(fmt.Sprintf("changelog-%s", format), func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("changelog_%s", format),
+				Conf:       "withchangelog.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.changelog.dockerfile", format),
+			})
+		})
+	}
+}
+
 type acceptParms struct {
 	Name       string
 	Conf       string

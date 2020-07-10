@@ -3,15 +3,20 @@ package deb
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/goreleaser/chglog"
 
 	"github.com/goreleaser/nfpm"
 )
@@ -379,4 +384,152 @@ func TestMultilineFields(t *testing.T) {
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
+}
+
+func TestDebChangelogControl(t *testing.T) {
+	info := &nfpm.Info{
+		Name:        "changelog-test",
+		Arch:        "amd64",
+		Description: "This package has changelogs.",
+		Version:     "1.0.0",
+		Changelog:   "../testdata/changelog.yaml",
+	}
+
+	controlTarGz, err := createControl(0, []byte{}, info)
+	assert.NoError(t, err)
+
+	controlChangelog, err := extractFileFromTarGz(controlTarGz, "changelog")
+	assert.NoError(t, err)
+
+	goldenChangelog, err := readAndFormatAsDebChangelog(info.Changelog, info.Name)
+	assert.NoError(t, err)
+
+	assert.Equal(t, goldenChangelog, string(controlChangelog))
+}
+
+func TestDebNoChangelogControlWithoutChangelogConfigured(t *testing.T) {
+	info := &nfpm.Info{
+		Name:        "no-changelog-test",
+		Arch:        "amd64",
+		Description: "This package has explicitly no changelog.",
+		Version:     "1.0.0",
+	}
+
+	controlTarGz, err := createControl(0, []byte{}, info)
+	assert.NoError(t, err)
+
+	_, err = extractFileFromTarGz(controlTarGz, "changelog")
+	assert.EqualError(t, err, os.ErrNotExist.Error())
+}
+
+func TestDebChangelogData(t *testing.T) {
+	info := &nfpm.Info{
+		Name:        "changelog-test",
+		Arch:        "amd64",
+		Description: "This package has changelogs.",
+		Version:     "1.0.0",
+		Changelog:   "../testdata/changelog.yaml",
+	}
+
+	dataTarGz, _, _, err := createDataTarGz(info)
+	assert.NoError(t, err)
+
+	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
+	dataChangelogGz, err := extractFileFromTarGz(dataTarGz, changelogName)
+	assert.NoError(t, err)
+
+	dataChangelog, err := gzipInflate(dataChangelogGz)
+	assert.NoError(t, err)
+
+	goldenChangelog, err := readAndFormatAsDebChangelog(info.Changelog, info.Name)
+	assert.NoError(t, err)
+
+	assert.Equal(t, goldenChangelog, string(dataChangelog))
+}
+
+func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
+	info := &nfpm.Info{
+		Name:        "no-changelog-test",
+		Arch:        "amd64",
+		Description: "This package has explicitly no changelog.",
+		Version:     "1.0.0",
+	}
+
+	dataTarGz, _, _, err := createDataTarGz(info)
+	assert.NoError(t, err)
+
+	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
+	_, err = extractFileFromTarGz(dataTarGz, changelogName)
+	assert.EqualError(t, err, os.ErrNotExist.Error())
+}
+
+func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
+	tarFile, err := gzipInflate(tarGzFile)
+	if err != nil {
+		return nil, err
+	}
+
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if hdr.Name != filename {
+			continue
+		}
+
+		fileContents, err := ioutil.ReadAll(tr)
+		if err != nil {
+			return nil, err
+		}
+
+		return fileContents, nil
+	}
+
+	return nil, os.ErrNotExist
+}
+
+func gzipInflate(data []byte) ([]byte, error) {
+	gzr, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	inflatedData, err := ioutil.ReadAll(gzr)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = gzr.Close(); err != nil {
+		return nil, err
+	}
+
+	return inflatedData, nil
+}
+
+func readAndFormatAsDebChangelog(changelogFileName, packageName string) (string, error) {
+	changelogEntries, err := chglog.Parse(changelogFileName)
+	if err != nil {
+		return "", err
+	}
+
+	tpl, err := chglog.DebTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	debChangelog, err := chglog.FormatChangelog(&chglog.PackageChangeLog{
+		Name:    packageName,
+		Entries: changelogEntries,
+	}, tpl)
+	if err != nil {
+		return "", err
+	}
+
+	return debChangelog, nil
 }
