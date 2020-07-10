@@ -68,13 +68,13 @@ $ cd nfpm
 **Get the dependencies:**
 
 ```console
-$ go get ./...
+$ go mod download
 ```
 
 **Build:**
 
 ```console
-$ go build -o nfpm .
+$ go build -o nfpm cmd/nfpm/main.go
 ```
 
 **Verify it works:**
