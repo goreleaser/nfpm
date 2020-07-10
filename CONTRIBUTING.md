@@ -10,8 +10,7 @@ conduct](/CODE_OF_CONDUCT.md).
 Prerequisites:
 
 * `make`
-* [Go 1.11+](https://golang.org/doc/install)
-* rpm (`apt-get install rpm`/`brew install rpm`)
+* [Go 1.14+](https://golang.org/doc/install)
 
 Clone `nfpm` from source:
 
@@ -35,7 +34,7 @@ $ make test
 If on the ARM tests you are seeing `standard_init_linux.go:211: exec user process caused "exec format error"`:
 
 ```console
-$sudo docker run --rm --privileged hypriot/qemu-register
+$ sudo docker run --rm --privileged hypriot/qemu-register
 ```
 
 ## Test your change
