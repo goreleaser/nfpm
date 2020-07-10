@@ -1,7 +1,7 @@
 SOURCE_FILES?=./...
 TEST_PATTERN?=.
 TEST_OPTIONS?=
-TEST_TIMEOUT?=5m
+TEST_TIMEOUT?=10m
 
 export PATH := ./bin:$(PATH)
 export GO111MODULE := on
