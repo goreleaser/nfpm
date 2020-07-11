@@ -9,7 +9,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/golangci/golangci-lint v1.28.2
-	github.com/google/rpmpack v0.0.0-20200615183209-0c831d19bd44
+	github.com/google/rpmpack v0.0.0-20200711065858-671dbb9d0be5
 	github.com/imdario/mergo v0.3.9
 	github.com/mattn/go-zglob v0.0.2
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
@@ -20,5 +20,3 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )
-
-replace github.com/google/rpmpack => github.com/caarlos0/rpmpack v0.0.0-20200710042532-753d6ca00514

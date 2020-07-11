@@ -44,8 +44,6 @@ github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb h1:m935MPodAbYS46DG4
 github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb/go.mod h1:PkYb9DJNAwrSvRx5DYA+gUcOIgTGVMNkfSCbZM8cWpI=
 github.com/bombsimon/wsl/v3 v3.1.0 h1:E5SRssoBgtVFPcYWUOFJEcgaySgdtTNYzsSKDOY7ss8=
 github.com/bombsimon/wsl/v3 v3.1.0/go.mod h1:st10JtZYLE4D5sC7b8xV4zTKZwAQjCH/Hy2Pm1FNZIc=
-github.com/caarlos0/rpmpack v0.0.0-20200710042532-753d6ca00514 h1:hBo5TK0R7gExBHl32YyPXxCaDsjWyhvdmOIcTkKUFHI=
-github.com/caarlos0/rpmpack v0.0.0-20200710042532-753d6ca00514/go.mod h1:RaTPr0KUf2K7fnZYLNDrr8rxAamWs3iNywJLtQ2AzBg=
 github.com/cavaliercoder/go-cpio v0.0.0-20180626203310-925f9528c45e h1:hHg27A0RSSp2Om9lubZpiMgVbvn39bsUmW9U5h0twqc=
 github.com/cavaliercoder/go-cpio v0.0.0-20180626203310-925f9528c45e/go.mod h1:oDpT4efm8tSYHXV5tHSdRvBet/b/QzxZ+XyyPehvm3A=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
@@ -163,6 +161,8 @@ github.com/google/martian v2.1.0+incompatible/go.mod h1:9I4somxYTbIHy5NJKHRl3wXi
 github.com/google/pprof v0.0.0-20181206194817-3ea8567a2e57/go.mod h1:zfwlbNMJ+OItoe0UupaVj+oy1omPYYDuagoSzA8v9mc=
 github.com/google/pprof v0.0.0-20190515194954-54271f7e092f/go.mod h1:zfwlbNMJ+OItoe0UupaVj+oy1omPYYDuagoSzA8v9mc=
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
+github.com/google/rpmpack v0.0.0-20200711065858-671dbb9d0be5 h1:7P5uYhwxBFsVZrkPmon2EIhFICvv3ughhTg99yphzLQ=
+github.com/google/rpmpack v0.0.0-20200711065858-671dbb9d0be5/go.mod h1:RaTPr0KUf2K7fnZYLNDrr8rxAamWs3iNywJLtQ2AzBg=
 github.com/google/uuid v1.0.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
