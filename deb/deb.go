@@ -18,6 +18,8 @@ import (
 	"github.com/blakesmith/ar"
 	"github.com/pkg/errors"
 
+	"github.com/goreleaser/chglog"
+
 	"github.com/goreleaser/nfpm"
 )
 
@@ -140,15 +142,42 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 		return md5buf, 0, err
 	}
 	for _, file := range files {
-		if err := createTree(out, file.Destination, created); err != nil {
+		if err = createTree(out, file.Destination, created); err != nil {
 			return md5buf, 0, err
 		}
-		size, err := copyToTarAndDigest(out, &md5buf, file.Source, file.Destination)
+
+		var size int64 // declare early to avoid shadowing err
+		size, err = copyToTarAndDigest(out, &md5buf, file.Source, file.Destination)
 		if err != nil {
 			return md5buf, 0, err
 		}
 		instSize += size
 	}
+
+	if info.Changelog != "" {
+		changelog, err := createChangelog(info)
+		if err != nil {
+			return md5buf, 0, err
+		}
+
+		// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
+		changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
+		if err = createTree(out, changelogName, created); err != nil {
+			return md5buf, 0, err
+		}
+
+		var digest = md5.New() // nolint:gas
+		if _, err = fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(nil), changelog); err != nil {
+			return md5buf, instSize, err
+		}
+
+		if err = newFileInsideTarGz(out, changelogName, changelog); err != nil {
+			return md5buf, instSize, err
+		}
+
+		instSize += int64(len(changelog))
+	}
+
 	return md5buf, instSize, nil
 }
 
@@ -199,6 +228,48 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 	return info.Size(), nil
 }
 
+func createChangelog(info *nfpm.Info) (chglogTarGz []byte, err error) {
+	var buf bytes.Buffer
+	var out = gzip.NewWriter(&buf)
+	// the writers are properly closed later, this is just in case that we have
+	// an error in another part of the code.
+	defer out.Close() // nolint: errcheck
+
+	chglogData, err := formatChangelog(info)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err = out.Write([]byte(chglogData)); err != nil {
+		return nil, err
+	}
+
+	if err := out.Close(); err != nil {
+		return nil, errors.Wrap(err, "closing changelog.gz")
+	}
+
+	return buf.Bytes(), nil
+}
+
+func formatChangelog(info *nfpm.Info) (string, error) {
+	pkgChglog, err := info.GetChangeLog()
+	if err != nil {
+		return "", err
+	}
+
+	tpl, err := chglog.DebTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	chglogData, err := chglog.FormatChangelog(pkgChglog, tpl)
+	if err != nil {
+		return "", err
+	}
+
+	return chglogData, nil
+}
+
 func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarGz []byte, err error) {
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
@@ -209,18 +280,29 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 	defer compress.Close() // nolint: errcheck
 
 	var body bytes.Buffer
-	if err := writeControl(&body, controlData{
+	if err = writeControl(&body, controlData{
 		Info:          info,
 		InstalledSize: instSize / 1024,
 	}); err != nil {
 		return nil, err
 	}
 
-	for name, content := range map[string][]byte{
+	filesToCreate := map[string][]byte{
 		"control":   body.Bytes(),
 		"md5sums":   md5sums,
 		"conffiles": conffiles(info),
-	} {
+	}
+
+	if info.Changelog != "" {
+		changeLogData, err := formatChangelog(info)
+		if err != nil {
+			return nil, err
+		}
+
+		filesToCreate["changelog"] = []byte(changeLogData)
+	}
+
+	for name, content := range filesToCreate {
 		if err := newFileInsideTarGz(out, name, content); err != nil {
 			return nil, err
 		}

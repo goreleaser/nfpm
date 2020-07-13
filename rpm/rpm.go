@@ -3,6 +3,7 @@
 package rpm
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,7 +15,25 @@ import (
 	"github.com/google/rpmpack"
 	"github.com/pkg/errors"
 
+	"github.com/goreleaser/chglog"
+
 	"github.com/goreleaser/nfpm"
+)
+
+const (
+	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L152
+	tagChangelogTime = 1080
+	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L153
+	tagChangelogName = 1081
+	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L154
+	tagChangelogText = 1082
+
+	changelogNotesTemplate = `
+	{{- range .Changes }}{{$note := splitList "\n" .Note}}
+	- {{ first $note }}
+	{{- range $i,$n := (rest $note) }}{{- if ne (trim $n) ""}}
+	{{$n}}{{end}}
+	{{- end}}{{- end}}`
 )
 
 // nolint: gochecknoinits
@@ -79,9 +98,55 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
+	if info.Changelog != "" {
+		if err = addChangeLog(info, rpm); err != nil {
+			return err
+		}
+	}
+
 	if err = rpm.Write(w); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func addChangeLog(info *nfpm.Info, rpm *rpmpack.RPM) error {
+	changelog, err := info.GetChangeLog()
+	if err != nil {
+		return fmt.Errorf("reading changelog: %w", err)
+	}
+
+	if len(changelog.Entries) == 0 {
+		// no nothing because creating empty tags
+		// would result in an invalid package
+		return nil
+	}
+
+	tpl, err := chglog.LoadTemplateData(changelogNotesTemplate)
+	if err != nil {
+		return fmt.Errorf("parsing RPM changelog template: %w", err)
+	}
+
+	changes := make([]string, len(changelog.Entries))
+	titles := make([]string, len(changelog.Entries))
+	times := make([]uint32, len(changelog.Entries))
+	for idx, entry := range changelog.Entries {
+		var formattedNotes bytes.Buffer
+
+		err := tpl.Execute(&formattedNotes, entry)
+		if err != nil {
+			return fmt.Errorf("formatting changlog notes: %w", err)
+		}
+
+		changes[idx] = strings.TrimSpace(formattedNotes.String())
+		times[idx] = uint32(entry.Date.Unix())
+		titles[idx] = fmt.Sprintf("%s - %s", entry.Packager, entry.Semver)
+	}
+
+	rpm.AddCustomTag(tagChangelogTime, rpmpack.EntryUint32(times))
+	rpm.AddCustomTag(tagChangelogName, rpmpack.EntryStringSlice(titles))
+	rpm.AddCustomTag(tagChangelogText, rpmpack.EntryStringSlice(changes))
 
 	return nil
 }

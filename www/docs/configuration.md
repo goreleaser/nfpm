@@ -52,6 +52,9 @@ homepage: https://nfpm.goreleaser.com
 # License.
 license: MIT
 
+# Changelog YAML file, see: https://github.com/goreleaser/chglog
+changelog: "changelog.yaml"
+
 # Packages it replaces. (overridable)
 replaces:
 - foobar

@@ -148,6 +148,7 @@ description: |
 vendor: "FooBarCorp"
 homepage: "http://example.com"
 license: "MIT"
+changelog: "changelog.yaml"
 files:
   ./foo: "/usr/local/bin/foo"
   ./bar: "/usr/local/bin/bar"
