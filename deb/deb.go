@@ -252,7 +252,7 @@ func createChangelog(info *nfpm.Info) (chglogTarGz []byte, err error) {
 }
 
 func formatChangelog(info *nfpm.Info) (string, error) {
-	pkgChglog, err := info.GetChangeLog()
+	changelog, err := info.GetChangeLog()
 	if err != nil {
 		return "", err
 	}
@@ -262,12 +262,12 @@ func formatChangelog(info *nfpm.Info) (string, error) {
 		return "", err
 	}
 
-	chglogData, err := chglog.FormatChangelog(pkgChglog, tpl)
+	formattedChangelog, err := chglog.FormatChangelog(changelog, tpl)
 	if err != nil {
 		return "", err
 	}
 
-	return chglogData, nil
+	return strings.TrimSpace(formattedChangelog) + "\n", nil
 }
 
 func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarGz []byte, err error) {
