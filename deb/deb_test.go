@@ -386,6 +386,37 @@ func TestMultilineFields(t *testing.T) {
 	assert.Equal(t, string(bts), w.String())
 }
 
+func TestDEBConventionalFileName(t *testing.T) {
+	info := &nfpm.Info{
+		Name: "testpkg",
+		Arch: "all",
+	}
+
+	testCases := []struct {
+		Version    string
+		Release    string
+		Prerelease string
+		expected   string
+	}{
+		{Version: "1.2.3", Release: "", Prerelease: "",
+			expected: fmt.Sprintf("%s_1.2.3_%s.deb", info.Name, info.Arch)},
+		{Version: "1.2.3", Release: "4", Prerelease: "",
+			expected: fmt.Sprintf("%s_1.2.3-4_%s.deb", info.Name, info.Arch)},
+		{Version: "1.2.3", Release: "4", Prerelease: "5",
+			expected: fmt.Sprintf("%s_1.2.3-4~5_%s.deb", info.Name, info.Arch)},
+		{Version: "1.2.3", Release: "", Prerelease: "5",
+			expected: fmt.Sprintf("%s_1.2.3~5_%s.deb", info.Name, info.Arch)},
+	}
+
+	for _, testCase := range testCases {
+		info.Version = testCase.Version
+		info.Release = testCase.Release
+		info.Prerelease = testCase.Prerelease
+
+		assert.Equal(t, testCase.expected, Default.ConventionalFileName(info))
+	}
+}
+
 func TestDebChangelogControl(t *testing.T) {
 	info := &nfpm.Info{
 		Name:        "changelog-test",
