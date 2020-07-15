@@ -531,5 +531,5 @@ func readAndFormatAsDebChangelog(changelogFileName, packageName string) (string,
 		return "", err
 	}
 
-	return debChangelog, nil
+	return strings.TrimSpace(debChangelog) + "\n", nil
 }

@@ -29,11 +29,11 @@ const (
 	tagChangelogText = 1082
 
 	changelogNotesTemplate = `
-	{{- range .Changes }}{{$note := splitList "\n" .Note}}
-	- {{ first $note }}
-	{{- range $i,$n := (rest $note) }}{{- if ne (trim $n) ""}}
-	{{$n}}{{end}}
-	{{- end}}{{- end}}`
+{{- range .Changes }}{{$note := splitList "\n" .Note}}
+- {{ first $note }}
+{{- range $i,$n := (rest $note) }}{{- if ne (trim $n) ""}}
+{{$n}}{{end}}
+{{- end}}{{- end}}`
 )
 
 // nolint: gochecknoinits
