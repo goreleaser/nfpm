@@ -55,8 +55,16 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 		arch = info.Arch
 	}
 
+	version := info.Version
+	if info.Release != "" {
+		version += "-" + info.Release
+	}
+	if info.Prerelease != "" {
+		version += "~" + info.Prerelease
+	}
+
 	// package_version_architecture.package-type
-	return fmt.Sprintf("%s_%s_%s.deb", info.Name, info.Version, arch)
+	return fmt.Sprintf("%s_%s_%s.deb", info.Name, version, arch)
 }
 
 // Package writes a new deb package to the given writer using the given info.

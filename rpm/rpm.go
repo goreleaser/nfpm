@@ -69,8 +69,17 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 // http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html
 func (*RPM) ConventionalFileName(info *nfpm.Info) string {
 	info = ensureValidArch(info)
+
+	version := info.Version
+	if info.Release != "" {
+		version += "-" + info.Release
+	}
+	if info.Prerelease != "" {
+		version += "~" + info.Prerelease
+	}
+
 	// name-version-release.architecture.rpm
-	return fmt.Sprintf("%s-%s.%s.rpm", info.Name, info.Version, info.Arch)
+	return fmt.Sprintf("%s-%s.%s.rpm", info.Name, version, info.Arch)
 }
 
 // Package writes a new RPM package to the given writer using the given info.
