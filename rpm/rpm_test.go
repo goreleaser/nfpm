@@ -312,16 +312,16 @@ func TestRPMConventionalFileName(t *testing.T) {
 		Version    string
 		Release    string
 		Prerelease string
-		expected   string
+		Expected   string
 	}{
 		{Version: "1.2.3", Release: "", Prerelease: "",
-			expected: fmt.Sprintf("%s-1.2.3.%s.rpm", info.Name, info.Arch)},
+			Expected: fmt.Sprintf("%s-1.2.3.%s.rpm", info.Name, info.Arch)},
 		{Version: "1.2.3", Release: "4", Prerelease: "",
-			expected: fmt.Sprintf("%s-1.2.3-4.%s.rpm", info.Name, info.Arch)},
+			Expected: fmt.Sprintf("%s-1.2.3-4.%s.rpm", info.Name, info.Arch)},
 		{Version: "1.2.3", Release: "4", Prerelease: "5",
-			expected: fmt.Sprintf("%s-1.2.3-4~5.%s.rpm", info.Name, info.Arch)},
+			Expected: fmt.Sprintf("%s-1.2.3-4~5.%s.rpm", info.Name, info.Arch)},
 		{Version: "1.2.3", Release: "", Prerelease: "5",
-			expected: fmt.Sprintf("%s-1.2.3~5.%s.rpm", info.Name, info.Arch)},
+			Expected: fmt.Sprintf("%s-1.2.3~5.%s.rpm", info.Name, info.Arch)},
 	}
 
 	for _, testCase := range testCases {
@@ -329,7 +329,7 @@ func TestRPMConventionalFileName(t *testing.T) {
 		info.Release = testCase.Release
 		info.Prerelease = testCase.Prerelease
 
-		assert.Equal(t, testCase.expected, Default.ConventionalFileName(info))
+		assert.Equal(t, testCase.Expected, Default.ConventionalFileName(info))
 	}
 }
 
