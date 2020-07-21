@@ -12,7 +12,7 @@ require (
 	github.com/google/rpmpack v0.0.0-20200711065858-671dbb9d0be5
 	github.com/goreleaser/chglog v0.0.0-20191115023842-d969fbb05c3c
 	github.com/imdario/mergo v0.3.10
-	github.com/mattn/go-zglob v0.0.2
+	github.com/mattn/go-zglob v0.0.3
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sassoftware/go-rpmutils v0.0.0-20190420191620-a8f1baeba37b
