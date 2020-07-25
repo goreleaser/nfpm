@@ -498,7 +498,7 @@ func TestDebTriggers(t *testing.T) {
 	info := &nfpm.Info{
 		Name:        "no-triggers-test",
 		Arch:        "amd64",
-		Description: "This package has explicitly no triggers.",
+		Description: "This package has multiple triggers.",
 		Version:     "1.0.0",
 		Overridables: nfpm.Overridables{
 			Deb: nfpm.Deb{
