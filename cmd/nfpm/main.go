@@ -58,11 +58,32 @@ func initFile(config string) error {
 	return ioutil.WriteFile(config, []byte(example), 0600)
 }
 
+type parameterError struct {
+	msg string
+}
+
+func (e *parameterError) Error() string {
+	return e.msg
+}
+
+// nolint:funlen
 func doPackage(configPath, target, packager string) error {
-	if packager == "" {
-		fmt.Printf("guessing packager from target file extension...")
-		packager = filepath.Ext(target)[1:]
+	targetIsADirectory := false
+	stat, err := os.Stat(target)
+	if err == nil && stat.IsDir() {
+		targetIsADirectory = true
 	}
+
+	if packager == "" {
+		ext := filepath.Ext(target)
+		if targetIsADirectory || ext == "" {
+			return &parameterError{"a packager must be specified if target is a directory or blank"}
+		}
+
+		packager = ext[1:]
+		fmt.Println("guessing packager from target file extension...")
+	}
+
 	config, err := nfpm.ParseFile(configPath)
 	if err != nil {
 		return err
@@ -89,14 +110,10 @@ func doPackage(configPath, target, packager string) error {
 		// if no target was specified create a package in
 		// current directory with a conventional file name
 		target = pkg.ConventionalFileName(info)
-	} else {
+	} else if targetIsADirectory {
 		// if a directory was specified as target, create
 		// a package with conventional file name there
-		var stat os.FileInfo
-		stat, err = os.Stat(target)
-		if err == nil && stat.IsDir() {
-			target = path.Join(target, pkg.ConventionalFileName(info))
-		}
+		target = path.Join(target, pkg.ConventionalFileName(info))
 	}
 
 	f, err := os.Create(target)
