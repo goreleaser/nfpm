@@ -9,6 +9,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -159,9 +161,9 @@ func TestControl(t *testing.T) {
 func TestScripts(t *testing.T) {
 	var w bytes.Buffer
 	var out = tar.NewWriter(&w)
-	path := "../testdata/scripts/preinstall.sh"
+	filePath := "../testdata/scripts/preinstall.sh"
 	assert.Error(t, newScriptInsideTarGz(out, "doesnotexit", "preinst"))
-	assert.NoError(t, newScriptInsideTarGz(out, path, "preinst"))
+	assert.NoError(t, newScriptInsideTarGz(out, filePath, "preinst"))
 	var in = tar.NewReader(&w)
 	header, err := in.Next()
 	assert.NoError(t, err)
@@ -171,7 +173,7 @@ func TestScripts(t *testing.T) {
 	assert.Equal(t, int64(header.FileInfo().Mode()), mode)
 	data, err := ioutil.ReadAll(in)
 	assert.NoError(t, err)
-	org, err := ioutil.ReadFile(path)
+	org, err := ioutil.ReadFile(filePath)
 	assert.NoError(t, err)
 	assert.Equal(t, data, org)
 }
@@ -280,15 +282,15 @@ func TestConffiles(t *testing.T) {
 }
 
 func TestPathsToCreate(t *testing.T) {
-	for path, parts := range map[string][]string{
+	for filePath, parts := range map[string][]string{
 		"/usr/share/doc/whatever/foo.md": {"usr", "usr/share", "usr/share/doc", "usr/share/doc/whatever"},
 		"/var/moises":                    {"var"},
 		"/":                              {},
 	} {
 		parts := parts
-		path := path
-		t.Run(fmt.Sprintf("path: '%s'", path), func(t *testing.T) {
-			assert.Equal(t, parts, pathsToCreate(path))
+		filePath := filePath
+		t.Run(fmt.Sprintf("path: '%s'", filePath), func(t *testing.T) {
+			assert.Equal(t, parts, pathsToCreate(filePath))
 		})
 	}
 }
@@ -494,6 +496,36 @@ func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
 	assert.EqualError(t, err, os.ErrNotExist.Error())
 }
 
+func TestSymlinkInFiles(t *testing.T) {
+	var (
+		symlinkTarget  = "../testdata/whatever.conf"
+		packagedTarget = "/etc/fake/whatever.conf"
+	)
+
+	info := &nfpm.Info{
+		Name:        "symlink-in-files",
+		Arch:        "amd64",
+		Description: "This package's config references a file via symlink.",
+		Version:     "1.0.0",
+		Overridables: nfpm.Overridables{
+			Files: map[string]string{
+				symlinkTo(t, symlinkTarget): packagedTarget,
+			},
+		},
+	}
+
+	realSymlinkTarget, err := ioutil.ReadFile(symlinkTarget)
+	assert.NoError(t, err)
+
+	dataTarGz, _, _, err := createDataTarGz(info)
+	assert.NoError(t, err)
+
+	packagedSymlinkTarget, err := extractFileFromTarGz(dataTarGz, packagedTarget)
+	assert.NoError(t, err)
+
+	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
+}
+
 func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 	tarFile, err := gzipInflate(tarGzFile)
 	if err != nil {
@@ -510,7 +542,7 @@ func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 			return nil, err
 		}
 
-		if hdr.Name != filename {
+		if hdr.Name != strings.TrimLeft(filename, "/") {
 			continue
 		}
 
@@ -563,4 +595,23 @@ func readAndFormatAsDebChangelog(changelogFileName, packageName string) (string,
 	}
 
 	return strings.TrimSpace(debChangelog) + "\n", nil
+}
+
+func symlinkTo(tb testing.TB, fileName string) string {
+	target, err := filepath.Abs(fileName)
+	assert.NoError(tb, err)
+
+	tempDir, err := ioutil.TempDir("", "nfpm_deb_test")
+	assert.NoError(tb, err)
+
+	symlinkName := path.Join(tempDir, "symlink")
+	err = os.Symlink(target, symlinkName)
+	assert.NoError(tb, err)
+
+	tb.Cleanup(func() {
+		err = os.RemoveAll(tempDir)
+		assert.NoError(tb, err)
+	})
+
+	return symlinkName
 }
