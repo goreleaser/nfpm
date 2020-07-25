@@ -125,6 +125,17 @@ deb:
   # Custom deb rules script.
   scripts:
     rules: foo.sh
+
+  # Custom deb triggers
+  triggers:
+    # register interrest on a trigger activated by another package
+    # (also available: interest-await, interest-noawait)
+    interest:
+      - some-trigger-name
+    # activate a trigger for another package
+    # (also available: activate-await, activate-noawait)
+    activate:
+      - another-trigger-name
 ```
 
 ## Templating

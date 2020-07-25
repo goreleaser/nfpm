@@ -494,6 +494,71 @@ func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
 	assert.EqualError(t, err, os.ErrNotExist.Error())
 }
 
+func TestDebTriggers(t *testing.T) {
+	info := &nfpm.Info{
+		Name:        "no-triggers-test",
+		Arch:        "amd64",
+		Description: "This package has explicitly no triggers.",
+		Version:     "1.0.0",
+		Overridables: nfpm.Overridables{
+			Deb: nfpm.Deb{
+				Triggers: nfpm.DebTriggers{
+					Interest:      []string{"trigger1", "trigger2"},
+					InterestAwait: []string{"trigger3"},
+					// InterestNoAwait omitted
+					// Activate omitted
+					ActivateAwait:   []string{"trigger4"},
+					ActivateNoAwait: []string{"trigger5", "trigger6"},
+				},
+			},
+		},
+	}
+
+	controlTarGz, err := createControl(0, []byte{}, info)
+	assert.NoError(t, err)
+
+	controlTriggers, err := extractFileFromTarGz(controlTarGz, "triggers")
+	assert.NoError(t, err)
+
+	goldenTriggers := createTriggers(info)
+
+	assert.Equal(t, string(goldenTriggers), string(controlTriggers))
+
+	// check if specified triggers are included and also that
+	// no remnants of triggers that were not specified are included
+	assert.True(t, bytes.Contains(controlTriggers,
+		[]byte("interest trigger1\n")))
+	assert.True(t, bytes.Contains(controlTriggers,
+		[]byte("interest trigger2\n")))
+	assert.True(t, bytes.Contains(controlTriggers,
+		[]byte("interest-await trigger3\n")))
+	assert.False(t, bytes.Contains(controlTriggers,
+		[]byte("interest-noawait ")))
+	assert.False(t, bytes.Contains(controlTriggers,
+		[]byte("activate ")))
+	assert.True(t, bytes.Contains(controlTriggers,
+		[]byte("activate-await trigger4\n")))
+	assert.True(t, bytes.Contains(controlTriggers,
+		[]byte("activate-noawait trigger5\n")))
+	assert.True(t, bytes.Contains(controlTriggers,
+		[]byte("activate-noawait trigger6\n")))
+}
+
+func TestDebNoTriggersInControlIfNoneProvided(t *testing.T) {
+	info := &nfpm.Info{
+		Name:        "no-triggers-test",
+		Arch:        "amd64",
+		Description: "This package has explicitly no triggers.",
+		Version:     "1.0.0",
+	}
+
+	controlTarGz, err := createControl(0, []byte{}, info)
+	assert.NoError(t, err)
+
+	_, err = extractFileFromTarGz(controlTarGz, "triggers")
+	assert.EqualError(t, err, os.ErrNotExist.Error())
+}
+
 func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 	tarFile, err := gzipInflate(tarGzFile)
 	if err != nil {

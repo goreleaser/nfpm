@@ -196,6 +196,18 @@ func TestChangelog(t *testing.T) {
 	}
 }
 
+func TestDebTriggers(t *testing.T) {
+	t.Run("triggers-deb", func(t *testing.T) {
+		t.Parallel()
+		accept(t, acceptParms{
+			Name:       "triggers-deb",
+			Conf:       "triggers.yaml",
+			Format:     "deb",
+			Dockerfile: "deb.triggers.dockerfile",
+		})
+	})
+}
+
 type acceptParms struct {
 	Name       string
 	Conf       string
