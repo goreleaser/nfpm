@@ -542,7 +542,7 @@ func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 			return nil, err
 		}
 
-		if hdr.Name != strings.TrimLeft(filename, "/") {
+		if path.Join("/", hdr.Name) != path.Join("/", filename) {
 			continue
 		}
 
