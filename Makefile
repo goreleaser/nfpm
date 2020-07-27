@@ -19,7 +19,11 @@ pull_test_imgs:
 	grep FROM ./acceptance/testdata/*.dockerfile | cut -f2 -d' ' | sort | uniq | while read -r img; do docker pull "$$img"; done
 .PHONY: pull_test_imgs
 
-test: pull_test_imgs
+acceptance: pull_test_imgs
+	make -e TEST_OPTIONS="-tags=acceptance" test
+.PHONY: acceptance
+
+test:
 	go test $(TEST_OPTIONS) -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.out $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=$(TEST_TIMEOUT)
 .PHONY: test
 
@@ -35,7 +39,7 @@ lint: check
 	golangci-lint run
 .PHONY: check
 
-ci: build lint test
+ci: build lint test acceptance
 .PHONY: ci
 
 build:
