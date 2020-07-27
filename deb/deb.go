@@ -278,6 +278,7 @@ func formatChangelog(info *nfpm.Info) (string, error) {
 	return strings.TrimSpace(formattedChangelog) + "\n", nil
 }
 
+// nolint:funlen
 func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarGz []byte, err error) {
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
@@ -308,6 +309,11 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		}
 
 		filesToCreate["changelog"] = []byte(changeLogData)
+	}
+
+	triggers := createTriggers(info)
+	if len(triggers) > 0 {
+		filesToCreate["triggers"] = triggers
 	}
 
 	for name, content := range filesToCreate {
@@ -428,6 +434,31 @@ func conffiles(info *nfpm.Info) []byte {
 		confs = append(confs, dst)
 	}
 	return []byte(strings.Join(confs, "\n") + "\n")
+}
+
+func createTriggers(info *nfpm.Info) []byte {
+	var buffer bytes.Buffer
+
+	// https://man7.org/linux/man-pages/man5/deb-triggers.5.html
+	triggerEntries := []struct {
+		Directive    string
+		TriggerNames *[]string
+	}{
+		{"interest", &info.Deb.Triggers.Interest},
+		{"interest-await", &info.Deb.Triggers.InterestAwait},
+		{"interest-noawait", &info.Deb.Triggers.InterestNoAwait},
+		{"activate", &info.Deb.Triggers.Activate},
+		{"activate-await", &info.Deb.Triggers.ActivateAwait},
+		{"activate-noawait", &info.Deb.Triggers.ActivateNoAwait},
+	}
+
+	for _, triggerEntry := range triggerEntries {
+		for _, triggerName := range *triggerEntry.TriggerNames {
+			fmt.Fprintf(&buffer, "%s %s\n", triggerEntry.Directive, triggerName)
+		}
+	}
+
+	return buffer.Bytes()
 }
 
 const controlTemplate = `

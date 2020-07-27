@@ -1,0 +1,15 @@
+name: "foo"
+arch: "amd64"
+platform: "linux"
+version: "v1.2.3-beta"
+maintainer: "Foo Bar"
+vendor: "foobar"
+license: "MIT"
+files:
+  ../testdata/fake: "/usr/local/bin/fake"
+scripts:
+  postinstall: ./testdata/scripts/postinstall_trigger.sh
+deb:
+  triggers:
+    interest:
+      - manual-trigger

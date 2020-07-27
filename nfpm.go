@@ -167,8 +167,21 @@ type RPM struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Scripts         DebScripts `yaml:"scripts,omitempty"`
-	VersionMetadata string     `yaml:"metadata,omitempty"`
+	Scripts         DebScripts  `yaml:"scripts,omitempty"`
+	Triggers        DebTriggers `yaml:"triggers,omitempty"`
+	VersionMetadata string      `yaml:"metadata,omitempty"`
+}
+
+// DebTriggers contains triggers only available for deb packages.
+// https://wiki.debian.org/DpkgTriggers
+// https://man7.org/linux/man-pages/man5/deb-triggers.5.html
+type DebTriggers struct {
+	Interest        []string `yaml:"interest,omitempty"`
+	InterestAwait   []string `yaml:"interest_await,omitempty"`
+	InterestNoAwait []string `yaml:"interest_noawait,omitempty"`
+	Activate        []string `yaml:"activate,omitempty"`
+	ActivateAwait   []string `yaml:"activate_await,omitempty"`
+	ActivateNoAwait []string `yaml:"activate_noawait,omitempty"`
 }
 
 // DebScripts is scripts only available on deb packages.
