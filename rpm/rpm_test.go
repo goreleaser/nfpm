@@ -3,8 +3,11 @@ package rpm
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -399,4 +402,89 @@ func TestRPMNoChangelogTagsWithoutChangelogConfigured(t *testing.T) {
 
 	_, err = rpm.Header.Get(tagChangelogText)
 	assert.Error(t, err)
+}
+
+func TestSymlinkInFiles(t *testing.T) {
+	var (
+		symlinkTarget  = "../testdata/whatever.conf"
+		packagedTarget = "/etc/fake/whatever.conf"
+	)
+
+	info := &nfpm.Info{
+		Name:        "symlink-in-files",
+		Arch:        "amd64",
+		Description: "This package's config references a file via symlink.",
+		Version:     "1.0.0",
+		Overridables: nfpm.Overridables{
+			Files: map[string]string{
+				symlinkTo(t, symlinkTarget): packagedTarget,
+			},
+		},
+	}
+
+	realSymlinkTarget, err := ioutil.ReadFile(symlinkTarget)
+	assert.NoError(t, err)
+
+	var rpmFileBuffer bytes.Buffer
+	err = Default.Package(info, &rpmFileBuffer)
+	assert.NoError(t, err)
+
+	packagedSymlinkTarget, err := extractFileFromRpm(rpmFileBuffer.Bytes(), packagedTarget)
+	assert.NoError(t, err)
+
+	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
+}
+
+func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
+	rpmFile, err := rpmutils.ReadRpm(bytes.NewReader(rpm))
+	if err != nil {
+		return nil, err
+	}
+
+	pr, err := rpmFile.PayloadReader()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		hdr, err := pr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if hdr.Filename() != filename {
+			continue
+		}
+
+		fileContents, err := ioutil.ReadAll(pr)
+		if err != nil {
+			return nil, err
+		}
+
+		return fileContents, nil
+	}
+
+	return nil, os.ErrNotExist
+}
+
+func symlinkTo(tb testing.TB, fileName string) string {
+	target, err := filepath.Abs(fileName)
+	assert.NoError(tb, err)
+
+	tempDir, err := ioutil.TempDir("", "nfpm_rpm_test")
+	assert.NoError(tb, err)
+
+	symlinkName := path.Join(tempDir, "symlink")
+	err = os.Symlink(target, symlinkName)
+	assert.NoError(tb, err)
+
+	tb.Cleanup(func() {
+		err = os.RemoveAll(tempDir)
+		assert.NoError(tb, err)
+	})
+
+	return symlinkName
 }
