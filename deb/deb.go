@@ -202,36 +202,54 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 }
 
 func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int64, error) {
-	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
+	info, err := os.Lstat(src)
 	if err != nil {
 		return 0, errors.Wrap(err, "could not add file to the archive")
 	}
+	var linkname *string
+	switch mode := info.Mode(); {
+	case mode&os.ModeSymlink != 0:
+		lpath, _ := filepath.EvalSymlinks(src)
+		if lpath[0] != '/' {
+			// relative path is re-resolved relative to src
+			lpath, _ = filepath.Rel(filepath.Dir(src), lpath)
+		}
+		linkname = &lpath
+	}
+
+	file, _ := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	// don't care if it errs while closing...
 	defer file.Close() // nolint: errcheck,gosec
-	info, err := file.Stat()
-	if err != nil {
-		return 0, err
-	}
+
 	if info.IsDir() {
 		// TODO: this should probably return an error
 		return 0, nil
 	}
 	var header = tar.Header{
 		Name:    filepath.ToSlash(dst[1:]),
-		Size:    info.Size(),
 		Mode:    int64(info.Mode()),
 		ModTime: time.Now(),
 		Format:  tar.FormatGNU,
 	}
+	if linkname == nil {
+		header.Size = info.Size()
+	} else {
+		header.Linkname = *linkname
+		header.Typeflag = tar.TypeSymlink
+	}
+
 	if err := tarw.WriteHeader(&header); err != nil {
 		return 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", src)
 	}
-	var digest = md5.New() // nolint:gas
-	if _, err := io.Copy(tarw, io.TeeReader(file, digest)); err != nil {
-		return 0, errors.Wrap(err, "failed to copy")
-	}
-	if _, err := fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), header.Name); err != nil {
-		return 0, errors.Wrap(err, "failed to write md5")
+
+	if linkname == nil {
+		var digest = md5.New() // nolint:gas
+		if _, err := io.Copy(tarw, io.TeeReader(file, digest)); err != nil {
+			return 0, errors.Wrap(err, "failed to copy")
+		}
+		if _, err := fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), header.Name); err != nil {
+			return 0, errors.Wrap(err, "failed to write md5")
+		}
 	}
 	return info.Size(), nil
 }

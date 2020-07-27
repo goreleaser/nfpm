@@ -242,6 +242,75 @@ func TestDebFileDoesNotExist(t *testing.T) {
 	assert.EqualError(t, err, "../testdata/whatever.confzzz: file does not exist")
 }
 
+func TestDebFileIsSymlink(t *testing.T) {
+	tdir, _ := ioutil.TempDir("", "fakedir-")
+
+	pwd, _ := os.Getwd()
+	defer func() {
+		os.Chdir(pwd)
+		assert.NoError(t, os.RemoveAll(tdir))
+	}()
+
+	createDebWithSymlink := func(s []string) {
+		reg, sym, treg, tsym := s[0], s[1], s[2], s[3]
+		isAbsSource := reg[0] == '/'
+
+		reg, _ = filepath.Abs(fmt.Sprintf("%s/%s", tdir, reg))
+		os.MkdirAll(filepath.Dir(reg), 0755)
+		ioutil.WriteFile(reg, []byte("whatevs"), 0644)
+
+		sym, _ = filepath.Abs(fmt.Sprintf("%s/%s", tdir, sym))
+		symdir := filepath.Dir(sym)
+		os.MkdirAll(symdir, 0755)
+		symbase := filepath.Base(sym)
+
+		lpath, _ := filepath.Rel(symdir, reg)
+		if isAbsSource {
+			lpath = reg
+		}
+
+		os.Chdir(symdir)
+		os.Symlink(lpath, symbase)
+
+		info := &nfpm.Info{
+			Name:        "foo",
+			Arch:        "amd64",
+			Description: "Foo does things",
+			Version:     "1.0.0",
+			Overridables: nfpm.Overridables{
+				Files: map[string]string{
+					lpath:   treg,
+					symbase: tsym,
+				},
+			},
+		}
+
+		dataTarGz, _, _, err := createDataTarGz(info)
+		assert.NoError(t, err)
+		os.Chdir(pwd)
+
+		_, err = extractFileFromTarGz(dataTarGz, treg[1:])
+		assert.NoError(t, err)
+
+		lnk, err := extractFileFromTarGz(dataTarGz, tsym[1:])
+		assert.Equal(t, lpath, string(lnk))
+		assert.NoError(t, err)
+	}
+
+	createDebWithSymlink([]string{
+		"fake1", "fake1-symlink",
+		"/bin/fake1", "/bin/fake1-symlink"})
+	createDebWithSymlink([]string{
+		"fake2", "bin/fake2-symlink",
+		"/bin/fake2", "/usr/local/bin/fake2-symlink"})
+	createDebWithSymlink([]string{
+		"bin/fake3", "fake3-symlink",
+		"/bin/fake3", "/bin/fake3-symlink"})
+	createDebWithSymlink([]string{
+		"/bin/fake4", "fake4-symlink",
+		"/bin/fake4", "/bin/fake4-symlink"})
+}
+
 func TestDebNoFiles(t *testing.T) {
 	var err = Default.Package(
 		nfpm.WithDefaults(&nfpm.Info{
@@ -609,6 +678,11 @@ func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 
 		if path.Join("/", hdr.Name) != path.Join("/", filename) {
 			continue
+		}
+
+		if hdr.Typeflag == tar.TypeSymlink {
+			// use linkname as content
+			return []byte(hdr.Linkname), nil
 		}
 
 		fileContents, err := ioutil.ReadAll(tr)
