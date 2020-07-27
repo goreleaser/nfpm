@@ -202,12 +202,12 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 }
 
 func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int64, error) {
-	stt, err := os.Lstat(src)
+	info, err := os.Lstat(src)
 	if err != nil {
 		return 0, errors.Wrap(err, "could not add file to the archive")
 	}
 	var linkname *string
-	switch mode := stt.Mode(); {
+	switch mode := info.Mode(); {
 	case mode&os.ModeSymlink != 0:
 		lpath, _ := filepath.EvalSymlinks(src)
 		if lpath[0] != '/' {
@@ -220,10 +220,6 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 	file, _ := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	// don't care if it errs while closing...
 	defer file.Close() // nolint: errcheck,gosec
-	info, err := file.Stat()
-	if err != nil {
-		return 0, err
-	}
 
 	if info.IsDir() {
 		// TODO: this should probably return an error
