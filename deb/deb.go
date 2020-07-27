@@ -207,8 +207,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		return 0, errors.Wrap(err, "could not add file to the archive")
 	}
 	var linkname *string
-	switch mode := info.Mode(); {
-	case mode&os.ModeSymlink != 0:
+	if mode := info.Mode(); mode&os.ModeSymlink != 0 {
 		lpath, _ := filepath.EvalSymlinks(src)
 		if lpath[0] != '/' {
 			// relative path is re-resolved relative to src

@@ -244,10 +244,9 @@ func TestDebFileDoesNotExist(t *testing.T) {
 
 func TestDebFileIsSymlink(t *testing.T) {
 	tdir, _ := ioutil.TempDir("", "fakedir-")
-
 	pwd, _ := os.Getwd()
 	defer func() {
-		os.Chdir(pwd)
+		os.Chdir(pwd) // nolint: errcheck
 		assert.NoError(t, os.RemoveAll(tdir))
 	}()
 
@@ -256,21 +255,20 @@ func TestDebFileIsSymlink(t *testing.T) {
 		isAbsSource := reg[0] == '/'
 
 		reg, _ = filepath.Abs(fmt.Sprintf("%s/%s", tdir, reg))
-		os.MkdirAll(filepath.Dir(reg), 0755)
-		ioutil.WriteFile(reg, []byte("whatevs"), 0644)
+		os.MkdirAll(filepath.Dir(reg), 0755)           // nolint: errcheck
+		ioutil.WriteFile(reg, []byte("whatevs"), 0600) // nolint: errcheck
 
 		sym, _ = filepath.Abs(fmt.Sprintf("%s/%s", tdir, sym))
 		symdir := filepath.Dir(sym)
-		os.MkdirAll(symdir, 0755)
+		os.MkdirAll(symdir, 0755) // nolint: errcheck
 		symbase := filepath.Base(sym)
 
 		lpath, _ := filepath.Rel(symdir, reg)
 		if isAbsSource {
 			lpath = reg
 		}
-
-		os.Chdir(symdir)
-		os.Symlink(lpath, symbase)
+		os.Chdir(symdir)           // nolint: errcheck
+		os.Symlink(lpath, symbase) // nolint: errcheck
 
 		info := &nfpm.Info{
 			Name:        "foo",
@@ -287,7 +285,7 @@ func TestDebFileIsSymlink(t *testing.T) {
 
 		dataTarGz, _, _, err := createDataTarGz(info)
 		assert.NoError(t, err)
-		os.Chdir(pwd)
+		os.Chdir(pwd) // nolint: errcheck
 
 		_, err = extractFileFromTarGz(dataTarGz, treg[1:])
 		assert.NoError(t, err)
@@ -296,19 +294,15 @@ func TestDebFileIsSymlink(t *testing.T) {
 		assert.Equal(t, lpath, string(lnk))
 		assert.NoError(t, err)
 	}
-
+	// variations of symlind and target locations
 	createDebWithSymlink([]string{
-		"fake1", "fake1-symlink",
-		"/bin/fake1", "/bin/fake1-symlink"})
+		"fake1", "fake1-symlink", "/bin/fake1", "/bin/fake1-symlink"})
 	createDebWithSymlink([]string{
-		"fake2", "bin/fake2-symlink",
-		"/bin/fake2", "/usr/local/bin/fake2-symlink"})
+		"fake2", "bin/fake2-symlink", "/bin/fake2", "/usr/local/bin/fake2-symlink"})
 	createDebWithSymlink([]string{
-		"bin/fake3", "fake3-symlink",
-		"/bin/fake3", "/bin/fake3-symlink"})
+		"bin/fake3", "fake3-symlink", "/bin/fake3", "/bin/fake3-symlink"})
 	createDebWithSymlink([]string{
-		"/bin/fake4", "fake4-symlink",
-		"/bin/fake4", "/bin/fake4-symlink"})
+		"/bin/fake4", "fake4-symlink", "/bin/fake4", "/bin/fake4-symlink"})
 }
 
 func TestDebNoFiles(t *testing.T) {
@@ -657,7 +651,10 @@ func TestSymlinkInFiles(t *testing.T) {
 	packagedSymlinkTarget, err := extractFileFromTarGz(dataTarGz, packagedTarget)
 	assert.NoError(t, err)
 
-	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
+	packagedSymlinkContent, _ := ioutil.ReadFile(
+		string(packagedSymlinkTarget))
+	assert.Equal(t, string(realSymlinkTarget),
+		string(packagedSymlinkContent))
 }
 
 func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
