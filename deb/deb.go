@@ -153,8 +153,10 @@ func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[str
 
 		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
 			Name:     src,
-			Typeflag: tar.TypeSymlink,
 			Linkname: dst,
+			Typeflag: tar.TypeSymlink,
+			ModTime:  time.Now(),
+			Format:   tar.FormatGNU,
 		})
 		if err != nil {
 			return err

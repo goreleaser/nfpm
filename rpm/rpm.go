@@ -324,7 +324,6 @@ func addSymlinksInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 			Name:  src,
 			Body:  []byte(dst),
 			Mode:  uint(cpio.S_ISLNK),
-			Type:  rpmpack.GenericFile,
 			MTime: uint32(time.Now().UTC().Unix()),
 			Owner: "root",
 			Group: "root",
