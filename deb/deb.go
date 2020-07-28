@@ -131,7 +131,7 @@ func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64
 		return nil, nil, 0, err
 	}
 
-	if err := createSymlinksInsideTarGz(info, out); err != nil {
+	if err := createSymlinksInsideTarGz(info, out, created); err != nil {
 		return nil, nil, 0, err
 	}
 
@@ -145,12 +145,16 @@ func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
 }
 
-func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer) error {
+func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
 	for src, dst := range info.Symlinks {
+		if err := createTree(out, src, created); err != nil {
+			return err
+		}
+
 		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
-			Name:     src[1:],
+			Name:     src,
 			Typeflag: tar.TypeSymlink,
-			Linkname: dst[1:],
+			Linkname: dst,
 		})
 		if err != nil {
 			return err
