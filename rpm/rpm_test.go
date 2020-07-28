@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/sassoftware/go-rpmutils"
+	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/goreleaser/chglog"
@@ -435,6 +436,43 @@ func TestSymlinkInFiles(t *testing.T) {
 	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
 }
 
+func TestSymlink(t *testing.T) {
+	var (
+		configFilePath = "/usr/share/doc/fake/fake.txt"
+		symlink        = "/path/to/symlink"
+		symlinkTarget  = configFilePath
+	)
+
+	info := &nfpm.Info{
+		Name:        "symlink-in-files",
+		Arch:        "amd64",
+		Description: "This package's config references a file via symlink.",
+		Version:     "1.0.0",
+		Overridables: nfpm.Overridables{
+			Files: map[string]string{
+				"../testdata/whatever.conf": configFilePath,
+			},
+			Symlinks: map[string]string{
+				symlink: symlinkTarget,
+			},
+		},
+	}
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	assert.NoError(t, err)
+
+	packagedSymlinkHeader, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), symlink)
+	assert.NoError(t, err)
+
+	packagedSymlink, err := extractFileFromRpm(rpmFileBuffer.Bytes(), symlink)
+	assert.NoError(t, err)
+
+	assert.Equal(t, symlink, packagedSymlinkHeader.Filename())
+	assert.Equal(t, cpio.S_ISLNK, packagedSymlinkHeader.Mode())
+	assert.Equal(t, symlinkTarget, string(packagedSymlink))
+}
+
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 	rpmFile, err := rpmutils.ReadRpm(bytes.NewReader(rpm))
 	if err != nil {
@@ -465,6 +503,36 @@ func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 		}
 
 		return fileContents, nil
+	}
+
+	return nil, os.ErrNotExist
+}
+
+func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_header, error) {
+	rpmFile, err := rpmutils.ReadRpm(bytes.NewReader(rpm))
+	if err != nil {
+		return nil, err
+	}
+
+	pr, err := rpmFile.PayloadReader()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		hdr, err := pr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if hdr.Filename() != filename {
+			continue
+		}
+
+		return hdr, nil
 	}
 
 	return nil, os.ErrNotExist

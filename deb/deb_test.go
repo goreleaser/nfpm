@@ -591,6 +591,39 @@ func TestSymlinkInFiles(t *testing.T) {
 	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
 }
 
+func TestSymlink(t *testing.T) {
+	var (
+		configFilePath = "/usr/share/doc/fake/fake.txt"
+		symlink        = "/path/to/symlink"
+		symlinkTarget  = configFilePath
+	)
+
+	info := &nfpm.Info{
+		Name:        "symlink-in-files",
+		Arch:        "amd64",
+		Description: "This package's config references a file via symlink.",
+		Version:     "1.0.0",
+		Overridables: nfpm.Overridables{
+			Files: map[string]string{
+				"../testdata/whatever.conf": configFilePath,
+			},
+			Symlinks: map[string]string{
+				symlink: symlinkTarget,
+			},
+		},
+	}
+
+	dataTarGz, _, _, err := createDataTarGz(info)
+	assert.NoError(t, err)
+
+	packagedSymlinkHeader, err := extractFileHeaderFromTarGz(dataTarGz, symlink)
+	assert.NoError(t, err)
+
+	assert.Equal(t, symlink, packagedSymlinkHeader.Name)
+	assert.Equal(t, uint8(tar.TypeSymlink), packagedSymlinkHeader.Typeflag)
+	assert.Equal(t, symlinkTarget, packagedSymlinkHeader.Linkname)
+}
+
 func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 	tarFile, err := gzipInflate(tarGzFile)
 	if err != nil {
@@ -617,6 +650,32 @@ func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 		}
 
 		return fileContents, nil
+	}
+
+	return nil, os.ErrNotExist
+}
+
+func extractFileHeaderFromTarGz(tarGzFile []byte, filename string) (*tar.Header, error) {
+	tarFile, err := gzipInflate(tarGzFile)
+	if err != nil {
+		return nil, err
+	}
+
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if path.Join("/", hdr.Name) != path.Join("/", filename) {
+			continue
+		}
+
+		return hdr, nil
 	}
 
 	return nil, os.ErrNotExist
