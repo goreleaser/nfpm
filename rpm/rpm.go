@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/rpmpack"
 	"github.com/pkg/errors"
+	"github.com/sassoftware/go-rpmutils/cpio"
 
 	"github.com/goreleaser/chglog"
 
@@ -322,7 +323,7 @@ func addSymlinksInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 		rpm.AddFile(rpmpack.RPMFile{
 			Name:  src,
 			Body:  []byte(dst),
-			Mode:  uint(0120000),
+			Mode:  uint(cpio.S_ISLNK),
 			Type:  rpmpack.GenericFile,
 			MTime: uint32(time.Now().UTC().Unix()),
 			Owner: "root",
