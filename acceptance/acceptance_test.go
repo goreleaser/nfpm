@@ -214,7 +214,7 @@ func TestSymlink(t *testing.T) {
 		t.Run(fmt.Sprintf("symlink-%s", format), func(t *testing.T) {
 			t.Parallel()
 			accept(t, acceptParms{
-				Name:       fmt.Sprintf("changelog_%s", format),
+				Name:       fmt.Sprintf("symlink_%s", format),
 				Conf:       "symlink.yaml",
 				Format:     format,
 				Dockerfile: fmt.Sprintf("%s.symlink.dockerfile", format),
