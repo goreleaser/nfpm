@@ -208,6 +208,21 @@ func TestDebTriggers(t *testing.T) {
 	})
 }
 
+func TestSymlink(t *testing.T) {
+	for _, format := range formats {
+		format := format
+		t.Run(fmt.Sprintf("symlink-%s", format), func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("changelog_%s", format),
+				Conf:       "symlink.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.symlink.dockerfile", format),
+			})
+		})
+	}
+}
+
 type acceptParms struct {
 	Name       string
 	Conf       string
