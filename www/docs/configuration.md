@@ -97,6 +97,10 @@ config_files:
 empty_folders:
 - /var/log/foo
 
+# Symlinks mapping from symlink name inside package to target inside package (overridable)
+symlinks:
+  /sbin/foo: /usr/local/bin/foo
+
 # Scripts to run at specific stages. (overridable)
 scripts:
   preinstall: ./scripts/preinstall.sh

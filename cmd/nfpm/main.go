@@ -154,6 +154,8 @@ files:
   ./bar: "/usr/local/bin/bar"
 config_files:
   ./foobar.conf: "/etc/foobar.conf"
+symlinks:
+  /sbin/foo: "/usr/local/bin/foo"
 overrides:
   rpm:
     scripts:
