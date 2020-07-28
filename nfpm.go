@@ -153,6 +153,7 @@ type Overridables struct {
 	Conflicts    []string          `yaml:"conflicts,omitempty"`
 	Files        map[string]string `yaml:"files,omitempty"`
 	ConfigFiles  map[string]string `yaml:"config_files,omitempty"`
+	Symlinks     map[string]string `yaml:"symlinks,omitempty"`
 	EmptyFolders []string          `yaml:"empty_folders,omitempty"`
 	Scripts      Scripts           `yaml:"scripts,omitempty"`
 	RPM          RPM               `yaml:"rpm,omitempty"`
