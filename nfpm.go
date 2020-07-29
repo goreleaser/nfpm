@@ -239,7 +239,6 @@ func WithDefaults(info *Info) *Info {
 		if info.Prerelease == "" && !helpers.IsInt(v.Prerelease()) {
 			info.Prerelease = v.Prerelease()
 		}
-		info.Deb.VersionMetadata = v.Metadata()
 	}
 
 	return info
