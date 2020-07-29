@@ -118,6 +118,11 @@ rpm:
   # Compression algorithm.
   compression: lzma
 
+  # These config files will not be replaced by new versions if they were
+  # changed by the user. Corresponds to %config(noreplace).
+  config_noreplace_files:
+    path/to/local/bar.con: /etc/bar.conf
+
 # Custon configuration applied only to the Deb packager.
 # All fields described bellow, plus all fields above marked as `overridable`
 # can be specified here.
