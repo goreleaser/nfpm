@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/rpmpack"
 	"github.com/pkg/errors"
+	"github.com/sassoftware/go-rpmutils/cpio"
 
 	"github.com/goreleaser/chglog"
 
@@ -102,6 +103,8 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	if err = createFilesInsideRPM(info, rpm); err != nil {
 		return err
 	}
+
+	addSymlinksInsideRPM(info, rpm)
 
 	if err = addScriptFiles(info, rpm); err != nil {
 		return err
@@ -313,6 +316,19 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 		}
 	}
 	return nil
+}
+
+func addSymlinksInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
+	for src, dst := range info.Symlinks {
+		rpm.AddFile(rpmpack.RPMFile{
+			Name:  src,
+			Body:  []byte(dst),
+			Mode:  uint(cpio.S_ISLNK),
+			MTime: uint32(time.Now().UTC().Unix()),
+			Owner: "root",
+			Group: "root",
+		})
+	}
 }
 
 func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
