@@ -123,7 +123,7 @@ rpm:
 # can be specified here.
 deb:
   # Custom version metadata.
-  # Default is extracted from `version` if it is semver compatible.
+  # Setting metadata might interfere with version comparisons.
   metadata: xyz2
 
   # Custom deb rules script.
