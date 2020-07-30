@@ -2,6 +2,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -58,13 +59,7 @@ func initFile(config string) error {
 	return ioutil.WriteFile(config, []byte(example), 0600)
 }
 
-type parameterError struct {
-	msg string
-}
-
-func (e *parameterError) Error() string {
-	return e.msg
-}
+var errInsufficientParams = errors.New("a packager must be specified if target is a directory or blank")
 
 // nolint:funlen
 func doPackage(configPath, target, packager string) error {
@@ -77,7 +72,7 @@ func doPackage(configPath, target, packager string) error {
 	if packager == "" {
 		ext := filepath.Ext(target)
 		if targetIsADirectory || ext == "" {
-			return &parameterError{"a packager must be specified if target is a directory or blank"}
+			return errInsufficientParams
 		}
 
 		packager = ext[1:]
