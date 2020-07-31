@@ -21,19 +21,6 @@ import (
 	"github.com/goreleaser/nfpm"
 )
 
-const (
-	tagVersion     = 0x03e9 // 1001
-	tagRelease     = 0x03ea // 1002
-	tagEpoch       = 0x03eb // 1003
-	tagSummary     = 0x03ec // 1004
-	tagDescription = 0x03ed // 1005
-	tagGroup       = 0x03f8 // 1016
-	tagPrein       = 0x03ff // 1023
-	tagPostin      = 0x0400 // 1024
-	tagPreun       = 0x0401 // 1025
-	tagPostun      = 0x0402 // 1026
-)
-
 func exampleInfo() *nfpm.Info {
 	return nfpm.WithDefaults(&nfpm.Info{
 		Name:        "foo",
@@ -100,30 +87,30 @@ func TestRPM(t *testing.T) {
 	rpm, err := rpmutils.ReadRpm(file)
 	assert.NoError(t, err)
 
-	version, err := rpm.Header.GetString(tagVersion)
+	version, err := rpm.Header.GetString(rpmutils.VERSION)
 	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", version)
 
-	release, err := rpm.Header.GetString(tagRelease)
+	release, err := rpm.Header.GetString(rpmutils.RELEASE)
 	assert.NoError(t, err)
 	assert.Equal(t, "1", release)
 
-	epoch, err := rpm.Header.Get(tagEpoch)
+	epoch, err := rpm.Header.Get(rpmutils.EPOCH)
 	assert.NoError(t, err)
 	epochUint32, ok := epoch.([]uint32)
 	assert.Len(t, epochUint32, 1)
 	assert.True(t, ok)
 	assert.Equal(t, uint32(0), epochUint32[0])
 
-	group, err := rpm.Header.GetString(tagGroup)
+	group, err := rpm.Header.GetString(rpmutils.GROUP)
 	assert.NoError(t, err)
 	assert.Equal(t, "Development/Tools", group)
 
-	summary, err := rpm.Header.GetString(tagSummary)
+	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
 	assert.NoError(t, err)
 	assert.Equal(t, "Foo does things", summary)
 
-	description, err := rpm.Header.GetString(tagDescription)
+	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
 	assert.NoError(t, err)
 	assert.Equal(t, "Foo does things", description)
 }
@@ -151,30 +138,30 @@ func TestWithRPMTags(t *testing.T) {
 	rpm, err := rpmutils.ReadRpm(file)
 	assert.NoError(t, err)
 
-	version, err := rpm.Header.GetString(tagVersion)
+	version, err := rpm.Header.GetString(rpmutils.VERSION)
 	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", version)
 
-	release, err := rpm.Header.GetString(tagRelease)
+	release, err := rpm.Header.GetString(rpmutils.RELEASE)
 	assert.NoError(t, err)
 	assert.Equal(t, "3", release)
 
-	epoch, err := rpm.Header.Get(tagEpoch)
+	epoch, err := rpm.Header.Get(rpmutils.EPOCH)
 	assert.NoError(t, err)
 	epochUint32, ok := epoch.([]uint32)
 	assert.Len(t, epochUint32, 1)
 	assert.True(t, ok)
 	assert.Equal(t, uint32(42), epochUint32[0])
 
-	group, err := rpm.Header.GetString(tagGroup)
+	group, err := rpm.Header.GetString(rpmutils.GROUP)
 	assert.NoError(t, err)
 	assert.Equal(t, "default", group)
 
-	summary, err := rpm.Header.GetString(tagSummary)
+	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
 	assert.NoError(t, err)
 	assert.Equal(t, "first line", summary)
 
-	description, err := rpm.Header.GetString(tagDescription)
+	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
 	assert.NoError(t, err)
 	assert.Equal(t, info.Description, description)
 }
@@ -255,28 +242,28 @@ func TestRPMScripts(t *testing.T) {
 	rpm, err := rpmutils.ReadRpm(file)
 	assert.NoError(t, err)
 
-	data, err := rpm.Header.GetString(tagPrein)
+	data, err := rpm.Header.GetString(rpmutils.PREIN)
 	assert.NoError(t, err)
 	assert.Equal(t, `#!/bin/bash
 
 echo "Preinstall" > /dev/null
 `, data, "Preinstall script does not match")
 
-	data, err = rpm.Header.GetString(tagPreun)
+	data, err = rpm.Header.GetString(rpmutils.PREUN)
 	assert.NoError(t, err)
 	assert.Equal(t, `#!/bin/bash
 
 echo "Preremove" > /dev/null
 `, data, "Preremove script does not match")
 
-	data, err = rpm.Header.GetString(tagPostin)
+	data, err = rpm.Header.GetString(rpmutils.POSTIN)
 	assert.NoError(t, err)
 	assert.Equal(t, `#!/bin/bash
 
 echo "Postinstall" > /dev/null
 `, data, "Postinstall script does not match")
 
-	data, err = rpm.Header.GetString(tagPostun)
+	data, err = rpm.Header.GetString(rpmutils.POSTUN)
 	assert.NoError(t, err)
 	assert.Equal(t, `#!/bin/bash
 
