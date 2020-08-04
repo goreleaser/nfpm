@@ -15,6 +15,7 @@ import (
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/chglog"
 
@@ -80,38 +81,38 @@ func TestRPM(t *testing.T) {
 		assert.NoError(t, err)
 	}()
 
-	assert.NoError(t, Default.Package(exampleInfo(), f))
+	require.NoError(t, Default.Package(exampleInfo(), f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	rpm, err := rpmutils.ReadRpm(file)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	version, err := rpm.Header.GetString(rpmutils.VERSION)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1.0.0", version)
 
 	release, err := rpm.Header.GetString(rpmutils.RELEASE)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1", release)
 
 	epoch, err := rpm.Header.Get(rpmutils.EPOCH)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	epochUint32, ok := epoch.([]uint32)
+	require.True(t, ok)
 	assert.Len(t, epochUint32, 1)
-	assert.True(t, ok)
 	assert.Equal(t, uint32(0), epochUint32[0])
 
 	group, err := rpm.Header.GetString(rpmutils.GROUP)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Development/Tools", group)
 
 	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Foo does things", summary)
 
 	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Foo does things", description)
 }
 
@@ -130,39 +131,39 @@ func TestWithRPMTags(t *testing.T) {
 		Group: "default",
 	}
 	info.Description = "first line\nsecond line\nthird line"
-	assert.NoError(t, Default.Package(info, f))
+	require.NoError(t, Default.Package(info, f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rpm, err := rpmutils.ReadRpm(file)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	version, err := rpm.Header.GetString(rpmutils.VERSION)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1.0.0", version)
 
 	release, err := rpm.Header.GetString(rpmutils.RELEASE)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "3", release)
 
 	epoch, err := rpm.Header.Get(rpmutils.EPOCH)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	epochUint32, ok := epoch.([]uint32)
 	assert.Len(t, epochUint32, 1)
 	assert.True(t, ok)
 	assert.Equal(t, uint32(42), epochUint32[0])
 
 	group, err := rpm.Header.GetString(rpmutils.GROUP)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "default", group)
 
 	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "first line", summary)
 
 	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, info.Description, description)
 }
 
@@ -170,7 +171,7 @@ func TestRPMVersion(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0" //nolint:golint,goconst
 	meta, err := buildRPMMeta(info)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1.0.0", meta.Version)
 	assert.Equal(t, "1", meta.Release)
 }
@@ -180,7 +181,7 @@ func TestRPMVersionWithRelease(t *testing.T) {
 	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Release = "2"
 	meta, err := buildRPMMeta(info)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1.0.0", meta.Version)
 	assert.Equal(t, "2", meta.Release)
 }
@@ -191,7 +192,7 @@ func TestRPMVersionWithPrerelease(t *testing.T) {
 	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Prerelease = "rc1"
 	meta, err := buildRPMMeta(info)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1.0.0", meta.Version)
 	assert.Equal(t, "0.1.rc1", meta.Release)
 }
@@ -203,7 +204,7 @@ func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	info.Release = "0.2"
 	info.Prerelease = "rc1"
 	meta, err := buildRPMMeta(info)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1.0.0", meta.Version)
 	assert.Equal(t, "0.2.rc1", meta.Release)
 }
@@ -232,39 +233,39 @@ func TestRPMScripts(t *testing.T) {
 	defer func() {
 		_ = f.Close()
 		err = os.Remove(f.Name())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Default.Package(info, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	rpm, err := rpmutils.ReadRpm(file)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	data, err := rpm.Header.GetString(rpmutils.PREIN)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `#!/bin/bash
 
 echo "Preinstall" > /dev/null
 `, data, "Preinstall script does not match")
 
 	data, err = rpm.Header.GetString(rpmutils.PREUN)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `#!/bin/bash
 
 echo "Preremove" > /dev/null
 `, data, "Preremove script does not match")
 
 	data, err = rpm.Header.GetString(rpmutils.POSTIN)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `#!/bin/bash
 
 echo "Postinstall" > /dev/null
 `, data, "Postinstall script does not match")
 
 	data, err = rpm.Header.GetString(rpmutils.POSTUN)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `#!/bin/bash
 
 echo "Postremove" > /dev/null
@@ -330,30 +331,30 @@ func TestRPMChangelog(t *testing.T) {
 
 	var rpmFileBuffer bytes.Buffer
 	err := Default.Package(info, &rpmFileBuffer)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rpm, err := rpmutils.ReadRpm(bytes.NewReader(rpmFileBuffer.Bytes()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	changelog, err := chglog.Parse(info.Changelog)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_times, err := rpm.Header.Get(tagChangelogTime)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	times, ok := _times.([]uint32)
-	assert.True(t, ok)
+	require.True(t, ok)
 	assert.Equal(t, len(changelog), len(times))
 
 	_titles, err := rpm.Header.Get(tagChangelogName)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	titles, ok := _titles.([]string)
-	assert.True(t, ok)
+	require.True(t, ok)
 	assert.Equal(t, len(changelog), len(titles))
 
 	_notes, err := rpm.Header.Get(tagChangelogText)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	allNotes, ok := _notes.([]string)
-	assert.True(t, ok)
+	require.True(t, ok)
 	assert.Equal(t, len(changelog), len(allNotes))
 
 	for i, entry := range changelog {
@@ -377,10 +378,10 @@ func TestRPMNoChangelogTagsWithoutChangelogConfigured(t *testing.T) {
 
 	var rpmFileBuffer bytes.Buffer
 	err := Default.Package(info, &rpmFileBuffer)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rpm, err := rpmutils.ReadRpm(bytes.NewReader(rpmFileBuffer.Bytes()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = rpm.Header.Get(tagChangelogTime)
 	assert.Error(t, err)
@@ -411,14 +412,14 @@ func TestSymlinkInFiles(t *testing.T) {
 	}
 
 	realSymlinkTarget, err := ioutil.ReadFile(symlinkTarget)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var rpmFileBuffer bytes.Buffer
 	err = Default.Package(info, &rpmFileBuffer)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	packagedSymlinkTarget, err := extractFileFromRpm(rpmFileBuffer.Bytes(), packagedTarget)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
 }
@@ -447,13 +448,13 @@ func TestSymlink(t *testing.T) {
 
 	var rpmFileBuffer bytes.Buffer
 	err := Default.Package(info, &rpmFileBuffer)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	packagedSymlinkHeader, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), symlink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	packagedSymlink, err := extractFileFromRpm(rpmFileBuffer.Bytes(), symlink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, symlink, packagedSymlinkHeader.Filename())
 	assert.Equal(t, cpio.S_ISLNK, packagedSymlinkHeader.Mode())
