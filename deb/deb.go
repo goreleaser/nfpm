@@ -18,6 +18,8 @@ import (
 	"github.com/blakesmith/ar"
 	"github.com/pkg/errors"
 
+	"github.com/goreleaser/nfpm/internal/files"
+
 	"github.com/goreleaser/chglog"
 
 	"github.com/goreleaser/nfpm"
@@ -170,11 +172,11 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 	var md5buf bytes.Buffer
 	var instSize int64
 
-	files, err := info.FilesToCopy()
+	copiable, err := files.ToCopy(info)
 	if err != nil {
 		return md5buf, 0, err
 	}
-	for _, file := range files {
+	for _, file := range copiable {
 		if err = createTree(out, file.Destination, created); err != nil {
 			return md5buf, 0, err
 		}

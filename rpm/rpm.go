@@ -16,6 +16,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sassoftware/go-rpmutils/cpio"
 
+	"github.com/goreleaser/nfpm/internal/files"
+
 	"github.com/goreleaser/chglog"
 
 	"github.com/goreleaser/nfpm"
@@ -305,11 +307,11 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 }
 
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
-	files, err := info.FilesToCopy()
+	copiable, err := files.ToCopy(info)
 	if err != nil {
 		return err
 	}
-	for _, file := range files {
+	for _, file := range copiable {
 		err := copyToRPM(rpm, file.Source, file.Destination, file.Config)
 		if err != nil {
 			return err

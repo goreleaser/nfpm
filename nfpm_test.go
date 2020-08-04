@@ -181,31 +181,6 @@ func TestOverrides(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(&config.Info, info))
 }
 
-func TestListFilesToCopy(t *testing.T) {
-	info := &Info{
-		Overridables: Overridables{
-			ConfigFiles: map[string]string{
-				"testdata/whatever.conf": "/whatever",
-			},
-			Files: map[string]string{
-				"testdata/scripts/**/*": "/test",
-			},
-		},
-	}
-
-	files, err := info.FilesToCopy()
-	assert.NoError(t, err)
-
-	// all the input files described in the config in sorted order by source path
-	assert.Equal(t, []FileToCopy{
-		{"testdata/scripts/postinstall.sh", "/test/postinstall.sh", false},
-		{"testdata/scripts/postremove.sh", "/test/postremove.sh", false},
-		{"testdata/scripts/preinstall.sh", "/test/preinstall.sh", false},
-		{"testdata/scripts/preremove.sh", "/test/preremove.sh", false},
-		{"testdata/whatever.conf", "/whatever", true},
-	}, files)
-}
-
 type fakePackager struct{}
 
 func (*fakePackager) ConventionalFileName(info *Info) string {
