@@ -17,8 +17,8 @@ type FileToCopy struct {
 	Config      bool
 }
 
-// FilesToCopy lists all of the real files to be copied into the package.
-func FilesToCopy(info *nfpm.Info) ([]FileToCopy, error) {
+// ToCopy lists all of the real files to be copied into the package.
+func ToCopy(info *nfpm.Info) ([]FileToCopy, error) {
 	var files []FileToCopy
 	for i, filesMap := range []map[string]string{info.Files, info.ConfigFiles} {
 		for srcglob, dstroot := range filesMap {

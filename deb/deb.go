@@ -16,8 +16,9 @@ import (
 	"time"
 
 	"github.com/blakesmith/ar"
-	"github.com/goreleaser/nfpm/internal/files"
 	"github.com/pkg/errors"
+
+	"github.com/goreleaser/nfpm/internal/files"
 
 	"github.com/goreleaser/chglog"
 
@@ -171,7 +172,7 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 	var md5buf bytes.Buffer
 	var instSize int64
 
-	copiable, err := files.FilesToCopy(info)
+	copiable, err := files.ToCopy(info)
 	if err != nil {
 		return md5buf, 0, err
 	}

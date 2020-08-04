@@ -3,8 +3,9 @@ package files
 import (
 	"testing"
 
-	"github.com/goreleaser/nfpm"
 	"github.com/stretchr/testify/require"
+
+	"github.com/goreleaser/nfpm"
 )
 
 func TestListFilesToCopy(t *testing.T) {
@@ -19,7 +20,7 @@ func TestListFilesToCopy(t *testing.T) {
 		},
 	}
 
-	files, err := FilesToCopy(info)
+	files, err := ToCopy(info)
 	require.NoError(t, err)
 
 	// all the input files described in the config in sorted order by source path
