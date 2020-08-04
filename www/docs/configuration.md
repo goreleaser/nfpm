@@ -112,8 +112,9 @@ scripts:
 # All fields described bellow, plus all fields above marked as `overridable`
 # can be specified here.
 rpm:
-  # Group.
-  group: root
+  # The package group. This option is deprecated by most distros
+  # but required by old distros like CentOS 5 / EL 5 and earlier.
+  group: Unspecified
 
   # Compression algorithm.
   compression: lzma
