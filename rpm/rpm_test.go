@@ -105,7 +105,7 @@ func TestRPM(t *testing.T) {
 
 	group, err := rpm.Header.GetString(rpmutils.GROUP)
 	require.NoError(t, err)
-	assert.Equal(t, "Development/Tools", group)
+	assert.Equal(t, "", group)
 
 	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
 	require.NoError(t, err)
@@ -114,6 +114,29 @@ func TestRPM(t *testing.T) {
 	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
 	require.NoError(t, err)
 	assert.Equal(t, "Foo does things", description)
+}
+
+func TestRPMGroup(t *testing.T) {
+	f, err := ioutil.TempFile("", "test.rpm")
+	defer func() {
+		_ = f.Close()
+		err = os.Remove(f.Name())
+		assert.NoError(t, err)
+	}()
+
+	info := exampleInfo()
+	info.RPM.Group = "Unspecified"
+
+	require.NoError(t, Default.Package(info, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
+	require.NoError(t, err)
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	group, err := rpm.Header.GetString(rpmutils.GROUP)
+	require.NoError(t, err)
+	assert.Equal(t, "Unspecified", group)
 }
 
 func TestWithRPMTags(t *testing.T) {
