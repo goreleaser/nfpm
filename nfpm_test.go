@@ -16,20 +16,20 @@ func TestRegister(t *testing.T) {
 	pkgr := &fakePackager{}
 	Register(format, pkgr)
 	got, err := Get(format)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, pkgr, got)
 }
 
 func TestGet(t *testing.T) {
 	format := "TestGet"
 	got, err := Get(format)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "no packager registered for the format "+format)
 	assert.Nil(t, got)
 	pkgr := &fakePackager{}
 	Register(format, pkgr)
 	got, err = Get(format)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, pkgr, got)
 }
 
@@ -136,28 +136,28 @@ func TestValidateError(t *testing.T) {
 func TestParseFile(t *testing.T) {
 	packagers = map[string]Packager{}
 	_, err := ParseFile("./testdata/overrides.yaml")
-	assert.Error(t, err)
+	require.Error(t, err)
 	Register("deb", &fakePackager{})
 	Register("rpm", &fakePackager{})
 	_, err = ParseFile("./testdata/overrides.yaml")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = ParseFile("./testdata/doesnotexist.yaml")
-	assert.Error(t, err)
+	require.Error(t, err)
 	config, err := ParseFile("./testdata/versionenv.yaml")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
 }
 
 func TestOverrides(t *testing.T) {
 	file := "./testdata/overrides.yaml"
 	config, err := ParseFile(file)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "foo", config.Name)
 	assert.Equal(t, "amd64", config.Arch)
 
 	// deb overrides
 	deb, err := config.Get("deb")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, deb.Depends, "deb_depend")
 	assert.NotContains(t, deb.Depends, "rpm_depend")
 	assert.Contains(t, deb.ConfigFiles, "deb.conf")
@@ -167,7 +167,7 @@ func TestOverrides(t *testing.T) {
 
 	// rpm overrides
 	rpm, err := config.Get("rpm")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, rpm.Depends, "rpm_depend")
 	assert.NotContains(t, rpm.Depends, "deb_depend")
 	assert.Contains(t, rpm.ConfigFiles, "rpm.conf")
@@ -177,7 +177,7 @@ func TestOverrides(t *testing.T) {
 
 	// no overrides
 	info, err := config.Get("doesnotexist")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, reflect.DeepEqual(&config.Info, info))
 }
 
