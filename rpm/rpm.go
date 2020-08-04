@@ -307,16 +307,42 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 }
 
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
-	copiable, err := files.ToCopy(info)
+	regularFiles, err := files.Expand(info.Files)
 	if err != nil {
 		return err
 	}
-	for _, file := range copiable {
-		err := copyToRPM(rpm, file.Source, file.Destination, file.Config)
+
+	for _, file := range regularFiles {
+		err = copyToRPM(rpm, file.Source, file.Destination, rpmpack.GenericFile)
 		if err != nil {
 			return err
 		}
 	}
+
+	configFiles, err := files.Expand(info.ConfigFiles)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range configFiles {
+		err = copyToRPM(rpm, file.Source, file.Destination, rpmpack.ConfigFile)
+		if err != nil {
+			return err
+		}
+	}
+
+	configNoReplaceFiles, err := files.Expand(info.RPM.ConfigNoReplaceFiles)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range configNoReplaceFiles {
+		err = copyToRPM(rpm, file.Source, file.Destination, rpmpack.ConfigFile|rpmpack.NoReplaceFile)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -333,7 +359,7 @@ func addSymlinksInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 	}
 }
 
-func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
+func copyToRPM(rpm *rpmpack.RPM, src, dst string, fileType rpmpack.FileType) error {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
 		return errors.Wrap(err, "could not add file to the archive")
@@ -360,10 +386,7 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
 		MTime: uint32(info.ModTime().Unix()),
 		Owner: "root",
 		Group: "root",
-	}
-
-	if config {
-		rpmFile.Type = rpmpack.ConfigFile
+		Type:  fileType,
 	}
 
 	rpm.AddFile(rpmFile)

@@ -294,6 +294,39 @@ func TestRPMMultiArch(t *testing.T) {
 	}
 }
 
+func TestConfigNoReplace(t *testing.T) {
+	var (
+		buildConfigFile   = "../testdata/whatever.conf"
+		packageConfigFile = "/etc/fake/fake.conf"
+	)
+
+	info := &nfpm.Info{
+		Name:        "symlink-in-files",
+		Arch:        "amd64",
+		Description: "This package's config references a file via symlink.",
+		Version:     "1.0.0",
+		Overridables: nfpm.Overridables{
+			RPM: nfpm.RPM{
+				ConfigNoReplaceFiles: map[string]string{
+					buildConfigFile: packageConfigFile,
+				},
+			},
+		},
+	}
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	assert.NoError(t, err)
+
+	expectedConfigContent, err := ioutil.ReadFile(buildConfigFile)
+	assert.NoError(t, err)
+
+	packageConfigContent, err := extractFileFromRpm(rpmFileBuffer.Bytes(), packageConfigFile)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedConfigContent, packageConfigContent)
+}
+
 func TestRPMConventionalFileName(t *testing.T) {
 	info := &nfpm.Info{
 		Name: "testpkg",

@@ -158,6 +158,8 @@ type Overridables struct {
 type RPM struct {
 	Group       string `yaml:"group,omitempty"`
 	Compression string `yaml:"compression,omitempty"`
+	// https://www.cl.cam.ac.uk/~jw35/docs/rpm_config.html
+	ConfigNoReplaceFiles map[string]string `yaml:"config_noreplace_files,omitempty"`
 }
 
 // Deb is custom configs that are only available on deb packages.
