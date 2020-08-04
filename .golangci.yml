@@ -7,6 +7,8 @@ linters:
     - testpackage
     - nolintlint
     - gofumpt
+    - nlreturn
+    - gci
 linters-settings:
   maligned:
     # print struct with more effective memory layout or not, false by default
