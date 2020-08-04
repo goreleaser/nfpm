@@ -20,35 +20,21 @@ func TestListFilesToCopy(t *testing.T) {
 		},
 	}
 
-	files, err := ToCopy(info)
+	regularFiles, err := Expand(info.Files)
+	require.NoError(t, err)
+
+	configFiles, err := Expand(info.ConfigFiles)
 	require.NoError(t, err)
 
 	// all the input files described in the config in sorted order by source path
 	require.Equal(t, []FileToCopy{
-		{
-			"../../testdata/scripts/postinstall.sh",
-			"/test/postinstall.sh",
-			false,
-		},
-		{
-			"../../testdata/scripts/postremove.sh",
-			"/test/postremove.sh",
-			false,
-		},
-		{
-			"../../testdata/scripts/preinstall.sh",
-			"/test/preinstall.sh",
-			false,
-		},
-		{
-			"../../testdata/scripts/preremove.sh",
-			"/test/preremove.sh",
-			false,
-		},
-		{
-			"../../testdata/whatever.conf",
-			"/whatever",
-			true,
-		},
-	}, files)
+		{"../../testdata/scripts/postinstall.sh", "/test/postinstall.sh"},
+		{"../../testdata/scripts/postremove.sh", "/test/postremove.sh"},
+		{"../../testdata/scripts/preinstall.sh", "/test/preinstall.sh"},
+		{"../../testdata/scripts/preremove.sh", "/test/preremove.sh"},
+	}, regularFiles)
+
+	require.Equal(t, []FileToCopy{
+		{"../../testdata/whatever.conf", "/whatever"},
+	}, configFiles)
 }

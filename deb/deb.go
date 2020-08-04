@@ -172,11 +172,19 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 	var md5buf bytes.Buffer
 	var instSize int64
 
-	copiable, err := files.ToCopy(info)
+	filesToCopy, err := files.Expand(info.Files)
 	if err != nil {
 		return md5buf, 0, err
 	}
-	for _, file := range copiable {
+
+	configFiles, err := files.Expand(info.ConfigFiles)
+	if err != nil {
+		return md5buf, 0, err
+	}
+
+	filesToCopy = append(filesToCopy, configFiles...)
+
+	for _, file := range filesToCopy {
 		if err = createTree(out, file.Destination, created); err != nil {
 			return md5buf, 0, err
 		}

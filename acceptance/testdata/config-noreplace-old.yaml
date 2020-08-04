@@ -1,0 +1,13 @@
+name: "foo"
+arch: "all"
+platform: "linux"
+version: "v1.0.0"
+maintainer: "Foo Bar"
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+config_files:
+  ../testdata/whatever.conf: "/etc/regular.conf"
+rpm:
+  config_noreplace_files:
+    ../testdata/whatever.conf: "/etc/noreplace.conf"

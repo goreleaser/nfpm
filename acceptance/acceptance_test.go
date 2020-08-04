@@ -88,6 +88,36 @@ func TestComplex(t *testing.T) {
 	}
 }
 
+func TestConfigNoReplace(t *testing.T) {
+	var target = "./testdata/tmp/noreplace_old_rpm.rpm"
+	require.NoError(t, os.MkdirAll("./testdata/tmp", 0700))
+
+	config, err := nfpm.ParseFile("./testdata/config-noreplace-old.yaml")
+	require.NoError(t, err)
+
+	info, err := config.Get("rpm")
+	require.NoError(t, err)
+	require.NoError(t, nfpm.Validate(info))
+
+	pkg, err := nfpm.Get("rpm")
+	require.NoError(t, err)
+
+	f, err := os.Create(target)
+	require.NoError(t, err)
+	info.Target = target
+	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
+
+	t.Run("noreplace-rpm", func(t *testing.T) {
+		t.Parallel()
+		accept(t, acceptParms{
+			Name:       "noreplace_rpm",
+			Conf:       "config-noreplace.yaml",
+			Format:     "rpm",
+			Dockerfile: "rpm.config-noreplace.dockerfile",
+		})
+	})
+}
+
 func TestEnvVarVersion(t *testing.T) {
 	for _, format := range formats {
 		format := format
