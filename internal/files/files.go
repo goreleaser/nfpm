@@ -3,7 +3,7 @@ package files
 import (
 	"sort"
 
-	"github.com/goreleaser/nfpm/glob"
+	"github.com/goreleaser/nfpm/internal/glob"
 )
 
 // FileToCopy describes the source and destination
