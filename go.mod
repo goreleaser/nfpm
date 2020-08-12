@@ -11,7 +11,7 @@ require (
 	github.com/golangci/golangci-lint v1.30.0
 	github.com/google/rpmpack v0.0.0-20200731134257-3685799e8fdf
 	github.com/goreleaser/chglog v0.1.1
-	github.com/imdario/mergo v0.3.10
+	github.com/imdario/mergo v0.3.11
 	github.com/mattn/go-zglob v0.0.3
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/pkg/errors v0.9.1
