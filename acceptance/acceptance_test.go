@@ -4,7 +4,6 @@ package acceptance
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,7 +24,6 @@ func TestSimple(t *testing.T) {
 	for _, format := range formats {
 		format := format
 		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("simple_%s", format),
 				Conf:       "simple.yaml",
@@ -34,7 +32,6 @@ func TestSimple(t *testing.T) {
 			})
 		})
 		t.Run(fmt.Sprintf("i386-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("simple_%s_386", format),
 				Conf:       "simple.386.yaml",
@@ -44,7 +41,6 @@ func TestSimple(t *testing.T) {
 		})
 		t.Run(fmt.Sprintf("ppc64le-%s", format), func(t *testing.T) {
 			t.Skip("for some reason travis fails to run those")
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("simple_%s_ppc64le", format),
 				Conf:       "simple.ppc64le.yaml",
@@ -53,7 +49,6 @@ func TestSimple(t *testing.T) {
 			})
 		})
 		t.Run(fmt.Sprintf("arm64-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("simple_%s_arm64", format),
 				Conf:       "simple.arm64.yaml",
@@ -68,7 +63,6 @@ func TestComplex(t *testing.T) {
 	for _, format := range formats {
 		format := format
 		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("complex_%s", format),
 				Conf:       "complex.yaml",
@@ -77,7 +71,6 @@ func TestComplex(t *testing.T) {
 			})
 		})
 		t.Run(fmt.Sprintf("i386-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("complex_%s_386", format),
 				Conf:       "complex.386.yaml",
@@ -108,7 +101,6 @@ func TestConfigNoReplace(t *testing.T) {
 	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
 
 	t.Run("noreplace-rpm", func(t *testing.T) {
-		t.Parallel()
 		accept(t, acceptParms{
 			Name:       "noreplace_rpm",
 			Conf:       "config-noreplace.yaml",
@@ -122,7 +114,6 @@ func TestEnvVarVersion(t *testing.T) {
 	for _, format := range formats {
 		format := format
 		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
-			t.Parallel()
 			os.Setenv("SEMVER", "v1.0.0-0.1.b1+git.abcdefgh")
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("env-var-version_%s", format),
@@ -138,7 +129,6 @@ func TestComplexOverrides(t *testing.T) {
 	for _, format := range formats {
 		format := format
 		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("overrides_%s", format),
 				Conf:       "overrides.yaml",
@@ -153,7 +143,6 @@ func TestMin(t *testing.T) {
 	for _, format := range formats {
 		format := format
 		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("min_%s", format),
 				Conf:       "min.yaml",
@@ -168,7 +157,6 @@ func TestMeta(t *testing.T) {
 	for _, format := range formats {
 		format := format
 		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("meta_%s", format),
 				Conf:       "meta.yaml",
@@ -184,7 +172,6 @@ func TestRPMCompression(t *testing.T) {
 	for _, format := range compressFormats {
 		format := format
 		t.Run(format, func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("%s_compression_rpm", format),
 				Conf:       fmt.Sprintf("%s.compression.yaml", format),
@@ -217,7 +204,6 @@ func TestChangelog(t *testing.T) {
 	for _, format := range formats {
 		format := format
 		t.Run(fmt.Sprintf("changelog-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("changelog_%s", format),
 				Conf:       "withchangelog.yaml",
@@ -230,7 +216,6 @@ func TestChangelog(t *testing.T) {
 
 func TestDebTriggers(t *testing.T) {
 	t.Run("triggers-deb", func(t *testing.T) {
-		t.Parallel()
 		accept(t, acceptParms{
 			Name:       "triggers-deb",
 			Conf:       "triggers.yaml",
@@ -244,7 +229,6 @@ func TestSymlink(t *testing.T) {
 	for _, format := range formats {
 		format := format
 		t.Run(fmt.Sprintf("symlink-%s", format), func(t *testing.T) {
-			t.Parallel()
 			accept(t, acceptParms{
 				Name:       fmt.Sprintf("symlink_%s", format),
 				Conf:       "symlink.yaml",
@@ -260,6 +244,15 @@ type acceptParms struct {
 	Conf       string
 	Format     string
 	Dockerfile string
+}
+
+type testWriter struct {
+	t *testing.T
+}
+
+func (t testWriter) Write(p []byte) (n int, err error) {
+	t.t.Logf(string(p))
+	return len(p), nil
 }
 
 func accept(t *testing.T, params acceptParms) {
@@ -293,27 +286,9 @@ func accept(t *testing.T, params acceptParms) {
 		".",
 	)
 	cmd.Dir = "./testdata"
-	stdout, err := cmd.StdoutPipe()
-	require.NoError(t, err)
-	stderr, err := cmd.StderrPipe()
-	require.NoError(t, err)
+	cmd.Stderr = testWriter{t}
+	cmd.Stdout = cmd.Stderr
+
 	t.Log("will exec:", cmd.Args)
-	err = cmd.Start()
-	require.NoError(t, err)
-
-	var slurp []byte
-	slurp, err = ioutil.ReadAll(stderr)
-	if len(slurp) > 0 {
-		t.Log("stderr:", string(slurp))
-	}
-	require.NoError(t, err)
-
-	slurp, err = ioutil.ReadAll(stdout)
-	if len(slurp) > 0 {
-		t.Log("stdout:", string(slurp))
-	}
-	require.NoError(t, err)
-
-	err = cmd.Wait()
-	require.NoError(t, err)
+	require.NoError(t, cmd.Run())
 }
