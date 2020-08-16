@@ -22,7 +22,7 @@ import (
 // nolint: gochecknoglobals
 var updateApk = flag.Bool("update-apk", false, "update apk .golden files")
 
-func exampleInfo(t *testing.T) *nfpm.Info {
+func exampleInfo() *nfpm.Info {
 	return nfpm.WithDefaults(&nfpm.Info{
 		Name:        "foo",
 		Arch:        "amd64",
@@ -80,7 +80,7 @@ func TestArchToAlpine(t *testing.T) {
 }
 
 func verifyArch(t *testing.T, nfpmArch, expectedArch string) {
-	info := exampleInfo(t)
+	info := exampleInfo()
 	info.Arch = nfpmArch
 
 	assert.NoError(t, Default.Package(info, ioutil.Discard))
@@ -88,7 +88,7 @@ func verifyArch(t *testing.T, nfpmArch, expectedArch string) {
 }
 
 func TestCreateBuilderData(t *testing.T) {
-	info := exampleInfo(t)
+	info := exampleInfo()
 	size := int64(0)
 	builderData := createBuilderData(info, &size)
 
@@ -132,7 +132,7 @@ func TestDefaultWithArch(t *testing.T) {
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
 		t.Run(arch, func(t *testing.T) {
-			info := exampleInfo(t)
+			info := exampleInfo()
 			info.Arch = arch
 			var err = Default.Package(info, ioutil.Discard)
 			assert.NoError(t, err)
@@ -198,7 +198,7 @@ func TestNoFiles(t *testing.T) {
 }
 
 func TestCreateBuilderControl(t *testing.T) {
-	info := exampleInfo(t)
+	info := exampleInfo()
 	size := int64(12345)
 	digest := sha256.New()
 	dataDigest := digest.Sum(nil)
@@ -226,7 +226,7 @@ func TestCreateBuilderControl(t *testing.T) {
 }
 
 func TestCreateBuilderControlScripts(t *testing.T) {
-	info := exampleInfo(t)
+	info := exampleInfo()
 	info.Scripts = nfpm.Scripts{
 		PreInstall:  "../testdata/scripts/preinstall.sh",
 		PostInstall: "../testdata/scripts/postinstall.sh",
@@ -257,13 +257,13 @@ func TestControl(t *testing.T) {
 
 	var w bytes.Buffer
 	assert.NoError(t, writeControl(&w, controlData{
-		Info:          exampleInfo(t),
+		Info:          exampleInfo(),
 		InstalledSize: 10,
 		Datahash:      hex.EncodeToString(dataDigest),
 	}))
 	var golden = "testdata/control.golden"
 	if *updateApk {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)

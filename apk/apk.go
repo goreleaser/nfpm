@@ -71,7 +71,7 @@ var archToAlpine = map[string]string{
 // nolint: gochecknoglobals
 var Default = &Apk{}
 
-// Apk is a apk packager implementation
+// Apk is a apk packager implementation.
 type Apk struct{}
 
 func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
@@ -79,7 +79,7 @@ func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 	return fmt.Sprintf("%s_%s_%s.apk", info.Name, info.Version, info.Arch)
 }
 
-// Package writes a new apk package to the given writer using the given info
+// Package writes a new apk package to the given writer using the given info.
 func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 	arch, ok := archToAlpine[info.Arch]
 	if ok {
