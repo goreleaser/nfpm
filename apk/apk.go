@@ -23,6 +23,8 @@ SOFTWARE.
 // Package apk (someday) implements nfpm.Packager providing .apk bindings.
 package apk
 
+// Initial implementation from https://gist.github.com/tcurdt/512beaac7e9c12dcf5b6b7603b09d0d8
+
 import (
 	"archive/tar"
 	"bufio"
@@ -453,6 +455,7 @@ func pathsToCreate(dst string) []string {
 	return result
 }
 
+// reference: https://wiki.adelielinux.org/wiki/APK_internals#.PKGINFO
 const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 pkgname = {{.Info.Name}}
