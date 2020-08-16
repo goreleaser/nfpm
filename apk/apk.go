@@ -31,7 +31,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"hash"
 	"io"
@@ -246,7 +245,6 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 		if err := writeControl(&infoBuf, controlData{
 			Info:          info,
 			InstalledSize: size,
-			Datahash:      hex.EncodeToString(dataDigest),
 		}); err != nil {
 			return err
 		}
@@ -484,13 +482,11 @@ depend = {{ $dep }}
 {{- if .Info.License}}
 license = {{.Info.License}}
 {{- end }}
-datahash = {{.Datahash}}
 `
 
 type controlData struct {
 	Info          *nfpm.Info
 	InstalledSize int64
-	Datahash      string
 }
 
 func writeControl(w io.Writer, data controlData) error {

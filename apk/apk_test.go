@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -249,14 +248,10 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 }
 
 func TestControl(t *testing.T) {
-	digest := sha256.New()
-	dataDigest := digest.Sum(nil)
-
 	var w bytes.Buffer
 	assert.NoError(t, writeControl(&w, controlData{
 		Info:          exampleInfo(),
 		InstalledSize: 10,
-		Datahash:      hex.EncodeToString(dataDigest),
 	}))
 	var golden = "testdata/TestControl.golden"
 	if *update {
