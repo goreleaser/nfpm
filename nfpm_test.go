@@ -16,20 +16,20 @@ func TestRegister(t *testing.T) {
 	pkgr := &fakePackager{}
 	Register(format, pkgr)
 	got, err := Get(format)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, pkgr, got)
 }
 
 func TestGet(t *testing.T) {
 	format := "TestGet"
 	got, err := Get(format)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "no packager registered for the format "+format)
 	assert.Nil(t, got)
 	pkgr := &fakePackager{}
 	Register(format, pkgr)
 	got, err = Get(format)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, pkgr, got)
 }
 
@@ -38,7 +38,6 @@ func TestDefaultsVersion(t *testing.T) {
 		Version: "v1.0.0",
 	}
 	info = WithDefaults(info)
-	assert.NotEmpty(t, info.Bindir)
 	assert.NotEmpty(t, info.Platform)
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "", info.Release)
@@ -71,7 +70,7 @@ func TestDefaultsVersion(t *testing.T) {
 	assert.Equal(t, "beta1", info.Prerelease)
 
 	info = &Info{
-		Version:    "v1.0.0-1",
+		Version:    "v1.0.0-1+xdg2",
 		Release:    "2",
 		Prerelease: "beta1",
 	}
@@ -79,11 +78,11 @@ func TestDefaultsVersion(t *testing.T) {
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "2", info.Release)
 	assert.Equal(t, "beta1", info.Prerelease)
+	assert.Equal(t, "", info.Deb.VersionMetadata)
 }
 
 func TestDefaults(t *testing.T) {
 	info := &Info{
-		Bindir:      "/usr/bin",
 		Platform:    "darwin",
 		Version:     "2.4.1",
 		Description: "no description given",
@@ -117,18 +116,13 @@ func TestValidate(t *testing.T) {
 
 func TestValidateError(t *testing.T) {
 	for err, info := range map[string]Info{
-		"package name cannot be empty": {},
+		"package name must be provided": {},
 		"package arch must be provided": {
 			Name: "fo",
 		},
 		"package version must be provided": {
 			Name: "as",
 			Arch: "asd",
-		},
-		"no files were provided": {
-			Name:    "as",
-			Arch:    "asd",
-			Version: "1.2.3",
 		},
 	} {
 		err := err
@@ -142,29 +136,29 @@ func TestValidateError(t *testing.T) {
 func TestParseFile(t *testing.T) {
 	packagers = map[string]Packager{}
 	_, err := ParseFile("./testdata/overrides.yaml")
-	assert.Error(t, err)
+	require.Error(t, err)
 	Register("deb", &fakePackager{})
 	Register("rpm", &fakePackager{})
 	Register("apk", &fakePackager{})
 	_, err = ParseFile("./testdata/overrides.yaml")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = ParseFile("./testdata/doesnotexist.yaml")
-	assert.Error(t, err)
+	require.Error(t, err)
 	config, err := ParseFile("./testdata/versionenv.yaml")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
 }
 
 func TestOverrides(t *testing.T) {
 	file := "./testdata/overrides.yaml"
 	config, err := ParseFile(file)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "foo", config.Name)
 	assert.Equal(t, "amd64", config.Arch)
 
 	// deb overrides
 	deb, err := config.Get("deb")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, deb.Depends, "deb_depend")
 	assert.NotContains(t, deb.Depends, "rpm_depend")
 	assert.Contains(t, deb.ConfigFiles, "deb.conf")
@@ -174,7 +168,7 @@ func TestOverrides(t *testing.T) {
 
 	// rpm overrides
 	rpm, err := config.Get("rpm")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, rpm.Depends, "rpm_depend")
 	assert.NotContains(t, rpm.Depends, "deb_depend")
 	assert.Contains(t, rpm.ConfigFiles, "rpm.conf")
@@ -184,11 +178,15 @@ func TestOverrides(t *testing.T) {
 
 	// no overrides
 	info, err := config.Get("doesnotexist")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, reflect.DeepEqual(&config.Info, info))
 }
 
 type fakePackager struct{}
+
+func (*fakePackager) ConventionalFileName(info *Info) string {
+	return ""
+}
 
 func (*fakePackager) Package(info *Info, w io.Writer) error {
 	return nil

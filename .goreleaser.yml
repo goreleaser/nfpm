@@ -11,6 +11,7 @@ builds:
   goos:
   - linux
   - darwin
+  - windows
   goarch:
   - amd64
 dockers:
@@ -39,7 +40,7 @@ brews:
   test: |
     system "#{bin}/nfpm -v"
 nfpms:
-- name_template: '{{ .ProjectName }}_{{ .Arch }}'
+- file_name_template: '{{ .ProjectName }}_{{ .Arch }}'
   homepage:  https://github.com/goreleaser/nfpm
   description: nFPM is not FPM
   maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
@@ -48,3 +49,10 @@ nfpms:
   formats:
   - deb
   - rpm
+scoop:
+  bucket:
+    owner: goreleaser
+    name: scoop-bucket
+  homepage:  https://goreleaser.com
+  description: Deliver Go binaries as fast and easily as possible
+  license: MIT

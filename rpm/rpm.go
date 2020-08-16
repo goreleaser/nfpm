@@ -3,6 +3,7 @@
 package rpm
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,9 +14,29 @@ import (
 
 	"github.com/google/rpmpack"
 	"github.com/pkg/errors"
+	"github.com/sassoftware/go-rpmutils/cpio"
+
+	"github.com/goreleaser/nfpm/internal/files"
+
+	"github.com/goreleaser/chglog"
 
 	"github.com/goreleaser/nfpm"
-	"github.com/goreleaser/nfpm/glob"
+)
+
+const (
+	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L152
+	tagChangelogTime = 1080
+	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L153
+	tagChangelogName = 1081
+	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L154
+	tagChangelogText = 1082
+
+	changelogNotesTemplate = `
+{{- range .Changes }}{{$note := splitList "\n" .Note}}
+- {{ first $note }}
+{{- range $i,$n := (rest $note) }}{{- if ne (trim $n) ""}}
+{{$n}}{{end}}
+{{- end}}{{- end}}`
 )
 
 // nolint: gochecknoinits
@@ -27,11 +48,12 @@ func init() {
 // nolint: gochecknoglobals
 var Default = &RPM{}
 
-// RPM is a RPM packager implementation
+// RPM is a RPM packager implementation.
 type RPM struct{}
 
 // nolint: gochecknoglobals
 var archToRPM = map[string]string{
+	"all":   "noarch",
 	"amd64": "x86_64",
 	"386":   "i386",
 	"arm64": "aarch64",
@@ -45,7 +67,25 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	return info
 }
 
-// Package writes a new RPM package to the given writer using the given info
+// ConventionalFileName returns a file name according
+// to the conventions for RPM packages. See:
+// http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html
+func (*RPM) ConventionalFileName(info *nfpm.Info) string {
+	info = ensureValidArch(info)
+
+	version := info.Version
+	if info.Release != "" {
+		version += "-" + info.Release
+	}
+	if info.Prerelease != "" {
+		version += "~" + info.Prerelease
+	}
+
+	// name-version-release.architecture.rpm
+	return fmt.Sprintf("%s-%s.%s.rpm", info.Name, version, info.Arch)
+}
+
+// Package writes a new RPM package to the given writer using the given info.
 func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	var (
 		err  error
@@ -53,9 +93,6 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 		rpm  *rpmpack.RPM
 	)
 	info = ensureValidArch(info)
-	if err = nfpm.Validate(info); err != nil {
-		return err
-	}
 
 	if meta, err = buildRPMMeta(info); err != nil {
 		return err
@@ -69,8 +106,16 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
+	addSymlinksInsideRPM(info, rpm)
+
 	if err = addScriptFiles(info, rpm); err != nil {
 		return err
+	}
+
+	if info.Changelog != "" {
+		if err = addChangeLog(info, rpm); err != nil {
+			return err
+		}
 	}
 
 	if err = rpm.Write(w); err != nil {
@@ -80,12 +125,54 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	return nil
 }
 
+func addChangeLog(info *nfpm.Info, rpm *rpmpack.RPM) error {
+	changelog, err := info.GetChangeLog()
+	if err != nil {
+		return fmt.Errorf("reading changelog: %w", err)
+	}
+
+	if len(changelog.Entries) == 0 {
+		// no nothing because creating empty tags
+		// would result in an invalid package
+		return nil
+	}
+
+	tpl, err := chglog.LoadTemplateData(changelogNotesTemplate)
+	if err != nil {
+		return fmt.Errorf("parsing RPM changelog template: %w", err)
+	}
+
+	changes := make([]string, len(changelog.Entries))
+	titles := make([]string, len(changelog.Entries))
+	times := make([]uint32, len(changelog.Entries))
+	for idx, entry := range changelog.Entries {
+		var formattedNotes bytes.Buffer
+
+		err := tpl.Execute(&formattedNotes, entry)
+		if err != nil {
+			return fmt.Errorf("formatting changlog notes: %w", err)
+		}
+
+		changes[idx] = strings.TrimSpace(formattedNotes.String())
+		times[idx] = uint32(entry.Date.Unix())
+		titles[idx] = fmt.Sprintf("%s - %s", entry.Packager, entry.Semver)
+	}
+
+	rpm.AddCustomTag(tagChangelogTime, rpmpack.EntryUint32(times))
+	rpm.AddCustomTag(tagChangelogName, rpmpack.EntryStringSlice(titles))
+	rpm.AddCustomTag(tagChangelogText, rpmpack.EntryStringSlice(changes))
+
+	return nil
+}
+
+//nolint:funlen
 func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 	var (
 		err   error
 		epoch uint64
 		provides,
 		depends,
+		recommends,
 		replaces,
 		suggests,
 		conflicts rpmpack.Relations
@@ -97,6 +184,9 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		return nil, err
 	}
 	if depends, err = toRelation(info.Depends); err != nil {
+		return nil, err
+	}
+	if recommends, err = toRelation(info.Recommends); err != nil {
 		return nil, err
 	}
 	if replaces, err = toRelation(info.Replaces); err != nil {
@@ -127,8 +217,9 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		URL:         info.Homepage,
 		Vendor:      info.Vendor,
 		Packager:    info.Maintainer,
-		Group:       defaultTo(info.RPM.Group, "Development/Tools"),
+		Group:       info.RPM.Group,
 		Provides:    provides,
+		Recommends:  recommends,
 		Requires:    depends,
 		Obsoletes:   replaces,
 		Suggests:    suggests,
@@ -216,47 +307,65 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 }
 
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
-	copyFunc := func(files map[string]string, config bool) error {
-		for srcglob, dstroot := range files {
-			globbed, err := glob.Glob(srcglob, dstroot)
-			if err != nil {
-				return err
-			}
-			for src, dst := range globbed {
-				// when used as a lib, target may not be set.
-				// in that case, src will always have the empty sufix, and all
-				// files will be ignored.
-				if info.Target != "" && strings.HasSuffix(src, info.Target) {
-					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
-					continue
-				}
-				err := copyToRPM(rpm, src, dst, config)
-				if err != nil {
-					return err
-				}
-			}
-		}
+	regularFiles, err := files.Expand(info.Files)
+	if err != nil {
+		return err
+	}
 
-		return nil
+	for _, file := range regularFiles {
+		err = copyToRPM(rpm, file.Source, file.Destination, rpmpack.GenericFile)
+		if err != nil {
+			return err
+		}
 	}
-	err := copyFunc(info.Files, false)
+
+	configFiles, err := files.Expand(info.ConfigFiles)
 	if err != nil {
 		return err
 	}
-	err = copyFunc(info.ConfigFiles, true)
+
+	for _, file := range configFiles {
+		err = copyToRPM(rpm, file.Source, file.Destination, rpmpack.ConfigFile)
+		if err != nil {
+			return err
+		}
+	}
+
+	configNoReplaceFiles, err := files.Expand(info.RPM.ConfigNoReplaceFiles)
 	if err != nil {
 		return err
 	}
+
+	for _, file := range configNoReplaceFiles {
+		err = copyToRPM(rpm, file.Source, file.Destination, rpmpack.ConfigFile|rpmpack.NoReplaceFile)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
+func addSymlinksInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
+	for src, dst := range info.Symlinks {
+		rpm.AddFile(rpmpack.RPMFile{
+			Name:  src,
+			Body:  []byte(dst),
+			Mode:  uint(cpio.S_ISLNK),
+			MTime: uint32(time.Now().UTC().Unix()),
+			Owner: "root",
+			Group: "root",
+		})
+	}
+}
+
+func copyToRPM(rpm *rpmpack.RPM, src, dst string, fileType rpmpack.FileType) error {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
 		return errors.Wrap(err, "could not add file to the archive")
 	}
 	// don't care if it errs while closing...
-	defer file.Close() // nolint: errcheck
+	defer file.Close() // nolint: errcheck,gosec
 	info, err := file.Stat()
 	if err != nil {
 		return err
@@ -277,10 +386,7 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, config bool) error {
 		MTime: uint32(info.ModTime().Unix()),
 		Owner: "root",
 		Group: "root",
-	}
-
-	if config {
-		rpmFile.Type = rpmpack.ConfigFile
+		Type:  fileType,
 	}
 
 	rpm.AddFile(rpmFile)

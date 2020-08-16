@@ -1,0 +1,16 @@
+- semver: "1.1.0-1"
+  date: "2009-12-08T22:00:00Z"
+  packager: "Carlos A Becker <pkg@carlosbecker.com>"
+  urgency: "low"
+  distribution: "stable"
+  changes:
+    - note: "note 1"
+    - note: "note 2"
+
+- semver: "1.0.0-1"
+  date: "2009-11-10T23:00:00Z"
+  packager: "Carlos A Becker <pkg@carlosbecker.com>"
+  urgency: "low"
+  distribution: "stable"
+  changes:
+    - note: "note 3"

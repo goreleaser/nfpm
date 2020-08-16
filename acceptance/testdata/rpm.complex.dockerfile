@@ -1,6 +1,9 @@
 FROM fedora
 ARG package
 COPY ${package} /tmp/foo.rpm
+RUN test "$(rpm -qp --recommends /tmp/foo.rpm)" = "fish"
+RUN test "$(rpm -qp --suggests /tmp/foo.rpm)" = "zsh"
+RUN test "$(rpm -qp --requires /tmp/foo.rpm)" = "bash"
 RUN rpm -ivh /tmp/foo.rpm
 RUN test -e /usr/local/bin/fake
 RUN test -f /etc/foo/whatever.conf

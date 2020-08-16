@@ -1,0 +1,12 @@
+name: "foo"
+arch: "amd64"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar"
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+files:
+  ../testdata/whatever.conf: "/etc/foo/whatever.conf"
+symlinks:
+  /path/to/symlink: "/etc/foo/whatever.conf"

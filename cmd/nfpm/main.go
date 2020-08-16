@@ -2,9 +2,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
@@ -26,10 +28,13 @@ var (
 		String()
 
 	pkgCmd = app.Command("pkg", "package based on the config file").Alias("package")
-	target = pkgCmd.Flag("target", "where to save the generated package").
-		Default("/tmp/foo.deb").
+	target = pkgCmd.Flag("target", "where to save the generated package (filename, folder or blank for current folder)").
+		Default("").
 		Short('t').
 		String()
+	packager = pkgCmd.Flag("packager", "which packager implementation to use").
+			Short('p').
+			Enum("deb", "rpm")
 
 	initCmd = app.Command("init", "create an empty config file")
 )
@@ -45,25 +50,42 @@ func main() {
 		}
 		fmt.Printf("created config file from example: %s\n", *config)
 	case pkgCmd.FullCommand():
-		if err := doPackage(*config, *target); err != nil {
+		if err := doPackage(*config, *target, *packager); err != nil {
 			kingpin.Fatalf(err.Error())
 		}
-		fmt.Printf("created package: %s\n", *target)
 	}
 }
 
 func initFile(config string) error {
-	return ioutil.WriteFile(config, []byte(example), 0666)
+	return ioutil.WriteFile(config, []byte(example), 0600)
 }
 
-func doPackage(path, target string) error {
-	format := filepath.Ext(target)[1:]
-	config, err := nfpm.ParseFile(path)
+var errInsufficientParams = errors.New("a packager must be specified if target is a directory or blank")
+
+// nolint:funlen
+func doPackage(configPath, target, packager string) error {
+	targetIsADirectory := false
+	stat, err := os.Stat(target)
+	if err == nil && stat.IsDir() {
+		targetIsADirectory = true
+	}
+
+	if packager == "" {
+		ext := filepath.Ext(target)
+		if targetIsADirectory || ext == "" {
+			return errInsufficientParams
+		}
+
+		packager = ext[1:]
+		fmt.Println("guessing packager from target file extension...")
+	}
+
+	config, err := nfpm.ParseFile(configPath)
 	if err != nil {
 		return err
 	}
 
-	info, err := config.Get(format)
+	info, err := config.Get(packager)
 	if err != nil {
 		return err
 	}
@@ -74,10 +96,20 @@ func doPackage(path, target string) error {
 		return err
 	}
 
-	fmt.Printf("using %s packager...\n", format)
-	pkg, err := nfpm.Get(format)
+	fmt.Printf("using %s packager...\n", packager)
+	pkg, err := nfpm.Get(packager)
 	if err != nil {
 		return err
+	}
+
+	if target == "" {
+		// if no target was specified create a package in
+		// current directory with a conventional file name
+		target = pkg.ConventionalFileName(info)
+	} else if targetIsADirectory {
+		// if a directory was specified as target, create
+		// a package with conventional file name there
+		target = path.Join(target, pkg.ConventionalFileName(info))
 	}
 
 	f, err := os.Create(target)
@@ -86,14 +118,26 @@ func doPackage(path, target string) error {
 	}
 
 	info.Target = target
-	return pkg.Package(info, f)
+
+	err = pkg.Package(info, f)
+	_ = f.Close()
+	if err != nil {
+		os.Remove(target)
+		return err
+	}
+
+	fmt.Printf("created package: %s\n", target)
+	return nil
 }
 
 const example = `# nfpm example config file
+#
+# check https://nfpm.goreleaser.com/configuration for detailed usage
+#
 name: "foo"
 arch: "amd64"
 platform: "linux"
-version: "v${MY_APP_VERSION}"
+version: "v1.0.0"
 section: "default"
 priority: "extra"
 replaces:
@@ -103,10 +147,8 @@ provides:
 depends:
 - foo
 - bar
-# recommends on rpm packages requires rpmbuild >= 4.13
 recommends:
 - whatever
-# suggests on rpm packages requires rpmbuild >= 4.13
 suggests:
 - something-else
 conflicts:
@@ -119,12 +161,14 @@ description: |
 vendor: "FooBarCorp"
 homepage: "http://example.com"
 license: "MIT"
-bindir: "/usr/local/bin"
+changelog: "changelog.yaml"
 files:
   ./foo: "/usr/local/bin/foo"
   ./bar: "/usr/local/bin/bar"
 config_files:
   ./foobar.conf: "/etc/foobar.conf"
+symlinks:
+  /sbin/foo: "/usr/local/bin/foo"
 overrides:
   rpm:
     scripts:

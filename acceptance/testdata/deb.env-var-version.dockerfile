@@ -1,7 +1,7 @@
 FROM ubuntu
 ARG package
 COPY ${package} /tmp/foo.deb
-ENV EXPECTVER=" Version: 1.0.0~0.1.b1+git.abcdefgh"
+ENV EXPECTVER=" Version: 1.0.0~0.1.b1"
 RUN dpkg --info /tmp/foo.deb | grep "Version" > found
 RUN export FOUND_VER="$(cat found)" && \
     echo "Expected: '${EXPECTVER}' :: Found: '${FOUND_VER}'" && \

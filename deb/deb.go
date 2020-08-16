@@ -18,8 +18,11 @@ import (
 	"github.com/blakesmith/ar"
 	"github.com/pkg/errors"
 
+	"github.com/goreleaser/nfpm/internal/files"
+
+	"github.com/goreleaser/chglog"
+
 	"github.com/goreleaser/nfpm"
-	"github.com/goreleaser/nfpm/glob"
 )
 
 // nolint: gochecknoinits
@@ -42,10 +45,31 @@ var archToDebian = map[string]string{
 // nolint: gochecknoglobals
 var Default = &Deb{}
 
-// Deb is a deb packager implementation
+// Deb is a deb packager implementation.
 type Deb struct{}
 
-// Package writes a new deb package to the given writer using the given info
+// ConventionalFileName returns a file name according
+// to the conventions for debian packages. See:
+// https://manpages.debian.org/buster/dpkg-dev/dpkg-name.1.en.html
+func (*Deb) ConventionalFileName(info *nfpm.Info) string {
+	arch, ok := archToDebian[info.Arch]
+	if !ok {
+		arch = info.Arch
+	}
+
+	version := info.Version
+	if info.Release != "" {
+		version += "-" + info.Release
+	}
+	if info.Prerelease != "" {
+		version += "~" + info.Prerelease
+	}
+
+	// package_version_architecture.package-type
+	return fmt.Sprintf("%s_%s_%s.deb", info.Name, version, arch)
+}
+
+// Package writes a new deb package to the given writer using the given info.
 func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 	arch, ok := archToDebian[info.Arch]
 	if ok {
@@ -109,6 +133,10 @@ func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64
 		return nil, nil, 0, err
 	}
 
+	if err := createSymlinksInsideTarGz(info, out, created); err != nil {
+		return nil, nil, 0, err
+	}
+
 	if err := out.Close(); err != nil {
 		return nil, nil, 0, errors.Wrap(err, "closing data.tar.gz")
 	}
@@ -119,37 +147,80 @@ func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
 }
 
+func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
+	for src, dst := range info.Symlinks {
+		if err := createTree(out, src, created); err != nil {
+			return err
+		}
+
+		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
+			Name:     src,
+			Linkname: dst,
+			Typeflag: tar.TypeSymlink,
+			ModTime:  time.Now(),
+			Format:   tar.FormatGNU,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) (bytes.Buffer, int64, error) {
 	var md5buf bytes.Buffer
 	var instSize int64
-	for _, files := range []map[string]string{
-		info.Files,
-		info.ConfigFiles,
-	} {
-		for srcglob, dstroot := range files {
-			globbed, err := glob.Glob(srcglob, dstroot)
-			if err != nil {
-				return md5buf, 0, err
-			}
-			for src, dst := range globbed {
-				// when used as a lib, target may not be set.
-				// in that case, src will always have the empty sufix, and all
-				// files will be ignored.
-				if info.Target != "" && strings.HasSuffix(src, info.Target) {
-					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
-					continue
-				}
-				if err := createTree(out, dst, created); err != nil {
-					return md5buf, 0, err
-				}
-				size, err := copyToTarAndDigest(out, &md5buf, src, dst)
-				if err != nil {
-					return md5buf, 0, err
-				}
-				instSize += size
-			}
-		}
+
+	filesToCopy, err := files.Expand(info.Files)
+	if err != nil {
+		return md5buf, 0, err
 	}
+
+	configFiles, err := files.Expand(info.ConfigFiles)
+	if err != nil {
+		return md5buf, 0, err
+	}
+
+	filesToCopy = append(filesToCopy, configFiles...)
+
+	for _, file := range filesToCopy {
+		if err = createTree(out, file.Destination, created); err != nil {
+			return md5buf, 0, err
+		}
+
+		var size int64 // declare early to avoid shadowing err
+		size, err = copyToTarAndDigest(out, &md5buf, file.Source, file.Destination)
+		if err != nil {
+			return md5buf, 0, err
+		}
+		instSize += size
+	}
+
+	if info.Changelog != "" {
+		changelog, err := createChangelog(info)
+		if err != nil {
+			return md5buf, 0, err
+		}
+
+		// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
+		changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
+		if err = createTree(out, changelogName, created); err != nil {
+			return md5buf, 0, err
+		}
+
+		var digest = md5.New() // nolint:gas
+		if _, err = fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(nil), changelog); err != nil {
+			return md5buf, instSize, err
+		}
+
+		if err = newFileInsideTarGz(out, changelogName, changelog); err != nil {
+			return md5buf, instSize, err
+		}
+
+		instSize += int64(len(changelog))
+	}
+
 	return md5buf, instSize, nil
 }
 
@@ -171,7 +242,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		return 0, errors.Wrap(err, "could not add file to the archive")
 	}
 	// don't care if it errs while closing...
-	defer file.Close() // nolint: errcheck
+	defer file.Close() // nolint: errcheck,gosec
 	info, err := file.Stat()
 	if err != nil {
 		return 0, err
@@ -200,6 +271,49 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 	return info.Size(), nil
 }
 
+func createChangelog(info *nfpm.Info) (chglogTarGz []byte, err error) {
+	var buf bytes.Buffer
+	var out = gzip.NewWriter(&buf)
+	// the writers are properly closed later, this is just in case that we have
+	// an error in another part of the code.
+	defer out.Close() // nolint: errcheck
+
+	chglogData, err := formatChangelog(info)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err = out.Write([]byte(chglogData)); err != nil {
+		return nil, err
+	}
+
+	if err := out.Close(); err != nil {
+		return nil, errors.Wrap(err, "closing changelog.gz")
+	}
+
+	return buf.Bytes(), nil
+}
+
+func formatChangelog(info *nfpm.Info) (string, error) {
+	changelog, err := info.GetChangeLog()
+	if err != nil {
+		return "", err
+	}
+
+	tpl, err := chglog.DebTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	formattedChangelog, err := chglog.FormatChangelog(changelog, tpl)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(formattedChangelog) + "\n", nil
+}
+
+// nolint:funlen
 func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarGz []byte, err error) {
 	var buf bytes.Buffer
 	var compress = gzip.NewWriter(&buf)
@@ -210,18 +324,34 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 	defer compress.Close() // nolint: errcheck
 
 	var body bytes.Buffer
-	if err := writeControl(&body, controlData{
+	if err = writeControl(&body, controlData{
 		Info:          info,
 		InstalledSize: instSize / 1024,
 	}); err != nil {
 		return nil, err
 	}
 
-	for name, content := range map[string][]byte{
+	filesToCreate := map[string][]byte{
 		"control":   body.Bytes(),
 		"md5sums":   md5sums,
 		"conffiles": conffiles(info),
-	} {
+	}
+
+	if info.Changelog != "" {
+		changeLogData, err := formatChangelog(info)
+		if err != nil {
+			return nil, err
+		}
+
+		filesToCreate["changelog"] = []byte(changeLogData)
+	}
+
+	triggers := createTriggers(info)
+	if len(triggers) > 0 {
+		filesToCreate["triggers"] = triggers
+	}
+
+	for name, content := range filesToCreate {
 		if err := newFileInsideTarGz(out, name, content); err != nil {
 			return nil, err
 		}
@@ -339,6 +469,31 @@ func conffiles(info *nfpm.Info) []byte {
 		confs = append(confs, dst)
 	}
 	return []byte(strings.Join(confs, "\n") + "\n")
+}
+
+func createTriggers(info *nfpm.Info) []byte {
+	var buffer bytes.Buffer
+
+	// https://man7.org/linux/man-pages/man5/deb-triggers.5.html
+	triggerEntries := []struct {
+		Directive    string
+		TriggerNames *[]string
+	}{
+		{"interest", &info.Deb.Triggers.Interest},
+		{"interest-await", &info.Deb.Triggers.InterestAwait},
+		{"interest-noawait", &info.Deb.Triggers.InterestNoAwait},
+		{"activate", &info.Deb.Triggers.Activate},
+		{"activate-await", &info.Deb.Triggers.ActivateAwait},
+		{"activate-noawait", &info.Deb.Triggers.ActivateNoAwait},
+	}
+
+	for _, triggerEntry := range triggerEntries {
+		for _, triggerName := range *triggerEntry.TriggerNames {
+			fmt.Fprintf(&buffer, "%s %s\n", triggerEntry.Directive, triggerName)
+		}
+	}
+
+	return buffer.Bytes()
 }
 
 const controlTemplate = `

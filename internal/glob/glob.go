@@ -12,7 +12,7 @@ import (
 )
 
 // longestCommonPrefix returns the longest prefix of all strings the argument
-// slice. If the slice is empty the empty string is returned
+// slice. If the slice is empty the empty string is returned.
 func longestCommonPrefix(strs []string) string {
 	if len(strs) == 0 {
 		return ""
@@ -39,6 +39,15 @@ func strlcp(a, b string) string {
 	return a[0:min]
 }
 
+// ErrGlobNoMatch happens when no files matched the given glob.
+type ErrGlobNoMatch struct {
+	glob string
+}
+
+func (e ErrGlobNoMatch) Error() string {
+	return fmt.Sprintf("%s: no matching files", e.glob)
+}
+
 // Glob returns a map with source file path as keys and destination as values.
 // First the longest common prefix (lcp) of all globbed files is found. The destination
 // for each globbed file is then dst joined with src with the lcp trimmed off.
@@ -48,7 +57,7 @@ func Glob(glob, dst string) (map[string]string, error) {
 		return nil, errors.Wrap(err, glob)
 	}
 	if len(matches) == 0 {
-		return nil, fmt.Errorf("%s: no matching files", glob)
+		return nil, ErrGlobNoMatch{glob}
 	}
 	files := make(map[string]string)
 	prefix := longestCommonPrefix(matches)

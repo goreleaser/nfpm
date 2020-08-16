@@ -1,3 +1,5 @@
+//+build acceptance
+
 package acceptance
 
 import (
@@ -87,6 +89,36 @@ func TestComplex(t *testing.T) {
 	}
 }
 
+func TestConfigNoReplace(t *testing.T) {
+	var target = "./testdata/tmp/noreplace_old_rpm.rpm"
+	require.NoError(t, os.MkdirAll("./testdata/tmp", 0700))
+
+	config, err := nfpm.ParseFile("./testdata/config-noreplace-old.yaml")
+	require.NoError(t, err)
+
+	info, err := config.Get("rpm")
+	require.NoError(t, err)
+	require.NoError(t, nfpm.Validate(info))
+
+	pkg, err := nfpm.Get("rpm")
+	require.NoError(t, err)
+
+	f, err := os.Create(target)
+	require.NoError(t, err)
+	info.Target = target
+	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
+
+	t.Run("noreplace-rpm", func(t *testing.T) {
+		t.Parallel()
+		accept(t, acceptParms{
+			Name:       "noreplace_rpm",
+			Conf:       "config-noreplace.yaml",
+			Format:     "rpm",
+			Dockerfile: "rpm.config-noreplace.dockerfile",
+		})
+	})
+}
+
 func TestEnvVarVersion(t *testing.T) {
 	for _, format := range formats {
 		format := format
@@ -133,6 +165,21 @@ func TestMin(t *testing.T) {
 	}
 }
 
+func TestMeta(t *testing.T) {
+	for _, format := range formats {
+		format := format
+		t.Run(fmt.Sprintf("amd64-%s", format), func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("meta_%s", format),
+				Conf:       "meta.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.meta.dockerfile", format),
+			})
+		})
+	}
+}
+
 func TestRPMCompression(t *testing.T) {
 	compressFormats := []string{"gzip", "xz", "lzma"}
 	for _, format := range compressFormats {
@@ -165,6 +212,48 @@ func TestDebRules(t *testing.T) {
 		Format:     "deb",
 		Dockerfile: "rules.deb.dockerfile",
 	})
+}
+
+func TestChangelog(t *testing.T) {
+	for _, format := range formats {
+		format := format
+		t.Run(fmt.Sprintf("changelog-%s", format), func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("changelog_%s", format),
+				Conf:       "withchangelog.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.changelog.dockerfile", format),
+			})
+		})
+	}
+}
+
+func TestDebTriggers(t *testing.T) {
+	t.Run("triggers-deb", func(t *testing.T) {
+		t.Parallel()
+		accept(t, acceptParms{
+			Name:       "triggers-deb",
+			Conf:       "triggers.yaml",
+			Format:     "deb",
+			Dockerfile: "deb.triggers.dockerfile",
+		})
+	})
+}
+
+func TestSymlink(t *testing.T) {
+	for _, format := range formats {
+		format := format
+		t.Run(fmt.Sprintf("symlink-%s", format), func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("symlink_%s", format),
+				Conf:       "symlink.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.symlink.dockerfile", format),
+			})
+		})
+	}
 }
 
 type acceptParms struct {
