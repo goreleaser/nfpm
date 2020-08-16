@@ -91,14 +91,14 @@ func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 
 	size := int64(0)
 	// create the data tgz
-	dataDigest, err := createData(&bufData, info, &size)
+	_, err = createData(&bufData, info, &size)
 	if err != nil {
 		return err
 	}
 
 	// create the control tgz
 	var bufControl bytes.Buffer
-	if _, err = createControl(&bufControl, info, dataDigest, size); err != nil {
+	if _, err = createControl(&bufControl, info, size); err != nil {
 		return err
 	}
 
@@ -129,24 +129,9 @@ func (counter *writerCounter) Count() uint64 {
 }
 
 func writeFile(tw *tar.Writer, header *tar.Header, file io.Reader) error {
-	// if hash {
-	// 	header.Format = tar.FormatPAX
-
-	// 	digest := sha1.New()
-	// 	_, err := io.Copy(digest, file)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	header.PAXRecords = map[string]string{
-	// 		"APK-TOOLS.checksum.SHA1": "f572d396fae9206628714fb2ce00f72e94f2258f",
-	// 		// "APK-TOOLS.checksum.SHA1": hex.EncodeToString(digest.Sum(nil)),
-	// 	}
-	// } else {
 	header.Format = tar.FormatUSTAR
 	header.ChangeTime = time.Time{}
 	header.AccessTime = time.Time{}
-	// }
 
 	err := tw.WriteHeader(header)
 	if err != nil {
@@ -221,8 +206,8 @@ func createData(dataTgz io.Writer, info *nfpm.Info, sizep *int64) ([]byte, error
 	return dataDigest, nil
 }
 
-func createControl(controlTgz io.Writer, info *nfpm.Info, dataDigest []byte, size int64) ([]byte, error) {
-	builderControl := createBuilderControl(info, size, dataDigest)
+func createControl(controlTgz io.Writer, info *nfpm.Info, size int64) ([]byte, error) {
+	builderControl := createBuilderControl(info, size)
 	controlDigest, err := writeTgz(controlTgz, tarCut, builderControl, sha256.New())
 	if err != nil {
 		return nil, err
@@ -239,7 +224,7 @@ func combineToApk(target io.Writer, dataTgz, controlTgz io.Reader) error {
 	return nil
 }
 
-func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(tw *tar.Writer) error {
+func createBuilderControl(info *nfpm.Info, size int64) func(tw *tar.Writer) error {
 	return func(tw *tar.Writer) error {
 		var infoBuf bytes.Buffer
 		if err := writeControl(&infoBuf, controlData{
