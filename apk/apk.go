@@ -28,14 +28,8 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha256"
-	"crypto/x509"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/pem"
 	"fmt"
 	"hash"
 	"io"
@@ -48,7 +42,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/goreleaser/nfpm/glob"
+	"github.com/goreleaser/nfpm/internal/files"
 
 	"github.com/pkg/errors"
 
@@ -80,6 +74,11 @@ var Default = &Apk{}
 // Apk is a apk packager implementation
 type Apk struct{}
 
+func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
+	// TODO: verify this
+	return fmt.Sprintf("%s_%s_%s.apk", info.Name, info.Version, info.Arch)
+}
+
 // Package writes a new apk package to the given writer using the given info
 func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 	arch, ok := archToAlpine[info.Arch]
@@ -98,19 +97,12 @@ func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 
 	// create the control tgz
 	var bufControl bytes.Buffer
-	controlDigest, err := createControl(&bufControl, info, dataDigest, size)
-	if err != nil {
-		return err
-	}
-
-	var bufSignature bytes.Buffer
-	err = createSignature(&bufSignature, controlDigest, info)
-	if err != nil {
+	if _, err = createControl(&bufControl, info, dataDigest, size); err != nil {
 		return err
 	}
 
 	// combine
-	return combineToApk(apk, &bufData, &bufControl, &bufSignature)
+	return combineToApk(apk, &bufData, &bufControl)
 }
 
 type writerCounter struct {
@@ -219,59 +211,6 @@ func writeTgz(w io.Writer, kind tarKind, builder func(tw *tar.Writer) error, dig
 	return digest.Sum(nil), nil
 }
 
-func parseRsaPrivateKeyFromPemStr(privPEM string) (*rsa.PrivateKey, error) {
-	block, _ := pem.Decode([]byte(privPEM))
-	if block == nil {
-		return nil, errors.New("failed to parse PEM block containing the key")
-	}
-
-	priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return priv, nil
-}
-
-func fileToBase64String(file string) (string, error) {
-	fileBytes, err := ioutil.ReadFile(filepath.Clean(file))
-	if err != nil {
-		return "", err
-	}
-	base64Contents := base64.StdEncoding.EncodeToString(fileBytes)
-	return base64Contents, nil
-}
-
-func createSignature(signatureTgz io.Writer, controlDigest []byte, info *nfpm.Info) error {
-	var pemBytes []byte
-	var err error
-	switch {
-	case info.PrivateKeyBase64 != "":
-		if pemBytes, err = base64.StdEncoding.DecodeString(info.PrivateKeyBase64); err != nil {
-			return err
-		}
-	case info.PrivateKeyFile != "":
-		if pemBytes, err = ioutil.ReadFile(filepath.Clean(info.PrivateKeyFile)); err != nil {
-			return err
-		}
-	default:
-		fmt.Printf("yaml configuration of 'privatekeybase64' or 'privatekeyfile' is required for .apk\n")
-	}
-	priv, err := parseRsaPrivateKeyFromPemStr(string(pemBytes))
-	if err != nil {
-		return err
-	}
-	signed, err := priv.Sign(rand.Reader, controlDigest, crypto.SHA256)
-	if err != nil {
-		return err
-	}
-
-	// create the signature tgz
-	builderSignature := createBuilderSignature(signed, info)
-	_, err = writeTgz(signatureTgz, tarCut, builderSignature, sha256.New())
-	return err
-}
-
 func createData(dataTgz io.Writer, info *nfpm.Info, sizep *int64) ([]byte, error) {
 	builderData := createBuilderData(info, sizep)
 	dataDigest, err := writeTgz(dataTgz, tarFull, builderData, sha256.New())
@@ -290,36 +229,13 @@ func createControl(controlTgz io.Writer, info *nfpm.Info, dataDigest []byte, siz
 	return controlDigest, nil
 }
 
-func combineToApk(target io.Writer, dataTgz, controlTgz, signatureTgz io.Reader) (err error) {
-	tgzs := []io.Reader{signatureTgz, controlTgz, dataTgz}
-
-	for _, tgz := range tgzs {
-		if _, err = io.Copy(target, tgz); err != nil {
+func combineToApk(target io.Writer, dataTgz, controlTgz io.Reader) error {
+	for _, tgz := range []io.Reader{controlTgz, dataTgz} {
+		if _, err := io.Copy(target, tgz); err != nil {
 			return err
 		}
 	}
-
-	return err
-}
-
-func createBuilderSignature(signed []byte, info *nfpm.Info) func(tw *tar.Writer) error {
-	return func(tw *tar.Writer) error {
-		keyname := info.KeyName
-		// needs to exist on the machine: /etc/apk/keys/<keyname>.rsa.pub
-
-		signContent := signed
-		signHeader := &tar.Header{
-			Name: fmt.Sprintf(".SIGN.RSA.%s.rsa.pub", keyname),
-			Mode: 0600,
-			Size: int64(len(signContent)),
-		}
-
-		if err := writeFile(tw, signHeader, bytes.NewReader(signContent)); err != nil {
-			return err
-		}
-
-		return nil
-	}
+	return nil
 }
 
 func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(tw *tar.Writer) error {
@@ -411,35 +327,26 @@ func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error
 }
 
 func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool, sizep *int64) error {
-	for _, files := range []map[string]string{
-		info.Files,
-		info.ConfigFiles,
-	} {
-		for srcglob, dstroot := range files {
-			globbed, err := glob.Glob(srcglob, dstroot)
-			if err != nil {
-				return err
-			}
-			for src, dst := range globbed {
-				// when used as a lib, target may not be set.
-				// in that case, src will always have the empty sufix, and all
-				// files will be ignored.
-				if info.Target != "" && strings.HasSuffix(src, info.Target) {
-					fmt.Printf("skipping %s because it has the suffix %s", src, info.Target)
-					continue
-				}
-				if err := createTree(tw, dst, created); err != nil {
-					return err
-				}
+	filesToCopy, err := files.Expand(info.Files)
+	if err != nil {
+		return err
+	}
 
-				// copied from deb.go->copyToTarAndDigest()
-				err := copyToTarAndDigest(src, dst, tw, sizep, created)
-				if err != nil {
-					return err
-				}
-			}
+	configFilesToCopy, err := files.Expand(info.ConfigFiles)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range append(filesToCopy, configFilesToCopy...) {
+		if err = createTree(tw, file.Destination, created); err != nil {
+			return err
+		}
+		err := copyToTarAndDigest(file.Source, file.Destination, tw, sizep, created)
+		if err != nil {
+			return err
 		}
 	}
+
 	return nil
 }
 

@@ -60,9 +60,6 @@ func Parse(in io.Reader) (config Config, err error) {
 	config.Info.Release = os.ExpandEnv(config.Info.Release)
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
 
-	config.Info.PrivateKeyBase64 = os.ExpandEnv(config.Info.PrivateKeyBase64)
-	config.Info.PrivateKeyFile = os.ExpandEnv(config.Info.PrivateKeyFile)
-
 	return config, config.Validate()
 }
 

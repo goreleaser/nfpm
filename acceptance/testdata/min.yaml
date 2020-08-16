@@ -4,5 +4,3 @@ version: 1.2.3
 license: MIT
 files:
   ../testdata/fake: "/usr/local/bin/fake"
-privatekeyfile: testdata/keyfile/id_rsa
-keyname: appuser@3b1a5e094ee4
