@@ -365,30 +365,13 @@ func copyToTarAndDigest(src, dst string, tw *tar.Writer, sizep *int64, created m
 		// TODO: this should probably return an error
 		return nil
 	}
-	/*					var header = tar.Header{
-							Name:    filepath.ToSlash(dst[1:]),
-							Size:    info.Size(),
-							Mode:    int64(info.Mode()),
-							ModTime: time.Now(),
-							Format:  tar.FormatGNU,
-						}
-	*/
 	header, err := tar.FileInfoHeader(info, src)
 	if err != nil {
 		log.Print(err)
 		return err
 	}
+
 	header.Name = filepath.ToSlash(dst[1:])
-
-	info, err = file.Stat()
-	if err != nil {
-		return err
-	}
-	if info.IsDir() {
-		// TODO: this should probably return an error
-		return nil
-	}
-
 	err = writeFile(tw, header, file)
 	if err != nil {
 		return err

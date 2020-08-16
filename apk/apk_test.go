@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"testing"
 
@@ -211,13 +212,14 @@ func TestCreateBuilderControl(t *testing.T) {
 	tw := tar.NewWriter(&w)
 	assert.NoError(t, builderControl(tw))
 
+	var control = extractControl(t, &w)
 	var golden = "testdata/TestCreateBuilderControl.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655)) // nolint: gosec
+		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	assert.Equal(t, string(bts), control)
 }
 
 func TestCreateBuilderControlScripts(t *testing.T) {
@@ -238,13 +240,14 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 	tw := tar.NewWriter(&w)
 	assert.NoError(t, builderControl(tw))
 
+	var control = extractControl(t, &w)
 	var golden = "testdata/TestCreateBuilderControlScripts.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655)) // nolint: gosec
+		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	assert.Equal(t, string(bts), control)
 }
 
 func TestControl(t *testing.T) {
@@ -260,4 +263,25 @@ func TestControl(t *testing.T) {
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, string(bts), w.String())
+}
+
+func extractControl(t *testing.T, r io.Reader) string {
+	var tr = tar.NewReader(r)
+
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		if hdr.Name == ".PKGINFO" {
+			var w bytes.Buffer
+			_, err := io.Copy(&w, tr)
+			require.NoError(t, err)
+			return w.String()
+		}
+		t.Log("ignored", hdr.Name)
+	}
+
+	return ""
 }
