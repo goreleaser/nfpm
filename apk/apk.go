@@ -469,14 +469,14 @@ url = {{.Info.Homepage}}
 {{- if .Info.Maintainer}}
 maintainer = {{.Info.Maintainer}}
 {{- end }}
-{{- with .Info.Replaces}}
-replaces = {{join .}}
+{{- range $repl := .Info.Replaces}}
+replaces = {{ $repl }}
 {{- end }}
-{{- with .Info.Provides}}
-provides = {{join .}}
+{{- range $prov := .Info.Provides}}
+provides = {{ $prov }}
 {{- end }}
-{{- with .Info.Depends}}
-depend = {{join .}}
+{{- range $dep := .Info.Depends}}
+depend = {{ $dep }}
 {{- end }}
 {{- if .Info.License}}
 license = {{.Info.License}}
@@ -493,9 +493,6 @@ type controlData struct {
 func writeControl(w io.Writer, data controlData) error {
 	var tmpl = template.New("control")
 	tmpl.Funcs(template.FuncMap{
-		"join": func(strs []string) string {
-			return strings.Trim(strings.Join(strs, ", "), " ")
-		},
 		"multiline": func(strs string) string {
 			ret := strings.ReplaceAll(strs, "\n", "\n  ")
 			return strings.Trim(ret, " \n")

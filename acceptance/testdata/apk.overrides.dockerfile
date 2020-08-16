@@ -1,8 +1,6 @@
 FROM alpine
 ARG package
 COPY ${package} /tmp/foo.apk
-#RUN apk add /tmp/foo.apk
-# TODO make this work without --allow-untrusted
 RUN apk add -vvv --allow-untrusted /tmp/foo.apk
 RUN test -e /usr/local/bin/fake
 RUN test -f /etc/foo/whatever.conf

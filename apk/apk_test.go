@@ -8,8 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,7 +18,7 @@ import (
 )
 
 // nolint: gochecknoglobals
-var updateApk = flag.Bool("update-apk", false, "update apk .golden files")
+var update = flag.Bool("update", false, "update apk .golden files")
 
 func exampleInfo() *nfpm.Info {
 	return nfpm.WithDefaults(&nfpm.Info{
@@ -37,21 +35,27 @@ func exampleInfo() *nfpm.Info {
 		Overridables: nfpm.Overridables{
 			Depends: []string{
 				"bash",
+				"foo",
 			},
 			Recommends: []string{
 				"git",
+				"bar",
 			},
 			Suggests: []string{
 				"bash",
+				"lala",
 			},
 			Replaces: []string{
 				"svn",
+				"subversion",
 			},
 			Provides: []string{
 				"bzr",
+				"zzz",
 			},
 			Conflicts: []string{
 				"zsh",
+				"foobarsh",
 			},
 			Files: map[string]string{
 				"../testdata/fake":          "/usr/local/bin/fake",
@@ -204,25 +208,17 @@ func TestCreateBuilderControl(t *testing.T) {
 	dataDigest := digest.Sum(nil)
 	builderControl := createBuilderControl(info, size, dataDigest)
 
-	var controlTgz bytes.Buffer
-	tw := tar.NewWriter(&controlTgz)
+	var w bytes.Buffer
+	tw := tar.NewWriter(&w)
 	assert.NoError(t, builderControl(tw))
 
-	assert.Equal(t, 798, controlTgz.Len())
-
-	stringControlTgz := controlTgz.String()
-	assert.True(t, strings.HasPrefix(stringControlTgz, ".PKGINFO"))
-	assert.Contains(t, stringControlTgz, "pkgname = "+info.Name)
-	assert.Contains(t, stringControlTgz, "pkgver = "+info.Version+"-"+info.Release)
-	assert.Contains(t, stringControlTgz, "pkgdesc = "+info.Description)
-	assert.Contains(t, stringControlTgz, "url = "+info.Homepage)
-	assert.Contains(t, stringControlTgz, "maintainer = "+info.Maintainer)
-	assert.Contains(t, stringControlTgz, "replaces = "+info.Replaces[0])
-	assert.Contains(t, stringControlTgz, "provides = "+info.Provides[0])
-	assert.Contains(t, stringControlTgz, "depend = "+info.Depends[0])
-	assert.Contains(t, stringControlTgz, "arch = "+info.Arch) // conversion using archToAlpine[info.Arch]) would occur in Package() method
-	assert.Contains(t, stringControlTgz, "size = "+strconv.Itoa(int(size)))
-	assert.Contains(t, stringControlTgz, "datahash = "+hex.EncodeToString(dataDigest))
+	var golden = "testdata/TestCreateBuilderControl.golden"
+	if *update {
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655)) // nolint: gosec
+	}
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	assert.NoError(t, err)
+	assert.Equal(t, string(bts), w.String())
 }
 
 func TestCreateBuilderControlScripts(t *testing.T) {
@@ -239,16 +235,17 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 	dataDigest := digest.Sum(nil)
 	builderControl := createBuilderControl(info, size, dataDigest)
 
-	var controlTgz bytes.Buffer
-	tw := tar.NewWriter(&controlTgz)
+	var w bytes.Buffer
+	tw := tar.NewWriter(&w)
 	assert.NoError(t, builderControl(tw))
 
-	stringControlTgz := controlTgz.String()
-	assert.Contains(t, stringControlTgz, ".pre-install")
-	assert.Contains(t, stringControlTgz, ".post-install")
-	assert.Contains(t, stringControlTgz, ".pre-deinstall")
-	assert.Contains(t, stringControlTgz, ".post-deinstall")
-	assert.Contains(t, stringControlTgz, "datahash = "+hex.EncodeToString(dataDigest))
+	var golden = "testdata/TestCreateBuilderControlScripts.golden"
+	if *update {
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655)) // nolint: gosec
+	}
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	assert.NoError(t, err)
+	assert.Equal(t, string(bts), w.String())
 }
 
 func TestControl(t *testing.T) {
@@ -261,8 +258,8 @@ func TestControl(t *testing.T) {
 		InstalledSize: 10,
 		Datahash:      hex.EncodeToString(dataDigest),
 	}))
-	var golden = "testdata/control.golden"
-	if *updateApk {
+	var golden = "testdata/TestControl.golden"
+	if *update {
 		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
