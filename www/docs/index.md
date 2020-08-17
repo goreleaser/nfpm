@@ -2,7 +2,7 @@
 
 ![](/static/banner.svg)
 
-NFPM is a simple, 0-dependencies, Deb and RPM packager.
+NFPM is a simple, 0-dependencies, `deb`, `rpm` and `apk` packager.
 
 ## Why
 
