@@ -619,9 +619,41 @@ func TestSymlink(t *testing.T) {
 	packagedSymlinkHeader, err := extractFileHeaderFromTarGz(dataTarGz, symlink)
 	require.NoError(t, err)
 
-	assert.Equal(t, symlink, packagedSymlinkHeader.Name)
+	assert.Equal(t, symlink, path.Join("/", packagedSymlinkHeader.Name))
 	assert.Equal(t, uint8(tar.TypeSymlink), packagedSymlinkHeader.Typeflag)
 	assert.Equal(t, symlinkTarget, packagedSymlinkHeader.Linkname)
+}
+
+func TestNoLeadingSlashInTarGzFiles(t *testing.T) {
+	info := exampleInfo()
+	info.Symlinks = map[string]string{
+		"/symlink/to/fake.txt": "/usr/share/doc/fake/fake.txt",
+	}
+	info.Changelog = "../testdata/changelog.yaml"
+
+	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
+	require.NoError(t, err)
+	testNoLeadingSlashInTarGzFiles(t, dataTarGz)
+
+	controlTarGz, err := createControl(instSize, md5sums, info)
+	require.NoError(t, err)
+	testNoLeadingSlashInTarGzFiles(t, controlTarGz)
+}
+
+func testNoLeadingSlashInTarGzFiles(t *testing.T, tarGzFile []byte) {
+	tarFile, err := gzipInflate(tarGzFile)
+	require.NoError(t, err)
+
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		require.NoError(t, err)
+
+		assert.False(t, strings.HasPrefix(hdr.Name, "/"), "%s starts with /", hdr.Name)
+	}
 }
 
 func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
