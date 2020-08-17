@@ -204,7 +204,7 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 		}
 
 		// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
-		changelogName := fmt.Sprintf("usr/share/doc/%s/changelog.gz", info.Name)
+		changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
 		if err = createTree(out, changelogName, created); err != nil {
 			return md5buf, 0, err
 		}
@@ -392,7 +392,7 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	return newItemInsideTarGz(out, content, &tar.Header{
-		Name:     filepath.ToSlash(name),
+		Name:     strings.TrimLeft(filepath.ToSlash(name), "/"),
 		Size:     int64(len(content)),
 		Mode:     0644,
 		ModTime:  time.Now(),
