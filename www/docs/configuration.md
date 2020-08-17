@@ -108,9 +108,16 @@ scripts:
   preremove: ./scripts/preremove.sh
   postremove: ./scripts/postremove.sh
 
+# All fields above marked as `overridable` can be overriden for a given package format in this section.
+overrides:
+  deb:
+    # ...
+  rpm:
+    # ...
+  apk:
+    # ...
+
 # Custon configuration applied only to the RPM packager.
-# All fields described bellow, plus all fields above marked as `overridable`
-# can be specified here.
 rpm:
   # The package group. This option is deprecated by most distros
   # but required by old distros like CentOS 5 / EL 5 and earlier.
@@ -125,8 +132,6 @@ rpm:
     path/to/local/bar.con: /etc/bar.conf
 
 # Custon configuration applied only to the Deb packager.
-# All fields described bellow, plus all fields above marked as `overridable`
-# can be specified here.
 deb:
   # Custom version metadata.
   # Setting metadata might interfere with version comparisons.
