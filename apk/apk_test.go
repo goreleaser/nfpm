@@ -3,7 +3,6 @@ package apk
 import (
 	"archive/tar"
 	"bytes"
-	"crypto/sha256"
 	"flag"
 	"fmt"
 	"io"
@@ -204,9 +203,7 @@ func TestNoFiles(t *testing.T) {
 func TestCreateBuilderControl(t *testing.T) {
 	info := exampleInfo()
 	size := int64(12345)
-	digest := sha256.New()
-	dataDigest := digest.Sum(nil)
-	builderControl := createBuilderControl(info, size, dataDigest)
+	builderControl := createBuilderControl(info, size)
 
 	var w bytes.Buffer
 	tw := tar.NewWriter(&w)
@@ -232,9 +229,7 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 	}
 
 	size := int64(12345)
-	digest := sha256.New()
-	dataDigest := digest.Sum(nil)
-	builderControl := createBuilderControl(info, size, dataDigest)
+	builderControl := createBuilderControl(info, size)
 
 	var w bytes.Buffer
 	tw := tar.NewWriter(&w)
