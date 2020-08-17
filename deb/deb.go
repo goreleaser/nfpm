@@ -154,7 +154,7 @@ func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[str
 		}
 
 		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
-			Name:     src,
+			Name:     strings.TrimLeft(src, "/"),
 			Linkname: dst,
 			Typeflag: tar.TypeSymlink,
 			ModTime:  time.Now(),
@@ -204,7 +204,7 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 		}
 
 		// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
-		changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
+		changelogName := fmt.Sprintf("usr/share/doc/%s/changelog.gz", info.Name)
 		if err = createTree(out, changelogName, created); err != nil {
 			return md5buf, 0, err
 		}
