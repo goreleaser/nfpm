@@ -307,7 +307,11 @@ func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error
 		}
 
 		// handle Files and ConfigFiles
-		return createFilesInsideTarGz(info, tw, created, sizep)
+		if err := createFilesInsideTarGz(info, tw, created, sizep); err != nil {
+			return err
+		}
+
+		return createSymlinksInsideTarGz(info, tw, created)
 	}
 }
 
@@ -327,6 +331,27 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			return err
 		}
 		err := copyToTarAndDigest(file.Source, file.Destination, tw, sizep, created)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
+	for src, dst := range info.Symlinks {
+		if err := createTree(out, src, created); err != nil {
+			return err
+		}
+
+		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
+			Name:     strings.TrimLeft(src, "/"),
+			Linkname: dst,
+			Typeflag: tar.TypeSymlink,
+			ModTime:  time.Now(),
+			Format:   tar.FormatGNU,
+		})
 		if err != nil {
 			return err
 		}
