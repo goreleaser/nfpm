@@ -17,5 +17,3 @@ RUN cat /etc/regular.conf.rpmsave | grep modified
 RUN cat /etc/noreplace.conf | grep modified
 RUN test -f /etc/noreplace.conf.rpmnew
 RUN cat /etc/noreplace.conf.rpmnew | grep foo=baz
-
-RUN rpm -e foo

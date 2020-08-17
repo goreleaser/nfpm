@@ -13,12 +13,13 @@ import (
 
 	"github.com/goreleaser/nfpm"
 	// shut up
+	_ "github.com/goreleaser/nfpm/apk"
 	_ "github.com/goreleaser/nfpm/deb"
 	_ "github.com/goreleaser/nfpm/rpm"
 )
 
 // nolint: gochecknoglobals
-var formats = []string{"deb", "rpm"}
+var formats = []string{"deb", "rpm", "apk"}
 
 func TestSimple(t *testing.T) {
 	for _, format := range formats {
@@ -261,6 +262,7 @@ func accept(t *testing.T, params acceptParms) {
 	require.NoError(t, err)
 	var packageName = params.Name + "." + params.Format
 	var target = filepath.Join(tmp, packageName)
+	t.Log("package: " + target)
 
 	require.NoError(t, os.MkdirAll(tmp, 0700))
 

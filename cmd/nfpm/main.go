@@ -12,6 +12,7 @@ import (
 	"github.com/alecthomas/kingpin"
 
 	"github.com/goreleaser/nfpm"
+	_ "github.com/goreleaser/nfpm/apk"
 	_ "github.com/goreleaser/nfpm/deb"
 	_ "github.com/goreleaser/nfpm/rpm"
 )

@@ -1,0 +1,13 @@
+pkgname = foo
+pkgver = 1.0.0-r1
+arch = amd64
+size = 12345
+pkgdesc = Foo does things
+url = http://carlosbecker.com
+maintainer = Carlos A Becker <pkg@carlosbecker.com>
+replaces = svn
+replaces = subversion
+provides = bzr
+provides = zzz
+depend = bash
+depend = foo

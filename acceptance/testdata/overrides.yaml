@@ -31,3 +31,7 @@ overrides:
     scripts:
       postinstall: ./testdata/scripts/postinstall.sh
       preremove: ./testdata/scripts/preremove.sh
+  apk:
+    scripts:
+      postinstall: ./testdata/scripts/postinstall.sh
+      preremove: ./testdata/scripts/preremove.sh

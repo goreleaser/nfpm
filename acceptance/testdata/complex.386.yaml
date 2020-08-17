@@ -30,3 +30,4 @@ scripts:
   postinstall: ./testdata/scripts/postinstall.sh
   preremove: ./testdata/scripts/preremove.sh
   postremove: ./testdata/scripts/postremove.sh
+

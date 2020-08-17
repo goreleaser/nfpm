@@ -8,4 +8,3 @@ RUN zcat "/usr/share/doc/foo/changelog.gz" | grep "Carlos A Becker <pkg@carlosbe
 RUN zcat "/usr/share/doc/foo/changelog.gz" | grep "note 1"
 RUN zcat "/usr/share/doc/foo/changelog.gz" | grep "note 2"
 RUN zcat "/usr/share/doc/foo/changelog.gz" | grep "note 3"
-RUN dpkg -r foo

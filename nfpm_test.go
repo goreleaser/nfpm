@@ -139,6 +139,7 @@ func TestParseFile(t *testing.T) {
 	require.Error(t, err)
 	Register("deb", &fakePackager{})
 	Register("rpm", &fakePackager{})
+	Register("apk", &fakePackager{})
 	_, err = ParseFile("./testdata/overrides.yaml")
 	require.NoError(t, err)
 	_, err = ParseFile("./testdata/doesnotexist.yaml")
