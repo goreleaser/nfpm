@@ -34,7 +34,7 @@ var (
 		String()
 	packager = pkgCmd.Flag("packager", "which packager implementation to use").
 			Short('p').
-			Enum("deb", "rpm")
+			Enum("deb", "rpm", "apk")
 
 	initCmd = app.Command("init", "create an empty config file")
 )
