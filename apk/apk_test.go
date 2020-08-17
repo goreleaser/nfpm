@@ -95,13 +95,12 @@ func TestCreateBuilderData(t *testing.T) {
 	size := int64(0)
 	builderData := createBuilderData(info, &size)
 
-	// tw := tar.NewWriter(ioutil.Discard)
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
 
 	assert.NoError(t, builderData(tw))
 
-	assert.Equal(t, 1043464, buf.Len())
+	assert.Equal(t, 8712, buf.Len())
 }
 
 func TestCombineToApk(t *testing.T) {
