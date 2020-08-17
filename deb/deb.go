@@ -154,7 +154,7 @@ func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[str
 		}
 
 		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
-			Name:     src,
+			Name:     strings.TrimLeft(src, "/"),
 			Linkname: dst,
 			Typeflag: tar.TypeSymlink,
 			ModTime:  time.Now(),
@@ -392,7 +392,7 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	return newItemInsideTarGz(out, content, &tar.Header{
-		Name:     filepath.ToSlash(name),
+		Name:     strings.TrimLeft(filepath.ToSlash(name), "/"),
 		Size:     int64(len(content)),
 		Mode:     0644,
 		ModTime:  time.Now(),
