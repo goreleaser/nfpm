@@ -28,7 +28,7 @@ test:
 .PHONY: test
 
 cover: test
-	go tool cover -html=coverage.out
+	go tool cover -html=coverage.txt
 .PHONY: cover
 
 fmt:
