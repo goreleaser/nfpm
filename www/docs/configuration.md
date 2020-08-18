@@ -110,9 +110,17 @@ scripts:
 
 # All fields above marked as `overridable` can be overriden for a given package format in this section.
 overrides:
+  # The depends override can for example be used to provide version constraints for dependencies where
+  # different package formats use different versions or for dependencies that are named differently.
   deb:
+    depends:
+      - baz (>= 1.2.3-0)
+      - some-lib-dev
     # ...
   rpm:
+    depends:
+      - baz >= 1.2.3-0
+      - some-lib-devel
     # ...
   apk:
     # ...
