@@ -212,24 +212,41 @@ func TestRPMVersionWithRelease(t *testing.T) {
 func TestRPMVersionWithPrerelease(t *testing.T) {
 	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
 	info := exampleInfo()
-	info.Version = "1.0.0" //nolint:golint,goconst
-	info.Prerelease = "rc1"
+
+	info.Version = "1.0.0"
+	info.Prerelease = "rc1" // nolint:goconst
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0", meta.Version)
-	assert.Equal(t, "0.1.rc1", meta.Release)
+	assert.Equal(t, "1.0.0~rc1", meta.Version)
+	assert.Equal(t, "1", meta.Release)
+
+	info.Version = "1.0.0~rc1"
+	info.Prerelease = ""
+	meta, err = buildRPMMeta(info)
+	require.NoError(t, err)
+	assert.Equal(t, "1.0.0~rc1", meta.Version)
+	assert.Equal(t, "1", meta.Release)
 }
 
 func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
 	info := exampleInfo()
-	info.Version = "1.0.0" //nolint:golint,goconst
+
+	info.Version = "1.0.0"
 	info.Release = "0.2"
 	info.Prerelease = "rc1"
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0", meta.Version)
-	assert.Equal(t, "0.2.rc1", meta.Release)
+	assert.Equal(t, "1.0.0~rc1", meta.Version)
+	assert.Equal(t, "0.2", meta.Release)
+
+	info.Version = "1.0.0~rc1"
+	info.Release = "0.2"
+	info.Prerelease = ""
+	meta, err = buildRPMMeta(info)
+	require.NoError(t, err)
+	assert.Equal(t, "1.0.0~rc1", meta.Version)
+	assert.Equal(t, "0.2", meta.Release)
 }
 
 func TestWithInvalidEpoch(t *testing.T) {
@@ -367,7 +384,7 @@ func TestRPMConventionalFileName(t *testing.T) {
 		{Version: "1.2.3", Release: "4", Prerelease: "",
 			Expected: fmt.Sprintf("%s-1.2.3-4.%s.rpm", info.Name, info.Arch)},
 		{Version: "1.2.3", Release: "4", Prerelease: "5",
-			Expected: fmt.Sprintf("%s-1.2.3-4~5.%s.rpm", info.Name, info.Arch)},
+			Expected: fmt.Sprintf("%s-1.2.3~5-4.%s.rpm", info.Name, info.Arch)},
 		{Version: "1.2.3", Release: "", Prerelease: "5",
 			Expected: fmt.Sprintf("%s-1.2.3~5.%s.rpm", info.Name, info.Arch)},
 	}

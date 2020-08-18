@@ -1,8 +1,8 @@
 FROM fedora
 ARG package
 COPY ${package} /tmp/foo.rpm
-ENV EXPECTVER="Version : 1.0.0" \
-    EXPECTREL="Release : 0.1.0.1.b1"
+ENV EXPECTVER="Version : 1.0.0~0.1.b1" \
+    EXPECTREL="Release : 1"
 RUN rpm -qpi /tmp/foo.rpm | sed -e 's/ \+/ /g' | grep "Version" > found.ver
 RUN rpm -qpi /tmp/foo.rpm | sed -e 's/ \+/ /g' | grep "Release" > found.rel
 RUN export FOUND_VER="$(cat found.ver)" && \
