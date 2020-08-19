@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
@@ -230,10 +229,7 @@ func WithDefaults(info *Info) *Info {
 	// and support proper ordering for both rpm and deb
 	if v, err := semver.NewVersion(info.Version); err == nil {
 		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if info.Release == "" && isInt(v.Prerelease()) {
-			info.Release = v.Prerelease()
-		}
-		if info.Prerelease == "" && !isInt(v.Prerelease()) {
+		if info.Prerelease == "" {
 			info.Prerelease = v.Prerelease()
 		}
 	}
@@ -258,9 +254,4 @@ func (info *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 		Name:    info.Name,
 		Entries: entries,
 	}, nil
-}
-
-func isInt(s string) bool {
-	_, err := strconv.Atoi(s)
-	return err == nil
 }

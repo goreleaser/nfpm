@@ -73,12 +73,9 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 func (*RPM) ConventionalFileName(info *nfpm.Info) string {
 	info = ensureValidArch(info)
 
-	version := info.Version
+	version := formatVersion(info)
 	if info.Release != "" {
 		version += "-" + info.Release
-	}
-	if info.Prerelease != "" {
-		version += "~" + info.Prerelease
 	}
 
 	// name-version-release.architecture.rpm
@@ -208,8 +205,8 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Name:        info.Name,
 		Summary:     strings.Split(info.Description, "\n")[0],
 		Description: info.Description,
-		Version:     info.Version,
-		Release:     releaseFor(info),
+		Version:     formatVersion(info),
+		Release:     defaultTo(info.Release, "1"),
 		Epoch:       uint32(epoch),
 		Arch:        info.Arch,
 		OS:          info.Platform,
@@ -230,12 +227,12 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 	}, nil
 }
 
-func releaseFor(info *nfpm.Info) string {
-	var release = defaultTo(info.Release, "1")
-	if info.Prerelease != "" {
-		release = fmt.Sprintf("%s.%s", defaultTo(info.Release, "0.1"), info.Prerelease)
+func formatVersion(info *nfpm.Info) string {
+	if info.Prerelease == "" {
+		return info.Version
 	}
-	return release
+
+	return info.Version + "~" + info.Prerelease
 }
 
 func defaultTo(in, def string) string {

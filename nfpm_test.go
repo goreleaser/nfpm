@@ -52,12 +52,12 @@ func TestDefaultsVersion(t *testing.T) {
 	assert.Equal(t, "rc1", info.Prerelease)
 
 	info = &Info{
-		Version: "v1.0.0-1",
+		Version: "v1.0.0-beta1",
 	}
 	info = WithDefaults(info)
 	assert.Equal(t, "1.0.0", info.Version)
-	assert.Equal(t, "1", info.Release)
-	assert.Equal(t, "", info.Prerelease)
+	assert.Equal(t, "", info.Release)
+	assert.Equal(t, "beta1", info.Prerelease)
 
 	info = &Info{
 		Version:    "v1.0.0-1",
