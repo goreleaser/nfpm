@@ -61,8 +61,13 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 	if info.Release != "" {
 		version += "-" + info.Release
 	}
+
 	if info.Prerelease != "" {
 		version += "~" + info.Prerelease
+	}
+
+	if info.VersionMetadata != "" {
+		version += "+" + info.VersionMetadata
 	}
 
 	// package_version_architecture.package-type
@@ -502,7 +507,7 @@ Package: {{.Info.Name}}
 Version: {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
          {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
          {{- if .Info.Prerelease}}~{{ .Info.Prerelease }}{{- end }}
-         {{- if .Info.Deb.VersionMetadata}}+{{ .Info.Deb.VersionMetadata }}{{- end }}
+         {{- if .Info.VersionMetadata}}+{{ .Info.VersionMetadata }}{{- end }}
 Section: {{.Info.Section}}
 Priority: {{.Info.Priority}}
 Architecture: {{.Info.Arch}}

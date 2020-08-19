@@ -249,6 +249,23 @@ func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	assert.Equal(t, "0.2", meta.Release)
 }
 
+func TestRPMVersionWithVersionMetadata(t *testing.T) {
+	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
+	info := exampleInfo()
+
+	info.Version = "1.0.0+meta"
+	info.VersionMetadata = ""
+	meta, err := buildRPMMeta(nfpm.WithDefaults(info))
+	require.NoError(t, err)
+	assert.Equal(t, "1.0.0+meta", meta.Version)
+
+	info.Version = "1.0.0"
+	info.VersionMetadata = "meta"
+	meta, err = buildRPMMeta(nfpm.WithDefaults(info))
+	require.NoError(t, err)
+	assert.Equal(t, "1.0.0+meta", meta.Version)
+}
+
 func TestWithInvalidEpoch(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
 	defer func() {
@@ -378,21 +395,25 @@ func TestRPMConventionalFileName(t *testing.T) {
 		Release    string
 		Prerelease string
 		Expected   string
+		Metadata   string
 	}{
-		{Version: "1.2.3", Release: "", Prerelease: "",
+		{Version: "1.2.3", Release: "", Prerelease: "", Metadata: "",
 			Expected: fmt.Sprintf("%s-1.2.3.%s.rpm", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "4", Prerelease: "",
+		{Version: "1.2.3", Release: "4", Prerelease: "", Metadata: "",
 			Expected: fmt.Sprintf("%s-1.2.3-4.%s.rpm", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "4", Prerelease: "5",
+		{Version: "1.2.3", Release: "4", Prerelease: "5", Metadata: "",
 			Expected: fmt.Sprintf("%s-1.2.3~5-4.%s.rpm", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "", Prerelease: "5",
+		{Version: "1.2.3", Release: "", Prerelease: "5", Metadata: "",
 			Expected: fmt.Sprintf("%s-1.2.3~5.%s.rpm", info.Name, info.Arch)},
+		{Version: "1.2.3", Release: "1", Prerelease: "5", Metadata: "git",
+			Expected: fmt.Sprintf("%s-1.2.3~5+git-1.%s.rpm", info.Name, info.Arch)},
 	}
 
 	for _, testCase := range testCases {
 		info.Version = testCase.Version
 		info.Release = testCase.Release
 		info.Prerelease = testCase.Prerelease
+		info.VersionMetadata = testCase.Metadata
 
 		assert.Equal(t, testCase.Expected, Default.ConventionalFileName(info))
 	}

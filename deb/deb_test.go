@@ -121,26 +121,59 @@ func TestDebVersionWithRelease(t *testing.T) {
 }
 
 func TestDebVersionWithPrerelease(t *testing.T) {
+	var buf bytes.Buffer
+
 	info := exampleInfo()
 	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Prerelease = "1"
-	var buf bytes.Buffer
-	var err = writeControl(&buf, controlData{info, 0})
+	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
-	var v = extractDebVersion(&buf)
+	v := extractDebVersion(&buf)
 	assert.Equal(t, "1.0.0~1", v)
 }
 
 func TestDebVersionWithReleaseAndPrerelease(t *testing.T) {
+	var buf bytes.Buffer
+
 	info := exampleInfo()
 	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Release = "2"
-	info.Prerelease = "rc1"
-	var buf bytes.Buffer
-	var err = writeControl(&buf, controlData{info, 0})
+	info.Prerelease = "rc1" //nolint:golint,goconst
+	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
-	var v = extractDebVersion(&buf)
+	v := extractDebVersion(&buf)
 	assert.Equal(t, "1.0.0-2~rc1", v)
+}
+
+func TestDebVersionWithVersionMetadata(t *testing.T) {
+	var buf bytes.Buffer
+
+	info := exampleInfo()
+	info.Version = "1.0.0+meta" //nolint:golint,goconst
+	info.VersionMetadata = ""
+	err := writeControl(&buf, controlData{info, 0})
+	require.NoError(t, err)
+	v := extractDebVersion(&buf)
+	assert.Equal(t, "1.0.0+meta", v)
+
+	buf.Reset()
+
+	info.Version = "1.0.0" //nolint:golint,goconst
+	info.VersionMetadata = "meta"
+	err = writeControl(&buf, controlData{info, 0})
+	require.NoError(t, err)
+	v = extractDebVersion(&buf)
+	assert.Equal(t, "1.0.0+meta", v)
+
+	buf.Reset()
+
+	info.Version = "1.0.0+foo" //nolint:golint,goconst
+	info.Prerelease = "alpha"
+	info.VersionMetadata = "meta"
+	err = writeControl(&buf, controlData{nfpm.WithDefaults(info), 0})
+	require.NoError(t, err)
+	v = extractDebVersion(&buf)
+	assert.Equal(t, "1.0.0~alpha+meta", v)
 }
 
 func TestControl(t *testing.T) {
@@ -399,21 +432,25 @@ func TestDEBConventionalFileName(t *testing.T) {
 		Release    string
 		Prerelease string
 		Expected   string
+		Metadata   string
 	}{
-		{Version: "1.2.3", Release: "", Prerelease: "",
+		{Version: "1.2.3", Release: "", Prerelease: "", Metadata: "",
 			Expected: fmt.Sprintf("%s_1.2.3_%s.deb", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "4", Prerelease: "",
+		{Version: "1.2.3", Release: "4", Prerelease: "", Metadata: "",
 			Expected: fmt.Sprintf("%s_1.2.3-4_%s.deb", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "4", Prerelease: "5",
+		{Version: "1.2.3", Release: "4", Prerelease: "5", Metadata: "",
 			Expected: fmt.Sprintf("%s_1.2.3-4~5_%s.deb", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "", Prerelease: "5",
+		{Version: "1.2.3", Release: "", Prerelease: "5", Metadata: "",
 			Expected: fmt.Sprintf("%s_1.2.3~5_%s.deb", info.Name, info.Arch)},
+		{Version: "1.2.3", Release: "1", Prerelease: "5", Metadata: "git",
+			Expected: fmt.Sprintf("%s_1.2.3-1~5+git_%s.deb", info.Name, info.Arch)},
 	}
 
 	for _, testCase := range testCases {
 		info.Version = testCase.Version
 		info.Release = testCase.Release
 		info.Prerelease = testCase.Prerelease
+		info.VersionMetadata = testCase.Metadata
 
 		assert.Equal(t, testCase.Expected, Default.ConventionalFileName(info))
 	}
