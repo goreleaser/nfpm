@@ -77,7 +77,25 @@ type Apk struct{}
 
 func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 	// TODO: verify this
-	return fmt.Sprintf("%s_%s_%s.apk", info.Name, info.Version, info.Arch)
+	arch, ok := archToAlpine[info.Arch]
+	if !ok {
+		arch = info.Arch
+	}
+
+	version := info.Version
+	if info.Release != "" {
+		version += "-" + info.Release
+	}
+
+	if info.Prerelease != "" {
+		version += "~" + info.Prerelease
+	}
+
+	if info.VersionMetadata != "" {
+		version += "+" + info.VersionMetadata
+	}
+
+	return fmt.Sprintf("%s_%s_%s.apk", info.Name, version, arch)
 }
 
 // Package writes a new apk package to the given writer using the given info.
@@ -453,7 +471,7 @@ pkgname = {{.Info.Name}}
 pkgver = {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
          {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
          {{- if .Info.Prerelease}}~{{ .Info.Prerelease }}{{- end }}
-         {{- if .Info.Deb.VersionMetadata}}+{{ .Info.Deb.VersionMetadata }}{{- end }}
+         {{- if .Info.VersionMetadata}}+{{ .Info.VersionMetadata }}{{- end }}
 arch = {{.Info.Arch}}
 size = {{.InstalledSize}}
 pkgdesc = {{multiline .Info.Description}}

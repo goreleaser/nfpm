@@ -228,11 +228,17 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 }
 
 func formatVersion(info *nfpm.Info) string {
-	if info.Prerelease == "" {
-		return info.Version
+	version := info.Version
+
+	if info.Prerelease != "" {
+		version += "~" + info.Prerelease
 	}
 
-	return info.Version + "~" + info.Prerelease
+	if info.VersionMetadata != "" {
+		version += "+" + info.VersionMetadata
+	}
+
+	return version
 }
 
 func defaultTo(in, def string) string {

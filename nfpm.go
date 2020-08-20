@@ -116,24 +116,25 @@ func (c *Config) Validate() error {
 
 // Info contains information about a single package.
 type Info struct {
-	Overridables `yaml:",inline"`
-	Name         string `yaml:"name,omitempty"`
-	Arch         string `yaml:"arch,omitempty"`
-	Platform     string `yaml:"platform,omitempty"`
-	Epoch        string `yaml:"epoch,omitempty"`
-	Version      string `yaml:"version,omitempty"`
-	Release      string `yaml:"release,omitempty"`
-	Prerelease   string `yaml:"prerelease,omitempty"`
-	Section      string `yaml:"section,omitempty"`
-	Priority     string `yaml:"priority,omitempty"`
-	Maintainer   string `yaml:"maintainer,omitempty"`
-	Description  string `yaml:"description,omitempty"`
-	Vendor       string `yaml:"vendor,omitempty"`
-	Homepage     string `yaml:"homepage,omitempty"`
-	License      string `yaml:"license,omitempty"`
-	Bindir       string `yaml:"bindir,omitempty"` // Deprecated: this does nothing. TODO: remove.
-	Changelog    string `yaml:"changelog,omitempty"`
-	Target       string `yaml:"-"`
+	Overridables    `yaml:",inline"`
+	Name            string `yaml:"name,omitempty"`
+	Arch            string `yaml:"arch,omitempty"`
+	Platform        string `yaml:"platform,omitempty"`
+	Epoch           string `yaml:"epoch,omitempty"`
+	Version         string `yaml:"version,omitempty"`
+	Release         string `yaml:"release,omitempty"`
+	Prerelease      string `yaml:"prerelease,omitempty"`
+	VersionMetadata string `yaml:"version_metadata,omitempty"`
+	Section         string `yaml:"section,omitempty"`
+	Priority        string `yaml:"priority,omitempty"`
+	Maintainer      string `yaml:"maintainer,omitempty"`
+	Description     string `yaml:"description,omitempty"`
+	Vendor          string `yaml:"vendor,omitempty"`
+	Homepage        string `yaml:"homepage,omitempty"`
+	License         string `yaml:"license,omitempty"`
+	Bindir          string `yaml:"bindir,omitempty"` // Deprecated: this does nothing. TODO: remove.
+	Changelog       string `yaml:"changelog,omitempty"`
+	Target          string `yaml:"-"`
 }
 
 // Overridables contain the field which are overridable in a package.
@@ -165,7 +166,7 @@ type RPM struct {
 type Deb struct {
 	Scripts         DebScripts  `yaml:"scripts,omitempty"`
 	Triggers        DebTriggers `yaml:"triggers,omitempty"`
-	VersionMetadata string      `yaml:"metadata,omitempty"`
+	VersionMetadata string      `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
 }
 
 // DebTriggers contains triggers only available for deb packages.
@@ -213,6 +214,18 @@ func Validate(info *Info) error {
 	if info.Version == "" {
 		return ErrFieldEmpty{"version"}
 	}
+
+	// deprecation warnings
+	if info.Deb.VersionMetadata != "" {
+		fmt.Fprintln(os.Stderr,
+			"Warning: deb.metadata is deprecated and will be removed in a future version "+
+				"(moved to version_metadata)")
+	}
+
+	if info.Bindir != "" {
+		fmt.Fprintln(os.Stderr, "Warning: bindir is deprecated and will be removed in a future version")
+	}
+
 	return nil
 }
 
@@ -231,6 +244,10 @@ func WithDefaults(info *Info) *Info {
 		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
 		if info.Prerelease == "" {
 			info.Prerelease = v.Prerelease()
+		}
+
+		if info.VersionMetadata == "" {
+			info.VersionMetadata = v.Metadata()
 		}
 	}
 

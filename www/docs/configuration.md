@@ -22,13 +22,17 @@ version: v1.2.3
 # Default is extracted from `version` if it is semver compatible.
 epoch: 2
 
-# Version Release.
-# Default is extracted from `version` if it is semver compatible.
-release: 1
-
 # Version Prerelease.
 # Default is extracted from `version` if it is semver compatible.
 prerelease: beta1
+
+# Version Metadata (previously deb.metadata).
+# Default is extracted from `version` if it is semver compatible.
+# Setting metadata might interfere with version comparisons depending on the packager.
+version_metadata: git
+
+# Version Release.
+release: 1
 
 # Section.
 section: default
@@ -141,10 +145,6 @@ rpm:
 
 # Custon configuration applied only to the Deb packager.
 deb:
-  # Custom version metadata.
-  # Setting metadata might interfere with version comparisons.
-  metadata: xyz2
-
   # Custom deb rules script.
   scripts:
     rules: foo.sh
