@@ -4,6 +4,8 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"crypto/md5" // nolint: gosec
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
@@ -675,6 +677,40 @@ func TestEnsureRelativePrefixInTarGzFiles(t *testing.T) {
 	controlTarGz, err := createControl(instSize, md5sums, info)
 	require.NoError(t, err)
 	testRelativePathPrefixInTarGzFiles(t, controlTarGz)
+}
+
+func TestMD5Sums(t *testing.T) {
+	info := exampleInfo()
+	info.Changelog = "../testdata/changelog.yaml"
+
+	nFiles := len(info.Files) + len(info.ConfigFiles) + 1 // +1 is the changelog
+
+	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
+	require.NoError(t, err)
+
+	controlTarGz, err := createControl(instSize, md5sums, info)
+	require.NoError(t, err)
+
+	md5sumsFile, err := extractFileFromTarGz(controlTarGz, "./md5sums")
+	require.NoError(t, err)
+
+	lines := strings.Split(strings.TrimRight(string(md5sumsFile), "\n"), "\n")
+	require.Equal(t, nFiles, len(lines))
+
+	for _, line := range lines {
+		parts := strings.Fields(line)
+		require.Equal(t, len(parts), 2)
+
+		md5sum, fileName := parts[0], parts[1]
+
+		fileContent, err := extractFileFromTarGz(dataTarGz, fileName)
+		require.NoError(t, err)
+
+		digest := md5.New() // nolint:gosec
+		_, err = digest.Write(fileContent)
+		require.NoError(t, err)
+		assert.Equal(t, md5sum, hex.EncodeToString(digest.Sum(nil)))
+	}
 }
 
 func testRelativePathPrefixInTarGzFiles(t *testing.T, tarGzFile []byte) {
