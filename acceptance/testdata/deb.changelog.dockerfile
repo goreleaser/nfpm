@@ -1,5 +1,9 @@
 FROM ubuntu
 ARG package
+# the dpkg configuration of the docker
+# image filters out changelogs by default
+# so we have to remove that rule
+RUN rm /etc/dpkg/dpkg.cfg.d/excludes
 COPY ${package} /tmp/foo.deb
 RUN apt upgrade -y
 RUN apt install -y gzip
