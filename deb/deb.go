@@ -159,7 +159,7 @@ func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[str
 		}
 
 		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
-			Name:     strings.TrimLeft(src, "/"),
+			Name:     normalizePath(src),
 			Linkname: dst,
 			Typeflag: tar.TypeSymlink,
 			ModTime:  time.Now(),
@@ -203,27 +203,12 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 	}
 
 	if info.Changelog != "" {
-		changelog, err := createChangelog(info)
+		size, err := createChangelogInsideTarGz(out, &md5buf, created, info)
 		if err != nil {
 			return md5buf, 0, err
 		}
 
-		// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
-		changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
-		if err = createTree(out, changelogName, created); err != nil {
-			return md5buf, 0, err
-		}
-
-		var digest = md5.New() // nolint:gas
-		if _, err = fmt.Fprintf(&md5buf, "%x  %s\n", digest.Sum(nil), changelog); err != nil {
-			return md5buf, instSize, err
-		}
-
-		if err = newFileInsideTarGz(out, changelogName, changelog); err != nil {
-			return md5buf, instSize, err
-		}
-
-		instSize += int64(len(changelog))
+		instSize += size
 	}
 
 	return md5buf, instSize, nil
@@ -257,7 +242,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		return 0, nil
 	}
 	var header = tar.Header{
-		Name:    filepath.ToSlash(dst[1:]),
+		Name:    normalizePath(dst),
 		Size:    info.Size(),
 		Mode:    int64(info.Mode()),
 		ModTime: time.Now(),
@@ -276,27 +261,49 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 	return info.Size(), nil
 }
 
-func createChangelog(info *nfpm.Info) (chglogTarGz []byte, err error) {
+func createChangelogInsideTarGz(tarw *tar.Writer, md5w io.Writer, created map[string]bool,
+	info *nfpm.Info) (int64, error) {
 	var buf bytes.Buffer
 	var out = gzip.NewWriter(&buf)
 	// the writers are properly closed later, this is just in case that we have
 	// an error in another part of the code.
 	defer out.Close() // nolint: errcheck
 
-	chglogData, err := formatChangelog(info)
+	changelogContent, err := formatChangelog(info)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	if _, err = out.Write([]byte(chglogData)); err != nil {
-		return nil, err
+	if _, err = out.Write([]byte(changelogContent)); err != nil {
+		return 0, err
 	}
 
-	if err := out.Close(); err != nil {
-		return nil, errors.Wrap(err, "closing changelog.gz")
+	if err = out.Close(); err != nil {
+		return 0, errors.Wrap(err, "closing changelog.gz")
 	}
 
-	return buf.Bytes(), nil
+	changelogData := buf.Bytes()
+
+	// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
+	changelogName := normalizePath(fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name))
+	if err = createTree(tarw, changelogName, created); err != nil {
+		return 0, err
+	}
+
+	var digest = md5.New() // nolint:gas
+	if _, err = digest.Write(changelogData); err != nil {
+		return 0, err
+	}
+
+	if _, err = fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), changelogName); err != nil {
+		return 0, err
+	}
+
+	if err = newFileInsideTarGz(tarw, changelogName, changelogData); err != nil {
+		return 0, err
+	}
+
+	return int64(len(changelogData)), nil
 }
 
 func formatChangelog(info *nfpm.Info) (string, error) {
@@ -397,13 +404,19 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	return newItemInsideTarGz(out, content, &tar.Header{
-		Name:     strings.TrimLeft(filepath.ToSlash(name), "/"),
+		Name:     normalizePath(name),
 		Size:     int64(len(content)),
 		Mode:     0644,
 		ModTime:  time.Now(),
 		Typeflag: tar.TypeReg,
 		Format:   tar.FormatGNU,
 	})
+}
+
+// normalizePath returns a path separated by slashes, all relative path items
+// resolved and relative to the current directory (so it starts with "./").
+func normalizePath(src string) string {
+	return "." + filepath.ToSlash(filepath.Clean(filepath.Join("/", src)))
 }
 
 func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
@@ -416,7 +429,7 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 		return err
 	}
 	return newItemInsideTarGz(out, content, &tar.Header{
-		Name:     filepath.ToSlash(dest),
+		Name:     normalizePath(dest),
 		Size:     int64(len(content)),
 		Mode:     0755,
 		ModTime:  time.Now(),
@@ -429,13 +442,15 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 // as well, so we walk through the dst and create all subfolders.
 func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 	for _, path := range pathsToCreate(dst) {
+		path = normalizePath(path) + "/"
+
 		if created[path] {
 			// skipping dir that was previously created inside the archive
 			// (eg: usr/)
 			continue
 		}
 		if err := tarw.WriteHeader(&tar.Header{
-			Name:     filepath.ToSlash(path + "/"),
+			Name:     path,
 			Mode:     0755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
@@ -450,7 +465,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 
 func pathsToCreate(dst string) []string {
 	var paths = []string{}
-	var base = dst[1:]
+	var base = strings.TrimPrefix(dst, "/")
 	for {
 		base = filepath.Dir(base)
 		if base == "." {
