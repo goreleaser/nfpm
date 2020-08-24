@@ -661,7 +661,7 @@ func TestSymlink(t *testing.T) {
 	assert.Equal(t, symlinkTarget, packagedSymlinkHeader.Linkname)
 }
 
-func TestNoLeadingSlashInTarGzFiles(t *testing.T) {
+func TestEnsureRelativePrefixInTarGzFiles(t *testing.T) {
 	info := exampleInfo()
 	info.Symlinks = map[string]string{
 		"/symlink/to/fake.txt": "/usr/share/doc/fake/fake.txt",
@@ -670,14 +670,14 @@ func TestNoLeadingSlashInTarGzFiles(t *testing.T) {
 
 	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
 	require.NoError(t, err)
-	testNoLeadingSlashInTarGzFiles(t, dataTarGz)
+	testRelativePathPrefixInTarGzFiles(t, dataTarGz)
 
 	controlTarGz, err := createControl(instSize, md5sums, info)
 	require.NoError(t, err)
-	testNoLeadingSlashInTarGzFiles(t, controlTarGz)
+	testRelativePathPrefixInTarGzFiles(t, controlTarGz)
 }
 
-func testNoLeadingSlashInTarGzFiles(t *testing.T, tarGzFile []byte) {
+func testRelativePathPrefixInTarGzFiles(t *testing.T, tarGzFile []byte) {
 	tarFile, err := gzipInflate(tarGzFile)
 	require.NoError(t, err)
 
@@ -689,7 +689,7 @@ func testNoLeadingSlashInTarGzFiles(t *testing.T, tarGzFile []byte) {
 		}
 		require.NoError(t, err)
 
-		assert.False(t, strings.HasPrefix(hdr.Name, "/"), "%s starts with /", hdr.Name)
+		assert.True(t, strings.HasPrefix(hdr.Name, "./"), "%s does not start with './'", hdr.Name)
 	}
 }
 

@@ -159,7 +159,7 @@ func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[str
 		}
 
 		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
-			Name:     strings.TrimLeft(src, "/"),
+			Name:     relPathSlash(src),
 			Linkname: dst,
 			Typeflag: tar.TypeSymlink,
 			ModTime:  time.Now(),
@@ -257,7 +257,7 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		return 0, nil
 	}
 	var header = tar.Header{
-		Name:    filepath.ToSlash(dst[1:]),
+		Name:    relPathSlash(dst),
 		Size:    info.Size(),
 		Mode:    int64(info.Mode()),
 		ModTime: time.Now(),
@@ -397,13 +397,19 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	return newItemInsideTarGz(out, content, &tar.Header{
-		Name:     strings.TrimLeft(filepath.ToSlash(name), "/"),
+		Name:     relPathSlash(name),
 		Size:     int64(len(content)),
 		Mode:     0644,
 		ModTime:  time.Now(),
 		Typeflag: tar.TypeReg,
 		Format:   tar.FormatGNU,
 	})
+}
+
+// relPathSlash returns a path separated by slashes, all relative path items resolved
+// and relative to the current directory (so it starts with "./").
+func relPathSlash(src string) string {
+	return "." + filepath.ToSlash(filepath.Clean(filepath.Join("/", src)))
 }
 
 func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
@@ -416,7 +422,7 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 		return err
 	}
 	return newItemInsideTarGz(out, content, &tar.Header{
-		Name:     filepath.ToSlash(dest),
+		Name:     relPathSlash(dest),
 		Size:     int64(len(content)),
 		Mode:     0755,
 		ModTime:  time.Now(),
@@ -435,7 +441,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 			continue
 		}
 		if err := tarw.WriteHeader(&tar.Header{
-			Name:     filepath.ToSlash(path + "/"),
+			Name:     relPathSlash(path) + "/",
 			Mode:     0755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
