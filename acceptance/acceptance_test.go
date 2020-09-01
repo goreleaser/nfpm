@@ -240,6 +240,17 @@ func TestSymlink(t *testing.T) {
 	}
 }
 
+func TestDebBreaks(t *testing.T) {
+	t.Run("breaks-deb", func(t *testing.T) {
+		accept(t, acceptParms{
+			Name:       "breaks-deb",
+			Conf:       "breaks.yaml",
+			Format:     "deb",
+			Dockerfile: "deb.breaks.dockerfile",
+		})
+	})
+}
+
 type acceptParms struct {
 	Name       string
 	Conf       string
