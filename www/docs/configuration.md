@@ -61,27 +61,27 @@ changelog: "changelog.yaml"
 
 # Packages it replaces. (overridable)
 replaces:
-- foobar
+  - foobar
 
 # Packages it provides. (overridable)
 provides:
-- bar
+  - bar
 
 # Dependencies. (overridable)
 depends:
-- git
+  - git
 
 # Recommended packages. (overridable)
 recommends:
-- golang
+  - golang
 
 # Suggested packages. (overridable)
 suggests:
-- bzr
+  - bzr
 
 # Packages it conflicts with. (overridable)
 conflicts:
-- mercurial
+  - mercurial
 
 # Files to add to the package. (overridable)
 # This can be binaries or any other files.
@@ -99,7 +99,7 @@ config_files:
 
 # Empty folders your package may need created. (overridable)
 empty_folders:
-- /var/log/foo
+  - /var/log/foo
 
 # Symlinks mapping from symlink name inside package to target inside package (overridable)
 symlinks:
@@ -159,6 +159,12 @@ deb:
     # (also available: activate_await, activate_noawait)
     activate:
       - another-trigger-name
+
+  # Packages which would break if this package would be installed.
+  # The installation of this package is blocked if `some-package`
+  # is already installed.
+  breaks:
+    - some-package
 ```
 
 ## Templating
