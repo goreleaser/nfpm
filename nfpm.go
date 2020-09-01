@@ -166,6 +166,7 @@ type RPM struct {
 type Deb struct {
 	Scripts         DebScripts  `yaml:"scripts,omitempty"`
 	Triggers        DebTriggers `yaml:"triggers,omitempty"`
+	Breaks          []string    `yaml:"breaks,omitempty"`
 	VersionMetadata string      `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
 }
 

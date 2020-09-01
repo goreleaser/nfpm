@@ -552,6 +552,9 @@ Suggests: {{join .}}
 {{- with .Info.Conflicts}}
 Conflicts: {{join .}}
 {{- end }}
+{{- with .Info.Deb.Breaks}}
+Breaks: {{join .}}
+{{- end }}
 {{- if .Info.Homepage}}
 Homepage: {{.Info.Homepage}}
 {{- end }}
