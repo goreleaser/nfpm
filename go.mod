@@ -19,6 +19,7 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
+	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c // indirect
 )
