@@ -251,6 +251,17 @@ func TestDebBreaks(t *testing.T) {
 	})
 }
 
+func TestSignatures(t *testing.T) {
+	t.Run("signed-deb", func(t *testing.T) {
+		accept(t, acceptParms{
+			Name:       "signed-deb",
+			Conf:       "signed.deb.yaml",
+			Format:     "deb",
+			Dockerfile: "deb.signed.dockerfile",
+		})
+	})
+}
+
 type acceptParms struct {
 	Name       string
 	Conf       string

@@ -1,0 +1,12 @@
+name: "foo"
+arch: "amd64"
+platform: "linux"
+version: "v1.0.0"
+maintainer: "John Doe <john@example.com>"
+description: This package is sigend
+vendor: "FooBarCorp"
+homepage: "http://example.com"
+files:
+  ../testdata/fake: "/usr/local/bin/fake"
+deb:
+  signing_key_file: ../internal/sign/testdata/privkey_unprotected.asc
