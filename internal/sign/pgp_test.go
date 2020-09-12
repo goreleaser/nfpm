@@ -1,4 +1,4 @@
-package signatures
+package sign
 
 import (
 	"bytes"
@@ -36,6 +36,12 @@ func TestPGPSignerAndVerify(t *testing.T) {
 			_, err = openpgp.CheckDetachedSignature(verifierKeyring,
 				bytes.NewReader(data), bytes.NewReader(sig))
 			assert.NoError(t, err)
+
+			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.asc")
+			assert.NoError(t, err)
+
+			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.gpg")
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -58,12 +64,18 @@ func TestArmoredDetachSignAndVerify(t *testing.T) {
 	for _, testCase := range testCases {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
-			sig, err := ArmoredDetachSign(bytes.NewReader(data),
+			sig, err := PGPArmoredDetachSign(bytes.NewReader(data),
 				testCase.keyFile, testCase.pass)
 			require.NoError(t, err)
 
 			_, err = openpgp.CheckArmoredDetachedSignature(verifierKeyring,
 				bytes.NewReader(data), bytes.NewReader(sig))
+			assert.NoError(t, err)
+
+			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.asc")
+			assert.NoError(t, err)
+
+			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.gpg")
 			assert.NoError(t, err)
 		})
 	}
@@ -94,6 +106,13 @@ func TestWrongPass(t *testing.T) {
 	_, err := readSigningKey("testdata/privkey.asc", "password123")
 	require.EqualError(t, err,
 		"decrypt secret signing key: openpgp: invalid data: private key checksum failure")
+}
+
+func TestEmptyPass(t *testing.T) {
+	_, err := readSigningKey("testdata/privkey.asc", "")
+	require.EqualError(t, err,
+		"decrypt secret signing key with empty passphrase: openpgp: "+
+			"invalid data: private key checksum failure")
 }
 
 func TestReadArmoredKey(t *testing.T) {

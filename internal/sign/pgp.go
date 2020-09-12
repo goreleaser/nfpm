@@ -1,4 +1,4 @@
-package signatures
+package sign
 
 import (
 	"bytes"
@@ -30,8 +30,8 @@ func PGPSigner(keyFile, passphrase string) func([]byte) ([]byte, error) {
 	}
 }
 
-// ArmoredDetachSign creates an ASCII-armored detached signature.
-func ArmoredDetachSign(message io.Reader, keyFile, passphrase string) ([]byte, error) {
+// PGPArmoredDetachSign creates an ASCII-armored detached signature.
+func PGPArmoredDetachSign(message io.Reader, keyFile, passphrase string) ([]byte, error) {
 	key, err := readSigningKey(keyFile, passphrase)
 	if err != nil {
 		return nil, errors.Wrap(err, "armored detach sign")
@@ -45,6 +45,39 @@ func ArmoredDetachSign(message io.Reader, keyFile, passphrase string) ([]byte, e
 	}
 
 	return signature.Bytes(), nil
+}
+
+// PGPVerify is exported for use in tests and verifies a ASCII-armored or non-ASCII-armored
+// signature using an ASCII-armored or non-ASCII-armored public key file. The signer
+// identity is not explicitly checked, other that the obvious fact that the signer's key must
+// be in the armoredPubKeyFile.
+func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) error {
+	keyFileContent, err := ioutil.ReadFile(armoredPubKeyFile)
+	if err != nil {
+		return errors.Wrap(err, "reading armored public key file")
+	}
+
+	var keyring openpgp.EntityList
+
+	if isASCII(keyFileContent) {
+		keyring, err = openpgp.ReadArmoredKeyRing(bytes.NewReader(keyFileContent))
+		if err != nil {
+			return errors.Wrap(err, "decoding armored public key file")
+		}
+	} else {
+		keyring, err = openpgp.ReadKeyRing(bytes.NewReader(keyFileContent))
+		if err != nil {
+			return errors.Wrap(err, "decoding public key file")
+		}
+	}
+
+	if isASCII(signature) {
+		_, err = openpgp.CheckArmoredDetachedSignature(keyring, message, bytes.NewReader(signature))
+		return err
+	}
+
+	_, err = openpgp.CheckDetachedSignature(keyring, message, bytes.NewReader(signature))
+	return err
 }
 
 func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
@@ -92,6 +125,10 @@ func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 	if key.PrivateKey.Encrypted {
 		err = key.PrivateKey.Decrypt([]byte(passphrase))
 		if err != nil {
+			if passphrase == "" {
+				return nil, errors.Wrap(err, "decrypt secret signing key with empty passphrase")
+			}
+
 			return nil, errors.Wrap(err, "decrypt secret signing key")
 		}
 	}
