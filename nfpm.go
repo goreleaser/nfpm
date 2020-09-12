@@ -59,6 +59,14 @@ func Parse(in io.Reader) (config Config, err error) {
 	config.Info.Release = os.ExpandEnv(config.Info.Release)
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
 
+	generalPassphrase := os.ExpandEnv("$NFPM_PASSPHRASE")
+	config.Deb.SigningKeyPassphrase = generalPassphrase
+
+	debPGPPassphrase := os.ExpandEnv("$NFPM_DEB_PGP_PASSPHRASE")
+	if debPGPPassphrase != "" {
+		config.Deb.SigningKeyPassphrase = debPGPPassphrase
+	}
+
 	return config, config.Validate()
 }
 
@@ -164,10 +172,12 @@ type RPM struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Scripts         DebScripts  `yaml:"scripts,omitempty"`
-	Triggers        DebTriggers `yaml:"triggers,omitempty"`
-	Breaks          []string    `yaml:"breaks,omitempty"`
-	VersionMetadata string      `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
+	Scripts              DebScripts  `yaml:"scripts,omitempty"`
+	Triggers             DebTriggers `yaml:"triggers,omitempty"`
+	Breaks               []string    `yaml:"breaks,omitempty"`
+	VersionMetadata      string      `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
+	SigningKeyFile       string      `yaml:"signing_key_file,omitempty"`
+	SigningKeyPassphrase string
 }
 
 // DebTriggers contains triggers only available for deb packages.
