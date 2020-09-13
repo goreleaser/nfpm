@@ -252,14 +252,23 @@ func TestDebBreaks(t *testing.T) {
 }
 
 func TestSignatures(t *testing.T) {
-	t.Run("signed-deb", func(t *testing.T) {
-		accept(t, acceptParms{
-			Name:       "signed-deb",
-			Conf:       "signed.deb.yaml",
-			Format:     "deb",
-			Dockerfile: "deb.signed.dockerfile",
+	for _, format := range formats {
+		format := format
+
+		// TODO: implement and remove
+		if format == "apk" {
+			continue
+		}
+
+		t.Run("signed", func(t *testing.T) {
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("signed_%s", format),
+				Conf:       "signed.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.signed.dockerfile", format),
+			})
 		})
-	})
+	}
 }
 
 type acceptParms struct {

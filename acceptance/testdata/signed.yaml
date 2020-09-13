@@ -10,3 +10,5 @@ files:
   ../testdata/fake: "/usr/local/bin/fake"
 deb:
   signing_key_file: ../internal/sign/testdata/privkey_unprotected.asc
+rpm:
+  signing_key_file: ../internal/sign/testdata/privkey_unprotected.asc
