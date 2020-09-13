@@ -61,10 +61,16 @@ func Parse(in io.Reader) (config Config, err error) {
 
 	generalPassphrase := os.ExpandEnv("$NFPM_PASSPHRASE")
 	config.Deb.SigningKeyPassphrase = generalPassphrase
+	config.RPM.SigningKeyPassphrase = generalPassphrase
 
 	debPGPPassphrase := os.ExpandEnv("$NFPM_DEB_PGP_PASSPHRASE")
 	if debPGPPassphrase != "" {
 		config.Deb.SigningKeyPassphrase = debPGPPassphrase
+	}
+
+	rpmPGPPassphrase := os.ExpandEnv("$NFPM_PRM_PGP_PASSPHRASE")
+	if rpmPGPPassphrase != "" {
+		config.Deb.SigningKeyPassphrase = rpmPGPPassphrase
 	}
 
 	return config, config.Validate()
@@ -168,6 +174,8 @@ type RPM struct {
 	Compression string `yaml:"compression,omitempty"`
 	// https://www.cl.cam.ac.uk/~jw35/docs/rpm_config.html
 	ConfigNoReplaceFiles map[string]string `yaml:"config_noreplace_files,omitempty"`
+	SigningKeyFile       string            `yaml:"signing_key_file,omitempty"`
+	SigningKeyPassphrase string
 }
 
 // Deb is custom configs that are only available on deb packages.

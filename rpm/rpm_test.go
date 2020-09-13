@@ -16,6 +16,7 @@ import (
 	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/openpgp"
 
 	"github.com/goreleaser/chglog"
 
@@ -553,6 +554,26 @@ func TestSymlink(t *testing.T) {
 	assert.Equal(t, symlink, packagedSymlinkHeader.Filename())
 	assert.Equal(t, cpio.S_ISLNK, packagedSymlinkHeader.Mode())
 	assert.Equal(t, symlinkTarget, string(packagedSymlink))
+}
+
+func TestRPMSignature(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.SigningKeyFile = "../internal/sign/testdata/privkey.asc"
+	info.RPM.SigningKeyPassphrase = "hunter2"
+
+	pubkeyFileContent, err := ioutil.ReadFile("../internal/sign/testdata/pubkey.gpg")
+	require.NoError(t, err)
+
+	keyring, err := openpgp.ReadKeyRing(bytes.NewReader(pubkeyFileContent))
+	require.NoError(t, err)
+
+	var rpmBuffer bytes.Buffer
+	err = Default.Package(info, &rpmBuffer)
+	require.NoError(t, err)
+
+	_, sigs, err := rpmutils.Verify(bytes.NewReader(rpmBuffer.Bytes()), keyring)
+	require.NoError(t, err)
+	require.Len(t, sigs, 1)
 }
 
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
