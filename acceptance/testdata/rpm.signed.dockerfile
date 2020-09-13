@@ -1,6 +1,6 @@
 FROM fedora
 ARG package
-COPY pubkey.asc /tmp/pubkey.asc
+COPY keys/pubkey.asc /tmp/pubkey.asc
 COPY ${package} /tmp/foo.rpm
 
 RUN rpm --import /tmp/pubkey.asc

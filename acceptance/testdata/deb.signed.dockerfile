@@ -1,6 +1,6 @@
 FROM ubuntu
 ARG package
-COPY pubkey.gpg /usr/share/debsig/keyrings/BC8ACDD415BD80B3/debsig.gpg
+COPY keys/pubkey.gpg /usr/share/debsig/keyrings/BC8ACDD415BD80B3/debsig.gpg
 COPY ${package} /tmp/foo.deb
 
 RUN apt update -y
