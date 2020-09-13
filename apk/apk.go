@@ -269,7 +269,7 @@ func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) er
 		if keyname == "" {
 			addr, err := mail.ParseAddress(info.Maintainer)
 			if err != nil {
-				return errors.Wrap(err, "key name not send and unable to parse maintainer mail address")
+				return errors.Wrap(err, "key name not set and unable to parse maintainer mail address")
 			}
 
 			keyname = addr.Address + ".rsa.pub"
@@ -281,11 +281,7 @@ func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) er
 			Size: int64(len(signature)),
 		}
 
-		if err := writeFile(tw, signHeader, bytes.NewReader(signature)); err != nil {
-			return err
-		}
-
-		return nil
+		return writeFile(tw, signHeader, bytes.NewReader(signature))
 	}
 }
 
