@@ -69,9 +69,9 @@ func Parse(in io.Reader) (config Config, err error) {
 		config.Deb.SigningKeyPassphrase = debPassphrase
 	}
 
-	rpmPassphrase := os.ExpandEnv("$NFPM_PRM_PASSPHRASE")
+	rpmPassphrase := os.ExpandEnv("$NFPM_RPM_PASSPHRASE")
 	if rpmPassphrase != "" {
-		config.Deb.SigningKeyPassphrase = rpmPassphrase
+		config.RPM.SigningKeyPassphrase = rpmPassphrase
 	}
 
 	apkPassphrase := os.ExpandEnv("$NFPM_APK_PASSPHRASE")
