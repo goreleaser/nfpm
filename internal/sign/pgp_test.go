@@ -110,9 +110,7 @@ func TestWrongPass(t *testing.T) {
 
 func TestEmptyPass(t *testing.T) {
 	_, err := readSigningKey("testdata/privkey.asc", "")
-	require.EqualError(t, err,
-		"decrypt secret signing key with empty passphrase: openpgp: "+
-			"invalid data: private key checksum failure")
+	require.EqualError(t, err, "key is encrypted no passphrase provided")
 }
 
 func TestReadArmoredKey(t *testing.T) {

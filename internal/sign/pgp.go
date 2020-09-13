@@ -123,12 +123,12 @@ func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 	}
 
 	if key.PrivateKey.Encrypted {
+		if passphrase == "" {
+			return nil, errors.New("key is encrypted no passphrase provided")
+		}
+
 		err = key.PrivateKey.Decrypt([]byte(passphrase))
 		if err != nil {
-			if passphrase == "" {
-				return nil, errors.Wrap(err, "decrypt secret signing key with empty passphrase")
-			}
-
 			return nil, errors.Wrap(err, "decrypt secret signing key")
 		}
 	}
