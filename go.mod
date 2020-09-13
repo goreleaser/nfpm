@@ -2,6 +2,8 @@ module github.com/goreleaser/nfpm
 
 go 1.14
 
+replace github.com/google/rpmpack => github.com/goreleaser/rpmpack v0.0.0-20200912130434-2762bbe52570
+
 require (
 	github.com/Masterminds/semver/v3 v3.1.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
