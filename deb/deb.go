@@ -120,7 +120,16 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 			return errors.Wrap(err, "create signature")
 		}
 
-		if err := addArFile(w, "_gpgorigin", sig); err != nil {
+		sigType := "origin"
+		if info.Deb.SignatureType != "" {
+			sigType = info.Deb.SignatureType
+		}
+
+		if sigType != "origin" && sigType != "maint" && sigType != "archive" {
+			return errors.New("invalid signature type")
+		}
+
+		if err := addArFile(w, "_gpg"+sigType, sig); err != nil {
 			return errors.Wrap(err, "add signature to ar file")
 		}
 	}

@@ -74,7 +74,7 @@ func Parse(in io.Reader) (config Config, err error) {
 		config.Deb.SigningKeyPassphrase = rpmPassphrase
 	}
 
-	apkPassphrase := os.ExpandEnv("$NFPM_PRM_PASSPHRASE")
+	apkPassphrase := os.ExpandEnv("$NFPM_APK_PASSPHRASE")
 	if apkPassphrase != "" {
 		config.APK.SigningKeyPassphrase = apkPassphrase
 	}
@@ -198,6 +198,7 @@ type Deb struct {
 	Breaks               []string    `yaml:"breaks,omitempty"`
 	VersionMetadata      string      `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
 	SigningKeyFile       string      `yaml:"signing_key_file,omitempty"`
+	SignatureType        string      `yaml:"signature_type,omitempty"`
 	SigningKeyPassphrase string
 }
 
