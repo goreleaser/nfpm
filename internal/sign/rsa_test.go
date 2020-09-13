@@ -23,10 +23,10 @@ func TestRSASignAndVerify(t *testing.T) {
 	for _, testCase := range testCases {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
-			sig, err := RSASign(bytes.NewReader(testData), testCase.privKey, testCase.passphrase)
+			sig, err := rsaSign(bytes.NewReader(testData), testCase.privKey, testCase.passphrase)
 			require.NoError(t, err)
 
-			err = RSAVerify(bytes.NewReader(testData), sig, testCase.pubKey)
+			err = rsaVerify(bytes.NewReader(testData), sig, testCase.pubKey)
 			require.NoError(t, err)
 		})
 	}
@@ -34,12 +34,18 @@ func TestRSASignAndVerify(t *testing.T) {
 
 func TestWrongPassphrase(t *testing.T) {
 	testData := []byte("test")
-	_, err := RSASign(bytes.NewReader(testData), "testdata/rsa.priv", "password123")
-	require.Error(t, err, "x509: decryption password incorrect")
+	_, err := rsaSign(bytes.NewReader(testData), "testdata/rsa.priv", "password123")
+	require.EqualError(t, err, "decrypt private key PEM block: x509: decryption password incorrect")
 }
 
 func TestNoPassphrase(t *testing.T) {
 	testData := []byte("test")
-	_, err := RSASign(bytes.NewReader(testData), "testdata/rsa.priv", "password123")
-	require.Error(t, err, "key is encrypted no passphrase provided")
+	_, err := rsaSign(bytes.NewReader(testData), "testdata/rsa.priv", "")
+	require.EqualError(t, err, "key is encrypted no passphrase provided")
+}
+
+func TestInvalidHash(t *testing.T) {
+	invalidDigest := []byte("test")
+	_, err := RSASignSHA1Digest(invalidDigest, "testdata/rsa.priv", "hunter2")
+	require.EqualError(t, err, "digest is not a SHA256 hash")
 }

@@ -3,6 +3,8 @@ package apk
 import (
 	"archive/tar"
 	"bytes"
+	"crypto/sha1" // nolint:gosec
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"io"
@@ -12,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/internal/sign"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -202,13 +205,13 @@ func TestNoFiles(t *testing.T) {
 func TestCreateBuilderControl(t *testing.T) {
 	info := exampleInfo()
 	size := int64(12345)
-	builderControl := createBuilderControl(info, size)
+	builderControl := createBuilderControl(info, size, sha256.New().Sum(nil))
 
 	var w bytes.Buffer
 	tw := tar.NewWriter(&w)
 	assert.NoError(t, builderControl(tw))
 
-	var control = extractControl(t, &w)
+	var control = string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
 	var golden = "testdata/TestCreateBuilderControl.golden"
 	if *update {
 		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0655)) // nolint: gosec
@@ -228,13 +231,13 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 	}
 
 	size := int64(12345)
-	builderControl := createBuilderControl(info, size)
+	builderControl := createBuilderControl(info, size, sha256.New().Sum(nil))
 
 	var w bytes.Buffer
 	tw := tar.NewWriter(&w)
 	assert.NoError(t, builderControl(tw))
 
-	var control = extractControl(t, &w)
+	var control = string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
 	var golden = "testdata/TestCreateBuilderControlScripts.golden"
 	if *update {
 		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0655)) // nolint: gosec
@@ -259,23 +262,47 @@ func TestControl(t *testing.T) {
 	assert.Equal(t, string(bts), w.String())
 }
 
-func extractControl(t *testing.T, r io.Reader) string {
-	var tr = tar.NewReader(r)
+func TestSignature(t *testing.T) {
+	info := exampleInfo()
+	info.APK.SigningKeyFile = "../internal/sign/testdata/rsa.priv"
+	info.APK.SigningKeyName = "testkey.rsa.pub"
+	info.APK.SigningKeyPassphrase = "hunter2"
+
+	digest := sha1.New().Sum(nil) // nolint:gosec
+
+	var signatureTarGz bytes.Buffer
+	tw := tar.NewWriter(&signatureTarGz)
+	require.NoError(t, createSignatureBuilder(digest, info)(tw))
+
+	signature := extractFromTar(t, signatureTarGz.Bytes(), ".SIGN.RSA.testkey.rsa.pub")
+	err := sign.RSAVerifySHA1Digest(digest, signature, "../internal/sign/testdata/rsa.pub")
+	require.NoError(t, err)
+
+	err = Default.Package(info, ioutil.Discard)
+	require.NoError(t, err)
+}
+
+func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
+	t.Helper()
+
+	var tr = tar.NewReader(bytes.NewReader(tarFile))
 
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
-			break
+			break // End of archive
 		}
 		require.NoError(t, err)
-		if hdr.Name == ".PKGINFO" {
-			var w bytes.Buffer
-			_, err := io.Copy(&w, tr)
-			require.NoError(t, err)
-			return w.String()
+
+		if hdr.Name != fileName {
+			continue
 		}
-		t.Log("ignored", hdr.Name)
+
+		data, err := ioutil.ReadAll(tr)
+		require.NoError(t, err)
+		return data
 	}
 
-	return ""
+	t.Fatalf("file %q not found in tar file", fileName)
+	return nil
 }

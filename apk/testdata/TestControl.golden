@@ -11,3 +11,4 @@ provides = bzr
 provides = zzz
 depend = bash
 depend = foo
+datahash = 

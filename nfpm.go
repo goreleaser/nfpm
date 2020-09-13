@@ -62,15 +62,21 @@ func Parse(in io.Reader) (config Config, err error) {
 	generalPassphrase := os.ExpandEnv("$NFPM_PASSPHRASE")
 	config.Deb.SigningKeyPassphrase = generalPassphrase
 	config.RPM.SigningKeyPassphrase = generalPassphrase
+	config.APK.SigningKeyPassphrase = generalPassphrase
 
-	debPGPPassphrase := os.ExpandEnv("$NFPM_DEB_PGP_PASSPHRASE")
-	if debPGPPassphrase != "" {
-		config.Deb.SigningKeyPassphrase = debPGPPassphrase
+	debPassphrase := os.ExpandEnv("$NFPM_DEB_PASSPHRASE")
+	if debPassphrase != "" {
+		config.Deb.SigningKeyPassphrase = debPassphrase
 	}
 
-	rpmPGPPassphrase := os.ExpandEnv("$NFPM_PRM_PGP_PASSPHRASE")
-	if rpmPGPPassphrase != "" {
-		config.Deb.SigningKeyPassphrase = rpmPGPPassphrase
+	rpmPassphrase := os.ExpandEnv("$NFPM_PRM_PASSPHRASE")
+	if rpmPassphrase != "" {
+		config.Deb.SigningKeyPassphrase = rpmPassphrase
+	}
+
+	apkPassphrase := os.ExpandEnv("$NFPM_PRM_PASSPHRASE")
+	if apkPassphrase != "" {
+		config.APK.SigningKeyPassphrase = apkPassphrase
 	}
 
 	return config, config.Validate()
@@ -166,6 +172,7 @@ type Overridables struct {
 	Scripts      Scripts           `yaml:"scripts,omitempty"`
 	RPM          RPM               `yaml:"rpm,omitempty"`
 	Deb          Deb               `yaml:"deb,omitempty"`
+	APK          APK               `yaml:"apk,omitempty"`
 }
 
 // RPM is custom configs that are only available on RPM packages.
@@ -175,6 +182,12 @@ type RPM struct {
 	// https://www.cl.cam.ac.uk/~jw35/docs/rpm_config.html
 	ConfigNoReplaceFiles map[string]string `yaml:"config_noreplace_files,omitempty"`
 	SigningKeyFile       string            `yaml:"signing_key_file,omitempty"`
+	SigningKeyPassphrase string
+}
+
+type APK struct {
+	SigningKeyFile       string `yaml:"signing_key_file,omitempty"`
+	SigningKeyName       string `yaml:"signing_key_name,omitempty"`
 	SigningKeyPassphrase string
 }
 
