@@ -558,8 +558,8 @@ func TestSymlink(t *testing.T) {
 
 func TestRPMSignature(t *testing.T) {
 	info := exampleInfo()
-	info.RPM.SigningKeyFile = "../internal/sign/testdata/privkey.asc"
-	info.RPM.SigningKeyPassphrase = "hunter2"
+	info.RPM.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
+	info.RPM.Signature.KeyPassphrase = "hunter2"
 
 	pubkeyFileContent, err := ioutil.ReadFile("../internal/sign/testdata/pubkey.gpg")
 	require.NoError(t, err)

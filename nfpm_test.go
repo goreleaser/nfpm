@@ -174,9 +174,9 @@ func TestOptionsFromEnvironment(t *testing.T) {
 	os.Setenv("NFPM_PASSPHRASE", globalPass)
 	info, err = Parse(strings.NewReader("name: foo"))
 	require.NoError(t, err)
-	assert.Equal(t, globalPass, info.Deb.SigningKeyPassphrase)
-	assert.Equal(t, globalPass, info.RPM.SigningKeyPassphrase)
-	assert.Equal(t, globalPass, info.APK.SigningKeyPassphrase)
+	assert.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
+	assert.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
+	assert.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
 
 	os.Clearenv()
 
@@ -185,9 +185,9 @@ func TestOptionsFromEnvironment(t *testing.T) {
 	os.Setenv("NFPM_APK_PASSPHRASE", apkPass)
 	info, err = Parse(strings.NewReader("name: foo"))
 	require.NoError(t, err)
-	assert.Equal(t, debPass, info.Deb.SigningKeyPassphrase)
-	assert.Equal(t, rpmPass, info.RPM.SigningKeyPassphrase)
-	assert.Equal(t, apkPass, info.APK.SigningKeyPassphrase)
+	assert.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
+	assert.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
+	assert.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
 }
 
 func TestOverrides(t *testing.T) {

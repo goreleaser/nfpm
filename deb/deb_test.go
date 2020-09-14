@@ -734,8 +734,8 @@ func testRelativePathPrefixInTarGzFiles(t *testing.T, tarGzFile []byte) {
 
 func TestDebsigsSignature(t *testing.T) {
 	info := exampleInfo()
-	info.Deb.SigningKeyFile = "../internal/sign/testdata/privkey.asc"
-	info.Deb.SigningKeyPassphrase = "hunter2"
+	info.Deb.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
+	info.Deb.Signature.KeyPassphrase = "hunter2"
 
 	var deb bytes.Buffer
 	err := Default.Package(info, &deb)

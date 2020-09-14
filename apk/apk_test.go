@@ -264,9 +264,9 @@ func TestControl(t *testing.T) {
 
 func TestSignature(t *testing.T) {
 	info := exampleInfo()
-	info.APK.SigningKeyFile = "../internal/sign/testdata/rsa.priv"
-	info.APK.SigningKeyName = "testkey.rsa.pub"
-	info.APK.SigningKeyPassphrase = "hunter2"
+	info.APK.Signature.KeyFile = "../internal/sign/testdata/rsa.priv"
+	info.APK.Signature.KeyName = "testkey.rsa.pub"
+	info.APK.Signature.KeyPassphrase = "hunter2"
 
 	digest := sha1.New().Sum(nil) // nolint:gosec
 

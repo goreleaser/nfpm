@@ -60,23 +60,23 @@ func Parse(in io.Reader) (config Config, err error) {
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
 
 	generalPassphrase := os.ExpandEnv("$NFPM_PASSPHRASE")
-	config.Deb.SigningKeyPassphrase = generalPassphrase
-	config.RPM.SigningKeyPassphrase = generalPassphrase
-	config.APK.SigningKeyPassphrase = generalPassphrase
+	config.Deb.Signature.KeyPassphrase = generalPassphrase
+	config.RPM.Signature.KeyPassphrase = generalPassphrase
+	config.APK.Signature.KeyPassphrase = generalPassphrase
 
 	debPassphrase := os.ExpandEnv("$NFPM_DEB_PASSPHRASE")
 	if debPassphrase != "" {
-		config.Deb.SigningKeyPassphrase = debPassphrase
+		config.Deb.Signature.KeyPassphrase = debPassphrase
 	}
 
 	rpmPassphrase := os.ExpandEnv("$NFPM_RPM_PASSPHRASE")
 	if rpmPassphrase != "" {
-		config.RPM.SigningKeyPassphrase = rpmPassphrase
+		config.RPM.Signature.KeyPassphrase = rpmPassphrase
 	}
 
 	apkPassphrase := os.ExpandEnv("$NFPM_APK_PASSPHRASE")
 	if apkPassphrase != "" {
-		config.APK.SigningKeyPassphrase = apkPassphrase
+		config.APK.Signature.KeyPassphrase = apkPassphrase
 	}
 
 	return config, config.Validate()
@@ -181,25 +181,42 @@ type RPM struct {
 	Compression string `yaml:"compression,omitempty"`
 	// https://www.cl.cam.ac.uk/~jw35/docs/rpm_config.html
 	ConfigNoReplaceFiles map[string]string `yaml:"config_noreplace_files,omitempty"`
-	SigningKeyFile       string            `yaml:"signing_key_file,omitempty"`
-	SigningKeyPassphrase string
+	Signature            RPMSignature      `yaml:"signature,omitempty"`
+}
+
+type RPMSignature struct {
+	// PGP secret key, can be ASCII-armored
+	KeyFile       string `yaml:"key_file,omitempty"`
+	KeyPassphrase string // populated from environment variable
 }
 
 type APK struct {
-	SigningKeyFile       string `yaml:"signing_key_file,omitempty"`
-	SigningKeyName       string `yaml:"signing_key_name,omitempty"`
-	SigningKeyPassphrase string
+	Signature APKSignature `yaml:"signature,omitempty"`
+}
+
+type APKSignature struct {
+	// RSA private key in PEM format
+	KeyFile       string `yaml:"key_file,omitempty"`
+	KeyPassphrase string // populated from environment variable
+	// defaults to <maintainer email>.rsa.pub
+	KeyName string `yaml:"key_name,omitempty"`
 }
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Scripts              DebScripts  `yaml:"scripts,omitempty"`
-	Triggers             DebTriggers `yaml:"triggers,omitempty"`
-	Breaks               []string    `yaml:"breaks,omitempty"`
-	VersionMetadata      string      `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
-	SigningKeyFile       string      `yaml:"signing_key_file,omitempty"`
-	SignatureType        string      `yaml:"signature_type,omitempty"`
-	SigningKeyPassphrase string
+	Scripts         DebScripts   `yaml:"scripts,omitempty"`
+	Triggers        DebTriggers  `yaml:"triggers,omitempty"`
+	Breaks          []string     `yaml:"breaks,omitempty"`
+	VersionMetadata string       `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
+	Signature       DebSignature `yaml:"signature,omitempty"`
+}
+
+type DebSignature struct {
+	// PGP secret key, can be ASCII-armored
+	KeyFile       string `yaml:"key_file,omitempty"`
+	KeyPassphrase string // populated from environment variable
+	// origin, maint or archive (defaults to origin)
+	Type string `yaml:"type,omitempty"`
 }
 
 // DebTriggers contains triggers only available for deb packages.

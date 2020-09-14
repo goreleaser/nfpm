@@ -9,8 +9,11 @@ homepage: "http://example.com"
 files:
   ../testdata/fake: "/usr/local/bin/fake"
 deb:
-  signing_key_file: ../internal/sign/testdata/privkey_unprotected.asc
+  signature:
+    key_file: ../internal/sign/testdata/privkey_unprotected.asc
 rpm:
-  signing_key_file: ../internal/sign/testdata/privkey_unprotected.asc
+  signature:
+    key_file: ../internal/sign/testdata/privkey_unprotected.asc
 apk:
-  signing_key_file: ../internal/sign/testdata/rsa_unprotected.priv
+  signature:
+    key_file: ../internal/sign/testdata/rsa_unprotected.priv

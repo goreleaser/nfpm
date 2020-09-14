@@ -111,18 +111,19 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 		return errors.Wrap(err, "cannot add data.tar.gz to deb")
 	}
 
-	if info.Deb.SigningKeyFile != "" {
+	if info.Deb.Signature.KeyFile != "" {
 		data := io.MultiReader(bytes.NewReader(debianBinary), bytes.NewReader(controlTarGz),
 			bytes.NewReader(dataTarGz))
 
-		sig, err := sign.PGPArmoredDetachSign(data, info.Deb.SigningKeyFile, info.Deb.SigningKeyPassphrase)
+		sig, err := sign.PGPArmoredDetachSign(data, info.Deb.Signature.KeyFile,
+			info.Deb.Signature.KeyPassphrase)
 		if err != nil {
 			return errors.Wrap(err, "create signature")
 		}
 
 		sigType := "origin"
-		if info.Deb.SignatureType != "" {
-			sigType = info.Deb.SignatureType
+		if info.Deb.Signature.Type != "" {
+			sigType = info.Deb.Signature.Type
 		}
 
 		if sigType != "origin" && sigType != "maint" && sigType != "archive" {

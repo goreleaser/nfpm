@@ -126,7 +126,7 @@ func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 		return err
 	}
 
-	if info.APK.SigningKeyFile == "" {
+	if info.APK.Signature.KeyFile == "" {
 		return combineToApk(apk, &bufControl, &bufData)
 	}
 
@@ -259,13 +259,13 @@ func createSignature(signatureTgz io.Writer, info *nfpm.Info, controlSHA1Digest 
 func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) error {
 	return func(tw *tar.Writer) error {
 		signature, err := sign.RSASignSHA1Digest(digest,
-			info.APK.SigningKeyFile, info.APK.SigningKeyPassphrase)
+			info.APK.Signature.KeyFile, info.APK.Signature.KeyPassphrase)
 		if err != nil {
 			return err
 		}
 
 		// needs to exist on the machine during installation: /etc/apk/keys/<keyname>.rsa.pub
-		keyname := info.APK.SigningKeyName
+		keyname := info.APK.Signature.KeyName
 		if keyname == "" {
 			addr, err := mail.ParseAddress(info.Maintainer)
 			if err != nil {
