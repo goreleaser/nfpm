@@ -270,11 +270,17 @@ func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) er
 			addr, err := mail.ParseAddress(info.Maintainer)
 			if err != nil {
 				return errors.Wrap(err, "key name not set and unable to parse maintainer mail address")
+			} else if addr.Address == "" {
+				return errors.New("key name not set and maintainer mail address empty")
 			}
 
 			keyname = addr.Address + ".rsa.pub"
 		}
 
+		// In principle apk supports RSA signatures over SHA256/512 keys, but in
+		// practice verification works but installation segfaults. If this is
+		// fixed at some point we should also upgrade the hash. In this case,
+		// the file name will have to start with .SIGN.RSA256 or .SIGN.RSA512.
 		signHeader := &tar.Header{
 			Name: fmt.Sprintf(".SIGN.RSA.%s", keyname),
 			Mode: 0600,
