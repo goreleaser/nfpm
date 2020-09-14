@@ -290,7 +290,7 @@ func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
-			break // End of archive
+			break
 		}
 		require.NoError(t, err)
 
