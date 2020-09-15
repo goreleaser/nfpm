@@ -160,34 +160,44 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		version    = "1.0.0"
 	)
 
-	os.Clearenv()
+	t.Run("version", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("VERSION", version)
+		info, err := Parse(strings.NewReader("name: foo\nversion: $VERSION"))
+		require.NoError(t, err)
+		assert.Equal(t, version, info.Version)
+	})
 
-	os.Setenv("VERSION", version)
-	os.Setenv("RELEASE", release)
-	info, err := Parse(strings.NewReader("name: foo\nversion: $VERSION\nrelease: $RELEASE"))
-	require.NoError(t, err)
-	assert.Equal(t, version, info.Version)
-	assert.Equal(t, release, info.Release)
+	t.Run("release", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("RELEASE", release)
+		info, err := Parse(strings.NewReader("name: foo\nrelease: $RELEASE"))
+		require.NoError(t, err)
+		assert.Equal(t, release, info.Release)
+	})
 
-	os.Clearenv()
+	t.Run("global passphrase", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("NFPM_PASSPHRASE", globalPass)
+		info, err := Parse(strings.NewReader("name: foo"))
+		require.NoError(t, err)
+		assert.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
+		assert.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
+		assert.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
+	})
 
-	os.Setenv("NFPM_PASSPHRASE", globalPass)
-	info, err = Parse(strings.NewReader("name: foo"))
-	require.NoError(t, err)
-	assert.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
-	assert.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
-	assert.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
-
-	os.Clearenv()
-
-	os.Setenv("NFPM_DEB_PASSPHRASE", debPass)
-	os.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
-	os.Setenv("NFPM_APK_PASSPHRASE", apkPass)
-	info, err = Parse(strings.NewReader("name: foo"))
-	require.NoError(t, err)
-	assert.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
-	assert.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
-	assert.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+	t.Run("specific passphrases", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("NFPM_PASSPHRASE", globalPass)
+		os.Setenv("NFPM_DEB_PASSPHRASE", debPass)
+		os.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
+		os.Setenv("NFPM_APK_PASSPHRASE", apkPass)
+		info, err := Parse(strings.NewReader("name: foo"))
+		require.NoError(t, err)
+		assert.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
+		assert.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
+		assert.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+	})
 }
 
 func TestOverrides(t *testing.T) {
