@@ -17,7 +17,7 @@ import (
 // must be in the PEM format and can either be encrypted or not.
 func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, error) {
 	if len(sha1Digest) != sha1.Size {
-		return nil, errors.New("digest is not a SHA256 hash")
+		return nil, errors.New("digest is not a SHA1 hash")
 	}
 
 	keyFileContent, err := ioutil.ReadFile(keyFile)
@@ -108,7 +108,7 @@ func rsaVerify(message io.Reader, signature []byte, publicKeyFile string) error 
 	sha256Hash := sha1.New() // nolint:gosec
 	_, err := io.Copy(sha256Hash, message)
 	if err != nil {
-		return errors.Wrap(err, "create SHA256 message digest")
+		return errors.Wrap(err, "create SHA1 message digest")
 	}
 
 	return RSAVerifySHA1Digest(sha256Hash.Sum(nil), signature, publicKeyFile)
