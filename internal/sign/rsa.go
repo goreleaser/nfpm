@@ -73,7 +73,7 @@ func rsaSign(message io.Reader, keyFile, passphrase string) ([]byte, error) {
 // provided SHA1 hash of a message. The key file must be in the PEM format.
 func RSAVerifySHA1Digest(sha1Digest, signature []byte, publicKeyFile string) error {
 	if len(sha1Digest) != sha1.Size {
-		return errors.New("digest is not a SHA256 hash")
+		return errors.New("digest is not a SHA1 hash")
 	}
 
 	keyFileContent, err := ioutil.ReadFile(publicKeyFile)
