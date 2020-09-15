@@ -33,7 +33,7 @@ func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, e
 	blockData := block.Bytes
 	if x509.IsEncryptedPEMBlock(block) {
 		if passphrase == "" {
-			return nil, errors.New("key is encrypted no passphrase provided")
+			return nil, errors.New("key is encrypted but no passphrase was provided")
 		}
 
 		var decryptedBlockData []byte
