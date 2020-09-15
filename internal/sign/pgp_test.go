@@ -110,7 +110,7 @@ func TestWrongPass(t *testing.T) {
 
 func TestEmptyPass(t *testing.T) {
 	_, err := readSigningKey("testdata/privkey.asc", "")
-	require.EqualError(t, err, "key is encrypted no passphrase provided")
+	require.EqualError(t, err, "key is encrypted but no passphrase was provided")
 }
 
 func TestReadArmoredKey(t *testing.T) {

@@ -41,11 +41,11 @@ func TestWrongPassphrase(t *testing.T) {
 func TestNoPassphrase(t *testing.T) {
 	testData := []byte("test")
 	_, err := rsaSign(bytes.NewReader(testData), "testdata/rsa.priv", "")
-	require.EqualError(t, err, "key is encrypted no passphrase provided")
+	require.EqualError(t, err, "key is encrypted but no passphrase was provided")
 }
 
 func TestInvalidHash(t *testing.T) {
 	invalidDigest := []byte("test")
 	_, err := RSASignSHA1Digest(invalidDigest, "testdata/rsa.priv", "hunter2")
-	require.EqualError(t, err, "digest is not a SHA256 hash")
+	require.EqualError(t, err, "digest is not a SHA1 hash")
 }
