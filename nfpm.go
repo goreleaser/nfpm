@@ -187,7 +187,7 @@ type RPM struct {
 type RPMSignature struct {
 	// PGP secret key, can be ASCII-armored
 	KeyFile       string `yaml:"key_file,omitempty"`
-	KeyPassphrase string // populated from environment variable
+	KeyPassphrase string `yaml:"-"` // populated from environment variable
 }
 
 type APK struct {
@@ -197,7 +197,7 @@ type APK struct {
 type APKSignature struct {
 	// RSA private key in PEM format
 	KeyFile       string `yaml:"key_file,omitempty"`
-	KeyPassphrase string // populated from environment variable
+	KeyPassphrase string `yaml:"-"` // populated from environment variable
 	// defaults to <maintainer email>.rsa.pub
 	KeyName string `yaml:"key_name,omitempty"`
 }
@@ -214,7 +214,7 @@ type Deb struct {
 type DebSignature struct {
 	// PGP secret key, can be ASCII-armored
 	KeyFile       string `yaml:"key_file,omitempty"`
-	KeyPassphrase string // populated from environment variable
+	KeyPassphrase string `yaml:"-"` // populated from environment variable
 	// origin, maint or archive (defaults to origin)
 	Type string `yaml:"type,omitempty"`
 }
