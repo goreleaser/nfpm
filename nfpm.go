@@ -323,6 +323,10 @@ func (info *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 	}, nil
 }
 
+// ErrSigningFailure is returned whenever something went wrong during
+// the package signing process. The underlying error can be unwrapped
+// and could be crypto-related or something that occurred while adding
+// the signature to the package.
 type ErrSigningFailure struct {
 	Err error
 }
