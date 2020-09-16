@@ -322,3 +322,15 @@ func (info *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 		Entries: entries,
 	}, nil
 }
+
+type ErrSigningFailure struct {
+	Err error
+}
+
+func (s *ErrSigningFailure) Error() string {
+	return fmt.Sprintf("signing error: %v", s.Err)
+}
+
+func (s *ErrSigningFailure) Unwarp() error {
+	return s.Err
+}

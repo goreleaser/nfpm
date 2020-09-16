@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"crypto/md5" // nolint: gosec
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -758,6 +759,21 @@ func TestDebsigsSignature(t *testing.T) {
 
 	err = sign.PGPVerify(message, signature, "../internal/sign/testdata/pubkey.asc")
 	require.NoError(t, err)
+}
+
+func TestDebsigsSignatureError(t *testing.T) {
+	info := exampleInfo()
+	info.Deb.Signature.KeyFile = "/does/not/exist"
+
+	var deb bytes.Buffer
+	err := Default.Package(info, &deb)
+	require.Error(t, err)
+
+	var expectedError *nfpm.ErrSigningFailure
+	require.True(t, errors.As(err, &expectedError))
+
+	_, ok := err.(*nfpm.ErrSigningFailure)
+	assert.True(t, ok)
 }
 
 func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {

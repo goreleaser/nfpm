@@ -118,7 +118,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 		sig, err := sign.PGPArmoredDetachSign(data, info.Deb.Signature.KeyFile,
 			info.Deb.Signature.KeyPassphrase)
 		if err != nil {
-			return errors.Wrap(err, "create signature")
+			return &nfpm.ErrSigningFailure{Err: err}
 		}
 
 		sigType := "origin"
@@ -127,11 +127,11 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 		}
 
 		if sigType != "origin" && sigType != "maint" && sigType != "archive" {
-			return errors.New("invalid signature type")
+			return &nfpm.ErrSigningFailure{Err: errors.New("invalid signature type")}
 		}
 
 		if err := addArFile(w, "_gpg"+sigType, sig); err != nil {
-			return errors.Wrap(err, "add signature to ar file")
+			return &nfpm.ErrSigningFailure{Err: errors.Wrap(err, "add signature to ar file")}
 		}
 	}
 

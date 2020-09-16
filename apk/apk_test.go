@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/sha1" // nolint:gosec
 	"crypto/sha256"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -280,6 +281,28 @@ func TestSignature(t *testing.T) {
 
 	err = Default.Package(info, ioutil.Discard)
 	require.NoError(t, err)
+}
+
+func TestSignatureError(t *testing.T) {
+	info := exampleInfo()
+	info.APK.Signature.KeyFile = "../internal/sign/testdata/rsa.priv"
+	info.APK.Signature.KeyName = "testkey.rsa.pub"
+	info.APK.Signature.KeyPassphrase = "hunter2"
+
+	// wrong hash format
+	digest := sha256.New().Sum(nil)
+
+	var signatureTarGz bytes.Buffer
+
+	err := createSignature(&signatureTarGz, info, digest)
+	require.Error(t, err)
+	t.Logf("%T", err)
+
+	var expectedError *nfpm.ErrSigningFailure
+	require.True(t, errors.As(err, &expectedError))
+
+	_, ok := err.(*nfpm.ErrSigningFailure)
+	assert.True(t, ok)
 }
 
 func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {

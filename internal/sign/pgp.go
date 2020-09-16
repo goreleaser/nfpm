@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/openpgp"
+
+	"github.com/goreleaser/nfpm"
 )
 
 // PGPSigner returns a PGP signer that creates a detached non-ASCII-armored
@@ -16,14 +18,14 @@ func PGPSigner(keyFile, passphrase string) func([]byte) ([]byte, error) {
 	return func(data []byte) ([]byte, error) {
 		key, err := readSigningKey(keyFile, passphrase)
 		if err != nil {
-			return nil, errors.Wrap(err, "detach sign")
+			return nil, &nfpm.ErrSigningFailure{Err: err}
 		}
 
 		var signature bytes.Buffer
 
 		err = openpgp.DetachSign(&signature, key, bytes.NewReader(data), nil)
 		if err != nil {
-			return nil, errors.Wrap(err, "detach sign")
+			return nil, &nfpm.ErrSigningFailure{Err: err}
 		}
 
 		return signature.Bytes(), nil

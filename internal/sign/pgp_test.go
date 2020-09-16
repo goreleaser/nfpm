@@ -2,12 +2,15 @@ package sign
 
 import (
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/openpgp"
+
+	"github.com/goreleaser/nfpm"
 )
 
 const pass = "hunter2"
@@ -90,6 +93,14 @@ func readArmoredKeyring(t *testing.T, fileName string) openpgp.EntityList {
 	require.NoError(t, err)
 
 	return keyring
+}
+
+func TestPGPSignerError(t *testing.T) {
+	_, err := PGPSigner("/does/not/exist", "")([]byte("data"))
+	require.Error(t, err)
+
+	var expectedError *nfpm.ErrSigningFailure
+	assert.True(t, errors.As(err, &expectedError))
 }
 
 func TestNoSigningKey(t *testing.T) {
