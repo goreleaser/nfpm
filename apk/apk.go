@@ -253,7 +253,11 @@ func createSignature(signatureTgz io.Writer, info *nfpm.Info, controlSHA1Digest 
 	// we don't actually need to produce a digest here, but writeTgz
 	// requires it so we just use SHA1 since it is already imported
 	_, err := writeTgz(signatureTgz, tarCut, signatureBuilder, sha1.New()) // nolint:gosec
-	return &nfpm.ErrSigningFailure{Err: err}
+	if err != nil {
+		return &nfpm.ErrSigningFailure{Err: err}
+	}
+
+	return nil
 }
 
 func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) error {

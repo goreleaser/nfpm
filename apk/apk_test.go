@@ -296,7 +296,6 @@ func TestSignatureError(t *testing.T) {
 
 	err := createSignature(&signatureTarGz, info, digest)
 	require.Error(t, err)
-	t.Logf("%T", err)
 
 	var expectedError *nfpm.ErrSigningFailure
 	require.True(t, errors.As(err, &expectedError))
