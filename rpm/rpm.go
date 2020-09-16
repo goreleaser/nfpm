@@ -100,7 +100,7 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	}
 
 	if info.RPM.Signature.KeyFile != "" {
-		rpm.AddPGPSigner(sign.PGPSigner(info.RPM.Signature.KeyFile, info.RPM.Signature.KeyPassphrase))
+		rpm.SetPGPSigner(sign.PGPSigner(info.RPM.Signature.KeyFile, info.RPM.Signature.KeyPassphrase))
 	}
 
 	addEmptyDirsRPM(info, rpm)
