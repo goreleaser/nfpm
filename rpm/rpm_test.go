@@ -2,6 +2,7 @@ package rpm
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -574,6 +575,19 @@ func TestRPMSignature(t *testing.T) {
 	_, sigs, err := rpmutils.Verify(bytes.NewReader(rpmBuffer.Bytes()), keyring)
 	require.NoError(t, err)
 	require.Len(t, sigs, 1)
+}
+
+func TestRPMSignatureError(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
+	info.RPM.Signature.KeyPassphrase = "wrongpass"
+
+	var rpmBuffer bytes.Buffer
+	err := Default.Package(info, &rpmBuffer)
+	require.Error(t, err)
+
+	var expectedError *nfpm.ErrSigningFailure
+	require.True(t, errors.As(err, &expectedError))
 }
 
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
