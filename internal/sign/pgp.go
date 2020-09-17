@@ -2,14 +2,14 @@ package sign
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"unicode"
 
-	"github.com/pkg/errors"
-	"golang.org/x/crypto/openpgp"
-
 	"github.com/goreleaser/nfpm"
+	"golang.org/x/crypto/openpgp"
 )
 
 // PGPSigner returns a PGP signer that creates a detached non-ASCII-armored
@@ -36,14 +36,14 @@ func PGPSigner(keyFile, passphrase string) func([]byte) ([]byte, error) {
 func PGPArmoredDetachSign(message io.Reader, keyFile, passphrase string) ([]byte, error) {
 	key, err := readSigningKey(keyFile, passphrase)
 	if err != nil {
-		return nil, errors.Wrap(err, "armored detach sign")
+		return nil, fmt.Errorf("armored detach sign: %w", err)
 	}
 
 	var signature bytes.Buffer
 
 	err = openpgp.ArmoredDetachSign(&signature, key, message, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "armored detach sign")
+		return nil, fmt.Errorf("armored detach sign: %w", err)
 	}
 
 	return signature.Bytes(), nil
@@ -56,7 +56,7 @@ func PGPArmoredDetachSign(message io.Reader, keyFile, passphrase string) ([]byte
 func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) error {
 	keyFileContent, err := ioutil.ReadFile(armoredPubKeyFile)
 	if err != nil {
-		return errors.Wrap(err, "reading armored public key file")
+		return fmt.Errorf("reading armored public key file: %w", err)
 	}
 
 	var keyring openpgp.EntityList
@@ -64,12 +64,12 @@ func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) er
 	if isASCII(keyFileContent) {
 		keyring, err = openpgp.ReadArmoredKeyRing(bytes.NewReader(keyFileContent))
 		if err != nil {
-			return errors.Wrap(err, "decoding armored public key file")
+			return fmt.Errorf("decoding armored public key file: %w", err)
 		}
 	} else {
 		keyring, err = openpgp.ReadKeyRing(bytes.NewReader(keyFileContent))
 		if err != nil {
-			return errors.Wrap(err, "decoding public key file")
+			return fmt.Errorf("decoding public key file: %w", err)
 		}
 	}
 
@@ -85,7 +85,7 @@ func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) er
 func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 	fileContent, err := ioutil.ReadFile(keyFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading PGP key file")
+		return nil, fmt.Errorf("reading PGP key file: %w", err)
 	}
 
 	var entityList openpgp.EntityList
@@ -93,12 +93,12 @@ func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 	if isASCII(fileContent) {
 		entityList, err = openpgp.ReadArmoredKeyRing(bytes.NewReader(fileContent))
 		if err != nil {
-			return nil, errors.Wrap(err, "decoding armored PGP keyring")
+			return nil, fmt.Errorf("decoding armored PGP keyring: %w", err)
 		}
 	} else {
 		entityList, err = openpgp.ReadKeyRing(bytes.NewReader(fileContent))
 		if err != nil {
-			return nil, errors.Wrap(err, "decoding PGP keyring")
+			return nil, fmt.Errorf("decoding PGP keyring: %w", err)
 		}
 	}
 
@@ -131,7 +131,7 @@ func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 
 		err = key.PrivateKey.Decrypt([]byte(passphrase))
 		if err != nil {
-			return nil, errors.Wrap(err, "decrypt secret signing key")
+			return nil, fmt.Errorf("decrypt secret signing key: %w", err)
 		}
 	}
 
