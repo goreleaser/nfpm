@@ -143,6 +143,13 @@ rpm:
   config_noreplace_files:
     path/to/local/bar.con: /etc/bar.conf
 
+  # The package is signed if a key_file is set
+  signature:
+    # PGP secret key (can also be ASCII-armored), the passphrase is taken
+    # from the environment variable $NFPM_RPM_PASSPHRASE with a fallback
+    # to #NFPM_PASSPHRASE.
+    key_file: key.gpg
+
 # Custon configuration applied only to the Deb packager.
 deb:
   # Custom deb rules script.
@@ -165,6 +172,28 @@ deb:
   # is already installed.
   breaks:
     - some-package
+
+  # The package is signed if a key_file is set
+  signature:
+    # PGP secret key (can also be ASCII-armored). The passphrase is taken
+    # from the environment variable $NFPM_DEB_PASSPHRASE with a fallback
+    # to #NFPM_PASSPHRASE.
+    key_file: key.gpg
+    # The type describes the signers role, possible values are "origin",
+    # "maint" and "archive". If unset, the type defaults to "origin".
+    type: origin
+
+apk:
+  # The package is signed if a key_file is set
+  signature:
+    # RSA private key in the PEM format. The passphrase is taken from
+    # the environment variable $NFPM_APK_PASSPHRASE with a fallback
+    # to #NFPM_PASSPHRASE.
+    key_file: key.gpg
+    # The name of the signing key. When verifying a package, the signature
+    # is matched to the public key store in /etc/apk/keys/<key_name>.rsa.pub.
+    # If unset, it defaults to the maintainer email address.
+    key_name: origin
 ```
 
 ## Templating

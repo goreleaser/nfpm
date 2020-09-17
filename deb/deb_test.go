@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"crypto/md5" // nolint: gosec
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -17,10 +18,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blakesmith/ar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/chglog"
+
+	"github.com/goreleaser/nfpm/internal/sign"
 
 	"github.com/goreleaser/nfpm"
 )
@@ -729,6 +733,49 @@ func testRelativePathPrefixInTarGzFiles(t *testing.T, tarGzFile []byte) {
 	}
 }
 
+func TestDebsigsSignature(t *testing.T) {
+	info := exampleInfo()
+	info.Deb.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
+	info.Deb.Signature.KeyPassphrase = "hunter2"
+
+	var deb bytes.Buffer
+	err := Default.Package(info, &deb)
+	require.NoError(t, err)
+
+	debBinary, err := extractFileFromAr(deb.Bytes(), "debian-binary")
+	require.NoError(t, err)
+
+	controlTarGz, err := extractFileFromAr(deb.Bytes(), "control.tar.gz")
+	require.NoError(t, err)
+
+	dataTarGz, err := extractFileFromAr(deb.Bytes(), "data.tar.gz")
+	require.NoError(t, err)
+
+	signature, err := extractFileFromAr(deb.Bytes(), "_gpgorigin")
+	require.NoError(t, err)
+
+	message := io.MultiReader(bytes.NewReader(debBinary),
+		bytes.NewReader(controlTarGz), bytes.NewReader(dataTarGz))
+
+	err = sign.PGPVerify(message, signature, "../internal/sign/testdata/pubkey.asc")
+	require.NoError(t, err)
+}
+
+func TestDebsigsSignatureError(t *testing.T) {
+	info := exampleInfo()
+	info.Deb.Signature.KeyFile = "/does/not/exist"
+
+	var deb bytes.Buffer
+	err := Default.Package(info, &deb)
+	require.Error(t, err)
+
+	var expectedError *nfpm.ErrSigningFailure
+	require.True(t, errors.As(err, &expectedError))
+
+	_, ok := err.(*nfpm.ErrSigningFailure)
+	assert.True(t, ok)
+}
+
 func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 	tarFile, err := gzipInflate(tarGzFile)
 	if err != nil {
@@ -843,4 +890,30 @@ func symlinkTo(tb testing.TB, fileName string) string {
 	})
 
 	return symlinkName
+}
+
+func extractFileFromAr(arFile []byte, filename string) ([]byte, error) {
+	tr := ar.NewReader(bytes.NewReader(arFile))
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if path.Join("/", hdr.Name) != path.Join("/", filename) {
+			continue
+		}
+
+		fileContents, err := ioutil.ReadAll(tr)
+		if err != nil {
+			return nil, err
+		}
+
+		return fileContents, nil
+	}
+
+	return nil, os.ErrNotExist
 }

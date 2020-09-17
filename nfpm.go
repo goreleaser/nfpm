@@ -59,6 +59,26 @@ func Parse(in io.Reader) (config Config, err error) {
 	config.Info.Release = os.ExpandEnv(config.Info.Release)
 	config.Info.Version = os.ExpandEnv(config.Info.Version)
 
+	generalPassphrase := os.ExpandEnv("$NFPM_PASSPHRASE")
+	config.Deb.Signature.KeyPassphrase = generalPassphrase
+	config.RPM.Signature.KeyPassphrase = generalPassphrase
+	config.APK.Signature.KeyPassphrase = generalPassphrase
+
+	debPassphrase := os.ExpandEnv("$NFPM_DEB_PASSPHRASE")
+	if debPassphrase != "" {
+		config.Deb.Signature.KeyPassphrase = debPassphrase
+	}
+
+	rpmPassphrase := os.ExpandEnv("$NFPM_RPM_PASSPHRASE")
+	if rpmPassphrase != "" {
+		config.RPM.Signature.KeyPassphrase = rpmPassphrase
+	}
+
+	apkPassphrase := os.ExpandEnv("$NFPM_APK_PASSPHRASE")
+	if apkPassphrase != "" {
+		config.APK.Signature.KeyPassphrase = apkPassphrase
+	}
+
 	return config, config.Validate()
 }
 
@@ -152,6 +172,7 @@ type Overridables struct {
 	Scripts      Scripts           `yaml:"scripts,omitempty"`
 	RPM          RPM               `yaml:"rpm,omitempty"`
 	Deb          Deb               `yaml:"deb,omitempty"`
+	APK          APK               `yaml:"apk,omitempty"`
 }
 
 // RPM is custom configs that are only available on RPM packages.
@@ -160,14 +181,42 @@ type RPM struct {
 	Compression string `yaml:"compression,omitempty"`
 	// https://www.cl.cam.ac.uk/~jw35/docs/rpm_config.html
 	ConfigNoReplaceFiles map[string]string `yaml:"config_noreplace_files,omitempty"`
+	Signature            RPMSignature      `yaml:"signature,omitempty"`
+}
+
+type RPMSignature struct {
+	// PGP secret key, can be ASCII-armored
+	KeyFile       string `yaml:"key_file,omitempty"`
+	KeyPassphrase string `yaml:"-"` // populated from environment variable
+}
+
+type APK struct {
+	Signature APKSignature `yaml:"signature,omitempty"`
+}
+
+type APKSignature struct {
+	// RSA private key in PEM format
+	KeyFile       string `yaml:"key_file,omitempty"`
+	KeyPassphrase string `yaml:"-"` // populated from environment variable
+	// defaults to <maintainer email>.rsa.pub
+	KeyName string `yaml:"key_name,omitempty"`
 }
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Scripts         DebScripts  `yaml:"scripts,omitempty"`
-	Triggers        DebTriggers `yaml:"triggers,omitempty"`
-	Breaks          []string    `yaml:"breaks,omitempty"`
-	VersionMetadata string      `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
+	Scripts         DebScripts   `yaml:"scripts,omitempty"`
+	Triggers        DebTriggers  `yaml:"triggers,omitempty"`
+	Breaks          []string     `yaml:"breaks,omitempty"`
+	VersionMetadata string       `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
+	Signature       DebSignature `yaml:"signature,omitempty"`
+}
+
+type DebSignature struct {
+	// PGP secret key, can be ASCII-armored
+	KeyFile       string `yaml:"key_file,omitempty"`
+	KeyPassphrase string `yaml:"-"` // populated from environment variable
+	// origin, maint or archive (defaults to origin)
+	Type string `yaml:"type,omitempty"`
 }
 
 // DebTriggers contains triggers only available for deb packages.
@@ -272,4 +321,20 @@ func (info *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 		Name:    info.Name,
 		Entries: entries,
 	}, nil
+}
+
+// ErrSigningFailure is returned whenever something went wrong during
+// the package signing process. The underlying error can be unwrapped
+// and could be crypto-related or something that occurred while adding
+// the signature to the package.
+type ErrSigningFailure struct {
+	Err error
+}
+
+func (s *ErrSigningFailure) Error() string {
+	return fmt.Sprintf("signing error: %v", s.Err)
+}
+
+func (s *ErrSigningFailure) Unwarp() error {
+	return s.Err
 }

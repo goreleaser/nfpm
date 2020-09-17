@@ -17,6 +17,7 @@ import (
 	"github.com/sassoftware/go-rpmutils/cpio"
 
 	"github.com/goreleaser/nfpm/internal/files"
+	"github.com/goreleaser/nfpm/internal/sign"
 
 	"github.com/goreleaser/chglog"
 
@@ -96,6 +97,10 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) error {
 	}
 	if rpm, err = rpmpack.NewRPM(*meta); err != nil {
 		return err
+	}
+
+	if info.RPM.Signature.KeyFile != "" {
+		rpm.SetPGPSigner(sign.PGPSigner(info.RPM.Signature.KeyFile, info.RPM.Signature.KeyPassphrase))
 	}
 
 	addEmptyDirsRPM(info, rpm)

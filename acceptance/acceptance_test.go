@@ -251,6 +251,20 @@ func TestDebBreaks(t *testing.T) {
 	})
 }
 
+func TestSignatures(t *testing.T) {
+	for _, format := range formats {
+		format := format
+		t.Run("signed", func(t *testing.T) {
+			accept(t, acceptParms{
+				Name:       fmt.Sprintf("signed_%s", format),
+				Conf:       "signed.yaml",
+				Format:     format,
+				Dockerfile: fmt.Sprintf("%s.signed.dockerfile", format),
+			})
+		})
+	}
+}
+
 type acceptParms struct {
 	Name       string
 	Conf       string

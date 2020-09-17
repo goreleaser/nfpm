@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -147,6 +148,56 @@ func TestParseFile(t *testing.T) {
 	config, err := ParseFile("./testdata/versionenv.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
+}
+
+func TestOptionsFromEnvironment(t *testing.T) {
+	const (
+		globalPass = "hunter2"
+		debPass    = "password123"
+		rpmPass    = "secret"
+		apkPass    = "foobar"
+		release    = "3"
+		version    = "1.0.0"
+	)
+
+	t.Run("version", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("VERSION", version)
+		info, err := Parse(strings.NewReader("name: foo\nversion: $VERSION"))
+		require.NoError(t, err)
+		assert.Equal(t, version, info.Version)
+	})
+
+	t.Run("release", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("RELEASE", release)
+		info, err := Parse(strings.NewReader("name: foo\nrelease: $RELEASE"))
+		require.NoError(t, err)
+		assert.Equal(t, release, info.Release)
+	})
+
+	t.Run("global passphrase", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("NFPM_PASSPHRASE", globalPass)
+		info, err := Parse(strings.NewReader("name: foo"))
+		require.NoError(t, err)
+		assert.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
+		assert.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
+		assert.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
+	})
+
+	t.Run("specific passphrases", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("NFPM_PASSPHRASE", globalPass)
+		os.Setenv("NFPM_DEB_PASSPHRASE", debPass)
+		os.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
+		os.Setenv("NFPM_APK_PASSPHRASE", apkPass)
+		info, err := Parse(strings.NewReader("name: foo"))
+		require.NoError(t, err)
+		assert.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
+		assert.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
+		assert.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+	})
 }
 
 func TestOverrides(t *testing.T) {

@@ -203,6 +203,12 @@ github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 h1:EGx4pi6eqNxGa
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/goreleaser/chglog v0.1.1 h1:UaY3enMEVeavOaZyCraLn+2iM7/2T0yji8Mh7ZFsDp4=
 github.com/goreleaser/chglog v0.1.1/go.mod h1:xSDa/73C0TxBcLvoT2JHh47QyXpCx5rrNVzJKyeFGPw=
+github.com/goreleaser/rpmpack v0.0.0-20200731134257-3685799e8fdf h1:+QCryOyAhxMBMtB90ALMxTb2C822fon+hsY6av1sdIk=
+github.com/goreleaser/rpmpack v0.0.0-20200731134257-3685799e8fdf/go.mod h1:+y9lKiqDhR4zkLl+V9h4q0rdyrYVsWWm6LLCQP33DIk=
+github.com/goreleaser/rpmpack v0.0.0-20200912130434-2762bbe52570 h1:xR3+O5ERbBVojh+NPOFNV7gvtrU9rLkblJtzaaFB3yA=
+github.com/goreleaser/rpmpack v0.0.0-20200912130434-2762bbe52570/go.mod h1:+y9lKiqDhR4zkLl+V9h4q0rdyrYVsWWm6LLCQP33DIk=
+github.com/goreleaser/rpmpack v0.0.0-20200915084912-ac8a7d0c1fdc h1:bYP7CnnBF4FGZUWg6VcEMmGLPGNkwTmEPgoQlgSiaRM=
+github.com/goreleaser/rpmpack v0.0.0-20200915084912-ac8a7d0c1fdc/go.mod h1:+y9lKiqDhR4zkLl+V9h4q0rdyrYVsWWm6LLCQP33DIk=
 github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gostaticanalysis/analysisutil v0.0.0-20190318220348-4088753ea4d3/go.mod h1:eEOZF4jCKGi+aprrirO9e7WKB3beBRtWgqGunKl6pKE=

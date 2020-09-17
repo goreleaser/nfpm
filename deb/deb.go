@@ -19,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/goreleaser/nfpm/internal/files"
+	"github.com/goreleaser/nfpm/internal/sign"
 
 	"github.com/goreleaser/chglog"
 
@@ -80,27 +81,60 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 	if ok {
 		info.Arch = arch
 	}
+
 	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
 	if err != nil {
 		return err
 	}
+
 	controlTarGz, err := createControl(instSize, md5sums, info)
 	if err != nil {
 		return err
 	}
+
+	debianBinary := []byte("2.0\n")
+
 	var w = ar.NewWriter(deb)
 	if err := w.WriteGlobalHeader(); err != nil {
 		return errors.Wrap(err, "cannot write ar header to deb file")
 	}
-	if err := addArFile(w, "debian-binary", []byte("2.0\n")); err != nil {
+
+	if err := addArFile(w, "debian-binary", debianBinary); err != nil {
 		return errors.Wrap(err, "cannot pack debian-binary")
 	}
+
 	if err := addArFile(w, "control.tar.gz", controlTarGz); err != nil {
 		return errors.Wrap(err, "cannot add control.tar.gz to deb")
 	}
+
 	if err := addArFile(w, "data.tar.gz", dataTarGz); err != nil {
 		return errors.Wrap(err, "cannot add data.tar.gz to deb")
 	}
+
+	if info.Deb.Signature.KeyFile != "" {
+		data := io.MultiReader(bytes.NewReader(debianBinary), bytes.NewReader(controlTarGz),
+			bytes.NewReader(dataTarGz))
+
+		sig, err := sign.PGPArmoredDetachSign(data, info.Deb.Signature.KeyFile,
+			info.Deb.Signature.KeyPassphrase)
+		if err != nil {
+			return &nfpm.ErrSigningFailure{Err: err}
+		}
+
+		sigType := "origin"
+		if info.Deb.Signature.Type != "" {
+			sigType = info.Deb.Signature.Type
+		}
+
+		if sigType != "origin" && sigType != "maint" && sigType != "archive" {
+			return &nfpm.ErrSigningFailure{Err: errors.New("invalid signature type")}
+		}
+
+		if err := addArFile(w, "_gpg"+sigType, sig); err != nil {
+			return &nfpm.ErrSigningFailure{Err: errors.Wrap(err, "add signature to ar file")}
+		}
+	}
+
 	return nil
 }
 
