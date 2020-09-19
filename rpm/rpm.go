@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/google/rpmpack"
-	"github.com/pkg/errors"
 	"github.com/sassoftware/go-rpmutils/cpio"
 
 	"github.com/goreleaser/nfpm/internal/files"
@@ -370,7 +369,7 @@ func addSymlinksInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 func copyToRPM(rpm *rpmpack.RPM, src, dst string, fileType rpmpack.FileType) error {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
-		return errors.Wrap(err, "could not add file to the archive")
+		return fmt.Errorf("could not add file to the archive: %w", err)
 	}
 	// don't care if it errs while closing...
 	defer file.Close() // nolint: errcheck,gosec

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/md5" // nolint:gas
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,14 +17,11 @@ import (
 	"time"
 
 	"github.com/blakesmith/ar"
-	"github.com/pkg/errors"
-
-	"github.com/goreleaser/nfpm/internal/files"
-	"github.com/goreleaser/nfpm/internal/sign"
-
 	"github.com/goreleaser/chglog"
 
 	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/internal/files"
+	"github.com/goreleaser/nfpm/internal/sign"
 )
 
 // nolint: gochecknoinits
@@ -75,8 +73,12 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 	return fmt.Sprintf("%s_%s_%s.deb", info.Name, version, arch)
 }
 
+// ErrInvalidSignatureType happens if the signature type of a deb is not one of
+// origin, maint or archive.
+var ErrInvalidSignatureType = errors.New("invalid signature type")
+
 // Package writes a new deb package to the given writer using the given info.
-func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
+func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: funlen
 	arch, ok := archToDebian[info.Arch]
 	if ok {
 		info.Arch = arch
@@ -96,21 +98,22 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 
 	var w = ar.NewWriter(deb)
 	if err := w.WriteGlobalHeader(); err != nil {
-		return errors.Wrap(err, "cannot write ar header to deb file")
+		return fmt.Errorf("cannot write ar header to deb file: %w", err)
 	}
 
 	if err := addArFile(w, "debian-binary", debianBinary); err != nil {
-		return errors.Wrap(err, "cannot pack debian-binary")
+		return fmt.Errorf("cannot pack debian-binary: %w", err)
 	}
 
 	if err := addArFile(w, "control.tar.gz", controlTarGz); err != nil {
-		return errors.Wrap(err, "cannot add control.tar.gz to deb")
+		return fmt.Errorf("cannot add control.tar.gz to deb: %w", err)
 	}
 
 	if err := addArFile(w, "data.tar.gz", dataTarGz); err != nil {
-		return errors.Wrap(err, "cannot add data.tar.gz to deb")
+		return fmt.Errorf("cannot add data.tar.gz to deb: %w", err)
 	}
 
+	// TODO: refactor this
 	if info.Deb.Signature.KeyFile != "" {
 		data := io.MultiReader(bytes.NewReader(debianBinary), bytes.NewReader(controlTarGz),
 			bytes.NewReader(dataTarGz))
@@ -127,11 +130,15 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 		}
 
 		if sigType != "origin" && sigType != "maint" && sigType != "archive" {
-			return &nfpm.ErrSigningFailure{Err: errors.New("invalid signature type")}
+			return &nfpm.ErrSigningFailure{
+				Err: ErrInvalidSignatureType,
+			}
 		}
 
 		if err := addArFile(w, "_gpg"+sigType, sig); err != nil {
-			return &nfpm.ErrSigningFailure{Err: errors.Wrap(err, "add signature to ar file")}
+			return &nfpm.ErrSigningFailure{
+				Err: fmt.Errorf("add signature to ar file: %w", err),
+			}
 		}
 	}
 
@@ -146,7 +153,7 @@ func addArFile(w *ar.Writer, name string, body []byte) error {
 		ModTime: time.Now(),
 	}
 	if err := w.WriteHeader(&header); err != nil {
-		return errors.Wrap(err, "cannot write file header")
+		return fmt.Errorf("cannot write file header: %w", err)
 	}
 	_, err := w.Write(body)
 	return err
@@ -177,10 +184,10 @@ func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64
 	}
 
 	if err := out.Close(); err != nil {
-		return nil, nil, 0, errors.Wrap(err, "closing data.tar.gz")
+		return nil, nil, 0, fmt.Errorf("closing data.tar.gz: %w", err)
 	}
 	if err := compress.Close(); err != nil {
-		return nil, nil, 0, errors.Wrap(err, "closing data.tar.gz")
+		return nil, nil, 0, fmt.Errorf("closing data.tar.gz: %w", err)
 	}
 
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
@@ -263,7 +270,7 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int64, error) {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
-		return 0, errors.Wrap(err, "could not add file to the archive")
+		return 0, fmt.Errorf("could not add file to the archive: %w", err)
 	}
 	// don't care if it errs while closing...
 	defer file.Close() // nolint: errcheck,gosec
@@ -283,14 +290,14 @@ func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int6
 		Format:  tar.FormatGNU,
 	}
 	if err := tarw.WriteHeader(&header); err != nil {
-		return 0, errors.Wrapf(err, "cannot write header of %s to data.tar.gz", src)
+		return 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %w", src, err)
 	}
 	var digest = md5.New() // nolint:gas
 	if _, err := io.Copy(tarw, io.TeeReader(file, digest)); err != nil {
-		return 0, errors.Wrap(err, "failed to copy")
+		return 0, fmt.Errorf("failed to copy: %w", err)
 	}
 	if _, err := fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), header.Name); err != nil {
-		return 0, errors.Wrap(err, "failed to write md5")
+		return 0, fmt.Errorf("failed to write md5: %w", err)
 	}
 	return info.Size(), nil
 }
@@ -313,7 +320,7 @@ func createChangelogInsideTarGz(tarw *tar.Writer, md5w io.Writer, created map[st
 	}
 
 	if err = out.Close(); err != nil {
-		return 0, errors.Wrap(err, "closing changelog.gz")
+		return 0, fmt.Errorf("closing changelog.gz: %w", err)
 	}
 
 	changelogData := buf.Bytes()
@@ -418,20 +425,20 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 	}
 
 	if err := out.Close(); err != nil {
-		return nil, errors.Wrap(err, "closing control.tar.gz")
+		return nil, fmt.Errorf("closing control.tar.gz: %w", err)
 	}
 	if err := compress.Close(); err != nil {
-		return nil, errors.Wrap(err, "closing control.tar.gz")
+		return nil, fmt.Errorf("closing control.tar.gz: %w", err)
 	}
 	return buf.Bytes(), nil
 }
 
 func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) error {
 	if err := out.WriteHeader(header); err != nil {
-		return errors.Wrapf(err, "cannot write header of %s file to control.tar.gz", header.Name)
+		return fmt.Errorf("cannot write header of %s file to control.tar.gz: %w", header.Name, err)
 	}
 	if _, err := out.Write(content); err != nil {
-		return errors.Wrapf(err, "cannot write %s file to control.tar.gz", header.Name)
+		return fmt.Errorf("cannot write %s file to control.tar.gz: %w", header.Name, err)
 	}
 	return nil
 }
@@ -490,7 +497,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 			Format:   tar.FormatGNU,
 			ModTime:  time.Now(),
 		}); err != nil {
-			return errors.Wrap(err, "failed to create folder")
+			return fmt.Errorf("failed to create folder: %w", err)
 		}
 		created[path] = true
 	}

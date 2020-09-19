@@ -33,6 +33,7 @@ import (
 	"crypto/sha1" // nolint:gosec
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -46,13 +47,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/goreleaser/nfpm/internal/files"
-
-	"github.com/goreleaser/nfpm/internal/sign"
-
-	"github.com/pkg/errors"
-
 	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/internal/files"
+	"github.com/goreleaser/nfpm/internal/sign"
 )
 
 // nolint: gochecknoinits
@@ -260,6 +257,8 @@ func createSignature(signatureTgz io.Writer, info *nfpm.Info, controlSHA1Digest 
 	return nil
 }
 
+var errNoKeyAddress = errors.New("key name not set and maintainer mail address empty")
+
 func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) error {
 	return func(tw *tar.Writer) error {
 		signature, err := sign.RSASignSHA1Digest(digest,
@@ -273,9 +272,9 @@ func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) er
 		if keyname == "" {
 			addr, err := mail.ParseAddress(info.Maintainer)
 			if err != nil {
-				return errors.Wrap(err, "key name not set and unable to parse maintainer mail address")
+				return fmt.Errorf("key name not set and unable to parse maintainer mail address: %w", err)
 			} else if addr.Address == "" {
-				return errors.New("key name not set and maintainer mail address empty")
+				return errNoKeyAddress
 			}
 
 			keyname = addr.Address + ".rsa.pub"
@@ -370,10 +369,10 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 
 func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) error {
 	if err := out.WriteHeader(header); err != nil {
-		return errors.Wrapf(err, "cannot write header of %s file to control.tar.gz", header.Name)
+		return fmt.Errorf("cannot write header of %s file to control.tar.gz: %w", header.Name, err)
 	}
 	if _, err := out.Write(content); err != nil {
-		return errors.Wrapf(err, "cannot write %s file to control.tar.gz", header.Name)
+		return fmt.Errorf("cannot write %s file to control.tar.gz: %w", header.Name, err)
 	}
 	return nil
 }
@@ -444,7 +443,7 @@ func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[str
 func copyToTarAndDigest(src, dst string, tw *tar.Writer, sizep *int64, created map[string]bool) error {
 	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
-		return errors.Wrap(err, "could not add file to the archive")
+		return fmt.Errorf("could not add file to the archive: %w", err)
 	}
 	// don't care if it errs while closing...
 	defer file.Close() // nolint: errcheck
@@ -501,7 +500,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 			Format:   tar.FormatGNU,
 			ModTime:  time.Now(),
 		}); err != nil {
-			return errors.Wrap(err, "failed to create folder")
+			return fmt.Errorf("failed to create folder: %w", err)
 		}
 		created[path] = true
 	}

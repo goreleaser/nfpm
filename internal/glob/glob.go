@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/mattn/go-zglob"
-	"github.com/pkg/errors"
 )
 
 // longestCommonPrefix returns the longest prefix of all strings the argument
@@ -54,7 +53,7 @@ func (e ErrGlobNoMatch) Error() string {
 func Glob(glob, dst string) (map[string]string, error) {
 	matches, err := zglob.Glob(glob)
 	if err != nil {
-		return nil, errors.Wrap(err, glob)
+		return nil, fmt.Errorf("glob failed: %s: %w", glob, err)
 	}
 	if len(matches) == 0 {
 		return nil, ErrGlobNoMatch{glob}

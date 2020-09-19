@@ -50,7 +50,7 @@ func TestGlob(t *testing.T) {
 	assert.Equal(t, "/foo/bar/test_b.txt", singleFile["testdata/dir_a/dir_b/test_b.txt"])
 
 	nilvalue, err := Glob("does/not/exist", "/foo/bar")
-	assert.EqualError(t, err, "does/not/exist: file does not exist")
+	assert.EqualError(t, err, "glob failed: does/not/exist: file does not exist")
 	assert.Nil(t, nilvalue)
 
 	nomatches, err := Glob("testdata/nothing*", "/foo/bar")

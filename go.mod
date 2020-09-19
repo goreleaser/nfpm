@@ -14,7 +14,6 @@ require (
 	github.com/imdario/mergo v0.3.11
 	github.com/mattn/go-zglob v0.0.3
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
-	github.com/pkg/errors v0.9.1
 	github.com/sassoftware/go-rpmutils v0.0.0-20190420191620-a8f1baeba37b
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
