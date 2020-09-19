@@ -2,8 +2,6 @@ module github.com/goreleaser/nfpm
 
 go 1.14
 
-replace github.com/google/rpmpack => github.com/goreleaser/rpmpack v0.0.0-20200915084912-ac8a7d0c1fdc
-
 require (
 	github.com/Masterminds/semver/v3 v3.1.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
@@ -11,7 +9,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/golangci/golangci-lint v1.31.0
-	github.com/google/rpmpack v0.0.0-20200731134257-3685799e8fdf
+	github.com/google/rpmpack v0.0.0-20200919095143-1c1eea455332
 	github.com/goreleaser/chglog v0.1.1
 	github.com/imdario/mergo v0.3.11
 	github.com/mattn/go-zglob v0.0.3
