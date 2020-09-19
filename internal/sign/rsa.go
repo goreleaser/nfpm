@@ -13,11 +13,15 @@ import (
 	"io/ioutil"
 )
 
+var errNoPemBlock = errors.New("no PEM block found")
+var errDigestNotSH1 = errors.New("digest is not a SHA1 hash")
+var errNoPassphrase = errors.New("key is encrypted but no passphrase was provided")
+
 // RSASignSHA1Digest signs the provided SHA1 message digest. The key file
 // must be in the PEM format and can either be encrypted or not.
 func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, error) {
 	if len(sha1Digest) != sha1.Size {
-		return nil, errors.New("digest is not a SHA1 hash")
+		return nil, errDigestNotSH1
 	}
 
 	keyFileContent, err := ioutil.ReadFile(keyFile)
@@ -27,13 +31,13 @@ func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, e
 
 	block, _ := pem.Decode(keyFileContent)
 	if block == nil {
-		return nil, errors.New("parse PEM block with private key")
+		return nil, errNoPemBlock
 	}
 
 	blockData := block.Bytes
 	if x509.IsEncryptedPEMBlock(block) {
 		if passphrase == "" {
-			return nil, errors.New("key is encrypted but no passphrase was provided")
+			return nil, errNoPassphrase
 		}
 
 		var decryptedBlockData []byte
@@ -73,7 +77,7 @@ func rsaSign(message io.Reader, keyFile, passphrase string) ([]byte, error) {
 // provided SHA1 hash of a message. The key file must be in the PEM format.
 func RSAVerifySHA1Digest(sha1Digest, signature []byte, publicKeyFile string) error {
 	if len(sha1Digest) != sha1.Size {
-		return errors.New("digest is not a SHA1 hash")
+		return errDigestNotSH1
 	}
 
 	keyFileContent, err := ioutil.ReadFile(publicKeyFile)
@@ -83,7 +87,7 @@ func RSAVerifySHA1Digest(sha1Digest, signature []byte, publicKeyFile string) err
 
 	block, _ := pem.Decode(keyFileContent)
 	if block == nil {
-		return errors.New("parse PEM block with public key")
+		return errNoPemBlock
 	}
 
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)

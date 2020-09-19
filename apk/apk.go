@@ -257,6 +257,8 @@ func createSignature(signatureTgz io.Writer, info *nfpm.Info, controlSHA1Digest 
 	return nil
 }
 
+var errNoKeyAddress = errors.New("key name not set and maintainer mail address empty")
+
 func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) error {
 	return func(tw *tar.Writer) error {
 		signature, err := sign.RSASignSHA1Digest(digest,
@@ -272,7 +274,7 @@ func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) er
 			if err != nil {
 				return fmt.Errorf("key name not set and unable to parse maintainer mail address: %w", err)
 			} else if addr.Address == "" {
-				return errors.New("key name not set and maintainer mail address empty")
+				return errNoKeyAddress
 			}
 
 			keyname = addr.Address + ".rsa.pub"

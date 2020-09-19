@@ -18,6 +18,7 @@ import (
 
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/chglog"
+
 	"github.com/goreleaser/nfpm"
 	"github.com/goreleaser/nfpm/internal/files"
 	"github.com/goreleaser/nfpm/internal/sign"
@@ -72,8 +73,12 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 	return fmt.Sprintf("%s_%s_%s.deb", info.Name, version, arch)
 }
 
+// ErrInvalidSignatureType happens if the signature type of a deb is not one of
+// origin, maint or archive.
+var ErrInvalidSignatureType = errors.New("invalid signature type")
+
 // Package writes a new deb package to the given writer using the given info.
-func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
+func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: funlen
 	arch, ok := archToDebian[info.Arch]
 	if ok {
 		info.Arch = arch
@@ -108,6 +113,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 		return fmt.Errorf("cannot add data.tar.gz to deb: %w", err)
 	}
 
+	// TODO: refactor this
 	if info.Deb.Signature.KeyFile != "" {
 		data := io.MultiReader(bytes.NewReader(debianBinary), bytes.NewReader(controlTarGz),
 			bytes.NewReader(dataTarGz))
@@ -125,7 +131,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) {
 
 		if sigType != "origin" && sigType != "maint" && sigType != "archive" {
 			return &nfpm.ErrSigningFailure{
-				Err: errors.New("invalid signature type"),
+				Err: ErrInvalidSignatureType,
 			}
 		}
 

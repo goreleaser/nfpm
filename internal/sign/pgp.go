@@ -8,8 +8,9 @@ import (
 	"io/ioutil"
 	"unicode"
 
-	"github.com/goreleaser/nfpm"
 	"golang.org/x/crypto/openpgp"
+
+	"github.com/goreleaser/nfpm"
 )
 
 // PGPSigner returns a PGP signer that creates a detached non-ASCII-armored
@@ -82,6 +83,10 @@ func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) er
 	return err
 }
 
+var errMoreThanOneKey = errors.New("more than one signing key in keyring")
+var errNoKeys = errors.New("no signing key in keyring")
+var errNoPassword = errors.New("key is encrypted but no passphrase was provided")
+
 func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 	fileContent, err := ioutil.ReadFile(keyFile)
 	if err != nil {
@@ -114,19 +119,19 @@ func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 		}
 
 		if key != nil {
-			return nil, errors.New("more than one signing key in keyring")
+			return nil, errMoreThanOneKey
 		}
 
 		key = candidate
 	}
 
 	if key == nil {
-		return nil, errors.New("no signing key in keyring")
+		return nil, errNoKeys
 	}
 
 	if key.PrivateKey.Encrypted {
 		if passphrase == "" {
-			return nil, errors.New("key is encrypted but no passphrase was provided")
+			return nil, errNoPassword
 		}
 
 		err = key.PrivateKey.Decrypt([]byte(passphrase))
