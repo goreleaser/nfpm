@@ -86,16 +86,18 @@ conflicts:
 # Files to add to the package. (overridable)
 # This can be binaries or any other files.
 #
-# Key is the local file, value is the path inside the package.
+# Key is the local file/glob, value is the path inside the package.
 files:
   path/to/local/foo: /usr/local/bin/foo
+  some/glob/**/*: /usr/share/foo/
 
 # Config files are dealt with differently when upgrading and uninstalling the
 # package. (overridable)
 #
-# Key is the local file, value is the path inside the package
+# Key is the local file/glob, value is the path inside the package
 config_files:
-  path/to/local/foo.con: /etc/foo.conf
+  path/to/local/foo.conf: /etc/foo.conf
+  some/glob/**/*: /etc/foo/
 
 # Empty folders your package may need created. (overridable)
 empty_folders:
