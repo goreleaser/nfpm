@@ -6,7 +6,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha1" // nolint:gosec
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/pem"
@@ -62,7 +62,7 @@ func TestInvalidHash(t *testing.T) {
 }
 
 func TestRSAVerifySHA1DigestError(t *testing.T) {
-	rsaKey, err := rsa.GenerateKey(rand.Reader, 12)
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,9 +100,11 @@ func TestRSAVerifySHA1DigestError(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(keyFile.Name())
-		pem.Encode(keyFile, pemKey)
+		if err := pem.Encode(keyFile, pemKey); err != nil {
+			t.Fatal(err)
+		}
 		keyFile.Close()
-		digest := sha1.New().Sum(nil)
+		digest := sha1.New().Sum(nil) // nolint:gosec
 		assert.Error(t, RSAVerifySHA1Digest(digest, []byte{}, keyFile.Name()))
 	}
 }
