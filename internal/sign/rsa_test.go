@@ -93,9 +93,7 @@ func TestRSAVerifySHA1DigestError(t *testing.T) {
 	}
 
 	for _, pemKey := range pemKeys {
-		cwd, _ := os.Getwd()
-
-		keyFile, err := ioutil.TempFile(cwd, "*.pem")
+		keyFile, err := ioutil.TempFile("", "*.pem")
 		if err != nil {
 			t.Fatal(err)
 		}
