@@ -56,6 +56,11 @@ func TestGlob(t *testing.T) {
 	nomatches, err := Glob("testdata/nothing*", "/foo/bar")
 	assert.Nil(t, nomatches)
 	assert.EqualError(t, err, "testdata/nothing*: no matching files")
+
+	escapedBrace, err := Glob("testdata/\\{dir_d\\}/*", "/foo/bar")
+	assert.NoError(t, err)
+	assert.Len(t, escapedBrace, 1)
+	assert.Equal(t, "/foo/bar/test_brace.txt", escapedBrace["testdata/{dir_d}/test_brace.txt"])
 }
 
 func TestSingleGlob(t *testing.T) {
