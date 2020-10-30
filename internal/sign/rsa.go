@@ -64,13 +64,13 @@ func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, e
 }
 
 func rsaSign(message io.Reader, keyFile, passphrase string) ([]byte, error) {
-	sha256Hash := sha1.New() // nolint:gosec
-	_, err := io.Copy(sha256Hash, message)
+	sha1Hash := sha1.New() // nolint:gosec
+	_, err := io.Copy(sha1Hash, message)
 	if err != nil {
-		return nil, fmt.Errorf("create SHA256 message digest: %w", err)
+		return nil, fmt.Errorf("create SHA1 message digest: %w", err)
 	}
 
-	return RSASignSHA1Digest(sha256Hash.Sum(nil), keyFile, passphrase)
+	return RSASignSHA1Digest(sha1Hash.Sum(nil), keyFile, passphrase)
 }
 
 // RSAVerifySHA1Digest is exported for use in tests and verifies a signature over the
@@ -109,11 +109,11 @@ func RSAVerifySHA1Digest(sha1Digest, signature []byte, publicKeyFile string) err
 }
 
 func rsaVerify(message io.Reader, signature []byte, publicKeyFile string) error {
-	sha256Hash := sha1.New() // nolint:gosec
-	_, err := io.Copy(sha256Hash, message)
+	sha1Hash := sha1.New() // nolint:gosec
+	_, err := io.Copy(sha1Hash, message)
 	if err != nil {
 		return fmt.Errorf("create SHA1 message digest: %w", err)
 	}
 
-	return RSAVerifySHA1Digest(sha256Hash.Sum(nil), signature, publicKeyFile)
+	return RSAVerifySHA1Digest(sha1Hash.Sum(nil), signature, publicKeyFile)
 }
