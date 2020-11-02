@@ -410,25 +410,40 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		}
 	}
 
-	for script, dest := range map[string]string{
-		info.Scripts.PreInstall:             "preinst",
-		info.Scripts.PostInstall:            "postinst",
-		info.Scripts.PreRemove:              "prerm",
-		info.Scripts.PostRemove:             "postrm",
-		info.Overridables.Deb.Scripts.Rules: "rules",
-	} {
-		if script != "" {
-			if err := newScriptInsideTarGz(out, script, dest); err != nil {
-				return nil, err
-			}
-		}
+	type fileAndMode struct {
+		fileName string
+		mode     int64
 	}
 
-	for file, dest := range map[string]string{
-		info.Overridables.Deb.Templates: "templates",
-	} {
-		if file != "" {
-			if err := newFilePathInsideTarGz(out, file, dest); err != nil {
+	var specialFiles = map[string]*fileAndMode{}
+	specialFiles[info.Scripts.PreInstall] = &fileAndMode{
+		fileName: "preinst",
+		mode:     0755,
+	}
+	specialFiles[info.Scripts.PostInstall] = &fileAndMode{
+		fileName: "postinst",
+		mode:     0755,
+	}
+	specialFiles[info.Scripts.PreRemove] = &fileAndMode{
+		fileName: "prerm",
+		mode:     0755,
+	}
+	specialFiles[info.Scripts.PostRemove] = &fileAndMode{
+		fileName: "postrm",
+		mode:     0755,
+	}
+	specialFiles[info.Overridables.Deb.Scripts.Rules] = &fileAndMode{
+		fileName: "rules",
+		mode:     0755,
+	}
+	specialFiles[info.Overridables.Deb.Scripts.Templates] = &fileAndMode{
+		fileName: "templates",
+		mode:     0644,
+	}
+
+	for path, destMode := range specialFiles {
+		if path != "" {
+			if err := newFilePathInsideTarGz(out, path, destMode.fileName, destMode.mode); err != nil {
 				return nil, err
 			}
 		}
@@ -464,7 +479,7 @@ func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	})
 }
 
-func newFilePathInsideTarGz(out *tar.Writer, path, dest string) error {
+func newFilePathInsideTarGz(out *tar.Writer, path, dest string, mode int64) error {
 	file, err := os.Open(path) //nolint:gosec
 	if err != nil {
 		return err
@@ -476,7 +491,7 @@ func newFilePathInsideTarGz(out *tar.Writer, path, dest string) error {
 	return newItemInsideTarGz(out, content, &tar.Header{
 		Name:     normalizePath(dest),
 		Size:     int64(len(content)),
-		Mode:     0644,
+		Mode:     mode,
 		ModTime:  time.Now(),
 		Typeflag: tar.TypeReg,
 		Format:   tar.FormatGNU,
@@ -487,25 +502,6 @@ func newFilePathInsideTarGz(out *tar.Writer, path, dest string) error {
 // resolved and relative to the current directory (so it starts with "./").
 func normalizePath(src string) string {
 	return "." + filepath.ToSlash(filepath.Clean(filepath.Join("/", src)))
-}
-
-func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
-	file, err := os.Open(path) //nolint:gosec
-	if err != nil {
-		return err
-	}
-	content, err := ioutil.ReadAll(file)
-	if err != nil {
-		return err
-	}
-	return newItemInsideTarGz(out, content, &tar.Header{
-		Name:     normalizePath(dest),
-		Size:     int64(len(content)),
-		Mode:     0755,
-		ModTime:  time.Now(),
-		Typeflag: tar.TypeReg,
-		Format:   tar.FormatGNU,
-	})
 }
 
 // this is needed because the data.tar.gz file should have the empty folders

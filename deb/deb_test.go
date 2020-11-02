@@ -197,32 +197,12 @@ func TestControl(t *testing.T) {
 	assert.Equal(t, string(bts), w.String())
 }
 
-func TestScripts(t *testing.T) {
-	var w bytes.Buffer
-	var out = tar.NewWriter(&w)
-	filePath := "../testdata/scripts/preinstall.sh"
-	assert.Error(t, newScriptInsideTarGz(out, "doesnotexit", "preinst"))
-	require.NoError(t, newScriptInsideTarGz(out, filePath, "preinst"))
-	var in = tar.NewReader(&w)
-	header, err := in.Next()
-	require.NoError(t, err)
-	assert.Equal(t, "preinst", header.FileInfo().Name())
-	mode, err := strconv.ParseInt("0755", 8, 64)
-	require.NoError(t, err)
-	assert.Equal(t, int64(header.FileInfo().Mode()), mode)
-	data, err := ioutil.ReadAll(in)
-	require.NoError(t, err)
-	org, err := ioutil.ReadFile(filePath)
-	require.NoError(t, err)
-	assert.Equal(t, data, org)
-}
-
-func TestTemplates(t *testing.T) {
+func TestSpecialFiles(t *testing.T) {
 	var w bytes.Buffer
 	var out = tar.NewWriter(&w)
 	filePath := "testdata/templates.golden"
-	assert.Error(t, newFilePathInsideTarGz(out, "doesnotexit", "templates"))
-	require.NoError(t, newFilePathInsideTarGz(out, filePath, "templates"))
+	assert.Error(t, newFilePathInsideTarGz(out, "doesnotexit", "templates", 0644))
+	require.NoError(t, newFilePathInsideTarGz(out, filePath, "templates", 0644))
 	var in = tar.NewReader(&w)
 	header, err := in.Next()
 	require.NoError(t, err)

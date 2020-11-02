@@ -204,7 +204,6 @@ type APKSignature struct {
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
 	Scripts         DebScripts   `yaml:"scripts,omitempty"`
-	Templates       string       `yaml:"templates,omitempty"`
 	Triggers        DebTriggers  `yaml:"triggers,omitempty"`
 	Breaks          []string     `yaml:"breaks,omitempty"`
 	VersionMetadata string       `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
@@ -233,7 +232,8 @@ type DebTriggers struct {
 
 // DebScripts is scripts only available on deb packages.
 type DebScripts struct {
-	Rules string `yaml:"rules,omitempty"`
+	Rules     string `yaml:"rules,omitempty"`
+	Templates string `yaml:"templates,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages.
