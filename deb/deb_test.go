@@ -217,6 +217,26 @@ func TestScripts(t *testing.T) {
 	assert.Equal(t, data, org)
 }
 
+func TestTemplates(t *testing.T) {
+	var w bytes.Buffer
+	var out = tar.NewWriter(&w)
+	filePath := "testdata/templates.golden"
+	assert.Error(t, newFilePathInsideTarGz(out, "doesnotexit", "templates"))
+	require.NoError(t, newFilePathInsideTarGz(out, filePath, "templates"))
+	var in = tar.NewReader(&w)
+	header, err := in.Next()
+	require.NoError(t, err)
+	assert.Equal(t, "templates", header.FileInfo().Name())
+	mode, err := strconv.ParseInt("0644", 8, 64)
+	require.NoError(t, err)
+	assert.Equal(t, int64(header.FileInfo().Mode()), mode)
+	data, err := ioutil.ReadAll(in)
+	require.NoError(t, err)
+	org, err := ioutil.ReadFile(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, data, org)
+}
+
 func TestNoJoinsControl(t *testing.T) {
 	var w bytes.Buffer
 	assert.NoError(t, writeControl(&w, controlData{

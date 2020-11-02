@@ -1,0 +1,4 @@
+Template: templates/lala
+Type: string
+Description: Set lala for templates.
+ For the test purpose this templates.golden is created.

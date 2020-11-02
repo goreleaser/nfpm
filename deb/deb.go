@@ -424,6 +424,16 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		}
 	}
 
+	for file, dest := range map[string]string{
+		info.Overridables.Deb.Templates: "templates",
+	} {
+		if file != "" {
+			if err := newFilePathInsideTarGz(out, file, dest); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	if err := out.Close(); err != nil {
 		return nil, fmt.Errorf("closing control.tar.gz: %w", err)
 	}
@@ -446,6 +456,25 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	return newItemInsideTarGz(out, content, &tar.Header{
 		Name:     normalizePath(name),
+		Size:     int64(len(content)),
+		Mode:     0644,
+		ModTime:  time.Now(),
+		Typeflag: tar.TypeReg,
+		Format:   tar.FormatGNU,
+	})
+}
+
+func newFilePathInsideTarGz(out *tar.Writer, path, dest string) error {
+	file, err := os.Open(path) //nolint:gosec
+	if err != nil {
+		return err
+	}
+	content, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	return newItemInsideTarGz(out, content, &tar.Header{
+		Name:     normalizePath(dest),
 		Size:     int64(len(content)),
 		Mode:     0644,
 		ModTime:  time.Now(),
