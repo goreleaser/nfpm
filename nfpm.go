@@ -232,7 +232,8 @@ type DebTriggers struct {
 
 // DebScripts is scripts only available on deb packages.
 type DebScripts struct {
-	Rules string `yaml:"rules,omitempty"`
+	Rules     string `yaml:"rules,omitempty"`
+	Templates string `yaml:"templates,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages.
