@@ -350,6 +350,19 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 		}
 	}
 
+	// note: the ghost files will be created as empty files when the package is installed, which is not
+	// correct: https://github.com/google/rpmpack/issues/51
+	for _, destName := range info.RPM.GhostFiles {
+		rpm.AddFile(rpmpack.RPMFile{
+			Name:  destName,
+			Mode:  0644,
+			MTime: uint32(time.Now().UTC().Unix()),
+			Owner: "root",
+			Group: "root",
+			Type:  rpmpack.GhostFile,
+		})
+	}
+
 	return nil
 }
 

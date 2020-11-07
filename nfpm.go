@@ -182,6 +182,7 @@ type RPM struct {
 	// https://www.cl.cam.ac.uk/~jw35/docs/rpm_config.html
 	ConfigNoReplaceFiles map[string]string `yaml:"config_noreplace_files,omitempty"`
 	Signature            RPMSignature      `yaml:"signature,omitempty"`
+	GhostFiles           []string          `yaml:"ghost_files,omitempty"`
 }
 
 type RPMSignature struct {

@@ -615,6 +615,34 @@ func TestRPMSignatureError(t *testing.T) {
 	require.True(t, errors.As(err, &expectedError))
 }
 
+func TestRPMGhostFiles(t *testing.T) {
+	var (
+		filename = "/usr/lib/casper.a"
+	)
+
+	info := &nfpm.Info{
+		Name:         "rpm-ghost",
+		Arch:         "amd64",
+		Description:  "This RPM contains ghost files.",
+		Version:      "1.0.0",
+		Overridables: nfpm.Overridables{RPM: nfpm.RPM{GhostFiles: []string{filename}}},
+	}
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	require.NoError(t, err)
+
+	packagedFileHeader, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), filename)
+	require.NoError(t, err)
+
+	packagedFile, err := extractFileFromRpm(rpmFileBuffer.Bytes(), filename)
+	require.NoError(t, err)
+
+	assert.Equal(t, filename, packagedFileHeader.Filename())
+	assert.Equal(t, cpio.S_ISREG|0644, packagedFileHeader.Mode())
+	assert.Equal(t, "", string(packagedFile))
+}
+
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 	rpmFile, err := rpmutils.ReadRpm(bytes.NewReader(rpm))
 	if err != nil {
