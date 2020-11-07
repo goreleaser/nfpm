@@ -207,7 +207,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 
 	return &rpmpack.RPMMetaData{
 		Name:        info.Name,
-		Summary:     strings.Split(info.Description, "\n")[0],
+		Summary:     defaultTo(info.RPM.Summary, strings.Split(info.Description, "\n")[0]),
 		Description: info.Description,
 		Version:     formatVersion(info),
 		Release:     defaultTo(info.Release, "1"),
