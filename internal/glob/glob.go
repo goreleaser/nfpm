@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gobwas/glob"
+	"github.com/goreleaser/fileglob"
 )
 
 // longestCommonPrefix returns the longest prefix of all strings the argument
@@ -51,18 +51,9 @@ func (e ErrGlobNoMatch) Error() string {
 // First the longest common prefix (lcp) of all globbed files is found. The destination
 // for each globbed file is then dst joined with src with the lcp trimmed off.
 func Glob(pattern, dst string) (map[string]string, error) {
-	g, err := glob.Compile(strings.TrimPrefix(pattern, "./"), '/')
+	matches, err := fileglob.Glob(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("glob failed: %s: %w", pattern, err)
-	}
-	var matches []string
-	if err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-		if g.Match(path) {
-			matches = append(matches, path)
-		}
-		return nil
-	}); err != nil {
-		return nil, err
 	}
 
 	if len(matches) == 0 {
