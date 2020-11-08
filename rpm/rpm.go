@@ -367,13 +367,7 @@ func addSymlinksInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 }
 
 func copyToRPM(rpm *rpmpack.RPM, src, dst string, fileType rpmpack.FileType) error {
-	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
-	if err != nil {
-		return fmt.Errorf("could not add file to the archive: %w", err)
-	}
-	// don't care if it errs while closing...
-	defer file.Close() // nolint: errcheck,gosec
-	info, err := file.Stat()
+	info, err := os.Stat(src)
 	if err != nil {
 		return err
 	}
@@ -381,12 +375,12 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, fileType rpmpack.FileType) err
 		// TODO: this should probably return an error
 		return nil
 	}
-	data, err := ioutil.ReadAll(file)
+	data, err := ioutil.ReadFile(src)
 	if err != nil {
 		return err
 	}
 
-	rpmFile := rpmpack.RPMFile{
+	rpm.AddFile(rpmpack.RPMFile{
 		Name:  dst,
 		Body:  data,
 		Mode:  uint(info.Mode()),
@@ -394,9 +388,7 @@ func copyToRPM(rpm *rpmpack.RPM, src, dst string, fileType rpmpack.FileType) err
 		Owner: "root",
 		Group: "root",
 		Type:  fileType,
-	}
-
-	rpm.AddFile(rpmFile)
+	})
 
 	return nil
 }
