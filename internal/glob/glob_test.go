@@ -62,14 +62,14 @@ func TestGlob(t *testing.T) {
 
 	t.Run("nil value", func(t *testing.T) {
 		files, err := Glob("does/not/exist", "/foo/bar")
-		require.EqualError(t, err, "does/not/exist: no matching files")
+		require.EqualError(t, err, "glob failed: does/not/exist: no matching files")
 		require.Nil(t, files)
 	})
 
 	t.Run("no matches", func(t *testing.T) {
 		files, err := Glob("testdata/nothing*", "/foo/bar")
 		require.Nil(t, files)
-		require.EqualError(t, err, "testdata/nothing*: no matching files")
+		require.EqualError(t, err, "glob failed: testdata/nothing*: no matching files")
 	})
 
 	t.Run("escaped brace", func(t *testing.T) {

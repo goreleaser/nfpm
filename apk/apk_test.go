@@ -168,7 +168,7 @@ func TestFileDoesNotExist(t *testing.T) {
 					"bash",
 				},
 				Files: map[string]string{
-					"../testdata/": "/usr/local/bin/fake",
+					"../testdata/fake": "/usr/local/bin/fake",
 				},
 				ConfigFiles: map[string]string{
 					"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
@@ -177,7 +177,7 @@ func TestFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: file does not exist")
+	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: no matching files")
 }
 
 func TestNoFiles(t *testing.T) {

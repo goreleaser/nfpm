@@ -44,7 +44,7 @@ type ErrGlobNoMatch struct {
 }
 
 func (e ErrGlobNoMatch) Error() string {
-	return fmt.Sprintf("%s: no matching files", e.glob)
+	return fmt.Sprintf("glob failed: %s: no matching files", e.glob)
 }
 
 // Glob returns a map with source file path as keys and destination as values.
