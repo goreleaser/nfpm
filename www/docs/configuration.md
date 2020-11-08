@@ -137,6 +137,10 @@ rpm:
   # but required by old distros like CentOS 5 / EL 5 and earlier.
   group: Unspecified
 
+  # The package summary. This is, by default, the first line of the
+  # description, but can be explicitly provided here.
+  summary: Explicit Summary for Sample Package
+
   # Compression algorithm.
   compression: lzma
 

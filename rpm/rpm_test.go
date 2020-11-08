@@ -141,6 +141,31 @@ func TestRPMGroup(t *testing.T) {
 	assert.Equal(t, "Unspecified", group)
 }
 
+func TestRPMSummary(t *testing.T) {
+	f, err := ioutil.TempFile("", "test.rpm")
+	defer func() {
+		_ = f.Close()
+		err = os.Remove(f.Name())
+		assert.NoError(t, err)
+	}()
+
+	var customSummary = "This is my custom summary"
+	info := exampleInfo()
+	info.RPM.Group = "Unspecified"
+	info.RPM.Summary = customSummary
+
+	require.NoError(t, Default.Package(info, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
+	require.NoError(t, err)
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
+	require.NoError(t, err)
+	assert.Equal(t, customSummary, summary)
+}
+
 func TestWithRPMTags(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
 	defer func() {
