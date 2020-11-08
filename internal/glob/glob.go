@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mattn/go-zglob"
+	"github.com/goreleaser/fileglob"
 )
 
 // longestCommonPrefix returns the longest prefix of all strings the argument
@@ -44,24 +44,25 @@ type ErrGlobNoMatch struct {
 }
 
 func (e ErrGlobNoMatch) Error() string {
-	return fmt.Sprintf("%s: no matching files", e.glob)
+	return fmt.Sprintf("glob failed: %s: no matching files", e.glob)
 }
 
 // Glob returns a map with source file path as keys and destination as values.
 // First the longest common prefix (lcp) of all globbed files is found. The destination
 // for each globbed file is then dst joined with src with the lcp trimmed off.
-func Glob(glob, dst string) (map[string]string, error) {
-	matches, err := zglob.Glob(glob)
+func Glob(pattern, dst string) (map[string]string, error) {
+	matches, err := fileglob.Glob(pattern)
 	if err != nil {
-		return nil, fmt.Errorf("glob failed: %s: %w", glob, err)
+		return nil, fmt.Errorf("glob failed: %s: %w", pattern, err)
 	}
+
 	if len(matches) == 0 {
-		return nil, ErrGlobNoMatch{glob}
+		return nil, ErrGlobNoMatch{pattern}
 	}
 	files := make(map[string]string)
 	prefix := longestCommonPrefix(matches)
 	// the prefix may not be a complete path or may use glob patterns, in that case use the parent directory
-	if _, err := os.Stat(prefix); os.IsNotExist(err) || strings.ContainsAny(glob, "*") {
+	if _, err := os.Stat(prefix); os.IsNotExist(err) || strings.ContainsAny(pattern, "*") {
 		prefix = filepath.Dir(prefix)
 	}
 	for _, src := range matches {

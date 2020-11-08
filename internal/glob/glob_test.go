@@ -3,7 +3,7 @@ package glob
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLongestCommonPrefix(t *testing.T) {
@@ -17,11 +17,11 @@ func TestLongestCommonPrefix(t *testing.T) {
 	}
 
 	lcp1 := longestCommonPrefix(strings)
-	assert.Equal(t, "long", lcp1)
+	require.Equal(t, "long", lcp1)
 
 	empty := []string{}
 	lcp2 := longestCommonPrefix(empty)
-	assert.Equal(t, "", lcp2)
+	require.Equal(t, "", lcp2)
 
 	unique := []string{
 		"every",
@@ -34,38 +34,55 @@ func TestLongestCommonPrefix(t *testing.T) {
 	}
 
 	lcp3 := longestCommonPrefix(unique)
-	assert.Equal(t, "", lcp3)
+	require.Equal(t, "", lcp3)
 }
 
 func TestGlob(t *testing.T) {
-	files, err := Glob("testdata/dir_a/dir_*/*", "/foo/bar")
-	assert.NoError(t, err)
-	assert.Len(t, files, 2)
-	assert.Equal(t, "/foo/bar/dir_b/test_b.txt", files["testdata/dir_a/dir_b/test_b.txt"])
-	assert.Equal(t, "/foo/bar/dir_c/test_c.txt", files["testdata/dir_a/dir_c/test_c.txt"])
+	t.Run("simple", func(t *testing.T) {
+		files, err := Glob("./testdata/dir_a/dir_*/*", "/foo/bar")
+		require.NoError(t, err)
+		require.Len(t, files, 2)
+		require.Equal(t, "/foo/bar/dir_b/test_b.txt", files["testdata/dir_a/dir_b/test_b.txt"])
+		require.Equal(t, "/foo/bar/dir_c/test_c.txt", files["testdata/dir_a/dir_c/test_c.txt"])
+	})
 
-	singleFile, err := Glob("testdata/dir_a/dir_b/*", "/foo/bar")
-	assert.NoError(t, err)
-	assert.Len(t, singleFile, 1)
-	assert.Equal(t, "/foo/bar/test_b.txt", singleFile["testdata/dir_a/dir_b/test_b.txt"])
+	t.Run("single file", func(t *testing.T) {
+		files, err := Glob("testdata/dir_a/dir_b/*", "/foo/bar")
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		require.Equal(t, "/foo/bar/test_b.txt", files["testdata/dir_a/dir_b/test_b.txt"])
+	})
 
-	nilvalue, err := Glob("does/not/exist", "/foo/bar")
-	assert.EqualError(t, err, "glob failed: does/not/exist: file does not exist")
-	assert.Nil(t, nilvalue)
+	t.Run("double star", func(t *testing.T) {
+		files, err := Glob("testdata/**/test*.txt", "/foo/bar")
+		require.NoError(t, err)
+		require.Len(t, files, 3)
+		require.Equal(t, "/foo/bar/dir_a/dir_b/test_b.txt", files["testdata/dir_a/dir_b/test_b.txt"])
+	})
 
-	nomatches, err := Glob("testdata/nothing*", "/foo/bar")
-	assert.Nil(t, nomatches)
-	assert.EqualError(t, err, "testdata/nothing*: no matching files")
+	t.Run("nil value", func(t *testing.T) {
+		files, err := Glob("does/not/exist", "/foo/bar")
+		require.EqualError(t, err, "glob failed: does/not/exist: no matching files")
+		require.Nil(t, files)
+	})
 
-	escapedBrace, err := Glob("testdata/\\{dir_d\\}/*", "/foo/bar")
-	assert.NoError(t, err)
-	assert.Len(t, escapedBrace, 1)
-	assert.Equal(t, "/foo/bar/test_brace.txt", escapedBrace["testdata/{dir_d}/test_brace.txt"])
-}
+	t.Run("no matches", func(t *testing.T) {
+		files, err := Glob("testdata/nothing*", "/foo/bar")
+		require.Nil(t, files)
+		require.EqualError(t, err, "glob failed: testdata/nothing*: no matching files")
+	})
 
-func TestSingleGlob(t *testing.T) {
-	files, err := Glob("testdata/dir_a/dir_b/test_b.txt", "/foo/bar/dest.dat")
-	assert.NoError(t, err)
-	assert.Len(t, files, 1)
-	assert.Equal(t, "/foo/bar/dest.dat", files["testdata/dir_a/dir_b/test_b.txt"])
+	t.Run("escaped brace", func(t *testing.T) {
+		files, err := Glob("testdata/\\{dir_d\\}/*", "/foo/bar")
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		require.Equal(t, "/foo/bar/test_brace.txt", files["testdata/{dir_d}/test_brace.txt"])
+	})
+
+	t.Run("no glob", func(t *testing.T) {
+		files, err := Glob("testdata/dir_a/dir_b/test_b.txt", "/foo/bar/dest.dat")
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		require.Equal(t, "/foo/bar/dest.dat", files["testdata/dir_a/dir_b/test_b.txt"])
+	})
 }

@@ -15,7 +15,7 @@ func TestListFilesToCopy(t *testing.T) {
 				"../../testdata/whatever.conf": "/whatever",
 			},
 			Files: map[string]string{
-				"../../testdata/scripts/**/*": "/test",
+				"../../testdata/scripts/*": "/test",
 			},
 		},
 	}
