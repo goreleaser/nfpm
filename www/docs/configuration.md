@@ -131,11 +131,15 @@ overrides:
   apk:
     # ...
 
-# Custon configuration applied only to the RPM packager.
+# Custom configuration applied only to the RPM packager.
 rpm:
   # The package group. This option is deprecated by most distros
   # but required by old distros like CentOS 5 / EL 5 and earlier.
   group: Unspecified
+
+  # The package summary. This is, by default, the first line of the
+  # description, but can be explicitly provided here.
+  summary: Explicit Summary for Sample Package
 
   # Compression algorithm.
   compression: lzma
@@ -144,6 +148,20 @@ rpm:
   # changed by the user. Corresponds to %config(noreplace).
   config_noreplace_files:
     path/to/local/bar.con: /etc/bar.conf
+
+  # These files are not actually present in the package, but the file names
+  # are added to the package header. From the RPM directives documentation:
+  #
+  # "There are times when a file should be owned by the package but not
+  # installed - log files and state files are good examples of cases you might
+  # desire this to happen."
+  #
+  # "The way to achieve this, is to use the %ghost directive. By adding this
+  # directive to the line containing a file, RPM will know about the ghosted
+  # file, but will not add it to the package."
+  ghost_files:
+    - /etc/casper.conf
+    - /var/log/boo.log
 
   # The package is signed if a key_file is set
   signature:

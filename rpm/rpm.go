@@ -207,7 +207,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 
 	return &rpmpack.RPMMetaData{
 		Name:        info.Name,
-		Summary:     strings.Split(info.Description, "\n")[0],
+		Summary:     defaultTo(info.RPM.Summary, strings.Split(info.Description, "\n")[0]),
 		Description: info.Description,
 		Version:     formatVersion(info),
 		Release:     defaultTo(info.Release, "1"),
@@ -348,6 +348,19 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	// note: the ghost files will be created as empty files when the package is installed, which is not
+	// correct: https://github.com/google/rpmpack/issues/51
+	for _, destName := range info.RPM.GhostFiles {
+		rpm.AddFile(rpmpack.RPMFile{
+			Name:  destName,
+			Mode:  0644,
+			MTime: uint32(time.Now().UTC().Unix()),
+			Owner: "root",
+			Group: "root",
+			Type:  rpmpack.GhostFile,
+		})
 	}
 
 	return nil

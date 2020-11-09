@@ -141,6 +141,31 @@ func TestRPMGroup(t *testing.T) {
 	assert.Equal(t, "Unspecified", group)
 }
 
+func TestRPMSummary(t *testing.T) {
+	f, err := ioutil.TempFile("", "test.rpm")
+	defer func() {
+		_ = f.Close()
+		err = os.Remove(f.Name())
+		assert.NoError(t, err)
+	}()
+
+	var customSummary = "This is my custom summary"
+	info := exampleInfo()
+	info.RPM.Group = "Unspecified"
+	info.RPM.Summary = customSummary
+
+	require.NoError(t, Default.Package(info, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
+	require.NoError(t, err)
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
+	require.NoError(t, err)
+	assert.Equal(t, customSummary, summary)
+}
+
 func TestWithRPMTags(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
 	defer func() {
@@ -334,13 +359,13 @@ echo "Postremove" > /dev/null
 func TestRPMFileDoesNotExist(t *testing.T) {
 	info := exampleInfo()
 	info.Files = map[string]string{
-		"../testdata/": "/usr/local/bin/fake",
+		"../testdata/fake": "/usr/local/bin/fake",
 	}
 	info.ConfigFiles = map[string]string{
 		"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
 	}
 	var err = Default.Package(info, ioutil.Discard)
-	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: file does not exist")
+	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: no matching files")
 }
 
 func TestRPMMultiArch(t *testing.T) {
@@ -588,6 +613,34 @@ func TestRPMSignatureError(t *testing.T) {
 
 	var expectedError *nfpm.ErrSigningFailure
 	require.True(t, errors.As(err, &expectedError))
+}
+
+func TestRPMGhostFiles(t *testing.T) {
+	var (
+		filename = "/usr/lib/casper.a"
+	)
+
+	info := &nfpm.Info{
+		Name:         "rpm-ghost",
+		Arch:         "amd64",
+		Description:  "This RPM contains ghost files.",
+		Version:      "1.0.0",
+		Overridables: nfpm.Overridables{RPM: nfpm.RPM{GhostFiles: []string{filename}}},
+	}
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	require.NoError(t, err)
+
+	packagedFileHeader, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), filename)
+	require.NoError(t, err)
+
+	packagedFile, err := extractFileFromRpm(rpmFileBuffer.Bytes(), filename)
+	require.NoError(t, err)
+
+	assert.Equal(t, filename, packagedFileHeader.Filename())
+	assert.Equal(t, cpio.S_ISREG|0644, packagedFileHeader.Mode())
+	assert.Equal(t, "", string(packagedFile))
 }
 
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {

@@ -177,10 +177,12 @@ type Overridables struct {
 // RPM is custom configs that are only available on RPM packages.
 type RPM struct {
 	Group       string `yaml:"group,omitempty"`
+	Summary     string `yaml:"summary,omitempty"`
 	Compression string `yaml:"compression,omitempty"`
 	// https://www.cl.cam.ac.uk/~jw35/docs/rpm_config.html
 	ConfigNoReplaceFiles map[string]string `yaml:"config_noreplace_files,omitempty"`
 	Signature            RPMSignature      `yaml:"signature,omitempty"`
+	GhostFiles           []string          `yaml:"ghost_files,omitempty"`
 }
 
 type RPMSignature struct {
