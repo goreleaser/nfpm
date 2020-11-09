@@ -2,6 +2,7 @@
 package glob
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -51,6 +52,9 @@ func (e ErrGlobNoMatch) Error() string {
 // for each globbed file is then dst joined with src with the lcp trimmed off.
 func Glob(pattern, dst string) (map[string]string, error) {
 	matches, err := fileglob.Glob(pattern)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
 	if err != nil {
 		return nil, fmt.Errorf("glob failed: %s: %w", pattern, err)
 	}

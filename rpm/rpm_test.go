@@ -365,7 +365,7 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 		"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
 	}
 	var err = Default.Package(info, ioutil.Discard)
-	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: no matching files")
+	assert.EqualError(t, err, "matching \"../testdata/whatever.confzzz\": file does not exist")
 }
 
 func TestRPMMultiArch(t *testing.T) {
