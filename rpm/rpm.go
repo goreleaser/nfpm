@@ -314,7 +314,7 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 }
 
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
-	regularFiles, err := files.Expand(info.Files)
+	regularFiles, err := files.Expand(info.Files, info.DisableGlobbing)
 	if err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 		}
 	}
 
-	configFiles, err := files.Expand(info.ConfigFiles)
+	configFiles, err := files.Expand(info.ConfigFiles, info.DisableGlobbing)
 	if err != nil {
 		return err
 	}
@@ -338,7 +338,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) error {
 		}
 	}
 
-	configNoReplaceFiles, err := files.Expand(info.RPM.ConfigNoReplaceFiles)
+	configNoReplaceFiles, err := files.Expand(info.RPM.ConfigNoReplaceFiles, info.DisableGlobbing)
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,7 @@ package apk
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"crypto/sha1" // nolint:gosec
 	"crypto/sha256"
 	"errors"
@@ -302,6 +303,29 @@ func TestSignatureError(t *testing.T) {
 
 	_, ok := err.(*nfpm.ErrSigningFailure)
 	assert.True(t, ok)
+}
+
+func TestDisableGlobbing(t *testing.T) {
+	info := exampleInfo()
+	info.DisableGlobbing = true
+	info.Files = map[string]string{
+		"../testdata/{file}*": "/test/{file}*",
+	}
+
+	size := int64(0)
+	var dataTarGz bytes.Buffer
+	_, err := createData(&dataTarGz, info, &size)
+	require.NoError(t, err)
+
+	gzr, err := gzip.NewReader(&dataTarGz)
+	require.NoError(t, err)
+	dataTar, err := ioutil.ReadAll(gzr)
+	require.NoError(t, err)
+
+	extractedContent := extractFromTar(t, dataTar, "test/{file}*")
+	actualContent, err := ioutil.ReadFile("../testdata/{file}*")
+	require.NoError(t, err)
+	require.Equal(t, actualContent, extractedContent)
 }
 
 func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {

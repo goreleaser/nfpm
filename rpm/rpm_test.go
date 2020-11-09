@@ -643,6 +643,26 @@ func TestRPMGhostFiles(t *testing.T) {
 	assert.Equal(t, "", string(packagedFile))
 }
 
+func TestDisableGlobbing(t *testing.T) {
+	info := exampleInfo()
+	info.DisableGlobbing = true
+	info.Files = map[string]string{
+		"../testdata/{file}*": "/test/{file}*",
+	}
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	require.NoError(t, err)
+
+	expectedContent, err := ioutil.ReadFile("../testdata/{file}*")
+	require.NoError(t, err)
+
+	actualContent, err := extractFileFromRpm(rpmFileBuffer.Bytes(), "/test/{file}*")
+	require.NoError(t, err)
+
+	assert.Equal(t, expectedContent, actualContent)
+}
+
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 	rpmFile, err := rpmutils.ReadRpm(bytes.NewReader(rpm))
 	if err != nil {
