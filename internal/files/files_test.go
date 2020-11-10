@@ -42,15 +42,15 @@ func TestListFilesToCopy(t *testing.T) {
 
 func TestListFilesToCopyWithAndWithoutGlobbing(t *testing.T) {
 	_, err := Expand(map[string]string{
-		"../../testdata/{file}*": "/test/{file}*",
+		"../../testdata/{file}*": "/test/{file}[",
 	}, false)
 	assert.EqualError(t, err, "glob failed: ../../testdata/{file}*: no matching files")
 
 	files, err := Expand(map[string]string{
-		"../../testdata/{file}*": "/test/{file}*",
+		"../../testdata/{file}[": "/test/{file}[",
 	}, true)
 	require.NoError(t, err)
 	assert.Equal(t, []FileToCopy{
-		{"../../testdata/{file}*", "/test/{file}*"},
+		{"../../testdata/{file}[", "/test/{file}["},
 	}, files)
 }

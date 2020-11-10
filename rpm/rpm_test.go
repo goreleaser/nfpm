@@ -647,17 +647,17 @@ func TestDisableGlobbing(t *testing.T) {
 	info := exampleInfo()
 	info.DisableGlobbing = true
 	info.Files = map[string]string{
-		"../testdata/{file}*": "/test/{file}*",
+		"../testdata/{file}[": "/test/{file}[",
 	}
 
 	var rpmFileBuffer bytes.Buffer
 	err := Default.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
-	expectedContent, err := ioutil.ReadFile("../testdata/{file}*")
+	expectedContent, err := ioutil.ReadFile("../testdata/{file}[")
 	require.NoError(t, err)
 
-	actualContent, err := extractFileFromRpm(rpmFileBuffer.Bytes(), "/test/{file}*")
+	actualContent, err := extractFileFromRpm(rpmFileBuffer.Bytes(), "/test/{file}[")
 	require.NoError(t, err)
 
 	assert.Equal(t, expectedContent, actualContent)
