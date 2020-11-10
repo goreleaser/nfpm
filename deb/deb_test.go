@@ -724,7 +724,7 @@ func testRelativePathPrefixInTarGzFiles(t *testing.T, tarGzFile []byte) {
 	tr := tar.NewReader(bytes.NewReader(tarFile))
 	for {
 		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF)
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		require.NoError(t, err)
@@ -801,7 +801,7 @@ func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 	tr := tar.NewReader(bytes.NewReader(tarFile))
 	for {
 		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF)
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		if err != nil {
@@ -832,7 +832,7 @@ func extractFileHeaderFromTarGz(tarGzFile []byte, filename string) (*tar.Header,
 	tr := tar.NewReader(bytes.NewReader(tarFile))
 	for {
 		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF)
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		if err != nil {
@@ -912,7 +912,7 @@ func extractFileFromAr(arFile []byte, filename string) ([]byte, error) {
 	tr := ar.NewReader(bytes.NewReader(arFile))
 	for {
 		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF)
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		if err != nil {
