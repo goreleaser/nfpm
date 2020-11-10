@@ -300,9 +300,6 @@ func TestSignatureError(t *testing.T) {
 
 	var expectedError *nfpm.ErrSigningFailure
 	require.True(t, errors.As(err, &expectedError))
-
-	_, ok := err.(*nfpm.ErrSigningFailure)
-	assert.True(t, ok)
 }
 
 func TestDisableGlobbing(t *testing.T) {
@@ -335,7 +332,7 @@ func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
 
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.As(err, &io.EOF) {
 			break
 		}
 		require.NoError(t, err)

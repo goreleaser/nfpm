@@ -26,7 +26,7 @@ func Expand(filesSrcDstMap map[string]string, disableGlobbing bool) ([]FileToCop
 
 		globbed, err := glob.Glob(srcGlob, dstRoot)
 		if err != nil {
-			return nil, err // nolint:wrapcheck
+			return nil, err
 		}
 		for src, dst := range globbed {
 			files = append(files, FileToCopy{src, dst})
