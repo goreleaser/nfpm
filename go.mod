@@ -10,7 +10,7 @@ require (
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/golangci/golangci-lint v1.31.0
 	github.com/google/rpmpack v0.0.0-20200919095143-1c1eea455332
-	github.com/goreleaser/chglog v0.1.1
+	github.com/goreleaser/chglog v0.1.2
 	github.com/goreleaser/fileglob v0.3.0
 	github.com/imdario/mergo v0.3.11
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
@@ -18,7 +18,7 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c // indirect
 )
