@@ -306,7 +306,7 @@ func TestDisableGlobbing(t *testing.T) {
 	info := exampleInfo()
 	info.DisableGlobbing = true
 	info.Files = map[string]string{
-		"../testdata/{file}*": "/test/{file}*",
+		"../testdata/{file}[": "/test/{file}[",
 	}
 
 	size := int64(0)
@@ -319,8 +319,8 @@ func TestDisableGlobbing(t *testing.T) {
 	dataTar, err := ioutil.ReadAll(gzr)
 	require.NoError(t, err)
 
-	extractedContent := extractFromTar(t, dataTar, "test/{file}*")
-	actualContent, err := ioutil.ReadFile("../testdata/{file}*")
+	extractedContent := extractFromTar(t, dataTar, "test/{file}[")
+	actualContent, err := ioutil.ReadFile("../testdata/{file}[")
 	require.NoError(t, err)
 	require.Equal(t, actualContent, extractedContent)
 }
