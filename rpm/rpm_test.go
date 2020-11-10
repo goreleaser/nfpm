@@ -676,7 +676,7 @@ func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 
 	for {
 		hdr, err := pr.Next()
-		if errors.As(err, &io.EOF) {
+		iferrors.Is(err, io.EOF)
 			break // End of archive
 		}
 		if err != nil {
@@ -711,7 +711,7 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 
 	for {
 		hdr, err := pr.Next()
-		if errors.As(err, &io.EOF) {
+		iferrors.Is(err, io.EOF)
 			break // End of archive
 		}
 		if err != nil {

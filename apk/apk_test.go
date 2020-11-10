@@ -332,7 +332,7 @@ func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
 
 	for {
 		hdr, err := tr.Next()
-		if errors.As(err, &io.EOF) {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)
