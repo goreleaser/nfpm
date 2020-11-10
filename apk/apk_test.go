@@ -177,7 +177,7 @@ func TestFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: no matching files")
+	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: matching \"../testdata/whatever.confzzz\": file does not exist")
 }
 
 func TestNoFiles(t *testing.T) {
