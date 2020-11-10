@@ -776,6 +776,25 @@ func TestDebsigsSignatureError(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestDisableGlobbing(t *testing.T) {
+	info := exampleInfo()
+	info.DisableGlobbing = true
+	info.Files = map[string]string{
+		"../testdata/{file}*": "/test/{file}*",
+	}
+
+	dataTarGz, _, _, err := createDataTarGz(info)
+	require.NoError(t, err)
+
+	expectedContent, err := ioutil.ReadFile("../testdata/{file}*")
+	require.NoError(t, err)
+
+	actualContent, err := extractFileFromTarGz(dataTarGz, "/test/{file}*")
+	require.NoError(t, err)
+
+	assert.Equal(t, expectedContent, actualContent)
+}
+
 func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 	tarFile, err := gzipInflate(tarGzFile)
 	if err != nil {

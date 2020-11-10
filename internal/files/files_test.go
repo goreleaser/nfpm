@@ -3,6 +3,7 @@ package files
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/nfpm"
@@ -20,10 +21,10 @@ func TestListFilesToCopy(t *testing.T) {
 		},
 	}
 
-	regularFiles, err := Expand(info.Files)
+	regularFiles, err := Expand(info.Files, info.DisableGlobbing)
 	require.NoError(t, err)
 
-	configFiles, err := Expand(info.ConfigFiles)
+	configFiles, err := Expand(info.ConfigFiles, info.DisableGlobbing)
 	require.NoError(t, err)
 
 	// all the input files described in the config in sorted order by source path
@@ -37,4 +38,19 @@ func TestListFilesToCopy(t *testing.T) {
 	require.Equal(t, []FileToCopy{
 		{"../../testdata/whatever.conf", "/whatever"},
 	}, configFiles)
+}
+
+func TestListFilesToCopyWithAndWithoutGlobbing(t *testing.T) {
+	_, err := Expand(map[string]string{
+		"../../testdata/{file}*": "/test/{file}*",
+	}, false)
+	assert.EqualError(t, err, "glob failed: ../../testdata/{file}*: no matching files")
+
+	files, err := Expand(map[string]string{
+		"../../testdata/{file}*": "/test/{file}*",
+	}, true)
+	require.NoError(t, err)
+	assert.Equal(t, []FileToCopy{
+		{"../../testdata/{file}*", "/test/{file}*"},
+	}, files)
 }

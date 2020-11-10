@@ -59,6 +59,9 @@ license: MIT
 # Changelog YAML file, see: https://github.com/goreleaser/chglog
 changelog: "changelog.yaml"
 
+# Disables globbing for files, config_files, etc.
+disable_globbing: false
+
 # Packages it replaces. (overridable)
 replaces:
   - foobar

@@ -396,12 +396,12 @@ func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error
 }
 
 func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool, sizep *int64) error {
-	filesToCopy, err := files.Expand(info.Files)
+	filesToCopy, err := files.Expand(info.Files, info.DisableGlobbing)
 	if err != nil {
 		return err
 	}
 
-	configFilesToCopy, err := files.Expand(info.ConfigFiles)
+	configFilesToCopy, err := files.Expand(info.ConfigFiles, info.DisableGlobbing)
 	if err != nil {
 		return err
 	}

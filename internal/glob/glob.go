@@ -2,10 +2,10 @@
 package glob
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/goreleaser/fileglob"
 )
@@ -52,6 +52,9 @@ func (e ErrGlobNoMatch) Error() string {
 // for each globbed file is then dst joined with src with the lcp trimmed off.
 func Glob(pattern, dst string) (map[string]string, error) {
 	matches, err := fileglob.Glob(pattern)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
 	if err != nil {
 		return nil, fmt.Errorf("glob failed: %s: %w", pattern, err)
 	}
@@ -62,7 +65,7 @@ func Glob(pattern, dst string) (map[string]string, error) {
 	files := make(map[string]string)
 	prefix := longestCommonPrefix(matches)
 	// the prefix may not be a complete path or may use glob patterns, in that case use the parent directory
-	if _, err := os.Stat(prefix); os.IsNotExist(err) || strings.ContainsAny(pattern, "*") {
+	if _, err := os.Stat(prefix); os.IsNotExist(err) || fileglob.ContainsMatchers(pattern) {
 		prefix = filepath.Dir(prefix)
 	}
 	for _, src := range matches {

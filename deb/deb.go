@@ -218,12 +218,12 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 	var md5buf bytes.Buffer
 	var instSize int64
 
-	filesToCopy, err := files.Expand(info.Files)
+	filesToCopy, err := files.Expand(info.Files, info.DisableGlobbing)
 	if err != nil {
 		return md5buf, 0, err
 	}
 
-	configFiles, err := files.Expand(info.ConfigFiles)
+	configFiles, err := files.Expand(info.ConfigFiles, info.DisableGlobbing)
 	if err != nil {
 		return md5buf, 0, err
 	}

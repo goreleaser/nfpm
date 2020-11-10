@@ -153,6 +153,7 @@ type Info struct {
 	License         string `yaml:"license,omitempty"`
 	Bindir          string `yaml:"bindir,omitempty"` // Deprecated: this does nothing. TODO: remove.
 	Changelog       string `yaml:"changelog,omitempty"`
+	DisableGlobbing bool   `yaml:"disable_globbing"`
 	Target          string `yaml:"-"`
 }
 
