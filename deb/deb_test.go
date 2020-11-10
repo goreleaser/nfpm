@@ -278,7 +278,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: matching \"../testdata/whatever.confzzz\": file does not exist")
+	assert.EqualError(t, err, "matching \"../testdata/whatever.confzzz\": file does not exist")
 }
 
 func TestDebNoFiles(t *testing.T) {
