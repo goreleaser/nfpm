@@ -62,7 +62,7 @@ func TestGlob(t *testing.T) {
 
 	t.Run("nil value", func(t *testing.T) {
 		files, err := Glob("does/not/exist", "/foo/bar")
-		require.EqualError(t, err, "glob failed: does/not/exist: matching \"does/not/exist\": file does not exist")
+		require.EqualError(t, err, "matching \"does/not/exist\": file does not exist")
 		require.Nil(t, files)
 	})
 

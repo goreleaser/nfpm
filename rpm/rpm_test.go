@@ -365,7 +365,7 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 		"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
 	}
 	var err = Default.Package(info, ioutil.Discard)
-	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: matching \"../testdata/whatever.confzzz\": file does not exist")
+	assert.EqualError(t, err, "matching \"../testdata/whatever.confzzz\": file does not exist")
 }
 
 func TestRPMMultiArch(t *testing.T) {
@@ -676,7 +676,7 @@ func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 
 	for {
 		hdr, err := pr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		if err != nil {
@@ -711,7 +711,7 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 
 	for {
 		hdr, err := pr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		if err != nil {

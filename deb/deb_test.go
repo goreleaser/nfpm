@@ -278,7 +278,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: matching \"../testdata/whatever.confzzz\": file does not exist")
+	assert.EqualError(t, err, "matching \"../testdata/whatever.confzzz\": file does not exist")
 }
 
 func TestDebNoFiles(t *testing.T) {
@@ -662,7 +662,7 @@ func TestSymlink(t *testing.T) {
 	packagedSymlinkHeader, err := extractFileHeaderFromTarGz(dataTarGz, symlink)
 	require.NoError(t, err)
 
-	assert.Equal(t, symlink, path.Join("/", packagedSymlinkHeader.Name))
+	assert.Equal(t, symlink, path.Join("/", packagedSymlinkHeader.Name)) // nolint:gosec
 	assert.Equal(t, uint8(tar.TypeSymlink), packagedSymlinkHeader.Typeflag)
 	assert.Equal(t, symlinkTarget, packagedSymlinkHeader.Linkname)
 }
@@ -724,7 +724,7 @@ func testRelativePathPrefixInTarGzFiles(t *testing.T, tarGzFile []byte) {
 	tr := tar.NewReader(bytes.NewReader(tarFile))
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		require.NoError(t, err)
@@ -771,9 +771,6 @@ func TestDebsigsSignatureError(t *testing.T) {
 
 	var expectedError *nfpm.ErrSigningFailure
 	require.True(t, errors.As(err, &expectedError))
-
-	_, ok := err.(*nfpm.ErrSigningFailure)
-	assert.True(t, ok)
 }
 
 func TestDisableGlobbing(t *testing.T) {
@@ -804,14 +801,14 @@ func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
 	tr := tar.NewReader(bytes.NewReader(tarFile))
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		if err != nil {
 			return nil, err
 		}
 
-		if path.Join("/", hdr.Name) != path.Join("/", filename) {
+		if path.Join("/", hdr.Name) != path.Join("/", filename) { // nolint:gosec
 			continue
 		}
 
@@ -835,14 +832,14 @@ func extractFileHeaderFromTarGz(tarGzFile []byte, filename string) (*tar.Header,
 	tr := tar.NewReader(bytes.NewReader(tarFile))
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		if err != nil {
 			return nil, err
 		}
 
-		if path.Join("/", hdr.Name) != path.Join("/", filename) {
+		if path.Join("/", hdr.Name) != path.Join("/", filename) { // nolint:gosec
 			continue
 		}
 
@@ -915,7 +912,7 @@ func extractFileFromAr(arFile []byte, filename string) ([]byte, error) {
 	tr := ar.NewReader(bytes.NewReader(arFile))
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
 		if err != nil {

@@ -178,7 +178,7 @@ func TestFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, "glob failed: ../testdata/whatever.confzzz: matching \"../testdata/whatever.confzzz\": file does not exist")
+	assert.EqualError(t, err, "matching \"../testdata/whatever.confzzz\": file does not exist")
 }
 
 func TestNoFiles(t *testing.T) {
@@ -300,9 +300,6 @@ func TestSignatureError(t *testing.T) {
 
 	var expectedError *nfpm.ErrSigningFailure
 	require.True(t, errors.As(err, &expectedError))
-
-	_, ok := err.(*nfpm.ErrSigningFailure)
-	assert.True(t, ok)
 }
 
 func TestDisableGlobbing(t *testing.T) {
@@ -335,7 +332,7 @@ func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
 
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)
