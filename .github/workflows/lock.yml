@@ -1,6 +1,9 @@
-name: 'Lock threads'
+name: lock-inactive
 
 on:
+  push:
+    branches:
+      - 'master'
   schedule:
     - cron: '0 * * * *'
 
