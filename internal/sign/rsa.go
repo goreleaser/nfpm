@@ -13,9 +13,12 @@ import (
 	"io/ioutil"
 )
 
-var errNoPemBlock = errors.New("no PEM block found")
-var errDigestNotSH1 = errors.New("digest is not a SHA1 hash")
-var errNoPassphrase = errors.New("key is encrypted but no passphrase was provided")
+var (
+	errNoPemBlock   = errors.New("no PEM block found")
+	errDigestNotSH1 = errors.New("digest is not a SHA1 hash")
+	errNoPassphrase = errors.New("key is encrypted but no passphrase was provided")
+	errNoRSAKey     = errors.New("key is not an RSA key")
+)
 
 // RSASignSHA1Digest signs the provided SHA1 message digest. The key file
 // must be in the PEM format and can either be encrypted or not.
@@ -97,7 +100,7 @@ func RSAVerifySHA1Digest(sha1Digest, signature []byte, publicKeyFile string) err
 
 	rsaPub, ok := pub.(*rsa.PublicKey)
 	if !ok {
-		return fmt.Errorf("public key is no RSA key: %w", err)
+		return errNoRSAKey
 	}
 
 	err = rsa.VerifyPKCS1v15(rsaPub, crypto.SHA1, sha1Digest, signature)

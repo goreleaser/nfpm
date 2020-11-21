@@ -2,19 +2,9 @@ package sign
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha1" // nolint:gosec
-	"crypto/x509"
-	"encoding/asn1"
-	"encoding/pem"
-	"io/ioutil"
-	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -61,48 +51,36 @@ func TestInvalidHash(t *testing.T) {
 	require.EqualError(t, err, "digest is not a SHA1 hash")
 }
 
-func TestRSAVerifySHA1DigestError(t *testing.T) {
-	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-	asn1Bytes, err := asn1.Marshal(rsaKey.PublicKey)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestRSAVerifyWrongKey(t *testing.T) {
+	digest := sha1.New().Sum(nil) // nolint:gosec
 
-	ecdsaKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
+	sig, err := rsaSign(bytes.NewReader(digest), "testdata/rsa_unprotected.priv", "")
+	require.NoError(t, err)
 
-	x509Bytes, err := x509.MarshalPKIXPublicKey(&ecdsaKey.PublicKey)
-	if err != nil {
-		t.Fatal(err)
-	}
+	err = RSAVerifySHA1Digest(digest, sig, "testdata/rsa.pub")
+	require.EqualError(t, err, "verify PKCS1v15 signature: crypto/rsa: verification error")
+}
 
-	pemKeys := []*pem.Block{
-		{
-			Type:  "PUBLIC KEY",
-			Bytes: asn1Bytes,
-		},
-		{
-			Type:  "PUBLIC KEY",
-			Bytes: x509Bytes,
-		},
-	}
+func TestRSAVerifyWrongSignature(t *testing.T) {
+	digest := sha1.New().Sum(nil) // nolint:gosec
 
-	for _, pemKey := range pemKeys {
-		keyFile, err := ioutil.TempFile("", "*.pem")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer os.Remove(keyFile.Name())
-		if err := pem.Encode(keyFile, pemKey); err != nil {
-			t.Fatal(err)
-		}
-		keyFile.Close()
-		digest := sha1.New().Sum(nil) // nolint:gosec
-		assert.Error(t, RSAVerifySHA1Digest(digest, []byte{}, keyFile.Name()))
-	}
+	err := RSAVerifySHA1Digest(digest, []byte{}, "testdata/rsa.pub")
+	require.EqualError(t, err, "verify PKCS1v15 signature: crypto/rsa: verification error")
+}
+
+func TestRSAVerifyWrongPublicKeyFormat(t *testing.T) {
+	digest := sha1.New().Sum(nil) // nolint:gosec
+
+	sig, err := rsaSign(bytes.NewReader(digest), "testdata/rsa_unprotected.priv", "")
+	require.NoError(t, err)
+
+	err = RSAVerifySHA1Digest(digest, sig, "testdata/wrong_key_format.pub")
+	require.Equal(t, err, errNoRSAKey)
+}
+
+func TestRSAVerifyWrongSecretKeyFormat(t *testing.T) {
+	digest := sha1.New().Sum(nil) // nolint:gosec
+
+	_, err := rsaSign(bytes.NewReader(digest), "testdata/wrong_key_format.priv", "")
+	require.Error(t, err)
 }
