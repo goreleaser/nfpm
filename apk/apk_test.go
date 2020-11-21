@@ -300,6 +300,12 @@ func TestSignatureError(t *testing.T) {
 
 	var expectedError *nfpm.ErrSigningFailure
 	require.True(t, errors.As(err, &expectedError))
+
+	info.APK.Signature.KeyName = ""
+	info.Maintainer = ""
+	digest = sha1.New().Sum(nil) // nolint:gosec
+	err = createSignature(&signatureTarGz, info, digest)
+	require.True(t, errors.As(err, &expectedError))
 }
 
 func TestDisableGlobbing(t *testing.T) {
@@ -348,4 +354,48 @@ func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
 
 	t.Fatalf("file %q not found in tar file", fileName)
 	return nil
+}
+
+func TestAPKConventionalFileName(t *testing.T) {
+	apkName := "default"
+	testCases := []struct {
+		Arch       string
+		Version    string
+		Meta       string
+		Release    string
+		Prerelease string
+		Expect     string
+	}{
+		{Arch: "amd64", Version: "1.2.3",
+			Expect: "default_1.2.3_x86_64.apk"},
+		{Arch: "386", Version: "1.2.3", Meta: "git",
+			Expect: "default_1.2.3+git_x86.apk"},
+		{Arch: "386", Version: "1.2.3", Meta: "git", Release: "1",
+			Expect: "default_1.2.3-1+git_x86.apk"},
+		{Arch: "all", Version: "1.2.3",
+			Expect: "default_1.2.3_all.apk"},
+		{Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "5",
+			Expect: "default_1.2.3-1~5_x86.apk"},
+	}
+
+	for _, testCase := range testCases {
+		info := &nfpm.Info{
+			Name:            apkName,
+			Arch:            testCase.Arch,
+			Version:         testCase.Version,
+			VersionMetadata: testCase.Meta,
+			Release:         testCase.Release,
+			Prerelease:      testCase.Prerelease,
+		}
+		assert.Equal(t, testCase.Expect, Default.ConventionalFileName(info))
+	}
+}
+
+func TestPackageSymlinks(t *testing.T) {
+	info := exampleInfo()
+	info.Files = map[string]string{}
+	info.Symlinks = map[string]string{
+		"../testdata/fake": "fake",
+	}
+	assert.NoError(t, Default.Package(info, ioutil.Discard))
 }
