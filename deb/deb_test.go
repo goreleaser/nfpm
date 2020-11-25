@@ -19,15 +19,13 @@ import (
 	"testing"
 
 	"github.com/blakesmith/ar"
+	"github.com/goreleaser/chglog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/goreleaser/chglog"
-
-	"github.com/goreleaser/nfpm/internal/files"
-	"github.com/goreleaser/nfpm/internal/sign"
-
 	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/files"
+	"github.com/goreleaser/nfpm/internal/sign"
 )
 
 // nolint: gochecknoglobals
@@ -307,17 +305,26 @@ func TestDebNoFiles(t *testing.T) {
 
 func TestDebNoInfo(t *testing.T) {
 	var err = Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestConffiles(t *testing.T) {
-	out := conffiles(&nfpm.Info{
+	info := nfpm.WithDefaults(&nfpm.Info{
+		Name:        "minimal",
+		Arch:        "arm64",
+		Description: "Minimal does nothing",
+		Priority:    "extra",
+		Version:     "1.0.0",
+		Section:     "default",
 		Overridables: nfpm.Overridables{
 			ConfigFiles: map[string]string{
-				"fake": "/etc/fake",
+				"../testdata/fake": "/etc/fake",
 			},
 		},
 	})
+	err := info.Validate()
+	require.NoError(t, err)
+	out := conffiles(info)
 	assert.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
 }
 
@@ -471,6 +478,8 @@ func TestDebChangelogControl(t *testing.T) {
 		Version:     "1.0.0",
 		Changelog:   "../testdata/changelog.yaml",
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
@@ -491,6 +500,8 @@ func TestDebNoChangelogControlWithoutChangelogConfigured(t *testing.T) {
 		Description: "This package has explicitly no changelog.",
 		Version:     "1.0.0",
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
@@ -507,6 +518,8 @@ func TestDebChangelogData(t *testing.T) {
 		Version:     "1.0.0",
 		Changelog:   "../testdata/changelog.yaml",
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	dataTarGz, _, _, err := createDataTarGz(info)
 	require.NoError(t, err)
@@ -531,6 +544,8 @@ func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
 		Description: "This package has explicitly no changelog.",
 		Version:     "1.0.0",
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	dataTarGz, _, _, err := createDataTarGz(info)
 	require.NoError(t, err)
@@ -559,6 +574,8 @@ func TestDebTriggers(t *testing.T) {
 			},
 		},
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
@@ -597,6 +614,8 @@ func TestDebNoTriggersInControlIfNoneProvided(t *testing.T) {
 		Description: "This package has explicitly no triggers.",
 		Version:     "1.0.0",
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
@@ -622,6 +641,8 @@ func TestSymlinkInFiles(t *testing.T) {
 			},
 		},
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	realSymlinkTarget, err := ioutil.ReadFile(symlinkTarget)
 	require.NoError(t, err)
@@ -656,6 +677,8 @@ func TestSymlink(t *testing.T) {
 			},
 		},
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	dataTarGz, _, _, err := createDataTarGz(info)
 	require.NoError(t, err)
@@ -674,6 +697,8 @@ func TestEnsureRelativePrefixInTarGzFiles(t *testing.T) {
 		"/symlink/to/fake.txt": "/usr/share/doc/fake/fake.txt",
 	}
 	info.Changelog = "../testdata/changelog.yaml"
+	err := info.Validate()
+	require.NoError(t, err)
 
 	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
 	require.NoError(t, err)
@@ -687,8 +712,15 @@ func TestEnsureRelativePrefixInTarGzFiles(t *testing.T) {
 func TestMD5Sums(t *testing.T) {
 	info := exampleInfo()
 	info.Changelog = "../testdata/changelog.yaml"
+	err := info.Validate()
+	require.NoError(t, err)
 
-	nFiles := len(info.Files) + len(info.ConfigFiles) + 1 // +1 is the changelog
+	nFiles := 1
+	for _, f := range info.Contents {
+		if f.Packager == "" || f.Packager == "deb" {
+			nFiles++
+		}
+	}
 
 	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
 	require.NoError(t, err)
@@ -780,6 +812,8 @@ func TestDisableGlobbing(t *testing.T) {
 	info.Files = map[string]string{
 		"../testdata/{file}[": "/test/{file}[",
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	dataTarGz, _, _, err := createDataTarGz(info)
 	require.NoError(t, err)

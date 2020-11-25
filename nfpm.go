@@ -13,7 +13,9 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/goreleaser/chglog"
 	"github.com/imdario/mergo"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
+
+	"github.com/goreleaser/nfpm/files"
 )
 
 // nolint: gochecknoglobals
@@ -22,11 +24,18 @@ var (
 	lock      sync.Mutex
 )
 
-// Register a new packager for the given format.
-func Register(format string, p Packager) {
+// RegisterPackager a new packager for the given format.
+func RegisterPackager(format string, p Packager) {
 	lock.Lock()
+	defer lock.Unlock()
 	packagers[format] = p
-	lock.Unlock()
+}
+
+// ClearPackagers clear all registered packagers, used for testing.
+func ClearPackagers() {
+	lock.Lock()
+	defer lock.Unlock()
+	packagers = map[string]Packager{}
 }
 
 // ErrNoPackager happens when no packager is registered for the given format.
@@ -50,7 +59,7 @@ func Get(format string) (Packager, error) {
 // Parse decodes YAML data from an io.Reader into a configuration struct.
 func Parse(in io.Reader) (config Config, err error) {
 	dec := yaml.NewDecoder(in)
-	dec.SetStrict(true)
+	dec.KnownFields(true)
 	if err = dec.Decode(&config); err != nil {
 		return
 	}
@@ -77,6 +86,8 @@ func Parse(in io.Reader) (config Config, err error) {
 	if apkPassphrase != "" {
 		config.APK.Signature.KeyPassphrase = apkPassphrase
 	}
+
+	WithDefaults(&config.Info)
 
 	return config, config.Validate()
 }
@@ -117,6 +128,10 @@ func (c *Config) Get(format string) (info *Info, err error) {
 		// no overrides
 		return info, nil
 	}
+	if !override.hasResetFiles {
+		override.resetFiles(format)
+		c.Contents = append(c.Contents, override.Contents...)
+	}
 	if err = mergo.Merge(&info.Overridables, override, mergo.WithOverride); err != nil {
 		return nil, fmt.Errorf("failed to merge overrides into info: %w", err)
 	}
@@ -125,6 +140,9 @@ func (c *Config) Get(format string) (info *Info, err error) {
 
 // Validate ensures that the config is well typed.
 func (c *Config) Validate() error {
+	if err := Validate(&c.Info); err != nil {
+		return err
+	}
 	for format := range c.Overrides {
 		if _, err := Get(format); err != nil {
 			return err
@@ -157,22 +175,99 @@ type Info struct {
 	Target          string `yaml:"-"`
 }
 
+func (i *Info) Validate() error {
+	i.resetFiles("")
+	return Validate(i)
+}
+
+// GetChangeLog parses the provided changelog file.
+func (i *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
+	// if the file does not exist chglog.Parse will just silently
+	// create an empty changelog but we should notify the user instead
+	if _, err = os.Stat(i.Changelog); os.IsNotExist(err) {
+		return nil, err
+	}
+
+	entries, err := chglog.Parse(i.Changelog)
+	if err != nil {
+		return nil, err
+	}
+
+	return &chglog.PackageChangeLog{
+		Name:    i.Name,
+		Entries: entries,
+	}, nil
+}
+
 // Overridables contain the field which are overridable in a package.
 type Overridables struct {
-	Replaces     []string          `yaml:"replaces,omitempty"`
-	Provides     []string          `yaml:"provides,omitempty"`
-	Depends      []string          `yaml:"depends,omitempty"`
-	Recommends   []string          `yaml:"recommends,omitempty"`
-	Suggests     []string          `yaml:"suggests,omitempty"`
-	Conflicts    []string          `yaml:"conflicts,omitempty"`
-	Files        map[string]string `yaml:"files,omitempty"`
-	ConfigFiles  map[string]string `yaml:"config_files,omitempty"`
-	Symlinks     map[string]string `yaml:"symlinks,omitempty"`
-	EmptyFolders []string          `yaml:"empty_folders,omitempty"`
-	Scripts      Scripts           `yaml:"scripts,omitempty"`
-	RPM          RPM               `yaml:"rpm,omitempty"`
-	Deb          Deb               `yaml:"deb,omitempty"`
-	APK          APK               `yaml:"apk,omitempty"`
+	Replaces      []string          `yaml:"replaces,omitempty"`
+	Provides      []string          `yaml:"provides,omitempty"`
+	Depends       []string          `yaml:"depends,omitempty"`
+	Recommends    []string          `yaml:"recommends,omitempty"`
+	Suggests      []string          `yaml:"suggests,omitempty"`
+	Conflicts     []string          `yaml:"conflicts,omitempty"`
+	Contents      files.Contents    `yaml:"contents,omitempty"`
+	Files         map[string]string `yaml:"files,omitempty"`
+	ConfigFiles   map[string]string `yaml:"config_files,omitempty"`
+	Symlinks      map[string]string `yaml:"symlinks,omitempty"`
+	EmptyFolders  []string          `yaml:"empty_folders,omitempty"`
+	Scripts       Scripts           `yaml:"scripts,omitempty"`
+	RPM           RPM               `yaml:"rpm,omitempty"`
+	Deb           Deb               `yaml:"deb,omitempty"`
+	APK           APK               `yaml:"apk,omitempty"`
+	hasResetFiles bool
+}
+
+func (o *Overridables) resetFiles(packager string) {
+	if o.hasResetFiles {
+		return
+	}
+	for src, dst := range o.Files {
+		o.Contents = append(o.Contents, &files.Content{
+			Source:      src,
+			Destination: dst,
+			Packager:    packager,
+		})
+	}
+	o.Files = nil
+	for src, dst := range o.ConfigFiles {
+		o.Contents = append(o.Contents, &files.Content{
+			Source:      src,
+			Destination: dst,
+			Type:        "config",
+			Packager:    packager,
+		})
+	}
+	o.ConfigFiles = nil
+
+	// Symlinks is backwards from other in the config file
+	for dst, src := range o.Symlinks {
+		o.Contents = append(o.Contents, &files.Content{
+			Source:      src,
+			Destination: dst,
+			Type:        "symlink",
+			Packager:    packager,
+		})
+	}
+	o.Symlinks = nil
+	for src, dst := range o.RPM.ConfigNoReplaceFiles {
+		o.Contents = append(o.Contents, &files.Content{
+			Source:      src,
+			Destination: dst,
+			Type:        "config|noreplace",
+			Packager:    "rpm",
+		})
+	}
+	o.RPM.ConfigNoReplaceFiles = nil
+	for _, dst := range o.RPM.GhostFiles {
+		o.Contents = append(o.Contents, &files.Content{
+			Destination: dst,
+			Type:        "ghost",
+			Packager:    "rpm",
+		})
+	}
+	o.hasResetFiles = true
 }
 
 // RPM is custom configs that are only available on RPM packages.
@@ -257,7 +352,7 @@ func (e ErrFieldEmpty) Error() string {
 }
 
 // Validate the given Info and returns an error if it is invalid.
-func Validate(info *Info) error {
+func Validate(info *Info) (err error) {
 	if info.Name == "" {
 		return ErrFieldEmpty{"name"}
 	}
@@ -279,7 +374,8 @@ func Validate(info *Info) error {
 		fmt.Fprintln(os.Stderr, "Warning: bindir is deprecated and will be removed in a future version")
 	}
 
-	return nil
+	info.Contents, err = files.ExpandContentGlobs(info.Contents, info.DisableGlobbing)
+	return err
 }
 
 // WithDefaults set some sane defaults into the given Info.
@@ -289,6 +385,12 @@ func WithDefaults(info *Info) *Info {
 	}
 	if info.Description == "" {
 		info.Description = "no description given"
+	}
+	if info.Arch == "" {
+		info.Arch = "amd64"
+	}
+	if info.Version == "" {
+		info.Version = "v0.0.0-rc0"
 	}
 
 	// parse the version as a semver so we can properly split the parts
@@ -305,25 +407,6 @@ func WithDefaults(info *Info) *Info {
 	}
 
 	return info
-}
-
-// GetChangeLog parses the provided changelog file.
-func (info *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
-	// if the file does not exist chglog.Parse will just silently
-	// create an empty changelog but we should notify the user instead
-	if _, err = os.Stat(info.Changelog); os.IsNotExist(err) {
-		return nil, err
-	}
-
-	entries, err := chglog.Parse(info.Changelog)
-	if err != nil {
-		return nil, err
-	}
-
-	return &chglog.PackageChangeLog{
-		Name:    info.Name,
-		Entries: entries,
-	}, nil
 }
 
 // ErrSigningFailure is returned whenever something went wrong during

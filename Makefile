@@ -2,6 +2,7 @@ SOURCE_FILES?=./...
 TEST_PATTERN?=.
 TEST_OPTIONS?=
 TEST_TIMEOUT?=15m
+TEST_PARALLEL?=2
 
 export PATH := ./bin:$(PATH)
 export GO111MODULE := on
@@ -24,7 +25,7 @@ acceptance: pull_test_imgs
 .PHONY: acceptance
 
 test:
-	go test $(TEST_OPTIONS) -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=$(TEST_TIMEOUT)
+	go test $(TEST_OPTIONS) -p $(TEST_PARALLEL) -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=$(TEST_TIMEOUT)
 .PHONY: test
 
 cover: test

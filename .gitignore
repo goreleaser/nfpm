@@ -1,5 +1,8 @@
 vendor
 *.rpm
+*.deb
+!dummy.deb
+*.apk
 coverage.txt
 dist
 nfpm.yaml
@@ -8,3 +11,5 @@ bin
 coverage.out
 /nfpm
 www/site
+.idea/
+testdata/acceptance/tmp/

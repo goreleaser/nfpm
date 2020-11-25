@@ -1,0 +1,10 @@
+# Configuration file used to unit test enhanced file map
+name: "foo"
+arch: "amd64"
+version: "v1.2.3"
+contents:
+  # These two should be a single glob `./testdata/globtest/**/*.txt`
+  - src: "./testdata/globtest/**/*.txt"
+    dst: "/etc/foo/"
+  - src: "./testdata/globtest/*.txt"
+    dst: "/etc/foo/"

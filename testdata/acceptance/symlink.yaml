@@ -7,6 +7,6 @@ vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
 files:
-  ../testdata/whatever.conf: "/etc/foo/whatever.conf"
+  ./testdata/whatever.conf: "/etc/foo/whatever.conf"
 symlinks:
   /path/to/symlink: "/etc/foo/whatever.conf"

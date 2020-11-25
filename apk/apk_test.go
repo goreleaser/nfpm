@@ -13,12 +13,11 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/nfpm"
 	"github.com/goreleaser/nfpm/internal/sign"
-
-	"github.com/stretchr/testify/assert"
 )
 
 // nolint: gochecknoglobals
@@ -77,7 +76,7 @@ func exampleInfo() *nfpm.Info {
 }
 
 func TestArchToAlpine(t *testing.T) {
-	verifyArch(t, "", "")
+	verifyArch(t, "", "x86_64")
 	verifyArch(t, "abc", "abc")
 	verifyArch(t, "386", "x86")
 	verifyArch(t, "amd64", "x86_64")
@@ -97,6 +96,8 @@ func verifyArch(t *testing.T, nfpmArch, expectedArch string) {
 
 func TestCreateBuilderData(t *testing.T) {
 	info := exampleInfo()
+	err := info.Validate()
+	require.NoError(t, err)
 	size := int64(0)
 	builderData := createBuilderData(info, &size)
 
@@ -149,7 +150,7 @@ func TestDefaultWithArch(t *testing.T) {
 
 func TestNoInfo(t *testing.T) {
 	var err = Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestFileDoesNotExist(t *testing.T) {
@@ -207,6 +208,8 @@ func TestNoFiles(t *testing.T) {
 func TestCreateBuilderControl(t *testing.T) {
 	info := exampleInfo()
 	size := int64(12345)
+	err := info.Validate()
+	require.NoError(t, err)
 	builderControl := createBuilderControl(info, size, sha256.New().Sum(nil))
 
 	var w bytes.Buffer
@@ -231,6 +234,8 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 		PreRemove:   "../testdata/scripts/preremove.sh",
 		PostRemove:  "../testdata/scripts/postremove.sh",
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	size := int64(12345)
 	builderControl := createBuilderControl(info, size, sha256.New().Sum(nil))
@@ -269,6 +274,8 @@ func TestSignature(t *testing.T) {
 	info.APK.Signature.KeyFile = "../internal/sign/testdata/rsa.priv"
 	info.APK.Signature.KeyName = "testkey.rsa.pub"
 	info.APK.Signature.KeyPassphrase = "hunter2"
+	err := info.Validate()
+	require.NoError(t, err)
 
 	digest := sha1.New().Sum(nil) // nolint:gosec
 
@@ -277,7 +284,7 @@ func TestSignature(t *testing.T) {
 	require.NoError(t, createSignatureBuilder(digest, info)(tw))
 
 	signature := extractFromTar(t, signatureTarGz.Bytes(), ".SIGN.RSA.testkey.rsa.pub")
-	err := sign.RSAVerifySHA1Digest(digest, signature, "../internal/sign/testdata/rsa.pub")
+	err = sign.RSAVerifySHA1Digest(digest, signature, "../internal/sign/testdata/rsa.pub")
 	require.NoError(t, err)
 
 	err = Default.Package(info, ioutil.Discard)
@@ -289,13 +296,15 @@ func TestSignatureError(t *testing.T) {
 	info.APK.Signature.KeyFile = "../internal/sign/testdata/rsa.priv"
 	info.APK.Signature.KeyName = "testkey.rsa.pub"
 	info.APK.Signature.KeyPassphrase = "hunter2"
+	err := info.Validate()
+	require.NoError(t, err)
 
 	// wrong hash format
 	digest := sha256.New().Sum(nil)
 
 	var signatureTarGz bytes.Buffer
 
-	err := createSignature(&signatureTarGz, info, digest)
+	err = createSignature(&signatureTarGz, info, digest)
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
@@ -314,10 +323,12 @@ func TestDisableGlobbing(t *testing.T) {
 	info.Files = map[string]string{
 		"../testdata/{file}[": "/test/{file}[",
 	}
+	err := info.Validate()
+	require.NoError(t, err)
 
 	size := int64(0)
 	var dataTarGz bytes.Buffer
-	_, err := createData(&dataTarGz, info, &size)
+	_, err = createData(&dataTarGz, info, &size)
 	require.NoError(t, err)
 
 	gzr, err := gzip.NewReader(&dataTarGz)

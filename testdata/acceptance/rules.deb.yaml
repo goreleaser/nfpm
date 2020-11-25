@@ -10,8 +10,9 @@ vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
 files:
-  ../testdata/fake: "/usr/local/bin/fake"
+  ./testdata/fake: "/usr/local/bin/fake"
 config_files:
-  ../testdata/whatever.conf: "/etc/foo/whatever.conf"
-rpm:
-  compression: "xz"
+  ./testdata/whatever.conf: "/etc/foo/whatever.conf"
+deb:
+  scripts:
+    rules: ./testdata/acceptance/scripts/rules.sh

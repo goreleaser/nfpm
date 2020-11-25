@@ -1,4 +1,4 @@
-package nfpm
+package nfpm_test
 
 import (
 	"fmt"
@@ -10,72 +10,74 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/goreleaser/nfpm"
 )
 
 func TestRegister(t *testing.T) {
 	format := "TestRegister"
 	pkgr := &fakePackager{}
-	Register(format, pkgr)
-	got, err := Get(format)
+	nfpm.RegisterPackager(format, pkgr)
+	got, err := nfpm.Get(format)
 	require.NoError(t, err)
 	assert.Equal(t, pkgr, got)
 }
 
 func TestGet(t *testing.T) {
 	format := "TestGet"
-	got, err := Get(format)
+	got, err := nfpm.Get(format)
 	require.Error(t, err)
 	assert.EqualError(t, err, "no packager registered for the format "+format)
 	assert.Nil(t, got)
 	pkgr := &fakePackager{}
-	Register(format, pkgr)
-	got, err = Get(format)
+	nfpm.RegisterPackager(format, pkgr)
+	got, err = nfpm.Get(format)
 	require.NoError(t, err)
 	assert.Equal(t, pkgr, got)
 }
 
 func TestDefaultsVersion(t *testing.T) {
-	info := &Info{
+	info := &nfpm.Info{
 		Version: "v1.0.0",
 	}
-	info = WithDefaults(info)
+	info = nfpm.WithDefaults(info)
 	assert.NotEmpty(t, info.Platform)
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "", info.Release)
 	assert.Equal(t, "", info.Prerelease)
 
-	info = &Info{
+	info = &nfpm.Info{
 		Version: "v1.0.0-rc1",
 	}
-	info = WithDefaults(info)
+	info = nfpm.WithDefaults(info)
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "", info.Release)
 	assert.Equal(t, "rc1", info.Prerelease)
 
-	info = &Info{
+	info = &nfpm.Info{
 		Version: "v1.0.0-beta1",
 	}
-	info = WithDefaults(info)
+	info = nfpm.WithDefaults(info)
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "", info.Release)
 	assert.Equal(t, "beta1", info.Prerelease)
 
-	info = &Info{
+	info = &nfpm.Info{
 		Version:    "v1.0.0-1",
 		Release:    "2",
 		Prerelease: "beta1",
 	}
-	info = WithDefaults(info)
+	info = nfpm.WithDefaults(info)
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "2", info.Release)
 	assert.Equal(t, "beta1", info.Prerelease)
 
-	info = &Info{
+	info = &nfpm.Info{
 		Version:    "v1.0.0-1+xdg2",
 		Release:    "2",
 		Prerelease: "beta1",
 	}
-	info = WithDefaults(info)
+	info = nfpm.WithDefaults(info)
 	assert.Equal(t, "1.0.0", info.Version)
 	assert.Equal(t, "2", info.Release)
 	assert.Equal(t, "beta1", info.Prerelease)
@@ -83,31 +85,31 @@ func TestDefaultsVersion(t *testing.T) {
 }
 
 func TestDefaults(t *testing.T) {
-	info := &Info{
+	info := &nfpm.Info{
 		Platform:    "darwin",
 		Version:     "2.4.1",
 		Description: "no description given",
 	}
-	got := WithDefaults(info)
+	got := nfpm.WithDefaults(info)
 	assert.Equal(t, info, got)
 }
 
 func TestValidate(t *testing.T) {
-	require.NoError(t, Validate(&Info{
+	require.NoError(t, nfpm.Validate(&nfpm.Info{
 		Name:    "as",
 		Arch:    "asd",
 		Version: "1.2.3",
-		Overridables: Overridables{
+		Overridables: nfpm.Overridables{
 			Files: map[string]string{
 				"asa": "asd",
 			},
 		},
 	}))
-	require.NoError(t, Validate(&Info{
+	require.NoError(t, nfpm.Validate(&nfpm.Info{
 		Name:    "as",
 		Arch:    "asd",
 		Version: "1.2.3",
-		Overridables: Overridables{
+		Overridables: nfpm.Overridables{
 			ConfigFiles: map[string]string{
 				"asa": "asd",
 			},
@@ -116,7 +118,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestValidateError(t *testing.T) {
-	for err, info := range map[string]Info{
+	for err, info := range map[string]nfpm.Info{
 		"package name must be provided": {},
 		"package arch must be provided": {
 			Name: "fo",
@@ -129,25 +131,50 @@ func TestValidateError(t *testing.T) {
 		err := err
 		info := info
 		t.Run(err, func(t *testing.T) {
-			require.EqualError(t, Validate(&info), err)
+			require.EqualError(t, nfpm.Validate(&info), err)
 		})
 	}
 }
 
 func TestParseFile(t *testing.T) {
-	packagers = map[string]Packager{}
-	_, err := ParseFile("./testdata/overrides.yaml")
+	nfpm.ClearPackagers()
+	_, err := nfpm.ParseFile("./testdata/overrides.yaml")
 	require.Error(t, err)
-	Register("deb", &fakePackager{})
-	Register("rpm", &fakePackager{})
-	Register("apk", &fakePackager{})
-	_, err = ParseFile("./testdata/overrides.yaml")
+	nfpm.RegisterPackager("deb", &fakePackager{})
+	nfpm.RegisterPackager("rpm", &fakePackager{})
+	nfpm.RegisterPackager("apk", &fakePackager{})
+	_, err = nfpm.ParseFile("./testdata/overrides.yaml")
 	require.NoError(t, err)
-	_, err = ParseFile("./testdata/doesnotexist.yaml")
+	_, err = nfpm.ParseFile("./testdata/doesnotexist.yaml")
 	require.Error(t, err)
-	config, err := ParseFile("./testdata/versionenv.yaml")
+	config, err := nfpm.ParseFile("./testdata/versionenv.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
+}
+
+func TestParseEnhancedFile(t *testing.T) {
+	config, err := nfpm.ParseFile("./testdata/contents.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, config.Name, "contents foo")
+	shouldFind := 5
+	if len(config.Contents) != shouldFind {
+		t.Errorf("should have had %d files but found %d", shouldFind, len(config.Contents))
+		for idx, f := range config.Contents {
+			fmt.Printf("%d => %+#v\n", idx, f)
+		}
+	}
+}
+
+func TestParseEnhancedNestedGlobFile(t *testing.T) {
+	config, err := nfpm.ParseFile("./testdata/contents_glob.yaml")
+	require.NoError(t, err)
+	shouldFind := 3
+	if len(config.Contents) != shouldFind {
+		t.Errorf("should have had %d files but found %d", shouldFind, len(config.Contents))
+		for idx, f := range config.Contents {
+			fmt.Printf("%d => %+#v\n", idx, f)
+		}
+	}
 }
 
 func TestOptionsFromEnvironment(t *testing.T) {
@@ -163,7 +190,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 	t.Run("version", func(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("VERSION", version)
-		info, err := Parse(strings.NewReader("name: foo\nversion: $VERSION"))
+		info, err := nfpm.Parse(strings.NewReader("name: foo\nversion: $VERSION"))
 		require.NoError(t, err)
 		assert.Equal(t, version, info.Version)
 	})
@@ -171,7 +198,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 	t.Run("release", func(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("RELEASE", release)
-		info, err := Parse(strings.NewReader("name: foo\nrelease: $RELEASE"))
+		info, err := nfpm.Parse(strings.NewReader("name: foo\nrelease: $RELEASE"))
 		require.NoError(t, err)
 		assert.Equal(t, release, info.Release)
 	})
@@ -179,7 +206,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 	t.Run("global passphrase", func(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("NFPM_PASSPHRASE", globalPass)
-		info, err := Parse(strings.NewReader("name: foo"))
+		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		assert.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
 		assert.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
@@ -192,7 +219,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		os.Setenv("NFPM_DEB_PASSPHRASE", debPass)
 		os.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
 		os.Setenv("NFPM_APK_PASSPHRASE", apkPass)
-		info, err := Parse(strings.NewReader("name: foo"))
+		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		assert.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
 		assert.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
@@ -202,7 +229,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 
 func TestOverrides(t *testing.T) {
 	file := "./testdata/overrides.yaml"
-	config, err := ParseFile(file)
+	config, err := nfpm.ParseFile(file)
 	require.NoError(t, err)
 	assert.Equal(t, "foo", config.Name)
 	assert.Equal(t, "amd64", config.Arch)
@@ -212,9 +239,17 @@ func TestOverrides(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, deb.Depends, "deb_depend")
 	assert.NotContains(t, deb.Depends, "rpm_depend")
-	assert.Contains(t, deb.ConfigFiles, "deb.conf")
-	assert.NotContains(t, deb.ConfigFiles, "rpm.conf")
-	assert.Contains(t, deb.ConfigFiles, "whatever.conf")
+	for _, f := range deb.Contents {
+		fmt.Printf("%+#v\n", f)
+		assert.True(t, f.Packager != "rpm")
+		assert.True(t, f.Packager != "apk")
+		if f.Packager == "deb" {
+			assert.Contains(t, f.Destination, "/deb")
+		}
+		if f.Packager == "" {
+			assert.True(t, f.Destination == "/etc/foo/whatever.conf")
+		}
+	}
 	assert.Equal(t, "amd64", deb.Arch)
 
 	// rpm overrides
@@ -222,9 +257,17 @@ func TestOverrides(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, rpm.Depends, "rpm_depend")
 	assert.NotContains(t, rpm.Depends, "deb_depend")
-	assert.Contains(t, rpm.ConfigFiles, "rpm.conf")
-	assert.NotContains(t, rpm.ConfigFiles, "deb.conf")
-	assert.Contains(t, rpm.ConfigFiles, "whatever.conf")
+	for _, f := range rpm.Contents {
+		fmt.Printf("%+#v\n", f)
+		assert.True(t, f.Packager != "deb")
+		assert.True(t, f.Packager != "apk")
+		if f.Packager == "rpm" {
+			assert.Contains(t, f.Destination, "/rpm")
+		}
+		if f.Packager == "" {
+			assert.True(t, f.Destination == "/etc/foo/whatever.conf")
+		}
+	}
 	assert.Equal(t, "amd64", rpm.Arch)
 
 	// no overrides
@@ -235,10 +278,10 @@ func TestOverrides(t *testing.T) {
 
 type fakePackager struct{}
 
-func (*fakePackager) ConventionalFileName(info *Info) string {
+func (*fakePackager) ConventionalFileName(info *nfpm.Info) string {
 	return ""
 }
 
-func (*fakePackager) Package(info *Info, w io.Writer) error {
+func (*fakePackager) Package(info *nfpm.Info, w io.Writer) error {
 	return nil
 }

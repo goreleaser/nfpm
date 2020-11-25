@@ -2,7 +2,6 @@ name: "foo"
 arch: "amd64"
 platform: "linux"
 version: "v1.2.3"
-release: "simple"
 maintainer: "Foo Bar"
 description: |
   Foo bar
@@ -11,6 +10,8 @@ vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
 files:
-  ../testdata/fake: "/usr/local/bin/fake"
+  ./testdata/fake: "/usr/local/bin/fake"
 config_files:
-  ../testdata/whatever.conf: "/etc/foo/whatever.conf"
+  ./testdata/whatever.conf: "/etc/foo/whatever.conf"
+rpm:
+  compression: "xz"
