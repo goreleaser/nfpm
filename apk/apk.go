@@ -70,7 +70,7 @@ var archToAlpine = map[string]string{
 	// "s390x":  "???",
 }
 
-// Default apk packager
+// Default apk packager.
 // nolint: gochecknoglobals
 var Default = &Apk{}
 
