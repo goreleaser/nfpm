@@ -1,6 +1,7 @@
 linters:
   enable-all: true
   disable:
+    - paralleltest
     - godox
     - wsl
     - gomnd

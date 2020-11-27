@@ -40,7 +40,7 @@ var archToDebian = map[string]string{
 	"ppc64le": "ppc64el",
 }
 
-// Default deb packager
+// Default deb packager.
 // nolint: gochecknoglobals
 var Default = &Deb{}
 

@@ -44,7 +44,7 @@ func init() {
 	nfpm.Register("rpm", Default)
 }
 
-// Default RPM packager
+// Default RPM packager.
 // nolint: gochecknoglobals
 var Default = &RPM{}
 
