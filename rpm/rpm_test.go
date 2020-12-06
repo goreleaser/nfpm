@@ -632,15 +632,28 @@ func TestRPMGhostFiles(t *testing.T) {
 	err := Default.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
-	packagedFileHeader, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), filename)
+	headerFiles, err := extraFileInfoSliceFromRpm(rpmFileBuffer.Bytes())
 	require.NoError(t, err)
 
-	packagedFile, err := extractFileFromRpm(rpmFileBuffer.Bytes(), filename)
-	require.NoError(t, err)
+	type headerFileInfo struct {
+		Name string
+		Size int64
+		Mode int
+	}
+	expected := []headerFileInfo{
+		{filename, 0, cpio.S_ISREG | 0644},
+	}
+	actual := make([]headerFileInfo, 0)
+	for _, fileInfo := range headerFiles {
+		actual = append(actual, headerFileInfo{fileInfo.Name(), fileInfo.Size(), fileInfo.Mode()})
+	}
+	assert.Equal(t, expected, actual)
 
-	assert.Equal(t, filename, packagedFileHeader.Filename())
-	assert.Equal(t, cpio.S_ISREG|0644, packagedFileHeader.Mode())
-	assert.Equal(t, "", string(packagedFile))
+	_, err = extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), filename)
+	require.Error(t, err)
+
+	_, err = extractFileFromRpm(rpmFileBuffer.Bytes(), filename)
+	require.Error(t, err)
 }
 
 func TestDisableGlobbing(t *testing.T) {
@@ -696,6 +709,14 @@ func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 	}
 
 	return nil, os.ErrNotExist
+}
+
+func extraFileInfoSliceFromRpm(rpm []byte) ([]rpmutils.FileInfo, error) {
+	rpmFile, err := rpmutils.ReadRpm(bytes.NewReader(rpm))
+	if err != nil {
+		return nil, err
+	}
+	return rpmFile.Header.GetFiles()
 }
 
 func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_header, error) {
