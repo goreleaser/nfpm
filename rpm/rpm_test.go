@@ -22,6 +22,7 @@ import (
 	"github.com/goreleaser/chglog"
 
 	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/internal/files"
 )
 
 func exampleInfo() *nfpm.Info {
@@ -765,5 +766,5 @@ func symlinkTo(tb testing.TB, fileName string) string {
 		assert.NoError(tb, err)
 	})
 
-	return symlinkName
+	return files.ToNixPath(symlinkName)
 }

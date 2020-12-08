@@ -358,7 +358,7 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 		return err
 	}
 	return newItemInsideTarGz(out, content, &tar.Header{
-		Name:     filepath.ToSlash(dest),
+		Name:     files.ToNixPath(dest),
 		Size:     int64(len(content)),
 		Mode:     0755,
 		ModTime:  time.Now(),
@@ -461,7 +461,7 @@ func copyToTarAndDigest(src, dst string, tw *tar.Writer, sizep *int64, created m
 		return err
 	}
 
-	header.Name = filepath.ToSlash(dst[1:])
+	header.Name = files.ToNixPath(dst[1:])
 	err = writeFile(tw, header, file)
 	if err != nil {
 		return err
@@ -477,7 +477,7 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 		// this .nope is actually not created, because createTree ignore the
 		// last part of the path, assuming it is a file.
 		// TODO: should probably refactor this
-		if err := createTree(out, filepath.Join(folder, ".nope"), created); err != nil {
+		if err := createTree(out, files.ToNixPath(filepath.Join(folder, ".nope")), created); err != nil {
 			return err
 		}
 	}
@@ -494,7 +494,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 			continue
 		}
 		if err := tarw.WriteHeader(&tar.Header{
-			Name:     filepath.ToSlash(path + "/"),
+			Name:     files.ToNixPath(path + "/"),
 			Mode:     0755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
@@ -515,7 +515,7 @@ func pathsToCreate(dst string) []string {
 		if base == "." {
 			break
 		}
-		paths = append(paths, base)
+		paths = append(paths, files.ToNixPath(base))
 	}
 	// we don't really need to create those things in order apparently, but,
 	// it looks really weird if we don't.

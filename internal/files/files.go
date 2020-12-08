@@ -1,6 +1,7 @@
 package files
 
 import (
+	"path/filepath"
 	"sort"
 
 	"github.com/goreleaser/fileglob"
@@ -29,7 +30,7 @@ func Expand(filesSrcDstMap map[string]string, disableGlobbing bool) ([]FileToCop
 			return nil, err
 		}
 		for src, dst := range globbed {
-			files = append(files, FileToCopy{src, dst})
+			files = append(files, FileToCopy{ToNixPath(src), ToNixPath(dst)})
 		}
 	}
 
@@ -42,4 +43,10 @@ func Expand(filesSrcDstMap map[string]string, disableGlobbing bool) ([]FileToCop
 		return a.Destination < b.Destination
 	})
 	return files, nil
+}
+
+// ToNixPath converts the path to the nix style path
+// Windows style path separators are escape characters so cause issues.
+func ToNixPath(path string) string {
+	return filepath.ToSlash(filepath.Clean(path))
 }

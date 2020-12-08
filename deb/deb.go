@@ -147,7 +147,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: fun
 
 func addArFile(w *ar.Writer, name string, body []byte) error {
 	var header = ar.Header{
-		Name:    filepath.ToSlash(name),
+		Name:    files.ToNixPath(name),
 		Size:    int64(len(body)),
 		Mode:    0644,
 		ModTime: time.Now(),
@@ -260,7 +260,7 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 		// this .nope is actually not created, because createTree ignore the
 		// last part of the path, assuming it is a file.
 		// TODO: should probably refactor this
-		if err := createTree(out, filepath.Join(folder, ".nope"), created); err != nil {
+		if err := createTree(out, files.ToNixPath(filepath.Join(folder, ".nope")), created); err != nil {
 			return err
 		}
 	}
@@ -501,7 +501,7 @@ func newFilePathInsideTarGz(out *tar.Writer, path, dest string, mode int64) erro
 // normalizePath returns a path separated by slashes, all relative path items
 // resolved and relative to the current directory (so it starts with "./").
 func normalizePath(src string) string {
-	return "." + filepath.ToSlash(filepath.Clean(filepath.Join("/", src)))
+	return "." + files.ToNixPath(filepath.Join("/", src))
 }
 
 // this is needed because the data.tar.gz file should have the empty folders
@@ -537,7 +537,7 @@ func pathsToCreate(dst string) []string {
 		if base == "." {
 			break
 		}
-		paths = append(paths, base)
+		paths = append(paths, files.ToNixPath(base))
 	}
 	// we don't really need to create those things in order apparently, but,
 	// it looks really weird if we don't.
