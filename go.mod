@@ -9,7 +9,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/golangci/golangci-lint v1.33.0
-	github.com/google/rpmpack v0.0.0-20200919095143-1c1eea455332
+	github.com/google/rpmpack v0.0.0-20201206194719-59e495f2b7e1
 	github.com/goreleaser/chglog v0.1.2
 	github.com/goreleaser/fileglob v0.3.0
 	github.com/imdario/mergo v0.3.11

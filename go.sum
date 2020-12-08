@@ -197,6 +197,8 @@ github.com/google/pprof v0.0.0-20190515194954-54271f7e092f/go.mod h1:zfwlbNMJ+OI
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/google/rpmpack v0.0.0-20200919095143-1c1eea455332 h1:/7+8vH2OZt7aaatqFUE9STn3NHVt15l21vI+jJog5gw=
 github.com/google/rpmpack v0.0.0-20200919095143-1c1eea455332/go.mod h1:+y9lKiqDhR4zkLl+V9h4q0rdyrYVsWWm6LLCQP33DIk=
+github.com/google/rpmpack v0.0.0-20201206194719-59e495f2b7e1 h1:BRIy5qQZKSC/nthA5ueW547F73BV5hMoIoxhPfhxa3k=
+github.com/google/rpmpack v0.0.0-20201206194719-59e495f2b7e1/go.mod h1:+y9lKiqDhR4zkLl+V9h4q0rdyrYVsWWm6LLCQP33DIk=
 github.com/google/uuid v1.0.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.1.2 h1:EVhdT+1Kseyi1/pUmXKaFxYsDNy9RQYkMWRH68J/W7Y=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
