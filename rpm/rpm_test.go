@@ -78,16 +78,17 @@ func exampleInfo() *nfpm.Info {
 
 func TestRPM(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
-	defer func() {
-		_ = f.Close()
-		err = os.Remove(f.Name())
-		assert.NoError(t, err)
-	}()
-
+	require.NoError(t, err)
 	require.NoError(t, Default.Package(exampleInfo(), f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
 	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		assert.NoError(t, err)
+	}()
 	rpm, err := rpmutils.ReadRpm(file)
 	require.NoError(t, err)
 
@@ -121,19 +122,20 @@ func TestRPM(t *testing.T) {
 
 func TestRPMGroup(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
-	defer func() {
-		_ = f.Close()
-		err = os.Remove(f.Name())
-		assert.NoError(t, err)
-	}()
-
+	require.NoError(t, err)
 	info := exampleInfo()
 	info.RPM.Group = "Unspecified"
-
 	require.NoError(t, Default.Package(info, f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
 	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		assert.NoError(t, err)
+	}()
+
 	rpm, err := rpmutils.ReadRpm(file)
 	require.NoError(t, err)
 
@@ -144,11 +146,7 @@ func TestRPMGroup(t *testing.T) {
 
 func TestRPMSummary(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
-	defer func() {
-		_ = f.Close()
-		err = os.Remove(f.Name())
-		assert.NoError(t, err)
-	}()
+	require.NoError(t, err)
 
 	var customSummary = "This is my custom summary"
 	info := exampleInfo()
@@ -159,6 +157,12 @@ func TestRPMSummary(t *testing.T) {
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
 	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		assert.NoError(t, err)
+	}()
 	rpm, err := rpmutils.ReadRpm(file)
 	require.NoError(t, err)
 
@@ -169,11 +173,7 @@ func TestRPMSummary(t *testing.T) {
 
 func TestWithRPMTags(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
-	defer func() {
-		_ = f.Close()
-		err = os.Remove(f.Name())
-		assert.NoError(t, err)
-	}()
+	require.NoError(t, err)
 
 	var info = exampleInfo()
 	info.Release = "3"
@@ -186,6 +186,12 @@ func TestWithRPMTags(t *testing.T) {
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
 	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		assert.NoError(t, err)
+	}()
 
 	rpm, err := rpmutils.ReadRpm(file)
 	require.NoError(t, err)
@@ -315,16 +321,17 @@ func TestWithInvalidEpoch(t *testing.T) {
 func TestRPMScripts(t *testing.T) {
 	info := exampleInfo()
 	f, err := ioutil.TempFile(".", fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))
-	defer func() {
-		_ = f.Close()
-		err = os.Remove(f.Name())
-		require.NoError(t, err)
-	}()
 	require.NoError(t, err)
 	err = Default.Package(info, f)
 	require.NoError(t, err)
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
 	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		assert.NoError(t, err)
+	}()
 	rpm, err := rpmutils.ReadRpm(file)
 	require.NoError(t, err)
 
