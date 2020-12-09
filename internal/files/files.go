@@ -45,8 +45,10 @@ func Expand(filesSrcDstMap map[string]string, disableGlobbing bool) ([]FileToCop
 	return files, nil
 }
 
-// ToNixPath converts the path to the nix style path
-// Windows style path separators are escape characters so cause issues.
+// ToNixPath converts the given path to a nix-style path.
+//
+// Windows-style path separators are considered escape 
+// characters by some libraries, which can cause issues.
 func ToNixPath(path string) string {
 	return filepath.ToSlash(filepath.Clean(path))
 }
