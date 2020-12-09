@@ -24,6 +24,7 @@ import (
 
 	"github.com/goreleaser/chglog"
 
+	"github.com/goreleaser/nfpm/internal/files"
 	"github.com/goreleaser/nfpm/internal/sign"
 
 	"github.com/goreleaser/nfpm"
@@ -896,7 +897,7 @@ func symlinkTo(tb testing.TB, fileName string) string {
 	tempDir, err := ioutil.TempDir("", "nfpm_deb_test")
 	assert.NoError(tb, err)
 
-	symlinkName := path.Join(tempDir, "symlink")
+	symlinkName := filepath.Join(tempDir, "symlink")
 	err = os.Symlink(target, symlinkName)
 	assert.NoError(tb, err)
 
@@ -905,7 +906,7 @@ func symlinkTo(tb testing.TB, fileName string) string {
 		assert.NoError(tb, err)
 	})
 
-	return symlinkName
+	return files.ToNixPath(symlinkName)
 }
 
 func extractFileFromAr(arFile []byte, filename string) ([]byte, error) {

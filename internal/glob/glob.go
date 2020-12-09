@@ -78,7 +78,7 @@ func Glob(pattern, dst string) (map[string]string, error) {
 			// since prefix is a prefix of src a relative path should always be found
 			panic(err)
 		}
-		globdst := filepath.Join(dst, relpath)
+		globdst := filepath.ToSlash(filepath.Join(dst, relpath))
 		files[src] = globdst
 	}
 	return files, nil
