@@ -1,0 +1,37 @@
+name: "foo"
+arch: "amd64"
+platform: "linux"
+version: "v1.2.3-beta"
+maintainer: "Foo Bar"
+depends:
+- bash
+provides:
+- fake
+replaces:
+- foo
+suggests:
+- zsh
+description: |
+  Foo bar
+    Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+files:
+  ./testdata/fake: "/usr/local/bin/fake"
+  ./testdata/acceptance/folder/*: "/usr/share/whatever/folder/"
+config_files:
+  ./testdata/whatever.conf: "/etc/foo/whatever.conf"
+overrides:
+  rpm:
+    scripts:
+      preinstall: ./testdata/acceptance/scripts/preinstall.sh
+      postremove: ./testdata/acceptance/scripts/postremove.sh
+  deb:
+    scripts:
+      postinstall: ./testdata/acceptance/scripts/postinstall.sh
+      preremove: ./testdata/acceptance/scripts/preremove.sh
+  apk:
+    scripts:
+      postinstall: ./testdata/acceptance/scripts/postinstall.sh
+      preremove: ./testdata/acceptance/scripts/preremove.sh

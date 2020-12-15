@@ -48,13 +48,15 @@ import (
 	"time"
 
 	"github.com/goreleaser/nfpm"
-	"github.com/goreleaser/nfpm/internal/files"
+	"github.com/goreleaser/nfpm/files"
 	"github.com/goreleaser/nfpm/internal/sign"
 )
 
+const packagerName = "apk"
+
 // nolint: gochecknoinits
 func init() {
-	nfpm.Register("apk", Default)
+	nfpm.RegisterPackager(packagerName, Default)
 }
 
 // nolint: gochecknoglobals
@@ -105,6 +107,12 @@ func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 	arch, ok := archToAlpine[info.Arch]
 	if ok {
 		info.Arch = arch
+	}
+	if info.Arch == "" {
+		info.Arch = archToAlpine["amd64"]
+	}
+	if err = info.Validate(); err != nil {
+		return err
 	}
 
 	var bufData bytes.Buffer
@@ -386,31 +394,44 @@ func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error
 			return err
 		}
 
-		// handle Files and ConfigFiles
-		if err := createFilesInsideTarGz(info, tw, created, sizep); err != nil {
-			return err
-		}
-
-		return createSymlinksInsideTarGz(info, tw, created)
+		// handle Files
+		return createFilesInsideTarGz(info, tw, created, sizep)
 	}
 }
 
-func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool, sizep *int64) error {
-	filesToCopy, err := files.Expand(info.Files, info.DisableGlobbing)
-	if err != nil {
-		return err
-	}
-
-	configFilesToCopy, err := files.Expand(info.ConfigFiles, info.DisableGlobbing)
-	if err != nil {
-		return err
-	}
-
-	for _, file := range append(filesToCopy, configFilesToCopy...) {
+func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool, sizep *int64) (err error) {
+	for _, file := range info.Contents {
+		if file.Packager != "" && file.Packager != packagerName {
+			continue
+		}
 		if err = createTree(tw, file.Destination, created); err != nil {
 			return err
 		}
-		err := copyToTarAndDigest(file.Source, file.Destination, tw, sizep, created)
+		switch file.Type {
+		case "ghost":
+			// skip ghost files in apk
+			continue
+		case "symlink":
+			err = createSymlinkInsideTarGz(file, tw)
+		case "doc":
+			// nolint:gocritic
+			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
+			fallthrough
+		case "licence", "license":
+			// nolint:gocritic
+			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
+			fallthrough
+		case "readme":
+			// nolint:gocritic
+			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
+			fallthrough
+		case "config", "config|noreplace":
+			// nolint:gocritic
+			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
+			fallthrough
+		default:
+			err = copyToTarAndDigest(file, tw, sizep, created)
+		}
 		if err != nil {
 			return err
 		}
@@ -419,56 +440,37 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 	return nil
 }
 
-func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
-	for src, dst := range info.Symlinks {
-		if err := createTree(out, src, created); err != nil {
-			return err
-		}
-
-		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
-			Name:     strings.TrimLeft(src, "/"),
-			Linkname: dst,
-			Typeflag: tar.TypeSymlink,
-			ModTime:  time.Now(),
-			Format:   tar.FormatGNU,
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+func createSymlinkInsideTarGz(file *files.Content, out *tar.Writer) error {
+	return newItemInsideTarGz(out, []byte{}, &tar.Header{
+		Name:     strings.TrimLeft(file.Destination, "/"),
+		Linkname: file.Source,
+		Typeflag: tar.TypeSymlink,
+		ModTime:  file.FileInfo.MTime,
+		Format:   tar.FormatGNU,
+	})
 }
 
-func copyToTarAndDigest(src, dst string, tw *tar.Writer, sizep *int64, created map[string]bool) error {
-	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
+func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64, created map[string]bool) error {
+	tarFile, err := os.OpenFile(file.Source, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("could not add file to the archive: %w", err)
 	}
 	// don't care if it errs while closing...
-	defer file.Close() // nolint: errcheck
-	info, err := file.Stat()
-	if err != nil {
-		return err
-	}
-	if info.IsDir() {
-		// TODO: this should probably return an error
-		return nil
-	}
-	header, err := tar.FileInfoHeader(info, src)
+	defer tarFile.Close() // nolint: errcheck
+	header, err := tar.FileInfoHeader(file, file.Source)
 	if err != nil {
 		log.Print(err)
 		return err
 	}
 
-	header.Name = files.ToNixPath(dst[1:])
-	err = writeFile(tw, header, file)
+	header.Name = files.ToNixPath(file.Destination[1:])
+	err = writeFile(tw, header, tarFile)
 	if err != nil {
 		return err
 	}
 
-	*sizep += info.Size()
-	created[src] = true
+	*sizep += file.Size()
+	created[file.Source] = true
 	return nil
 }
 

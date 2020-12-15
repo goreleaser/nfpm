@@ -6,9 +6,9 @@ maintainer: "Foo Bar"
 vendor: "foobar"
 license: "MIT"
 files:
-  ../testdata/fake: "/usr/local/bin/fake"
+  ./testdata/fake: "/usr/local/bin/fake"
 scripts:
-  postinstall: ./testdata/scripts/postinstall_trigger.sh
+  postinstall: ./testdata/acceptance/scripts/postinstall_trigger.sh
 deb:
   triggers:
     interest:

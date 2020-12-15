@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,13 +21,15 @@ import (
 	"github.com/goreleaser/chglog"
 
 	"github.com/goreleaser/nfpm"
-	"github.com/goreleaser/nfpm/internal/files"
+	"github.com/goreleaser/nfpm/files"
 	"github.com/goreleaser/nfpm/internal/sign"
 )
 
+const packagerName = "deb"
+
 // nolint: gochecknoinits
 func init() {
-	nfpm.Register("deb", Default)
+	nfpm.RegisterPackager(packagerName, Default)
 }
 
 // nolint: gochecknoglobals
@@ -82,6 +85,9 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: fun
 	arch, ok := archToDebian[info.Arch]
 	if ok {
 		info.Arch = arch
+	}
+	if err = info.Validate(); err != nil {
+		return err
 	}
 
 	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
@@ -179,10 +185,6 @@ func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64
 		return nil, nil, 0, err
 	}
 
-	if err := createSymlinksInsideTarGz(info, out, created); err != nil {
-		return nil, nil, 0, err
-	}
-
 	if err := out.Close(); err != nil {
 		return nil, nil, 0, fmt.Errorf("closing data.tar.gz: %w", err)
 	}
@@ -193,50 +195,51 @@ func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64
 	return buf.Bytes(), md5buf.Bytes(), instSize, nil
 }
 
-func createSymlinksInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
-	for src, dst := range info.Symlinks {
-		if err := createTree(out, src, created); err != nil {
-			return err
-		}
-
-		err := newItemInsideTarGz(out, []byte{}, &tar.Header{
-			Name:     normalizePath(src),
-			Linkname: dst,
-			Typeflag: tar.TypeSymlink,
-			ModTime:  time.Now(),
-			Format:   tar.FormatGNU,
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+func createSymlinkInsideTarGz(file *files.Content, out *tar.Writer) error {
+	return newItemInsideTarGz(out, []byte{}, &tar.Header{
+		Name:     normalizePath(file.Destination),
+		Linkname: file.Source,
+		Typeflag: tar.TypeSymlink,
+		ModTime:  file.FileInfo.MTime,
+		Format:   tar.FormatGNU,
+	})
 }
 
-func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) (bytes.Buffer, int64, error) {
-	var md5buf bytes.Buffer
-	var instSize int64
-
-	filesToCopy, err := files.Expand(info.Files, info.DisableGlobbing)
-	if err != nil {
-		return md5buf, 0, err
-	}
-
-	configFiles, err := files.Expand(info.ConfigFiles, info.DisableGlobbing)
-	if err != nil {
-		return md5buf, 0, err
-	}
-
-	filesToCopy = append(filesToCopy, configFiles...)
-
-	for _, file := range filesToCopy {
-		if err = createTree(out, file.Destination, created); err != nil {
+func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool) (md5buf bytes.Buffer, instSize int64, err error) {
+	for _, file := range info.Contents {
+		if file.Packager != "" && file.Packager != packagerName {
+			continue
+		}
+		if err = createTree(tw, file.Destination, created); err != nil {
 			return md5buf, 0, err
 		}
 
 		var size int64 // declare early to avoid shadowing err
-		size, err = copyToTarAndDigest(out, &md5buf, file.Source, file.Destination)
+		switch file.Type {
+		case "ghost":
+			// skip ghost files in apk
+			continue
+		case "symlink":
+			err = createSymlinkInsideTarGz(file, tw)
+		case "doc":
+			// nolint:gocritic
+			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
+			fallthrough
+		case "licence", "license":
+			// nolint:gocritic
+			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
+			fallthrough
+		case "readme":
+			// nolint:gocritic
+			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
+			fallthrough
+		case "config", "config|noreplace":
+			// nolint:gocritic
+			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
+			fallthrough
+		default:
+			size, err = copyToTarAndDigest(file, tw, &md5buf)
+		}
 		if err != nil {
 			return md5buf, 0, err
 		}
@@ -244,7 +247,7 @@ func createFilesInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string
 	}
 
 	if info.Changelog != "" {
-		size, err := createChangelogInsideTarGz(out, &md5buf, created, info)
+		size, err := createChangelogInsideTarGz(tw, &md5buf, created, info)
 		if err != nil {
 			return md5buf, 0, err
 		}
@@ -267,43 +270,35 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 	return nil
 }
 
-func copyToTarAndDigest(tarw *tar.Writer, md5w io.Writer, src, dst string) (int64, error) {
-	file, err := os.OpenFile(src, os.O_RDONLY, 0600) //nolint:gosec
+func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (int64, error) {
+	tarFile, err := os.OpenFile(file.Source, os.O_RDONLY, 0600) //nolint:gosec
 	if err != nil {
-		return 0, fmt.Errorf("could not add file to the archive: %w", err)
+		return 0, fmt.Errorf("could not add tarFile to the archive: %w", err)
 	}
 	// don't care if it errs while closing...
-	defer file.Close() // nolint: errcheck,gosec
-	info, err := file.Stat()
+	defer tarFile.Close() // nolint: errcheck,gosec
+
+	header, err := tar.FileInfoHeader(file, file.Source)
 	if err != nil {
+		log.Print(err)
 		return 0, err
 	}
-	if info.IsDir() {
-		// TODO: this should probably return an error
-		return 0, nil
-	}
-	var header = tar.Header{
-		Name:    normalizePath(dst),
-		Size:    info.Size(),
-		Mode:    int64(info.Mode()),
-		ModTime: time.Now(),
-		Format:  tar.FormatGNU,
-	}
-	if err := tarw.WriteHeader(&header); err != nil {
-		return 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %w", src, err)
+	header.Format = tar.FormatGNU
+	header.Name = normalizePath(file.Destination)
+	if err := tw.WriteHeader(header); err != nil {
+		return 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %w", file.Source, err)
 	}
 	var digest = md5.New() // nolint:gas
-	if _, err := io.Copy(tarw, io.TeeReader(file, digest)); err != nil {
+	if _, err := io.Copy(tw, io.TeeReader(tarFile, digest)); err != nil {
 		return 0, fmt.Errorf("failed to copy: %w", err)
 	}
 	if _, err := fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), header.Name); err != nil {
 		return 0, fmt.Errorf("failed to write md5: %w", err)
 	}
-	return info.Size(), nil
+	return file.Size(), nil
 }
 
-func createChangelogInsideTarGz(tarw *tar.Writer, md5w io.Writer, created map[string]bool,
-	info *nfpm.Info) (int64, error) {
+func createChangelogInsideTarGz(tarw *tar.Writer, md5w io.Writer, created map[string]bool, info *nfpm.Info) (int64, error) {
 	var buf bytes.Buffer
 	var out = gzip.NewWriter(&buf)
 	// the writers are properly closed later, this is just in case that we have
@@ -551,8 +546,14 @@ func pathsToCreate(dst string) []string {
 func conffiles(info *nfpm.Info) []byte {
 	// nolint: prealloc
 	var confs []string
-	for _, dst := range info.ConfigFiles {
-		confs = append(confs, dst)
+	for _, file := range info.Contents {
+		if file.Packager != "" && file.Packager != packagerName {
+			continue
+		}
+		switch file.Type {
+		case "config", "config|noreplace":
+			confs = append(confs, file.Destination)
+		}
 	}
 	return []byte(strings.Join(confs, "\n") + "\n")
 }

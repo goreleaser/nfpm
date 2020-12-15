@@ -1,7 +1,9 @@
 name: "foo"
-arch: "386"
+arch: "amd64"
 platform: "linux"
+changelog: "./testdata/changelog.yaml"
 version: "v1.2.3"
+release: "simple"
 maintainer: "Foo Bar"
 description: |
   Foo bar
@@ -10,6 +12,6 @@ vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
 files:
-  ../testdata/fake: "/usr/local/bin/fake"
+  ./testdata/fake: "/usr/local/bin/fake"
 config_files:
-  ../testdata/whatever.conf: "/etc/foo/whatever.conf"
+  ./testdata/whatever.conf: "/etc/foo/whatever.conf"

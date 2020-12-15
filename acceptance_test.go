@@ -1,6 +1,6 @@
-//+build acceptance
+// +build acceptance
 
-package acceptance
+package nfpm_test
 
 import (
 	"fmt"
@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/nfpm"
-	// shut up
 	_ "github.com/goreleaser/nfpm/apk"
 	_ "github.com/goreleaser/nfpm/deb"
 	_ "github.com/goreleaser/nfpm/rpm"
@@ -83,10 +82,10 @@ func TestComplex(t *testing.T) {
 }
 
 func TestConfigNoReplace(t *testing.T) {
-	var target = "./testdata/tmp/noreplace_old_rpm.rpm"
-	require.NoError(t, os.MkdirAll("./testdata/tmp", 0700))
+	var target = "./testdata/acceptance/tmp/noreplace_old_rpm.rpm"
+	require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0700))
 
-	config, err := nfpm.ParseFile("./testdata/config-noreplace-old.yaml")
+	config, err := nfpm.ParseFile("./testdata/acceptance/config-noreplace-old.yaml")
 	require.NoError(t, err)
 
 	info, err := config.Get("rpm")
@@ -277,13 +276,13 @@ type testWriter struct {
 }
 
 func (t testWriter) Write(p []byte) (n int, err error) {
-	t.t.Logf(string(p))
+	t.t.Log(string(p))
 	return len(p), nil
 }
 
 func accept(t *testing.T, params acceptParms) {
-	var configFile = filepath.Join("./testdata", params.Conf)
-	tmp, err := filepath.Abs("./testdata/tmp")
+	var configFile = filepath.Join("./testdata/acceptance/", params.Conf)
+	tmp, err := filepath.Abs("./testdata/acceptance/tmp")
 	require.NoError(t, err)
 	var packageName = params.Name + "." + params.Format
 	var target = filepath.Join(tmp, packageName)
@@ -312,7 +311,7 @@ func accept(t *testing.T, params acceptParms) {
 		"--build-arg", "package="+filepath.Join("tmp", packageName),
 		".",
 	)
-	cmd.Dir = "./testdata"
+	cmd.Dir = "./testdata/acceptance"
 	cmd.Stderr = testWriter{t}
 	cmd.Stdout = cmd.Stderr
 

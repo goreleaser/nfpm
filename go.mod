@@ -41,7 +41,7 @@ require (
 	golang.org/x/net v0.0.0-20201209123823-ac852fbbde11 // indirect
 	golang.org/x/sys v0.0.0-20201207223542-d4d67f95c62d // indirect
 	golang.org/x/tools v0.0.0-20201208233053-a543418bbed2 // indirect
-	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	mvdan.cc/gofumpt v0.0.0-20201129102820-5c11c50e9475 // indirect
 )

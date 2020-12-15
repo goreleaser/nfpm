@@ -12,6 +12,7 @@ linters:
     - gci
     - exhaustivestruct
     - wrapcheck
+    - godot
 linters-settings:
   maligned:
     # print struct with more effective memory layout or not, false by default
@@ -40,6 +41,8 @@ linters-settings:
       - style
       - performance
 issues:
+  exclude:
+    - composites
   exclude-rules:
     - text: "G104" # gosec G104 is caught by errcheck
       linters:

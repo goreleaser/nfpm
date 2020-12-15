@@ -1,9 +1,8 @@
 name: "foo"
-arch: "amd64"
+arch: "ppc64le"
 platform: "linux"
 version: "v1.2.3"
 maintainer: "Foo Bar"
-release: "4"
 description: |
   Foo bar
     Multiple lines
@@ -11,6 +10,6 @@ vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
 files:
-  ../testdata/fake: "/usr/local/bin/fake"
+  ./testdata/fake: "/usr/local/bin/fake"
 config_files:
-  ../testdata/whatever.conf: "/etc/foo/whatever.conf"
+  ./testdata/whatever.conf: "/etc/foo/whatever.conf"

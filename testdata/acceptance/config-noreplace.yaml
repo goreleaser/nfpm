@@ -7,7 +7,7 @@ vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
 config_files:
-  ../testdata/whatever2.conf: "/etc/regular.conf"
+  ./testdata/whatever2.conf: "/etc/regular.conf"
 rpm:
   config_noreplace_files:
-    ../testdata/whatever2.conf: "/etc/noreplace.conf"
+    ./testdata/whatever2.conf: "/etc/noreplace.conf"
