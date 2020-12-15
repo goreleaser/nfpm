@@ -86,7 +86,7 @@ suggests:
 conflicts:
   - mercurial
     
-# Contents to att to the package
+# Contents to add to the package
 # This can be binaries or any other files.
 contents:
     # Basic file that applies to all packagers
