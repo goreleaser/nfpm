@@ -45,3 +45,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	mvdan.cc/gofumpt v0.0.0-20201129102820-5c11c50e9475 // indirect
 )
+
+replace github.com/google/rpmpack => github.com/djgilcrease/rpmpack v0.0.0-20201221224521-5ac1d3b45cee

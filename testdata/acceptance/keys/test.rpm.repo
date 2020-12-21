@@ -3,4 +3,5 @@ name=NFPM Testing
 baseurl=file:///tmp
 enabled=1
 gpgcheck=1
+gpgkey = file:///tmp/pubkey.asc
 sslverify=0
