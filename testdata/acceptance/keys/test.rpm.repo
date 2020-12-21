@@ -1,0 +1,6 @@
+[nfpm-test]
+name=NFPM Testing
+baseurl=file:///tmp
+enabled=1
+gpgcheck=1
+sslverify=0
