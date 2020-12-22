@@ -103,7 +103,7 @@ func TestValidate(t *testing.T) {
 		Overridables: nfpm.Overridables{
 			Contents: []*files.Content{
 				{
-					Source:      "asd",
+					Source:      "./testdata/contents.yaml",
 					Destination: "asd",
 				},
 			},
@@ -116,7 +116,7 @@ func TestValidate(t *testing.T) {
 		Overridables: nfpm.Overridables{
 			Contents: []*files.Content{
 				{
-					Source:      "asd",
+					Source:      "./testdata/contents.yaml",
 					Destination: "asd",
 					Type:        "config",
 				},
