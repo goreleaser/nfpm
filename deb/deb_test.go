@@ -656,7 +656,6 @@ func TestSymlinkInFiles(t *testing.T) {
 				{
 					Source:      symlinkTo(t, symlinkTarget),
 					Destination: packagedTarget,
-					Type:        "symlink",
 				},
 			},
 		},
