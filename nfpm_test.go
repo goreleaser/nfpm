@@ -8,11 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/goreleaser/nfpm"
 	"github.com/goreleaser/nfpm/files"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRegister(t *testing.T) {
@@ -21,20 +19,20 @@ func TestRegister(t *testing.T) {
 	nfpm.RegisterPackager(format, pkgr)
 	got, err := nfpm.Get(format)
 	require.NoError(t, err)
-	assert.Equal(t, pkgr, got)
+	require.Equal(t, pkgr, got)
 }
 
 func TestGet(t *testing.T) {
 	format := "TestGet"
 	got, err := nfpm.Get(format)
 	require.Error(t, err)
-	assert.EqualError(t, err, "no packager registered for the format "+format)
-	assert.Nil(t, got)
+	require.EqualError(t, err, "no packager registered for the format "+format)
+	require.Nil(t, got)
 	pkgr := &fakePackager{}
 	nfpm.RegisterPackager(format, pkgr)
 	got, err = nfpm.Get(format)
 	require.NoError(t, err)
-	assert.Equal(t, pkgr, got)
+	require.Equal(t, pkgr, got)
 }
 
 func TestDefaultsVersion(t *testing.T) {
@@ -42,26 +40,26 @@ func TestDefaultsVersion(t *testing.T) {
 		Version: "v1.0.0",
 	}
 	info = nfpm.WithDefaults(info)
-	assert.NotEmpty(t, info.Platform)
-	assert.Equal(t, "1.0.0", info.Version)
-	assert.Equal(t, "", info.Release)
-	assert.Equal(t, "", info.Prerelease)
+	require.NotEmpty(t, info.Platform)
+	require.Equal(t, "1.0.0", info.Version)
+	require.Equal(t, "", info.Release)
+	require.Equal(t, "", info.Prerelease)
 
 	info = &nfpm.Info{
 		Version: "v1.0.0-rc1",
 	}
 	info = nfpm.WithDefaults(info)
-	assert.Equal(t, "1.0.0", info.Version)
-	assert.Equal(t, "", info.Release)
-	assert.Equal(t, "rc1", info.Prerelease)
+	require.Equal(t, "1.0.0", info.Version)
+	require.Equal(t, "", info.Release)
+	require.Equal(t, "rc1", info.Prerelease)
 
 	info = &nfpm.Info{
 		Version: "v1.0.0-beta1",
 	}
 	info = nfpm.WithDefaults(info)
-	assert.Equal(t, "1.0.0", info.Version)
-	assert.Equal(t, "", info.Release)
-	assert.Equal(t, "beta1", info.Prerelease)
+	require.Equal(t, "1.0.0", info.Version)
+	require.Equal(t, "", info.Release)
+	require.Equal(t, "beta1", info.Prerelease)
 
 	info = &nfpm.Info{
 		Version:    "v1.0.0-1",
@@ -69,9 +67,9 @@ func TestDefaultsVersion(t *testing.T) {
 		Prerelease: "beta1",
 	}
 	info = nfpm.WithDefaults(info)
-	assert.Equal(t, "1.0.0", info.Version)
-	assert.Equal(t, "2", info.Release)
-	assert.Equal(t, "beta1", info.Prerelease)
+	require.Equal(t, "1.0.0", info.Version)
+	require.Equal(t, "2", info.Release)
+	require.Equal(t, "beta1", info.Prerelease)
 
 	info = &nfpm.Info{
 		Version:    "v1.0.0-1+xdg2",
@@ -79,10 +77,10 @@ func TestDefaultsVersion(t *testing.T) {
 		Prerelease: "beta1",
 	}
 	info = nfpm.WithDefaults(info)
-	assert.Equal(t, "1.0.0", info.Version)
-	assert.Equal(t, "2", info.Release)
-	assert.Equal(t, "beta1", info.Prerelease)
-	assert.Equal(t, "", info.Deb.VersionMetadata)
+	require.Equal(t, "1.0.0", info.Version)
+	require.Equal(t, "2", info.Release)
+	require.Equal(t, "beta1", info.Prerelease)
+	require.Equal(t, "", info.Deb.VersionMetadata)
 }
 
 func TestDefaults(t *testing.T) {
@@ -92,7 +90,7 @@ func TestDefaults(t *testing.T) {
 		Description: "no description given",
 	}
 	got := nfpm.WithDefaults(info)
-	assert.Equal(t, info, got)
+	require.Equal(t, info, got)
 }
 
 func TestValidate(t *testing.T) {
@@ -157,13 +155,13 @@ func TestParseFile(t *testing.T) {
 	require.Error(t, err)
 	config, err := nfpm.ParseFile("./testdata/versionenv.yaml")
 	require.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
+	require.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
 }
 
 func TestParseEnhancedFile(t *testing.T) {
 	config, err := nfpm.ParseFile("./testdata/contents.yaml")
 	require.NoError(t, err)
-	assert.Equal(t, config.Name, "contents foo")
+	require.Equal(t, config.Name, "contents foo")
 	shouldFind := 5
 	if len(config.Contents) != shouldFind {
 		t.Errorf("should have had %d files but found %d", shouldFind, len(config.Contents))
@@ -200,7 +198,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		os.Setenv("VERSION", version)
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nversion: $VERSION"))
 		require.NoError(t, err)
-		assert.Equal(t, version, info.Version)
+		require.Equal(t, version, info.Version)
 	})
 
 	t.Run("release", func(t *testing.T) {
@@ -208,7 +206,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		os.Setenv("RELEASE", release)
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nrelease: $RELEASE"))
 		require.NoError(t, err)
-		assert.Equal(t, release, info.Release)
+		require.Equal(t, release, info.Release)
 	})
 
 	t.Run("global passphrase", func(t *testing.T) {
@@ -216,9 +214,9 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		os.Setenv("NFPM_PASSPHRASE", globalPass)
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
-		assert.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
-		assert.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
-		assert.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
 	})
 
 	t.Run("specific passphrases", func(t *testing.T) {
@@ -229,9 +227,9 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		os.Setenv("NFPM_APK_PASSPHRASE", apkPass)
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
-		assert.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
-		assert.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
-		assert.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
+		require.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
+		require.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
 	})
 }
 
@@ -243,67 +241,65 @@ func TestOverrides(t *testing.T) {
 	file := "./testdata/overrides.yaml"
 	config, err := nfpm.ParseFile(file)
 	require.NoError(t, err)
-	assert.Equal(t, "foo", config.Name)
-	assert.Equal(t, "amd64", config.Arch)
+	require.Equal(t, "foo", config.Name)
+	require.Equal(t, "amd64", config.Arch)
 
-	// deb overrides
-	deb, err := config.Get("deb")
-	require.NoError(t, err)
-	assert.Contains(t, deb.Depends, "deb_depend")
-	assert.NotContains(t, deb.Depends, "rpm_depend")
-	assert.NotContains(t, deb.Depends, "apk_depend")
-	for _, f := range deb.Contents {
-		assert.True(t, f.Packager != "rpm")
-		assert.True(t, f.Packager != "apk")
-		if f.Packager == "deb" {
-			assert.Contains(t, f.Destination, "/deb")
+	t.Run("deb", func(t *testing.T) {
+		deb, err := config.Get("deb")
+		require.NoError(t, err)
+		require.Equal(t, deb.Depends, []string{"deb_depend"})
+		for _, f := range deb.Contents {
+			switch f.Packager {
+			case "deb":
+				require.Contains(t, f.Destination, "/deb")
+			case "":
+				require.True(t, f.Destination == "/etc/foo/whatever.conf")
+			default:
+				t.Fatalf("invalid packager: %s", f.Packager)
+			}
 		}
-		if f.Packager == "" {
-			assert.True(t, f.Destination == "/etc/foo/whatever.conf")
-		}
-	}
-	assert.Equal(t, "amd64", deb.Arch)
+		require.Equal(t, "amd64", deb.Arch)
+	})
 
-	// rpm overrides
-	rpm, err := config.Get("rpm")
-	require.NoError(t, err)
-	assert.Contains(t, rpm.Depends, "rpm_depend")
-	assert.NotContains(t, rpm.Depends, "deb_depend")
-	assert.NotContains(t, rpm.Depends, "apk_depend")
-	for _, f := range rpm.Contents {
-		assert.True(t, f.Packager != "deb")
-		assert.True(t, f.Packager != "apk")
-		if f.Packager == "rpm" {
-			assert.Contains(t, f.Destination, "/rpm")
+	t.Run("rpm", func(t *testing.T) {
+		rpm, err := config.Get("rpm")
+		require.NoError(t, err)
+		require.Equal(t, rpm.Depends, []string{"rpm_depend"})
+		for _, f := range rpm.Contents {
+			switch f.Packager {
+			case "rpm":
+				require.Contains(t, f.Destination, "/rpm")
+			case "":
+				require.True(t, f.Destination == "/etc/foo/whatever.conf")
+			default:
+				t.Fatalf("invalid packager: %s", f.Packager)
+			}
 		}
-		if f.Packager == "" {
-			assert.True(t, f.Destination == "/etc/foo/whatever.conf")
-		}
-	}
-	assert.Equal(t, "amd64", rpm.Arch)
+		require.Equal(t, "amd64", rpm.Arch)
+	})
 
-	// apk overrides
-	apk, err := config.Get("apk")
-	require.NoError(t, err)
-	assert.Contains(t, apk.Depends, "apk_depend")
-	assert.NotContains(t, apk.Depends, "rpm_depend")
-	assert.NotContains(t, apk.Depends, "deb_depend")
-	for _, f := range apk.Contents {
-		assert.True(t, f.Packager != "rpm")
-		assert.True(t, f.Packager != "deb")
-		if f.Packager == "apk" {
-			assert.Contains(t, f.Destination, "/apk")
+	t.Run("apk", func(t *testing.T) {
+		apk, err := config.Get("apk")
+		require.NoError(t, err)
+		require.Equal(t, apk.Depends, []string{"apk_depend"})
+		for _, f := range apk.Contents {
+			switch f.Packager {
+			case "apk":
+				require.Contains(t, f.Destination, "/apk")
+			case "":
+				require.True(t, f.Destination == "/etc/foo/whatever.conf")
+			default:
+				t.Fatalf("invalid packager: %s", f.Packager)
+			}
 		}
-		if f.Packager == "" {
-			assert.True(t, f.Destination == "/etc/foo/whatever.conf")
-		}
-	}
-	assert.Equal(t, "amd64", apk.Arch)
+		require.Equal(t, "amd64", apk.Arch)
+	})
 
-	// no overrides
-	info, err := config.Get("doesnotexist")
-	require.NoError(t, err)
-	assert.True(t, reflect.DeepEqual(&config.Info, info))
+	t.Run("no_overrides", func(t *testing.T) {
+		info, err := config.Get("doesnotexist")
+		require.NoError(t, err)
+		require.True(t, reflect.DeepEqual(&config.Info, info))
+	})
 }
 
 type fakePackager struct{}
