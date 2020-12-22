@@ -244,56 +244,24 @@ func TestOverrides(t *testing.T) {
 	require.Equal(t, "foo", config.Name)
 	require.Equal(t, "amd64", config.Arch)
 
-	t.Run("deb", func(t *testing.T) {
-		deb, err := config.Get("deb")
-		require.NoError(t, err)
-		require.Equal(t, deb.Depends, []string{"deb_depend"})
-		for _, f := range deb.Contents {
-			switch f.Packager {
-			case "deb":
-				require.Contains(t, f.Destination, "/deb")
-			case "":
-				require.True(t, f.Destination == "/etc/foo/whatever.conf")
-			default:
-				t.Fatalf("invalid packager: %s", f.Packager)
+	for _, format := range []string{"apk", "deb", "rpm"} {
+		t.Run(format, func(t *testing.T) {
+			pkg, err := config.Get(format)
+			require.NoError(t, err)
+			require.Equal(t, pkg.Depends, []string{format + "_depend"})
+			for _, f := range pkg.Contents {
+				switch f.Packager {
+				case format:
+					require.Contains(t, f.Destination, "/"+format)
+				case "":
+					require.True(t, f.Destination == "/etc/foo/whatever.conf")
+				default:
+					t.Fatalf("invalid packager: %s", f.Packager)
+				}
 			}
-		}
-		require.Equal(t, "amd64", deb.Arch)
-	})
-
-	t.Run("rpm", func(t *testing.T) {
-		rpm, err := config.Get("rpm")
-		require.NoError(t, err)
-		require.Equal(t, rpm.Depends, []string{"rpm_depend"})
-		for _, f := range rpm.Contents {
-			switch f.Packager {
-			case "rpm":
-				require.Contains(t, f.Destination, "/rpm")
-			case "":
-				require.True(t, f.Destination == "/etc/foo/whatever.conf")
-			default:
-				t.Fatalf("invalid packager: %s", f.Packager)
-			}
-		}
-		require.Equal(t, "amd64", rpm.Arch)
-	})
-
-	t.Run("apk", func(t *testing.T) {
-		apk, err := config.Get("apk")
-		require.NoError(t, err)
-		require.Equal(t, apk.Depends, []string{"apk_depend"})
-		for _, f := range apk.Contents {
-			switch f.Packager {
-			case "apk":
-				require.Contains(t, f.Destination, "/apk")
-			case "":
-				require.True(t, f.Destination == "/etc/foo/whatever.conf")
-			default:
-				t.Fatalf("invalid packager: %s", f.Packager)
-			}
-		}
-		require.Equal(t, "amd64", apk.Arch)
-	})
+			require.Equal(t, "amd64", pkg.Arch)
+		})
+	}
 
 	t.Run("no_overrides", func(t *testing.T) {
 		info, err := config.Get("doesnotexist")
