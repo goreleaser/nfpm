@@ -586,8 +586,8 @@ func TestSymlink(t *testing.T) {
 					Destination: configFilePath,
 				},
 				{
-					Source:      symlink,
-					Destination: symlinkTarget,
+					Source:      symlinkTarget,
+					Destination: symlink,
 					Type:        "symlink",
 				},
 			},
