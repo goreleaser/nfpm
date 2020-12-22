@@ -606,7 +606,7 @@ func TestRPMSignature(t *testing.T) {
 
 	_, sigs, err := rpmutils.Verify(bytes.NewReader(rpmBuffer.Bytes()), keyring)
 	require.NoError(t, err)
-	require.Len(t, sigs, 1)
+	require.Len(t, sigs, 2)
 }
 
 func TestRPMSignatureError(t *testing.T) {
