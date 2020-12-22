@@ -196,26 +196,26 @@ func (i *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 
 // Overridables contain the field which are overridable in a package.
 type Overridables struct {
-	Replaces      []string          `yaml:"replaces,omitempty"`
-	Provides      []string          `yaml:"provides,omitempty"`
-	Depends       []string          `yaml:"depends,omitempty"`
-	Recommends    []string          `yaml:"recommends,omitempty"`
-	Suggests      []string          `yaml:"suggests,omitempty"`
-	Conflicts     []string          `yaml:"conflicts,omitempty"`
-	Contents      files.Contents    `yaml:"contents,omitempty"`
-	EmptyFolders  []string          `yaml:"empty_folders,omitempty"`
-	Scripts       Scripts           `yaml:"scripts,omitempty"`
-	RPM           RPM               `yaml:"rpm,omitempty"`
-	Deb           Deb               `yaml:"deb,omitempty"`
-	APK           APK               `yaml:"apk,omitempty"`
+	Replaces     []string       `yaml:"replaces,omitempty"`
+	Provides     []string       `yaml:"provides,omitempty"`
+	Depends      []string       `yaml:"depends,omitempty"`
+	Recommends   []string       `yaml:"recommends,omitempty"`
+	Suggests     []string       `yaml:"suggests,omitempty"`
+	Conflicts    []string       `yaml:"conflicts,omitempty"`
+	Contents     files.Contents `yaml:"contents,omitempty"`
+	EmptyFolders []string       `yaml:"empty_folders,omitempty"`
+	Scripts      Scripts        `yaml:"scripts,omitempty"`
+	RPM          RPM            `yaml:"rpm,omitempty"`
+	Deb          Deb            `yaml:"deb,omitempty"`
+	APK          APK            `yaml:"apk,omitempty"`
 }
 
 // RPM is custom configs that are only available on RPM packages.
 type RPM struct {
-	Group                string            `yaml:"group,omitempty"`
-	Summary              string            `yaml:"summary,omitempty"`
-	Compression          string            `yaml:"compression,omitempty"`
-	Signature            RPMSignature      `yaml:"signature,omitempty"`
+	Group       string       `yaml:"group,omitempty"`
+	Summary     string       `yaml:"summary,omitempty"`
+	Compression string       `yaml:"compression,omitempty"`
+	Signature   RPMSignature `yaml:"signature,omitempty"`
 }
 
 type RPMSignature struct {
