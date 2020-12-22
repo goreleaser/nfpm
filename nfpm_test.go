@@ -8,9 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/goreleaser/nfpm"
 	"github.com/goreleaser/nfpm/files"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRegister(t *testing.T) {
@@ -245,6 +246,7 @@ func TestOverrides(t *testing.T) {
 	require.Equal(t, "amd64", config.Arch)
 
 	for _, format := range []string{"apk", "deb", "rpm"} {
+		format := format
 		t.Run(format, func(t *testing.T) {
 			pkg, err := config.Get(format)
 			require.NoError(t, err)
