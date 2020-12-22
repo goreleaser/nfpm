@@ -5,8 +5,9 @@ version: "v1.2.3-beta"
 maintainer: "Foo Bar"
 vendor: "foobar"
 license: "MIT"
-files:
-  ./testdata/fake: "/usr/local/bin/fake"
+contents:
+- src: ./testdata/fake
+  dst: /usr/local/bin/fake
 scripts:
   postinstall: ./testdata/acceptance/scripts/postinstall_trigger.sh
 deb:

@@ -6,8 +6,10 @@ maintainer: "Foo Bar"
 vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
-config_files:
-  ./testdata/whatever.conf: "/etc/regular.conf"
-rpm:
-  config_noreplace_files:
-    ./testdata/whatever.conf: "/etc/noreplace.conf"
+contents:
+- src: ./testdata/whatever.conf
+  dst: /etc/foo/regular.conf
+  type: config
+- src: ./testdata/whatever.conf
+  dst: /etc/foo/noreplace.conf
+  type: config|noreplace

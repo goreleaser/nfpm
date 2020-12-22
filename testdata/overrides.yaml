@@ -2,23 +2,31 @@
 name: "foo"
 arch: "amd64"
 version: "v1.2.3"
-config_files:
-  whatever.conf: "/etc/foo/whatever.conf"
+contents:
+- src: ./testdata/whatever.conf
+  dst: /etc/foo/whatever.conf
+  type: config
+- src: deb.conf
+  dst: /deb/path
+  type: config
+  packager: deb
+- src: rpm.conf
+  dst: /rpm/path
+  type: config
+  packager: rpm
+- src: apk.conf
+  dst: /apk/path
+  type: config
+  packager: apk
 rpm:
   group: foo
 overrides:
   deb:
     depends:
       - deb_depend
-    config_files:
-      deb.conf: "/deb/path"
   rpm:
     depends:
       - rpm_depend
-    config_files:
-      rpm.conf: "/rpm/path"
   apk:
     depends:
       - apk_depend
-    config_files:
-      apk.conf: "/apk/path"

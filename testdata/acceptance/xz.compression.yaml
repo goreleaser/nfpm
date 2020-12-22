@@ -9,9 +9,11 @@ description: |
 vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
-files:
-  ./testdata/fake: "/usr/local/bin/fake"
-config_files:
-  ./testdata/whatever.conf: "/etc/foo/whatever.conf"
+contents:
+- src: ./testdata/fake
+  dst: /usr/local/bin/fake
+- src: ./testdata/whatever.conf
+  dst: /etc/foo/whatever.conf
+  type: config
 rpm:
   compression: "xz"
