@@ -9,6 +9,6 @@ license: "MIT"
 contents:
 - src: ./testdata/whatever.conf
   dst: /etc/foo/whatever.conf
-- src: /path/to/symlink
-  dst: /etc/foo/whatever.conf
+- src: /etc/foo/whatever.conf
+  dst: /path/to/symlink
   type: symlink
