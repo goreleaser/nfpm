@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/files"
 )
 
 func TestRegister(t *testing.T) {
@@ -100,8 +101,11 @@ func TestValidate(t *testing.T) {
 		Arch:    "asd",
 		Version: "1.2.3",
 		Overridables: nfpm.Overridables{
-			Files: map[string]string{
-				"asa": "asd",
+			Contents: []*files.Content{
+				{
+					Source: "asd",
+					Destination: "asd",
+				},
 			},
 		},
 	}))
@@ -110,8 +114,12 @@ func TestValidate(t *testing.T) {
 		Arch:    "asd",
 		Version: "1.2.3",
 		Overridables: nfpm.Overridables{
-			ConfigFiles: map[string]string{
-				"asa": "asd",
+			Contents: []*files.Content{
+				{
+					Source: "asd",
+					Destination: "asd",
+					Type: "config",
+				},
 			},
 		},
 	}))

@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/files"
 	"github.com/goreleaser/nfpm/internal/sign"
 )
 
@@ -60,12 +61,20 @@ func exampleInfo() *nfpm.Info {
 				"zsh",
 				"foobarsh",
 			},
-			Files: map[string]string{
-				"../testdata/fake":          "/usr/local/bin/fake",
-				"../testdata/whatever.conf": "/usr/share/doc/fake/fake.txt",
-			},
-			ConfigFiles: map[string]string{
-				"../testdata/whatever.conf": "/etc/fake/fake.conf",
+			Contents: []*files.Content{
+				{
+					Source:      "../testdata/fake",
+					Destination: "/usr/local/bin/fake",
+				},
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/usr/share/doc/fake/fake.txt",
+				},
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/etc/fake/fake.conf",
+					Type:        "config",
+				},
 			},
 			EmptyFolders: []string{
 				"/var/log/whatever",
@@ -169,11 +178,16 @@ func TestFileDoesNotExist(t *testing.T) {
 				Depends: []string{
 					"bash",
 				},
-				Files: map[string]string{
-					"../testdata/fake": "/usr/local/bin/fake",
-				},
-				ConfigFiles: map[string]string{
-					"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
+				Contents: []*files.Content{
+					{
+						Source:      "../testdata/fake",
+						Destination: "/usr/local/bin/fake",
+					},
+					{
+						Source:      "../testdata/whatever.confzzz",
+						Destination: "/etc/fake/fake.conf",
+						Type:        "config",
+					},
 				},
 			},
 		}),
@@ -320,8 +334,11 @@ func TestSignatureError(t *testing.T) {
 func TestDisableGlobbing(t *testing.T) {
 	info := exampleInfo()
 	info.DisableGlobbing = true
-	info.Files = map[string]string{
-		"../testdata/{file}[": "/test/{file}[",
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/{file}[",
+			Destination: "/test/{file}[",
+		},
 	}
 	err := info.Validate()
 	require.NoError(t, err)
@@ -404,9 +421,12 @@ func TestAPKConventionalFileName(t *testing.T) {
 
 func TestPackageSymlinks(t *testing.T) {
 	info := exampleInfo()
-	info.Files = map[string]string{}
-	info.Symlinks = map[string]string{
-		"../testdata/fake": "fake",
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/fake",
+			Destination: "fake",
+			Type:        "symlink",
+		},
 	}
 	assert.NoError(t, Default.Package(info, ioutil.Discard))
 }

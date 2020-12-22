@@ -61,12 +61,20 @@ func exampleInfo() *nfpm.Info {
 			Conflicts: []string{
 				"zsh",
 			},
-			Files: map[string]string{
-				"../testdata/fake":          "/usr/local/bin/fake",
-				"../testdata/whatever.conf": "/usr/share/doc/fake/fake.txt",
-			},
-			ConfigFiles: map[string]string{
-				"../testdata/whatever.conf": "/etc/fake/fake.conf",
+			Contents: []*files.Content{
+				{
+					Source:      "../testdata/fake",
+					Destination: "/usr/local/bin/fake",
+				},
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/usr/share/doc/fake/fake.txt",
+				},
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/etc/fake/fake.conf",
+					Type:        "config",
+				},
 			},
 			EmptyFolders: []string{
 				"/var/log/whatever",
@@ -230,14 +238,13 @@ func TestNoJoinsControl(t *testing.T) {
 			Homepage:    "http://carlosbecker.com",
 			Vendor:      "nope",
 			Overridables: nfpm.Overridables{
-				Depends:     []string{},
-				Recommends:  []string{},
-				Suggests:    []string{},
-				Replaces:    []string{},
-				Provides:    []string{},
-				Conflicts:   []string{},
-				Files:       map[string]string{},
-				ConfigFiles: map[string]string{},
+				Depends:    []string{},
+				Recommends: []string{},
+				Suggests:   []string{},
+				Replaces:   []string{},
+				Provides:   []string{},
+				Conflicts:  []string{},
+				Contents:   []*files.Content{},
 			},
 		}),
 		InstalledSize: 10,
@@ -267,11 +274,16 @@ func TestDebFileDoesNotExist(t *testing.T) {
 				Depends: []string{
 					"bash",
 				},
-				Files: map[string]string{
-					"../testdata/fake": "/usr/local/bin/fake",
-				},
-				ConfigFiles: map[string]string{
-					"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
+				Contents: []*files.Content{
+					{
+						Source:      "../testdata/fake",
+						Destination: "/usr/local/bin/fake",
+					},
+					{
+						Source:      "../testdata/whatever.confzzz",
+						Destination: "/etc/fake/fake.conf",
+						Type:        "config",
+					},
 				},
 			},
 		}),
@@ -317,8 +329,12 @@ func TestConffiles(t *testing.T) {
 		Version:     "1.0.0",
 		Section:     "default",
 		Overridables: nfpm.Overridables{
-			ConfigFiles: map[string]string{
-				"../testdata/fake": "/etc/fake",
+			Contents: []*files.Content{
+				{
+					Source:      "../testdata/fake",
+					Destination: "/etc/fake",
+					Type:        "config",
+				},
 			},
 		},
 	})
@@ -636,8 +652,12 @@ func TestSymlinkInFiles(t *testing.T) {
 		Description: "This package's config references a file via symlink.",
 		Version:     "1.0.0",
 		Overridables: nfpm.Overridables{
-			Files: map[string]string{
-				symlinkTo(t, symlinkTarget): packagedTarget,
+			Contents: []*files.Content{
+				{
+					Source:      symlinkTo(t, symlinkTarget),
+					Destination: packagedTarget,
+					Type:        "symlink",
+				},
 			},
 		},
 	}
@@ -669,11 +689,16 @@ func TestSymlink(t *testing.T) {
 		Description: "This package's config references a file via symlink.",
 		Version:     "1.0.0",
 		Overridables: nfpm.Overridables{
-			Files: map[string]string{
-				"../testdata/whatever.conf": configFilePath,
-			},
-			Symlinks: map[string]string{
-				symlink: symlinkTarget,
+			Contents: []*files.Content{
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: configFilePath,
+				},
+				{
+					Source:      symlink,
+					Destination: symlinkTarget,
+					Type:        "symlink",
+				},
 			},
 		},
 	}
@@ -693,8 +718,12 @@ func TestSymlink(t *testing.T) {
 
 func TestEnsureRelativePrefixInTarGzFiles(t *testing.T) {
 	info := exampleInfo()
-	info.Symlinks = map[string]string{
-		"/symlink/to/fake.txt": "/usr/share/doc/fake/fake.txt",
+	info.Contents = []*files.Content{
+		{
+			Source:      "/symlink/to/fake.txt",
+			Destination: "/usr/share/doc/fake/fake.txt",
+			Type:        "symlink",
+		},
 	}
 	info.Changelog = "../testdata/changelog.yaml"
 	err := info.Validate()
@@ -809,11 +838,13 @@ func TestDebsigsSignatureError(t *testing.T) {
 func TestDisableGlobbing(t *testing.T) {
 	info := exampleInfo()
 	info.DisableGlobbing = true
-	info.Files = map[string]string{
-		"../testdata/{file}[": "/test/{file}[",
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/{file}[",
+			Destination: "/test/{file}[",
+		},
 	}
-	err := info.Validate()
-	require.NoError(t, err)
+	require.NoError(t, info.Validate())
 
 	dataTarGz, _, _, err := createDataTarGz(info)
 	require.NoError(t, err)

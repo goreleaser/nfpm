@@ -55,11 +55,16 @@ func exampleInfo() *nfpm.Info {
 			Conflicts: []string{
 				"zsh",
 			},
-			Files: map[string]string{
-				"../testdata/fake": "/usr/local/bin/fake",
-			},
-			ConfigFiles: map[string]string{
-				"../testdata/whatever.conf": "/etc/fake/fake.conf",
+			Contents: []*files.Content{
+				{
+					Source:      "../testdata/fake",
+					Destination: "/usr/local/bin/fake",
+				},
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/etc/fake/fake.conf",
+					Type:        "config",
+				},
 			},
 			EmptyFolders: []string{
 				"/var/log/whatever",
@@ -365,11 +370,16 @@ echo "Postremove" > /dev/null
 
 func TestRPMFileDoesNotExist(t *testing.T) {
 	info := exampleInfo()
-	info.Files = map[string]string{
-		"../testdata/fake": "/usr/local/bin/fake",
-	}
-	info.ConfigFiles = map[string]string{
-		"../testdata/whatever.confzzz": "/etc/fake/fake.conf",
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/fake",
+			Destination: "/usr/local/bin/fake",
+		},
+		{
+			Source:      "../testdata/whatever.confzzz",
+			Destination: "/etc/fake/fake.conf",
+			Type:        "config",
+		},
 	}
 	var err = Default.Package(info, ioutil.Discard)
 	assert.EqualError(t, err, "matching \"../testdata/whatever.confzzz\": file does not exist")
@@ -397,9 +407,11 @@ func TestConfigNoReplace(t *testing.T) {
 		Description: "This package's config references a file via symlink.",
 		Version:     "1.0.0",
 		Overridables: nfpm.Overridables{
-			RPM: nfpm.RPM{
-				ConfigNoReplaceFiles: map[string]string{
-					buildConfigFile: packageConfigFile,
+			Contents: []*files.Content{
+				{
+					Source:      buildConfigFile,
+					Destination: packageConfigFile,
+					Type:        "config|noreplace",
 				},
 			},
 		},
@@ -533,8 +545,12 @@ func TestSymlinkInFiles(t *testing.T) {
 		Description: "This package's config references a file via symlink.",
 		Version:     "1.0.0",
 		Overridables: nfpm.Overridables{
-			Files: map[string]string{
-				symlinkTo(t, symlinkTarget): packagedTarget,
+			Contents: []*files.Content{
+				{
+					Source:      symlinkTo(t, symlinkTarget),
+					Destination: packagedTarget,
+					Type:        "symlink",
+				},
 			},
 		},
 	}
@@ -565,11 +581,16 @@ func TestSymlink(t *testing.T) {
 		Description: "This package's config references a file via symlink.",
 		Version:     "1.0.0",
 		Overridables: nfpm.Overridables{
-			Files: map[string]string{
-				"../testdata/whatever.conf": configFilePath,
-			},
-			Symlinks: map[string]string{
-				symlink: symlinkTarget,
+			Contents: []*files.Content{
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: configFilePath,
+				},
+				{
+					Source:      symlink,
+					Destination: symlinkTarget,
+					Type:        "symlink",
+				},
 			},
 		},
 	}
@@ -628,11 +649,18 @@ func TestRPMGhostFiles(t *testing.T) {
 	)
 
 	info := &nfpm.Info{
-		Name:         "rpm-ghost",
-		Arch:         "amd64",
-		Description:  "This RPM contains ghost files.",
-		Version:      "1.0.0",
-		Overridables: nfpm.Overridables{RPM: nfpm.RPM{GhostFiles: []string{filename}}},
+		Name:        "rpm-ghost",
+		Arch:        "amd64",
+		Description: "This RPM contains ghost files.",
+		Version:     "1.0.0",
+		Overridables: nfpm.Overridables{
+			Contents: []*files.Content{
+				{
+					Destination: filename,
+					Type:        "ghost",
+				},
+			},
+		},
 	}
 
 	var rpmFileBuffer bytes.Buffer
@@ -666,8 +694,11 @@ func TestRPMGhostFiles(t *testing.T) {
 func TestDisableGlobbing(t *testing.T) {
 	info := exampleInfo()
 	info.DisableGlobbing = true
-	info.Files = map[string]string{
-		"../testdata/{file}[": "/test/{file}[",
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/{file}[",
+			Destination: "/test/{file}[",
+		},
 	}
 
 	var rpmFileBuffer bytes.Buffer
