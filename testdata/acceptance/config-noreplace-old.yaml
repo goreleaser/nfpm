@@ -8,8 +8,8 @@ homepage: "https://foobar.org"
 license: "MIT"
 contents:
 - src: ./testdata/whatever.conf
-  dst: /etc/foo/regular.conf
+  dst: /etc/regular.conf
   type: config
 - src: ./testdata/whatever.conf
-  dst: /etc/foo/noreplace.conf
+  dst: /etc/noreplace.conf
   type: config|noreplace
