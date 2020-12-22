@@ -6,11 +6,11 @@ contents:
 - src: ./testdata/whatever.conf
   dst: /etc/foo/regular.conf
   type: config
-- src: ./deb.conf
+- src: ./testdata/whatever.conf
   dst: /deb/path
   type: config
   packager: deb
-- src: ./rpm.conf
+- src: ./testdata/whatever.conf
   dst: /rpm/path
   type: config
   packager: rpm

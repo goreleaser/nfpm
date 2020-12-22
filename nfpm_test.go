@@ -236,6 +236,10 @@ func TestOptionsFromEnvironment(t *testing.T) {
 }
 
 func TestOverrides(t *testing.T) {
+	nfpm.RegisterPackager("deb", &fakePackager{})
+	nfpm.RegisterPackager("rpm", &fakePackager{})
+	nfpm.RegisterPackager("apk", &fakePackager{})
+
 	file := "./testdata/overrides.yaml"
 	config, err := nfpm.ParseFile(file)
 	require.NoError(t, err)
@@ -247,8 +251,8 @@ func TestOverrides(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, deb.Depends, "deb_depend")
 	assert.NotContains(t, deb.Depends, "rpm_depend")
+	assert.NotContains(t, deb.Depends, "apk_depend")
 	for _, f := range deb.Contents {
-		fmt.Printf("%+#v\n", f)
 		assert.True(t, f.Packager != "rpm")
 		assert.True(t, f.Packager != "apk")
 		if f.Packager == "deb" {
@@ -265,8 +269,8 @@ func TestOverrides(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, rpm.Depends, "rpm_depend")
 	assert.NotContains(t, rpm.Depends, "deb_depend")
+	assert.NotContains(t, rpm.Depends, "apk_depend")
 	for _, f := range rpm.Contents {
-		fmt.Printf("%+#v\n", f)
 		assert.True(t, f.Packager != "deb")
 		assert.True(t, f.Packager != "apk")
 		if f.Packager == "rpm" {
@@ -277,6 +281,24 @@ func TestOverrides(t *testing.T) {
 		}
 	}
 	assert.Equal(t, "amd64", rpm.Arch)
+
+	// apk overrides
+	apk, err := config.Get("apk")
+	require.NoError(t, err)
+	assert.Contains(t, apk.Depends, "apk_depend")
+	assert.NotContains(t, apk.Depends, "rpm_depend")
+	assert.NotContains(t, apk.Depends, "deb_depend")
+	for _, f := range apk.Contents {
+		assert.True(t, f.Packager != "rpm")
+		assert.True(t, f.Packager != "deb")
+		if f.Packager == "apk" {
+			assert.Contains(t, f.Destination, "/apk")
+		}
+		if f.Packager == "" {
+			assert.True(t, f.Destination == "/etc/foo/whatever.conf")
+		}
+	}
+	assert.Equal(t, "amd64", apk.Arch)
 
 	// no overrides
 	info, err := config.Get("doesnotexist")

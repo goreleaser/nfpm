@@ -131,6 +131,13 @@ func (c *Config) Get(format string) (info *Info, err error) {
 	if err = mergo.Merge(&info.Overridables, override, mergo.WithOverride); err != nil {
 		return nil, fmt.Errorf("failed to merge overrides into info: %w", err)
 	}
+	var contents []*files.Content
+	for _, f := range info.Contents {
+		if f.Packager == format || f.Packager == "" {
+			contents = append(contents, f)
+		}
+	}
+	info.Contents = contents
 	return info, nil
 }
 

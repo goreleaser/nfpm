@@ -6,16 +6,16 @@ contents:
 - src: ./testdata/whatever.conf
   dst: /etc/foo/whatever.conf
   type: config
-- src: deb.conf
-  dst: /deb/path
+- src: ./testdata/whatever.conf
+  dst: /deb/path.conf
   type: config
   packager: deb
-- src: rpm.conf
-  dst: /rpm/path
+- src: ./testdata/whatever.conf
+  dst: /rpm/path.conf
   type: config
   packager: rpm
-- src: apk.conf
-  dst: /apk/path
+- src: ./testdata/whatever.conf
+  dst: /apk/path.conf
   type: config
   packager: apk
 rpm:
