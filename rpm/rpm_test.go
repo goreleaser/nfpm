@@ -791,17 +791,9 @@ func symlinkTo(tb testing.TB, fileName string) string {
 	target, err := filepath.Abs(fileName)
 	assert.NoError(tb, err)
 
-	tempDir, err := ioutil.TempDir("", "nfpm_rpm_test")
-	assert.NoError(tb, err)
-
-	symlinkName := path.Join(tempDir, "symlink")
+	symlinkName := path.Join(tb.TempDir(), "symlink")
 	err = os.Symlink(target, symlinkName)
 	assert.NoError(tb, err)
-
-	tb.Cleanup(func() {
-		err = os.RemoveAll(tempDir)
-		assert.NoError(tb, err)
-	})
 
 	return files.ToNixPath(symlinkName)
 }

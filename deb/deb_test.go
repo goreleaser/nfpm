@@ -959,17 +959,9 @@ func symlinkTo(tb testing.TB, fileName string) string {
 	target, err := filepath.Abs(fileName)
 	assert.NoError(tb, err)
 
-	tempDir, err := ioutil.TempDir("", "nfpm_deb_test")
-	assert.NoError(tb, err)
-
-	symlinkName := filepath.Join(tempDir, "symlink")
+	symlinkName := filepath.Join(tb.TempDir(), "symlink")
 	err = os.Symlink(target, symlinkName)
 	assert.NoError(tb, err)
-
-	tb.Cleanup(func() {
-		err = os.RemoveAll(tempDir)
-		assert.NoError(tb, err)
-	})
 
 	return files.ToNixPath(symlinkName)
 }
