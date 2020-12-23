@@ -305,10 +305,6 @@ func Validate(info *Info) (err error) {
 		return ErrFieldEmpty{"version"}
 	}
 
-	if info.Bindir != "" {
-		fmt.Fprintln(os.Stderr, "Warning: bindir is deprecated and will be removed in a future version")
-	}
-
 	info.Contents, err = files.ExpandContentGlobs(info.Contents, info.DisableGlobbing)
 	return err
 }
