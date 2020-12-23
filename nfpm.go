@@ -172,7 +172,6 @@ type Info struct {
 	Vendor          string `yaml:"vendor,omitempty"`
 	Homepage        string `yaml:"homepage,omitempty"`
 	License         string `yaml:"license,omitempty"`
-	Bindir          string `yaml:"bindir,omitempty"` // Deprecated: this does nothing. TODO: remove.
 	Changelog       string `yaml:"changelog,omitempty"`
 	DisableGlobbing bool   `yaml:"disable_globbing"`
 	Target          string `yaml:"-"`
@@ -248,7 +247,6 @@ type Deb struct {
 	Scripts         DebScripts   `yaml:"scripts,omitempty"`
 	Triggers        DebTriggers  `yaml:"triggers,omitempty"`
 	Breaks          []string     `yaml:"breaks,omitempty"`
-	VersionMetadata string       `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
 	Signature       DebSignature `yaml:"signature,omitempty"`
 }
 
@@ -305,13 +303,6 @@ func Validate(info *Info) (err error) {
 	}
 	if info.Version == "" {
 		return ErrFieldEmpty{"version"}
-	}
-
-	// deprecation warnings
-	if info.Deb.VersionMetadata != "" {
-		fmt.Fprintln(os.Stderr,
-			"Warning: deb.metadata is deprecated and will be removed in a future version "+
-				"(moved to version_metadata)")
 	}
 
 	if info.Bindir != "" {
