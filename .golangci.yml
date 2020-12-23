@@ -23,7 +23,7 @@ linters-settings:
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
-    local-prefixes: github.com/goreleaser/nfpm
+    local-prefixes: github.com/goreleaser/nfpm/v2
   govet:
     check-shadowing: true
   errcheck:

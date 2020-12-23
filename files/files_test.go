@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
-	"github.com/goreleaser/nfpm/files"
+	"github.com/goreleaser/nfpm/v2/files"
 )
 
 type testStruct struct {

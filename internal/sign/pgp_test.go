@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/openpgp"
 
-	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/v2"
 )
 
 const pass = "hunter2"

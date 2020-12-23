@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/crypto/openpgp"
 
-	"github.com/goreleaser/nfpm"
+	"github.com/goreleaser/nfpm/v2"
 )
 
 // PGPSigner returns a PGP signer that creates a detached non-ASCII-armored

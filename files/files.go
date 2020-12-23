@@ -10,7 +10,7 @@ import (
 	"github.com/goreleaser/fileglob"
 	"gopkg.in/yaml.v3"
 
-	"github.com/goreleaser/nfpm/internal/glob"
+	"github.com/goreleaser/nfpm/v2/internal/glob"
 )
 
 // Content describes the source and destination

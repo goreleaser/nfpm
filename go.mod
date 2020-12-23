@@ -1,4 +1,4 @@
-module github.com/goreleaser/nfpm
+module github.com/goreleaser/nfpm/v2
 
 go 1.15
 
