@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/openpgp"
 
-	"github.com/goreleaser/nfpm"
-	"github.com/goreleaser/nfpm/files"
+	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/files"
 )
 
 func exampleInfo() *nfpm.Info {

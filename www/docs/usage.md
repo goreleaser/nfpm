@@ -22,6 +22,6 @@ created package: /tmp/foo-1.0.0.x86_64.rpm
 
 ## Go Library
 
-Check the [GoDocs](https://pkg.go.dev/github.com/goreleaser/nfpm?tab=doc) page,
+Check the [GoDocs](https://pkg.go.dev/github.com/goreleaser/nfpm/v2?tab=doc) page,
 as well as [NFPM command line implementation](https://github.com/goreleaser/nfpm/blob/master/cmd/nfpm/main.go)
 and [GoReleaser's usage](https://github.com/goreleaser/goreleaser/blob/master/internal/pipe/nfpm/nfpm.go).

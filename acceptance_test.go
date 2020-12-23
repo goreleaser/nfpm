@@ -11,10 +11,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/goreleaser/nfpm"
-	_ "github.com/goreleaser/nfpm/apk"
-	_ "github.com/goreleaser/nfpm/deb"
-	_ "github.com/goreleaser/nfpm/rpm"
+	"github.com/goreleaser/nfpm/v2"
+	_ "github.com/goreleaser/nfpm/v2/apk"
+	_ "github.com/goreleaser/nfpm/v2/deb"
+	_ "github.com/goreleaser/nfpm/v2/rpm"
 )
 
 // nolint: gochecknoglobals

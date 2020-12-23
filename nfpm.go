@@ -15,7 +15,7 @@ import (
 	"github.com/imdario/mergo"
 	"gopkg.in/yaml.v3"
 
-	"github.com/goreleaser/nfpm/files"
+	"github.com/goreleaser/nfpm/v2/files"
 )
 
 // nolint: gochecknoglobals
