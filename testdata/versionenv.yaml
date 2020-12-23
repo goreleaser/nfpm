@@ -2,16 +2,22 @@
 name: "foo"
 arch: "amd64"
 version: "v$GOROOT"
-config_files:
-  whatever.conf: "/etc/foo/whatever.conf"
+contents:
+- src: ./testdata/whatever.conf
+  dst: /etc/foo/regular.conf
+  type: config
+- src: ./testdata/whatever.conf
+  dst: /deb/path
+  type: config
+  packager: deb
+- src: ./testdata/whatever.conf
+  dst: /rpm/path
+  type: config
+  packager: rpm
 overrides:
   deb:
     depends:
       - deb_depend
-    config_files:
-      deb.conf: "/deb/path"
   rpm:
     depends:
       - rpm_depend
-    config_files:
-      rpm.conf: "/rpm/path"

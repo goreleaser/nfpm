@@ -128,13 +128,16 @@ func (c *Config) Get(format string) (info *Info, err error) {
 		// no overrides
 		return info, nil
 	}
-	if !override.hasResetFiles {
-		override.resetFiles(format)
-		c.Contents = append(c.Contents, override.Contents...)
-	}
 	if err = mergo.Merge(&info.Overridables, override, mergo.WithOverride); err != nil {
 		return nil, fmt.Errorf("failed to merge overrides into info: %w", err)
 	}
+	var contents []*files.Content
+	for _, f := range info.Contents {
+		if f.Packager == format || f.Packager == "" {
+			contents = append(contents, f)
+		}
+	}
+	info.Contents = contents
 	return info, nil
 }
 
@@ -176,7 +179,6 @@ type Info struct {
 }
 
 func (i *Info) Validate() error {
-	i.resetFiles("")
 	return Validate(i)
 }
 
@@ -201,84 +203,26 @@ func (i *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 
 // Overridables contain the field which are overridable in a package.
 type Overridables struct {
-	Replaces      []string          `yaml:"replaces,omitempty"`
-	Provides      []string          `yaml:"provides,omitempty"`
-	Depends       []string          `yaml:"depends,omitempty"`
-	Recommends    []string          `yaml:"recommends,omitempty"`
-	Suggests      []string          `yaml:"suggests,omitempty"`
-	Conflicts     []string          `yaml:"conflicts,omitempty"`
-	Contents      files.Contents    `yaml:"contents,omitempty"`
-	Files         map[string]string `yaml:"files,omitempty"`
-	ConfigFiles   map[string]string `yaml:"config_files,omitempty"`
-	Symlinks      map[string]string `yaml:"symlinks,omitempty"`
-	EmptyFolders  []string          `yaml:"empty_folders,omitempty"`
-	Scripts       Scripts           `yaml:"scripts,omitempty"`
-	RPM           RPM               `yaml:"rpm,omitempty"`
-	Deb           Deb               `yaml:"deb,omitempty"`
-	APK           APK               `yaml:"apk,omitempty"`
-	hasResetFiles bool
-}
-
-func (o *Overridables) resetFiles(packager string) {
-	if o.hasResetFiles {
-		return
-	}
-	for src, dst := range o.Files {
-		o.Contents = append(o.Contents, &files.Content{
-			Source:      src,
-			Destination: dst,
-			Packager:    packager,
-		})
-	}
-	o.Files = nil
-	for src, dst := range o.ConfigFiles {
-		o.Contents = append(o.Contents, &files.Content{
-			Source:      src,
-			Destination: dst,
-			Type:        "config",
-			Packager:    packager,
-		})
-	}
-	o.ConfigFiles = nil
-
-	// Symlinks is backwards from other in the config file
-	for dst, src := range o.Symlinks {
-		o.Contents = append(o.Contents, &files.Content{
-			Source:      src,
-			Destination: dst,
-			Type:        "symlink",
-			Packager:    packager,
-		})
-	}
-	o.Symlinks = nil
-	for src, dst := range o.RPM.ConfigNoReplaceFiles {
-		o.Contents = append(o.Contents, &files.Content{
-			Source:      src,
-			Destination: dst,
-			Type:        "config|noreplace",
-			Packager:    "rpm",
-		})
-	}
-	o.RPM.ConfigNoReplaceFiles = nil
-	for _, dst := range o.RPM.GhostFiles {
-		o.Contents = append(o.Contents, &files.Content{
-			Destination: dst,
-			Type:        "ghost",
-			Packager:    "rpm",
-		})
-	}
-	o.hasResetFiles = true
+	Replaces     []string       `yaml:"replaces,omitempty"`
+	Provides     []string       `yaml:"provides,omitempty"`
+	Depends      []string       `yaml:"depends,omitempty"`
+	Recommends   []string       `yaml:"recommends,omitempty"`
+	Suggests     []string       `yaml:"suggests,omitempty"`
+	Conflicts    []string       `yaml:"conflicts,omitempty"`
+	Contents     files.Contents `yaml:"contents,omitempty"`
+	EmptyFolders []string       `yaml:"empty_folders,omitempty"`
+	Scripts      Scripts        `yaml:"scripts,omitempty"`
+	RPM          RPM            `yaml:"rpm,omitempty"`
+	Deb          Deb            `yaml:"deb,omitempty"`
+	APK          APK            `yaml:"apk,omitempty"`
 }
 
 // RPM is custom configs that are only available on RPM packages.
 type RPM struct {
-	Group       string `yaml:"group,omitempty"`
-	Summary     string `yaml:"summary,omitempty"`
-	Compression string `yaml:"compression,omitempty"`
-	// https://www.cl.cam.ac.uk/~jw35/docs/rpm_config.html
-	ConfigNoReplaceFiles map[string]string `yaml:"config_noreplace_files,omitempty"`
-	Signature            RPMSignature      `yaml:"signature,omitempty"`
-	GhostFiles           []string          `yaml:"ghost_files,omitempty"`
+	Group       string       `yaml:"group,omitempty"`
+	Summary     string       `yaml:"summary,omitempty"`
+	Compression string       `yaml:"compression,omitempty"`
+	Signature   RPMSignature `yaml:"signature,omitempty"`
 }
 
 type RPMSignature struct {

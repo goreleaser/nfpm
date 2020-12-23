@@ -100,7 +100,7 @@ func TestConfigNoReplace(t *testing.T) {
 	info.Target = target
 	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
 
-	t.Run("noreplace-rpm", func(t *testing.T) {
+	t.Run("rpm", func(t *testing.T) {
 		accept(t, acceptParms{
 			Name:       "noreplace_rpm",
 			Conf:       "config-noreplace.yaml",

@@ -17,7 +17,7 @@ setup:
 
 
 pull_test_imgs:
-	grep FROM ./acceptance/testdata/*.dockerfile | cut -f2 -d' ' | sort | uniq | while read -r img; do docker pull "$$img"; done
+	grep FROM ./testdata/acceptance/*.dockerfile | cut -f2 -d' ' | sort | uniq | while read -r img; do docker pull "$$img"; done
 .PHONY: pull_test_imgs
 
 acceptance: pull_test_imgs

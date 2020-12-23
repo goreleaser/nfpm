@@ -1,6 +1,6 @@
 module github.com/goreleaser/nfpm
 
-go 1.14
+go 1.15
 
 require (
 	github.com/Djarvur/go-err113 v0.1.0 // indirect
@@ -28,6 +28,7 @@ require (
 	github.com/quasilyte/go-ruleguard v0.2.1 // indirect
 	github.com/quasilyte/regex/syntax v0.0.0-20200805063351-8f842688393c // indirect
 	github.com/sassoftware/go-rpmutils v0.0.0-20190420191620-a8f1baeba37b
+	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/stretchr/objx v0.3.0 // indirect
 	github.com/stretchr/testify v1.6.1
