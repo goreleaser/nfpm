@@ -244,10 +244,10 @@ type APKSignature struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Scripts         DebScripts   `yaml:"scripts,omitempty"`
-	Triggers        DebTriggers  `yaml:"triggers,omitempty"`
-	Breaks          []string     `yaml:"breaks,omitempty"`
-	Signature       DebSignature `yaml:"signature,omitempty"`
+	Scripts   DebScripts   `yaml:"scripts,omitempty"`
+	Triggers  DebTriggers  `yaml:"triggers,omitempty"`
+	Breaks    []string     `yaml:"breaks,omitempty"`
+	Signature DebSignature `yaml:"signature,omitempty"`
 }
 
 type DebSignature struct {
