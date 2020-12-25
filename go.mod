@@ -15,7 +15,7 @@ require (
 	github.com/golangci/misspell v0.3.5 // indirect
 	github.com/golangci/revgrep v0.0.0-20180812185044-276a5c0a1039 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
-	github.com/google/rpmpack v0.0.0-20201206194719-59e495f2b7e1
+	github.com/google/rpmpack v0.0.0-20201225075926-0a97c2c4b688
 	github.com/goreleaser/chglog v0.1.2
 	github.com/goreleaser/fileglob v0.3.1
 	github.com/gostaticanalysis/analysisutil v0.6.1 // indirect
@@ -36,6 +36,7 @@ require (
 	github.com/tetafro/godot v1.3.2 // indirect
 	github.com/timakin/bodyclose v0.0.0-20200424151742-cb6215831a94 // indirect
 	github.com/tomarrell/wrapcheck v0.0.0-20201130113247-1683564d9756 // indirect
+	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9
 	golang.org/x/mod v0.4.0 // indirect
@@ -46,5 +47,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	mvdan.cc/gofumpt v0.0.0-20201129102820-5c11c50e9475 // indirect
 )
-
-replace github.com/google/rpmpack => github.com/djgilcrease/rpmpack v0.0.0-20201221224521-5ac1d3b45cee
