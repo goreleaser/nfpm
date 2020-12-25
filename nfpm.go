@@ -172,7 +172,6 @@ type Info struct {
 	Vendor          string `yaml:"vendor,omitempty"`
 	Homepage        string `yaml:"homepage,omitempty"`
 	License         string `yaml:"license,omitempty"`
-	Bindir          string `yaml:"bindir,omitempty"` // Deprecated: this does nothing. TODO: remove.
 	Changelog       string `yaml:"changelog,omitempty"`
 	DisableGlobbing bool   `yaml:"disable_globbing"`
 	Target          string `yaml:"-"`
@@ -245,11 +244,10 @@ type APKSignature struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Scripts         DebScripts   `yaml:"scripts,omitempty"`
-	Triggers        DebTriggers  `yaml:"triggers,omitempty"`
-	Breaks          []string     `yaml:"breaks,omitempty"`
-	VersionMetadata string       `yaml:"metadata,omitempty"` // Deprecated: Moved to Info
-	Signature       DebSignature `yaml:"signature,omitempty"`
+	Scripts   DebScripts   `yaml:"scripts,omitempty"`
+	Triggers  DebTriggers  `yaml:"triggers,omitempty"`
+	Breaks    []string     `yaml:"breaks,omitempty"`
+	Signature DebSignature `yaml:"signature,omitempty"`
 }
 
 type DebSignature struct {
@@ -305,17 +303,6 @@ func Validate(info *Info) (err error) {
 	}
 	if info.Version == "" {
 		return ErrFieldEmpty{"version"}
-	}
-
-	// deprecation warnings
-	if info.Deb.VersionMetadata != "" {
-		fmt.Fprintln(os.Stderr,
-			"Warning: deb.metadata is deprecated and will be removed in a future version "+
-				"(moved to version_metadata)")
-	}
-
-	if info.Bindir != "" {
-		fmt.Fprintln(os.Stderr, "Warning: bindir is deprecated and will be removed in a future version")
 	}
 
 	info.Contents, err = files.ExpandContentGlobs(info.Contents, info.DisableGlobbing)

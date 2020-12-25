@@ -81,7 +81,6 @@ func TestDefaultsVersion(t *testing.T) {
 	require.Equal(t, "1.0.0", info.Version)
 	require.Equal(t, "2", info.Release)
 	require.Equal(t, "beta1", info.Prerelease)
-	require.Equal(t, "", info.Deb.VersionMetadata)
 }
 
 func TestDefaults(t *testing.T) {
