@@ -96,6 +96,7 @@ func TestArchToAlpine(t *testing.T) {
 }
 
 func verifyArch(t *testing.T, nfpmArch, expectedArch string) {
+	t.Helper()
 	info := exampleInfo()
 	info.Arch = nfpmArch
 

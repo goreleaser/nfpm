@@ -1,7 +1,6 @@
 package files_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -35,7 +34,7 @@ contents:
 	require.NoError(t, err)
 	assert.Len(t, config.Contents, 2)
 	for _, f := range config.Contents {
-		fmt.Printf("%+#v\n", f)
+		t.Logf("%+#v\n", f)
 		assert.Equal(t, f.Source, "a")
 		assert.Equal(t, f.Destination, "b")
 	}
@@ -53,7 +52,7 @@ contents:
 	require.NoError(t, err)
 	assert.Len(t, config.Contents, 2)
 	for _, f := range config.Contents {
-		fmt.Printf("%+#v\n", f)
+		t.Logf("%+#v\n", f)
 		assert.Equal(t, f.Packager, "")
 		assert.Equal(t, f.Type, "")
 	}
