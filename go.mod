@@ -11,7 +11,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/daixiang0/gci v0.2.7 // indirect
-	github.com/golangci/golangci-lint v1.33.0
+	github.com/golangci/golangci-lint v1.34.0
 	github.com/golangci/misspell v0.3.5 // indirect
 	github.com/golangci/revgrep v0.0.0-20180812185044-276a5c0a1039 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
