@@ -779,6 +779,7 @@ func TestMD5Sums(t *testing.T) {
 }
 
 func testRelativePathPrefixInTarGzFiles(t *testing.T, tarGzFile []byte) {
+	t.Helper()
 	tarFile, err := gzipInflate(tarGzFile)
 	require.NoError(t, err)
 

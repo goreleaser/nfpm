@@ -166,7 +166,7 @@ func TestParseEnhancedFile(t *testing.T) {
 	if len(config.Contents) != shouldFind {
 		t.Errorf("should have had %d files but found %d", shouldFind, len(config.Contents))
 		for idx, f := range config.Contents {
-			fmt.Printf("%d => %+#v\n", idx, f)
+			t.Logf("%d => %+#v\n", idx, f)
 		}
 	}
 }
@@ -178,7 +178,7 @@ func TestParseEnhancedNestedGlobFile(t *testing.T) {
 	if len(config.Contents) != shouldFind {
 		t.Errorf("should have had %d files but found %d", shouldFind, len(config.Contents))
 		for idx, f := range config.Contents {
-			fmt.Printf("%d => %+#v\n", idx, f)
+			t.Logf("%d => %+#v\n", idx, f)
 		}
 	}
 }
