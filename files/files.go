@@ -34,8 +34,6 @@ type ContentFileInfo struct {
 // Contents list of Content to process.
 type Contents []*Content
 
-type simpleContents map[string]string
-
 func (c *Contents) UnmarshalYAML(value *yaml.Node) (err error) {
 	// nolint:exhaustive
 	// we do not care about `AliasNode`, `DocumentNode`
@@ -47,17 +45,6 @@ func (c *Contents) UnmarshalYAML(value *yaml.Node) (err error) {
 			return err
 		}
 		*c = Contents(tmp)
-	case yaml.MappingNode:
-		var tmp simpleContents
-		if err = value.Decode(&tmp); err != nil {
-			return err
-		}
-		for src, dst := range tmp {
-			*c = append(*c, &Content{
-				Source:      src,
-				Destination: dst,
-			})
-		}
 	case yaml.ScalarNode:
 		// TODO: implement issue-43 here and remove the fallthrough
 		// nolint:gocritic
