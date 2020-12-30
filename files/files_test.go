@@ -2,6 +2,7 @@ package files_test
 
 import (
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,4 +39,25 @@ contents:
 		assert.Equal(t, f.Source, "a")
 		assert.Equal(t, f.Destination, "b")
 	}
+}
+
+func TestRace(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+- src: a
+  dst: b
+  type: symlink
+`))
+	err := dec.Decode(&config)
+	require.NoError(t, err)
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			files.ExpandContentGlobs(config.Contents, false)
+		}()
+	}
+	wg.Wait()
 }
