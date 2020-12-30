@@ -1,15 +1,12 @@
 package files
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
 
 	"github.com/goreleaser/fileglob"
-	"gopkg.in/yaml.v3"
-
 	"github.com/goreleaser/nfpm/v2/internal/glob"
 )
 
@@ -33,31 +30,6 @@ type ContentFileInfo struct {
 
 // Contents list of Content to process.
 type Contents []*Content
-
-func (c *Contents) UnmarshalYAML(value *yaml.Node) (err error) {
-	// nolint:exhaustive
-	// we do not care about `AliasNode`, `DocumentNode`
-	switch value.Kind {
-	case yaml.SequenceNode:
-		type tmpContents Contents
-		var tmp tmpContents
-		if err = value.Decode(&tmp); err != nil {
-			return err
-		}
-		*c = Contents(tmp)
-	case yaml.ScalarNode:
-		// TODO: implement issue-43 here and remove the fallthrough
-		// nolint:gocritic
-		// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-		fallthrough
-	default:
-		// nolint:goerr113
-		// this is temporary so we do not need the a static error
-		return fmt.Errorf("not implemented")
-	}
-
-	return nil
-}
 
 func (c Contents) Len() int {
 	return len(c)
