@@ -24,9 +24,9 @@ contents:
 - src: a
   dst: b
   type: "config|noreplace"
+  packager: "rpm"
   file_info:
     mode: 0644
-    packager: "rpm"
     mtime: 2008-01-02T15:04:05Z
 `))
 	dec.KnownFields(true)
@@ -38,33 +38,4 @@ contents:
 		assert.Equal(t, f.Source, "a")
 		assert.Equal(t, f.Destination, "b")
 	}
-}
-
-func TestMapperDecode(t *testing.T) {
-	var config testStruct
-	dec := yaml.NewDecoder(strings.NewReader(`---
-contents:
-  a: b
-  a2: b2
-`))
-	dec.KnownFields(true)
-	err := dec.Decode(&config)
-	require.NoError(t, err)
-	assert.Len(t, config.Contents, 2)
-	for _, f := range config.Contents {
-		t.Logf("%+#v\n", f)
-		assert.Equal(t, f.Packager, "")
-		assert.Equal(t, f.Type, "")
-	}
-}
-
-func TestStringDecode(t *testing.T) {
-	var config testStruct
-	dec := yaml.NewDecoder(strings.NewReader(`---
-contents: /path/to/a/tgz
-`))
-	dec.KnownFields(true)
-	err := dec.Decode(&config)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), "not implemented")
 }
