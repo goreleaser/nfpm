@@ -85,62 +85,63 @@ suggests:
 # Packages it conflicts with. (overridable)
 conflicts:
   - mercurial
-    
+
 # Contents to add to the package
 # This can be binaries or any other files.
 contents:
-    # Basic file that applies to all packagers
+  # Basic file that applies to all packagers
   - src: path/to/local/foo
     dst: /usr/local/bin/foo
-    
-    # Simple config file
+
+  # Simple config file
   - src: path/to/local/foo.conf
     dst: /etc/foo.conf
     type: config
-    
-    # Simple symlink
-  - src: /sbin/foo # link name
-    dst: /usr/local/bin/foo # real location
-    type: "symlink"
-    
-    # Corresponds to %config(noreplace) if the packager is rpm, otherwise it is just a config file
+
+  # Simple symlink
+  #	Will result in `ln -s /sbin/foo /usr/local/bin/foo`.
+  - src: /sbin/foo
+    dst: /usr/local/bin/foo
+    type: symlink
+
+  # Corresponds to `%config(noreplace)` if the packager is rpm, otherwise it is just a config file
   - src: path/to/local/bar.conf
     dst: /etc/bar.conf
-    type: "config|noreplace"
+    type: config|noreplace
 
-    # These files are not actually present in the package, but the file names
-    # are added to the package header. From the RPM directives documentation:
-    #
-    # "There are times when a file should be owned by the package but not
-    # installed - log files and state files are good examples of cases you might
-    # desire this to happen."
-    #
-    # "The way to achieve this, is to use the %ghost directive. By adding this
-    # directive to the line containing a file, RPM will know about the ghosted
-    # file, but will not add it to the package."
-    # 
-    # For non rpm packages ghost files are ignored at this time.
+  # These files are not actually present in the package, but the file names
+  # are added to the package header. From the RPM directives documentation:
+  #
+  # "There are times when a file should be owned by the package but not
+  # installed - log files and state files are good examples of cases you might
+  # desire this to happen."
+  #
+  # "The way to achieve this, is to use the %ghost directive. By adding this
+  # directive to the line containing a file, RPM will know about the ghosted
+  # file, but will not add it to the package."
+  #
+  # For non rpm packages ghost files are ignored at this time.
   - dst: /etc/casper.conf
     type: ghost
   - dst: /var/log/boo.log
     type: ghost
-    
-    # You can user the packager field to add files that are unique to a specific packager 
+
+  # You can user the packager field to add files that are unique to a specific packager
   - src: path/to/rpm/file.conf
     dst: /etc/file.conf
-    type: "config|noreplace"
+    type: config|noreplace
     packager: rpm
   - src: path/to/deb/file.conf
     dst: /etc/file.conf
-    type: "config|noreplace"
+    type: config|noreplace
     packager: deb
   - src: path/to/apk/file.conf
     dst: /etc/file.conf
-    type: "config|noreplace"
+    type: config|noreplace
     packager: apk
-    
-    # Sometimes it is important to be able to set the mtime, mode, owner, or group for a file 
-    # that differs from what is on the local build system at build time.
+
+  # Sometimes it is important to be able to set the mtime, mode, owner, or group for a file
+  # that differs from what is on the local build system at build time.
   - src: path/to/foo
     dst: /usr/local/foo
     file_info:

@@ -305,8 +305,13 @@ func Validate(info *Info) (err error) {
 		return ErrFieldEmpty{"version"}
 	}
 
-	info.Contents, err = files.ExpandContentGlobs(info.Contents, info.DisableGlobbing)
-	return err
+	contents, err := files.ExpandContentGlobs(info.Contents, info.DisableGlobbing)
+	if err != nil {
+		return err
+	}
+
+	info.Contents = contents
+	return nil
 }
 
 // WithDefaults set some sane defaults into the given Info.

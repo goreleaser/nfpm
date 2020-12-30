@@ -2,6 +2,7 @@ package files_test
 
 import (
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,9 +25,9 @@ contents:
 - src: a
   dst: b
   type: "config|noreplace"
+  packager: "rpm"
   file_info:
     mode: 0644
-    packager: "rpm"
     mtime: 2008-01-02T15:04:05Z
 `))
 	dec.KnownFields(true)
@@ -40,31 +41,24 @@ contents:
 	}
 }
 
-func TestMapperDecode(t *testing.T) {
+func TestRace(t *testing.T) {
 	var config testStruct
 	dec := yaml.NewDecoder(strings.NewReader(`---
 contents:
-  a: b
-  a2: b2
+- src: a
+  dst: b
+  type: symlink
 `))
-	dec.KnownFields(true)
 	err := dec.Decode(&config)
 	require.NoError(t, err)
-	assert.Len(t, config.Contents, 2)
-	for _, f := range config.Contents {
-		t.Logf("%+#v\n", f)
-		assert.Equal(t, f.Packager, "")
-		assert.Equal(t, f.Type, "")
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := files.ExpandContentGlobs(config.Contents, false)
+			require.NoError(t, err)
+		}()
 	}
-}
-
-func TestStringDecode(t *testing.T) {
-	var config testStruct
-	dec := yaml.NewDecoder(strings.NewReader(`---
-contents: /path/to/a/tgz
-`))
-	dec.KnownFields(true)
-	err := dec.Decode(&config)
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), "not implemented")
+	wg.Wait()
 }
