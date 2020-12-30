@@ -10,18 +10,18 @@ contents:
   - src: "./testdata/whatever2.conf"
     dst: "/etc/rpm/whatever.conf"
     type: "config|noreplace"
+    packager: "rpm"
     file_info:
       mode: 0644
-      packager: "rpm"
   - src: "./testdata/whatever2.conf"
     dst: "/etc/apk/whatever.conf"
     type: "config|noreplace"
+    packager: "apk"
     file_info:
       mode: 0644
-      packager: "apk"
   - src: "./testdata/whatever2.conf"
     dst: "/etc/deb/whatever.conf"
     type: "config|noreplace"
+    packager: "deb"
     file_info:
       mode: 0644
-      packager: "deb"
