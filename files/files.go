@@ -50,25 +50,33 @@ func (c Contents) Less(i, j int) bool {
 	return a.Destination < b.Destination
 }
 
-func (c *Content) WithFileInfoDefaults() {
-	if c.FileInfo == nil {
-		c.FileInfo = &ContentFileInfo{}
+func (c *Content) WithFileInfoDefaults() *Content {
+	var cc = &Content{
+		Source:      c.Source,
+		Destination: c.Destination,
+		Type:        c.Type,
+		Packager:    c.Packager,
+		FileInfo:    c.FileInfo,
 	}
-	if c.FileInfo.Owner == "" {
-		c.FileInfo.Owner = "root"
+	if cc.FileInfo == nil {
+		cc.FileInfo = &ContentFileInfo{}
 	}
-	if c.FileInfo.Group == "" {
-		c.FileInfo.Group = "root"
+	if cc.FileInfo.Owner == "" {
+		cc.FileInfo.Owner = "root"
 	}
-	info, err := os.Stat(c.Source)
+	if cc.FileInfo.Group == "" {
+		cc.FileInfo.Group = "root"
+	}
+	info, err := os.Stat(cc.Source)
 	if err == nil {
-		c.FileInfo.MTime = info.ModTime()
-		c.FileInfo.Mode = info.Mode()
-		c.FileInfo.Size = info.Size()
+		cc.FileInfo.MTime = info.ModTime()
+		cc.FileInfo.Mode = info.Mode()
+		cc.FileInfo.Size = info.Size()
 	}
-	if c.FileInfo.MTime.IsZero() {
-		c.FileInfo.MTime = time.Now().UTC()
+	if cc.FileInfo.MTime.IsZero() {
+		cc.FileInfo.MTime = time.Now().UTC()
 	}
+	return cc
 }
 
 // Name to part of the os.FileInfo interface
@@ -112,8 +120,7 @@ func ExpandContentGlobs(filesSrcDstMap Contents, disableGlobbing bool) (files Co
 		switch f.Type {
 		case "ghost", "symlink":
 			// Ghost and symlink files need to be in the list, but dont glob them because they do not really exist
-			f.WithFileInfoDefaults()
-			files = append(files, f)
+			files = append(files, f.WithFileInfoDefaults())
 			continue
 		}
 
@@ -140,8 +147,7 @@ func appendGlobbedFiles(globbed map[string]string, origFile *Content, incFiles C
 			FileInfo:    origFile.FileInfo,
 			Packager:    origFile.Packager,
 		}
-		newFile.WithFileInfoDefaults()
-		files = append(files, newFile)
+		files = append(files, newFile.WithFileInfoDefaults())
 	}
 
 	return files

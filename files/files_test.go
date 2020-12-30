@@ -56,7 +56,8 @@ contents:
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			files.ExpandContentGlobs(config.Contents, false)
+			_, err := files.ExpandContentGlobs(config.Contents, false)
+			require.NoError(t, err)
 		}()
 	}
 	wg.Wait()
