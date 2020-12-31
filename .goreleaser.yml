@@ -14,7 +14,7 @@ builds:
   - windows
   goarch:
   - amd64
-  - arm64
+  - arm64n
 dockers:
   - image_templates:
       - 'goreleaser/nfpm:{{ .Tag }}-amd64'
@@ -43,7 +43,7 @@ dockers:
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
       - "--label=org.opencontainers.image.source={{.GitURL}}"
-      - "--platform=linux/arm/v8"
+      - "--platform=linux/arm64/v8"
     goarch: arm64
 docker_manifests:
   - name_template: 'goreleaser/nfpm:{{ .Tag }}'
