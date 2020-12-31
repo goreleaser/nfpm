@@ -1,4 +1,3 @@
 FROM alpine
-RUN apk add --no-cache rpm
-COPY nfpm /nfpm
-ENTRYPOINT ["/nfpm"]
+COPY nfpm /usr/local/bin/nfpm
+ENTRYPOINT ["/usr/local/bin/nfpm"]
