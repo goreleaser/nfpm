@@ -16,9 +16,51 @@ builds:
   - amd64
 dockers:
   - image_templates:
-    - 'goreleaser/nfpm:{{ .Tag }}'
-    - 'goreleaser/nfpm:v{{ .Major }}.{{ .Minor }}'
-    - 'goreleaser/nfpm:latest'
+      - 'goreleaser/nfpm:{{ .Tag }}-amd64'
+      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
+    dockerfile: Dockerfile
+    binaries:
+      - nfpm
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/amd64"
+  - image_templates:
+      - 'goreleaser/nfpm:{{ .Tag }}-arm64v8'
+      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
+    dockerfile: Dockerfile
+    binaries:
+      - nfpm
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/arm/v8"
+    goarch: arm64
+docker_manifests:
+  - name_template: 'goreleaser/nfpm:{{ .Tag }}'
+    image_templates:
+      - 'goreleaser/nfpm:{{ .Tag }}-amd64'
+      - 'goreleaser/nfpm:{{ .Tag }}-arm64v8'
+  - name_template: 'ghcr.io/goreleaser/nfpm:{{ .Tag }}'
+    image_templates:
+      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
+      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
+  - name_template: 'goreleaser/nfpm:latest'
+    image_templates:
+      - 'goreleaser/nfpm:{{ .Tag }}-amd64'
+      - 'goreleaser/nfpm:{{ .Tag }}-arm64v8'
+  - name_template: 'ghcr.io/goreleaser/nfpm:latest'
+    image_templates:
+      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
+      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
 changelog:
   filters:
     exclude:
