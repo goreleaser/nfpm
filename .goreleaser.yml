@@ -14,6 +14,7 @@ builds:
   - windows
   goarch:
   - amd64
+  - arm64
 dockers:
   - image_templates:
       - 'goreleaser/nfpm:{{ .Tag }}-amd64'
@@ -73,7 +74,7 @@ archives:
     386: i386
     amd64: x86_64
 brews:
-- github:
+- tap:
     owner: goreleaser
     name: homebrew-tap
   folder: Formula
