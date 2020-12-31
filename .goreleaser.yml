@@ -14,7 +14,7 @@ builds:
   - windows
   goarch:
   - amd64
-  - arm64n
+  - arm64
 dockers:
   - image_templates:
       - 'goreleaser/nfpm:{{ .Tag }}-amd64'
