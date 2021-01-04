@@ -51,8 +51,12 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: Allow arm64 builds
-        run: sudo docker run --privileged linuxkit/binfmt:v0.7
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
       -
         name: Make Setup
         run: |
