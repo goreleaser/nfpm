@@ -3,6 +3,7 @@ package sign
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -17,34 +18,37 @@ const pass = "hunter2"
 
 func TestPGPSignerAndVerify(t *testing.T) {
 	data := []byte("testdata")
-	verifierKeyring := readArmoredKeyring(t, "testdata/pubkey.asc")
-
 	testCases := []struct {
-		name    string
-		keyFile string
-		pass    string
+		name        string
+		privKeyFile string
+		pubKeyFile  string
+		pass        string
 	}{
-		{"protected", "testdata/privkey.gpg", pass},
-		{"unprotected", "testdata/privkey_unprotected.gpg", ""},
-		{"armored protected", "testdata/privkey.asc", pass},
-		{"armored unprotected", "testdata/privkey_unprotected.asc", ""},
-		{"gpg subkey armored unprotected", "testdata/privkey_unprotected_subkey_only.asc", ""},
+		{"protected", "testdata/privkey.gpg", "testdata/pubkey", pass},
+		{"unprotected", "testdata/privkey_unprotected.gpg", "testdata/pubkey", ""},
+		{"armored protected", "testdata/privkey.asc", "testdata/pubkey", pass},
+		{"armored unprotected", "testdata/privkey_unprotected.asc", "testdata/pubkey", ""},
+		{"gpg subkey unprotected", "testdata/privkey_unprotected_subkey_only.asc", "testdata/pubkey", ""},
 	}
 
 	for _, testCase := range testCases {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
-			sig, err := PGPSigner(testCase.keyFile, testCase.pass)(data)
+			armoredPublicKey := fmt.Sprintf("%s.asc", testCase.pubKeyFile)
+			gpgPublicKey := fmt.Sprintf("%s.gpg", testCase.pubKeyFile)
+			println(armoredPublicKey)
+			verifierKeyring := readArmoredKeyring(t, armoredPublicKey)
+			sig, err := PGPSigner(testCase.privKeyFile, testCase.pass)(data)
 			require.NoError(t, err)
 
 			_, err = openpgp.CheckDetachedSignature(verifierKeyring,
 				bytes.NewReader(data), bytes.NewReader(sig))
 			assert.NoError(t, err)
 
-			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.asc")
+			err = PGPVerify(bytes.NewReader(data), sig, armoredPublicKey)
 			assert.NoError(t, err)
 
-			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.gpg")
+			err = PGPVerify(bytes.NewReader(data), sig, gpgPublicKey)
 			assert.NoError(t, err)
 		})
 	}
@@ -52,34 +56,37 @@ func TestPGPSignerAndVerify(t *testing.T) {
 
 func TestArmoredDetachSignAndVerify(t *testing.T) {
 	data := []byte("testdata")
-	verifierKeyring := readArmoredKeyring(t, "testdata/pubkey.asc")
-
 	testCases := []struct {
-		name    string
-		keyFile string
-		pass    string
+		name        string
+		privKeyFile string
+		pubKeyFile  string
+		pass        string
 	}{
-		{"protected", "testdata/privkey.gpg", pass},
-		{"unprotected", "testdata/privkey_unprotected.gpg", ""},
-		{"armored protected", "testdata/privkey.asc", pass},
-		{"armored unprotected", "testdata/privkey_unprotected.asc", ""},
+		{"protected", "testdata/privkey.gpg", "testdata/pubkey", pass},
+		{"unprotected", "testdata/privkey_unprotected.gpg", "testdata/pubkey", ""},
+		{"armored protected", "testdata/privkey.asc", "testdata/pubkey", pass},
+		{"armored unprotected", "testdata/privkey_unprotected.asc", "testdata/pubkey", ""},
+		{"gpg subkey unprotected", "testdata/privkey_unprotected_subkey_only.asc", "testdata/pubkey", ""},
 	}
 
 	for _, testCase := range testCases {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
+			armoredPublicKey := fmt.Sprintf("%s.asc", testCase.pubKeyFile)
+			gpgPublicKey := fmt.Sprintf("%s.gpg", testCase.pubKeyFile)
+			verifierKeyring := readArmoredKeyring(t, armoredPublicKey)
 			sig, err := PGPArmoredDetachSign(bytes.NewReader(data),
-				testCase.keyFile, testCase.pass)
+				testCase.privKeyFile, testCase.pass)
 			require.NoError(t, err)
 
 			_, err = openpgp.CheckArmoredDetachedSignature(verifierKeyring,
 				bytes.NewReader(data), bytes.NewReader(sig))
 			assert.NoError(t, err)
 
-			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.asc")
+			err = PGPVerify(bytes.NewReader(data), sig, armoredPublicKey)
 			assert.NoError(t, err)
 
-			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.gpg")
+			err = PGPVerify(bytes.NewReader(data), sig, gpgPublicKey)
 			assert.NoError(t, err)
 		})
 	}
