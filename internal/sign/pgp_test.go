@@ -28,6 +28,7 @@ func TestPGPSignerAndVerify(t *testing.T) {
 		{"unprotected", "testdata/privkey_unprotected.gpg", ""},
 		{"armored protected", "testdata/privkey.asc", pass},
 		{"armored unprotected", "testdata/privkey_unprotected.asc", ""},
+		{"gpg subkey armored unprotected", "testdata/privkey_unprotected_subkey_only.asc", ""},
 	}
 
 	for _, testCase := range testCases {
