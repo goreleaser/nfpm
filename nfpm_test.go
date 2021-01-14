@@ -153,9 +153,17 @@ func TestParseFile(t *testing.T) {
 	require.NoError(t, err)
 	_, err = nfpm.ParseFile("./testdata/doesnotexist.yaml")
 	require.Error(t, err)
-	config, err := nfpm.ParseFile("./testdata/versionenv.yaml")
+	os.Setenv("RPM_KEY_FILE", "my/rpm/key/file")
+	os.Setenv("TEST_RELEASE_ENV_VAR", "1234")
+	os.Setenv("TEST_PRERELEASE_ENV_VAR", "beta1")
+	config, err := nfpm.ParseFile("./testdata/env-fields.yaml")
 	require.NoError(t, err)
 	require.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
+	require.Equal(t, "1234", config.Release)
+	require.Equal(t, "beta1", config.Prerelease)
+	require.Equal(t, "my/rpm/key/file", config.RPM.Signature.KeyFile)
+	require.Equal(t, "hard/coded/file", config.Deb.Signature.KeyFile)
+	require.Equal(t, "", config.APK.Signature.KeyFile)
 }
 
 func TestParseEnhancedFile(t *testing.T) {
