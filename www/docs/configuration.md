@@ -16,6 +16,7 @@ arch: amd64
 platform: linux
 
 # Version. (required)
+# This will expand any env var you set in the field, eg version: v${SEMVER}
 version: v1.2.3
 
 # Version Epoch.
@@ -32,6 +33,7 @@ prerelease: beta1
 version_metadata: git
 
 # Version Release.
+# This will expand any env var you set in the field, eg release: ${VERSION_RELEASE}
 release: 1
 
 # Section.
@@ -197,6 +199,7 @@ rpm:
     # PGP secret key (can also be ASCII-armored), the passphrase is taken
     # from the environment variable $NFPM_RPM_PASSPHRASE with a fallback
     # to #NFPM_PASSPHRASE.
+    # This will expand any env var you set in the field, eg key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
 
 # Custom configuration applied only to the Deb packager.
@@ -230,6 +233,7 @@ deb:
     # PGP secret key (can also be ASCII-armored). The passphrase is taken
     # from the environment variable $NFPM_DEB_PASSPHRASE with a fallback
     # to #NFPM_PASSPHRASE.
+    # This will expand any env var you set in the field, eg key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
     # The type describes the signers role, possible values are "origin",
     # "maint" and "archive". If unset, the type defaults to "origin".
@@ -241,6 +245,7 @@ apk:
     # RSA private key in the PEM format. The passphrase is taken from
     # the environment variable $NFPM_APK_PASSPHRASE with a fallback
     # to #NFPM_PASSPHRASE.
+    # This will expand any env var you set in the field, eg key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
     # The name of the signing key. When verifying a package, the signature
     # is matched to the public key store in /etc/apk/keys/<key_name>.rsa.pub.

@@ -2,6 +2,8 @@
 name: "foo"
 arch: "amd64"
 version: "v$GOROOT"
+release: ${TEST_RELEASE_ENV_VAR}
+prerelease: ${TEST_PRERELEASE_ENV_VAR}
 contents:
 - src: ./testdata/whatever.conf
   dst: /etc/foo/regular.conf
@@ -14,6 +16,15 @@ contents:
   dst: /rpm/path
   type: config
   packager: rpm
+rpm:
+  signature:
+    key_file: ${RPM_KEY_FILE}
+deb:
+  signature:
+    key_file: hard/coded/file
+apk:
+  signature:
+    key_file: ${NO_ENV_VAR_SET_SO_SHOULD_BE_EMPTY}
 overrides:
   deb:
     depends:
