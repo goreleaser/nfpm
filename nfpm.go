@@ -88,7 +88,6 @@ func (c *Config) expandEnvVars() {
 	c.Info.RPM.Signature.KeyPassphrase = generalPassphrase
 	c.Info.APK.Signature.KeyPassphrase = generalPassphrase
 
-
 	debPassphrase := os.ExpandEnv("$NFPM_DEB_PASSPHRASE")
 	if debPassphrase != "" {
 		c.Info.Deb.Signature.KeyPassphrase = debPassphrase
@@ -175,6 +174,7 @@ type Info struct {
 	Platform        string `yaml:"platform,omitempty"`
 	Epoch           string `yaml:"epoch,omitempty"`
 	Version         string `yaml:"version,omitempty"`
+	KeepVersion     bool   `yaml:"keep_version"`
 	Release         string `yaml:"release,omitempty"`
 	Prerelease      string `yaml:"prerelease,omitempty"`
 	VersionMetadata string `yaml:"version_metadata,omitempty"`
@@ -244,7 +244,7 @@ type PackageSignature struct {
 }
 
 type RPMSignature struct {
-	PackageSignature    `yaml:",inline"`
+	PackageSignature `yaml:",inline"`
 }
 
 type APK struct {
@@ -252,7 +252,7 @@ type APK struct {
 }
 
 type APKSignature struct {
-	PackageSignature    `yaml:",inline"`
+	PackageSignature `yaml:",inline"`
 	// defaults to <maintainer email>.rsa.pub
 	KeyName string `yaml:"key_name,omitempty"`
 }
@@ -266,7 +266,7 @@ type Deb struct {
 }
 
 type DebSignature struct {
-	PackageSignature    `yaml:",inline"`
+	PackageSignature `yaml:",inline"`
 	// origin, maint or archive (defaults to origin)
 	Type string `yaml:"type,omitempty"`
 }
@@ -341,17 +341,18 @@ func WithDefaults(info *Info) *Info {
 	if info.Version == "" {
 		info.Version = "v0.0.0-rc0"
 	}
+	if !info.KeepVersion {
+		// parse the version as a semver so we can properly split the parts
+		// and support proper ordering for both rpm and deb
+		if v, err := semver.NewVersion(info.Version); err == nil {
+			info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
+			if info.Prerelease == "" {
+				info.Prerelease = v.Prerelease()
+			}
 
-	// parse the version as a semver so we can properly split the parts
-	// and support proper ordering for both rpm and deb
-	if v, err := semver.NewVersion(info.Version); err == nil {
-		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if info.Prerelease == "" {
-			info.Prerelease = v.Prerelease()
-		}
-
-		if info.VersionMetadata == "" {
-			info.VersionMetadata = v.Metadata()
+			if info.VersionMetadata == "" {
+				info.VersionMetadata = v.Metadata()
+			}
 		}
 	}
 
