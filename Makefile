@@ -47,6 +47,9 @@ build:
 	go build -o nfpm ./cmd/nfpm/main.go
 .PHONY: build
 
+staticbuild:
+	CGO_ENABLED=0 go build -a -installsuffix cgo -o nfpm ./cmd/nfpm/main.go
+.PHONY: staticbuild	
 deps:
 	go get -u
 	go mod tidy
