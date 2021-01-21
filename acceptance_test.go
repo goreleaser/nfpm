@@ -306,7 +306,7 @@ func accept(t *testing.T, params acceptParms) {
 	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
 	//nolint:gosec
 	cmd := exec.Command(
-		"docker", "build", "--rm", "--force-rm",
+		os.Getenv("CONTAINER_RUNTIME"), "build", "--rm", "--force-rm",
 		"-f", params.Dockerfile,
 		"--build-arg", "package="+filepath.Join("tmp", packageName),
 		".",

@@ -1,4 +1,4 @@
-FROM alpine:3.12
+FROM alpine
 ARG package
 COPY ${package} /tmp/foo.apk
 RUN apk add --allow-untrusted /tmp/foo.apk
