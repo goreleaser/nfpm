@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.12
 ARG package
 COPY keys/rsa_unprotected.pub /etc/apk/keys/john@example.com.rsa.pub
 COPY ${package} /tmp/foo.apk
