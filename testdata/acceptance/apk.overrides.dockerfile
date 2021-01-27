@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.12
 ARG package
 COPY ${package} /tmp/foo.apk
 RUN apk add -vvv --allow-untrusted /tmp/foo.apk
