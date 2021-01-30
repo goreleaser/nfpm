@@ -1,6 +1,7 @@
 package files
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -51,7 +52,7 @@ func (c Contents) Less(i, j int) bool {
 }
 
 func (c *Content) WithFileInfoDefaults() *Content {
-	var cc = &Content{
+	cc := &Content{
 		Source:      c.Source,
 		Destination: c.Destination,
 		Type:        c.Type,
@@ -110,8 +111,8 @@ func (c *Content) Sys() interface{} {
 }
 
 // ExpandContentGlobs gathers all of the real files to be copied into the package.
-func ExpandContentGlobs(filesSrcDstMap Contents, disableGlobbing bool) (files Contents, err error) {
-	for _, f := range filesSrcDstMap {
+func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents, err error) {
+	for _, f := range contents {
 		var globbed map[string]string
 		if disableGlobbing {
 			f.Source = fileglob.QuoteMeta(f.Source)
@@ -120,7 +121,11 @@ func ExpandContentGlobs(filesSrcDstMap Contents, disableGlobbing bool) (files Co
 		switch f.Type {
 		case "ghost", "symlink":
 			// Ghost and symlink files need to be in the list, but dont glob them because they do not really exist
-			files = append(files, f.WithFileInfoDefaults())
+			files, err = appendWithUniqueDestination(files, f.WithFileInfoDefaults())
+			if err != nil {
+				return nil, err
+			}
+
 			continue
 		}
 
@@ -128,7 +133,11 @@ func ExpandContentGlobs(filesSrcDstMap Contents, disableGlobbing bool) (files Co
 		if err != nil {
 			return nil, err
 		}
-		files = appendGlobbedFiles(globbed, f, files)
+
+		files, err = appendGlobbedFiles(globbed, f, files)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// sort the files for reproducibility and general cleanliness
@@ -137,7 +146,7 @@ func ExpandContentGlobs(filesSrcDstMap Contents, disableGlobbing bool) (files Co
 	return files, nil
 }
 
-func appendGlobbedFiles(globbed map[string]string, origFile *Content, incFiles Contents) (files Contents) {
+func appendGlobbedFiles(globbed map[string]string, origFile *Content, incFiles Contents) (files Contents, err error) {
 	files = append(files, incFiles...)
 	for src, dst := range globbed {
 		newFile := &Content{
@@ -147,10 +156,36 @@ func appendGlobbedFiles(globbed map[string]string, origFile *Content, incFiles C
 			FileInfo:    origFile.FileInfo,
 			Packager:    origFile.Packager,
 		}
-		files = append(files, newFile.WithFileInfoDefaults())
+
+		files, err = appendWithUniqueDestination(files, newFile.WithFileInfoDefaults())
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return files
+	return files, nil
+}
+
+var ErrContentCollision = fmt.Errorf("content collision")
+
+func appendWithUniqueDestination(slice []*Content, elems ...*Content) ([]*Content, error) {
+	alreadyPresent := map[string]*Content{}
+
+	for _, presentElem := range slice {
+		alreadyPresent[presentElem.Destination] = presentElem
+	}
+
+	for _, elem := range elems {
+		if present, ok := alreadyPresent[elem.Destination]; ok {
+			return nil, fmt.Errorf(
+				"cannot add %s because %s is already present at the same destination (%s): %w",
+				elem.Source, present.Source, present.Destination, ErrContentCollision)
+		}
+
+		alreadyPresent[elem.Destination] = elem
+	}
+
+	return append(slice, elems...), nil
 }
 
 // ToNixPath converts the given path to a nix-style path.

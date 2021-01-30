@@ -100,10 +100,17 @@ contents:
     dst: /etc/foo.conf
     type: config
 
-  # Simple symlink
-  #	Will result in `ln -s /sbin/foo /usr/local/bin/foo`.
-  - src: /sbin/foo
-    dst: /usr/local/bin/foo
+  # Simple symlink at /usr/local/bin/foo which points to /sbin/foo, which is
+  # the same behaviour as `ln -s /sbin/foo /usr/local/bin/foo`.
+  #
+  # This also means that both "src" and "dst" are paths inside the package (or
+  # rather paths in the file system where the package will be installed) and
+  # not in the build environment. This is different from regular files where
+  # "src" is a path in the build environment. However, this convention results
+  # in "dst" always being the file that is created when installing the
+  # package.
+  - src: /actual/path/to/foo
+    dst: /usr/bin/foo
     type: symlink
 
   # Corresponds to `%config(noreplace)` if the packager is rpm, otherwise it is just a config file
