@@ -62,3 +62,13 @@ contents:
 	}
 	wg.Wait()
 }
+
+func TestCollision(t *testing.T) {
+	configuredFiles := []*files.Content{
+		{Source: "../testdata/whatever.conf", Destination: "/samedestination"},
+		{Source: "../testdata/whatever2.conf", Destination: "/samedestination"},
+	}
+
+	_, err := files.ExpandContentGlobs(configuredFiles, true)
+	require.ErrorIs(t, err, files.ErrContentCollision)
+}
