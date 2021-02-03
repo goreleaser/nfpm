@@ -171,22 +171,31 @@ func TestParseEnhancedFile(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, config.Name, "contents foo")
 	shouldFind := 5
-	if len(config.Contents) != shouldFind {
-		t.Errorf("should have had %d files but found %d", shouldFind, len(config.Contents))
-		for idx, f := range config.Contents {
-			t.Logf("%d => %+#v\n", idx, f)
-		}
-	}
+	require.Len(t, config.Contents, shouldFind)
 }
 
 func TestParseEnhancedNestedGlobFile(t *testing.T) {
 	config, err := nfpm.ParseFile("./testdata/contents_glob.yaml")
 	require.NoError(t, err)
 	shouldFind := 3
-	if len(config.Contents) != shouldFind {
-		t.Errorf("should have had %d files but found %d", shouldFind, len(config.Contents))
-		for idx, f := range config.Contents {
-			t.Logf("%d => %+#v\n", idx, f)
+	require.Len(t, config.Contents, shouldFind)
+}
+
+func TestParseEnhancedNestedNoGlob(t *testing.T) {
+	config, err := nfpm.ParseFile("./testdata/contents_directory.yaml")
+	require.NoError(t, err)
+	shouldFind := 3
+	require.Len(t, config.Contents, shouldFind)
+	for _, f := range config.Contents {
+		switch f.Source {
+		case "testdata/globtest/nested/b.txt":
+			require.Equal(t, "/etc/foo/nested/b.txt", f.Destination)
+		case "testdata/globtest/multi-nested/subdir/c.txt":
+			require.Equal(t, "/etc/foo/multi-nested/subdir/c.txt", f.Destination)
+		case "testdata/globtest/a.txt":
+			require.Equal(t, "/etc/foo/a.txt", f.Destination)
+		default:
+			t.Errorf("unknown source %s", f.Source)
 		}
 	}
 }

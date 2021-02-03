@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE Policy SYSTEM "https://www.debian.org/debsig/1.0/policy.dtd">
+<Policy xmlns="https://www.debian.org/debsig/1.0/">
+  <Origin Name="test" id="9890904DFB2EC88A" Description="Test package"/>
+  <Selection>
+    <Required Type="origin" File="debsig.gpg" id="9890904DFB2EC88A"/>
+  </Selection>
+   <Verification MinOptional="0">
+    <Required Type="origin" File="debsig.gpg" id="9890904DFB2EC88A"/>
+   </Verification>
+</Policy>

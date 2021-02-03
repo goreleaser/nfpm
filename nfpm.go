@@ -57,10 +57,19 @@ func Get(format string) (Packager, error) {
 
 // Parse decodes YAML data from an io.Reader into a configuration struct.
 func Parse(in io.Reader) (config Config, err error) {
+	return ParseWithEnvMapping(in, os.Getenv)
+}
+
+// ParseWithEnvMapping decodes YAML data from an io.Reader into a configuration struct.
+func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Config, err error) {
 	dec := yaml.NewDecoder(in)
 	dec.KnownFields(true)
 	if err = dec.Decode(&config); err != nil {
 		return
+	}
+	config.envMappingFunc = mapping
+	if config.envMappingFunc == nil {
+		config.envMappingFunc = func(s string) string { return s }
 	}
 
 	config.expandEnvVars()
@@ -70,51 +79,20 @@ func Parse(in io.Reader) (config Config, err error) {
 	return config, config.Validate()
 }
 
-func (c *Config) expandEnvVars() {
-	// Version related fields
-	c.Info.Release = os.ExpandEnv(c.Info.Release)
-	c.Info.Version = os.ExpandEnv(c.Info.Version)
-	c.Info.Prerelease = os.ExpandEnv(c.Info.Prerelease)
-
-	// Package signing related fields
-	c.Info.Deb.Signature.KeyFile = os.ExpandEnv(c.Deb.Signature.KeyFile)
-	c.Info.RPM.Signature.KeyFile = os.ExpandEnv(c.RPM.Signature.KeyFile)
-	c.Info.APK.Signature.KeyFile = os.ExpandEnv(c.APK.Signature.KeyFile)
-	c.Info.Deb.Signature.KeyID = pointer.ToString(os.ExpandEnv(pointer.GetString(c.Deb.Signature.KeyID)))
-	c.Info.RPM.Signature.KeyID = pointer.ToString(os.ExpandEnv(pointer.GetString(c.RPM.Signature.KeyID)))
-	c.Info.APK.Signature.KeyID = pointer.ToString(os.ExpandEnv(pointer.GetString(c.APK.Signature.KeyID)))
-
-	// Package signing passphrase
-	generalPassphrase := os.ExpandEnv("$NFPM_PASSPHRASE")
-	c.Info.Deb.Signature.KeyPassphrase = generalPassphrase
-	c.Info.RPM.Signature.KeyPassphrase = generalPassphrase
-	c.Info.APK.Signature.KeyPassphrase = generalPassphrase
-
-	debPassphrase := os.ExpandEnv("$NFPM_DEB_PASSPHRASE")
-	if debPassphrase != "" {
-		c.Info.Deb.Signature.KeyPassphrase = debPassphrase
-	}
-
-	rpmPassphrase := os.ExpandEnv("$NFPM_RPM_PASSPHRASE")
-	if rpmPassphrase != "" {
-		c.Info.RPM.Signature.KeyPassphrase = rpmPassphrase
-	}
-
-	apkPassphrase := os.ExpandEnv("$NFPM_APK_PASSPHRASE")
-	if apkPassphrase != "" {
-		c.Info.APK.Signature.KeyPassphrase = apkPassphrase
-	}
-}
-
 // ParseFile decodes YAML data from a file path into a configuration struct.
 func ParseFile(path string) (config Config, err error) {
+	return ParseFileWithEnvMapping(path, os.Getenv)
+}
+
+// ParseFileWithEnvMapping decodes YAML data from a file path into a configuration struct.
+func ParseFileWithEnvMapping(path string, mapping func(string) string) (config Config, err error) {
 	var file *os.File
 	file, err = os.Open(path) //nolint:gosec
 	if err != nil {
 		return
 	}
 	defer file.Close() // nolint: errcheck,gosec
-	return Parse(file)
+	return ParseWithEnvMapping(file, mapping)
 }
 
 // Packager represents any packager implementation.
@@ -125,8 +103,9 @@ type Packager interface {
 
 // Config contains the top level configuration for packages.
 type Config struct {
-	Info      `yaml:",inline"`
-	Overrides map[string]Overridables `yaml:"overrides,omitempty"`
+	Info           `yaml:",inline"`
+	Overrides      map[string]Overridables `yaml:"overrides,omitempty"`
+	envMappingFunc func(string) string
 }
 
 // Get returns the Info struct for the given packager format. Overrides
@@ -166,6 +145,43 @@ func (c *Config) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (c *Config) expandEnvVars() {
+	// Version related fields
+	c.Info.Release = os.Expand(c.Info.Release, c.envMappingFunc)
+	c.Info.Version = os.Expand(c.Info.Version, c.envMappingFunc)
+	c.Info.Prerelease = os.Expand(c.Info.Prerelease, c.envMappingFunc)
+	c.Info.Arch = os.Expand(c.Info.Arch, c.envMappingFunc)
+
+	// Package signing related fields
+	c.Info.Deb.Signature.KeyFile = os.Expand(c.Deb.Signature.KeyFile, c.envMappingFunc)
+	c.Info.RPM.Signature.KeyFile = os.Expand(c.RPM.Signature.KeyFile, c.envMappingFunc)
+	c.Info.APK.Signature.KeyFile = os.Expand(c.APK.Signature.KeyFile, c.envMappingFunc)
+	c.Info.Deb.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.Deb.Signature.KeyID), c.envMappingFunc))
+	c.Info.RPM.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.RPM.Signature.KeyID), c.envMappingFunc))
+	c.Info.APK.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.APK.Signature.KeyID), c.envMappingFunc))
+
+	// Package signing passphrase
+	generalPassphrase := os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
+	c.Info.Deb.Signature.KeyPassphrase = generalPassphrase
+	c.Info.RPM.Signature.KeyPassphrase = generalPassphrase
+	c.Info.APK.Signature.KeyPassphrase = generalPassphrase
+
+	debPassphrase := os.Expand("$NFPM_DEB_PASSPHRASE", c.envMappingFunc)
+	if debPassphrase != "" {
+		c.Info.Deb.Signature.KeyPassphrase = debPassphrase
+	}
+
+	rpmPassphrase := os.Expand("$NFPM_RPM_PASSPHRASE", c.envMappingFunc)
+	if rpmPassphrase != "" {
+		c.Info.RPM.Signature.KeyPassphrase = rpmPassphrase
+	}
+
+	apkPassphrase := os.Expand("$NFPM_APK_PASSPHRASE", c.envMappingFunc)
+	if apkPassphrase != "" {
+		c.Info.APK.Signature.KeyPassphrase = apkPassphrase
+	}
 }
 
 // Info contains information about a single package.
