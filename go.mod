@@ -13,7 +13,6 @@ require (
 	github.com/golangci/golangci-lint v1.36.0
 	github.com/golangci/misspell v0.3.5 // indirect
 	github.com/golangci/revgrep v0.0.0-20180812185044-276a5c0a1039 // indirect
-	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/google/rpmpack v0.0.0-20201225075926-0a97c2c4b688
 	github.com/goreleaser/chglog v0.1.2
 	github.com/goreleaser/fileglob v0.3.1

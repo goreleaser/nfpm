@@ -30,15 +30,17 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
-	"crypto/sha1" // nolint:gosec
-	"crypto/sha256"
+	"crypto"
+	_ "crypto/md5"
+	_ "crypto/sha1" // nolint:gosec
+	_ "crypto/sha256"
+	_ "crypto/sha512"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/mail"
 	"os"
 	"path/filepath"
@@ -70,6 +72,13 @@ var archToAlpine = map[string]string{
 	"arm64": "aarch64",
 
 	// "s390x":  "???",
+}
+
+var supportedChecksumHash = map[crypto.Hash]string{
+	crypto.MD5:    "MD5",
+	crypto.SHA1:   "SHA1",
+	crypto.SHA256: "SHA256",
+	crypto.SHA512: "SHA512",
 }
 
 // Default apk packager.
@@ -204,6 +213,7 @@ func writeTgz(w io.Writer, kind tarKind, builder func(tw *tar.Writer) error, dig
 	}
 
 	// handle the cut vs full tars
+	// TODO: document this better, why do we need to call bw.Flush twice if it is a full tar vs the cut tar?
 	if err = bw.Flush(); err != nil {
 		return nil, err
 	}
@@ -237,7 +247,7 @@ func writeTgz(w io.Writer, kind tarKind, builder func(tw *tar.Writer) error, dig
 
 func createData(dataTgz io.Writer, info *nfpm.Info, sizep *int64) ([]byte, error) {
 	builderData := createBuilderData(info, sizep)
-	dataDigest, err := writeTgz(dataTgz, tarFull, builderData, sha256.New())
+	dataDigest, err := writeTgz(dataTgz, tarFull, builderData, crypto.SHA256.New())
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +256,7 @@ func createData(dataTgz io.Writer, info *nfpm.Info, sizep *int64) ([]byte, error
 
 func createControl(controlTgz io.Writer, info *nfpm.Info, size int64, dataDigest []byte) ([]byte, error) {
 	builderControl := createBuilderControl(info, size, dataDigest)
-	controlDigest, err := writeTgz(controlTgz, tarCut, builderControl, sha1.New()) // nolint:gosec
+	controlDigest, err := writeTgz(controlTgz, tarCut, builderControl, crypto.SHA1.New()) // nolint:gosec
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +267,7 @@ func createSignature(signatureTgz io.Writer, info *nfpm.Info, controlSHA1Digest 
 	signatureBuilder := createSignatureBuilder(controlSHA1Digest, info)
 	// we don't actually need to produce a digest here, but writeTgz
 	// requires it so we just use SHA1 since it is already imported
-	_, err := writeTgz(signatureTgz, tarCut, signatureBuilder, sha1.New()) // nolint:gosec
+	_, err := writeTgz(signatureTgz, tarCut, signatureBuilder, crypto.SHA1.New()) // nolint:gosec
 	if err != nil {
 		return &nfpm.ErrSigningFailure{Err: err}
 	}
@@ -357,11 +367,11 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 }
 
 func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
-	file, err := os.Open(path) //nolint:gosec
+	file, err := os.Stat(path) //nolint:gosec
 	if err != nil {
 		return err
 	}
-	content, err := ioutil.ReadAll(file)
+	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -369,13 +379,22 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 		Name:     files.ToNixPath(dest),
 		Size:     int64(len(content)),
 		Mode:     0755,
-		ModTime:  time.Now(),
+		ModTime:  file.ModTime(),
 		Typeflag: tar.TypeReg,
-		Format:   tar.FormatGNU,
 	})
 }
 
 func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) error {
+	header.Format = tar.FormatPAX
+	header.PAXRecords = make(map[string]string)
+
+	for hasher, name := range supportedChecksumHash {
+		if !hasher.Available() {
+			continue
+		}
+		hash := hasher.New()
+		header.PAXRecords[fmt.Sprintf("APK-TOOLS.checksum.%s", name)] = fmt.Sprintf("%x", hash.Sum(content))
+	}
 	if err := out.WriteHeader(header); err != nil {
 		return fmt.Errorf("cannot write header of %s file to control.tar.gz: %w", header.Name, err)
 	}
@@ -430,11 +449,13 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
 			fallthrough
 		default:
-			err = copyToTarAndDigest(file, tw, sizep, created)
+			err = copyToTarAndDigest(file, tw, sizep)
 		}
 		if err != nil {
 			return err
 		}
+		created[file.Source] = true
+		created[file.Destination[1:]] = true
 	}
 
 	return nil
@@ -446,31 +467,25 @@ func createSymlinkInsideTarGz(file *files.Content, out *tar.Writer) error {
 		Linkname: file.Source,
 		Typeflag: tar.TypeSymlink,
 		ModTime:  file.FileInfo.MTime,
-		Format:   tar.FormatGNU,
 	})
 }
 
-func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64, created map[string]bool) error {
-	tarFile, err := os.OpenFile(file.Source, os.O_RDONLY, 0600) //nolint:gosec
+func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error {
+	contents, err := ioutil.ReadFile(file.Source)
 	if err != nil {
-		return fmt.Errorf("could not add file to the archive: %w", err)
+		return err
 	}
-	// don't care if it errs while closing...
-	defer tarFile.Close() // nolint: errcheck
 	header, err := tar.FileInfoHeader(file, file.Source)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 
 	header.Name = files.ToNixPath(file.Destination[1:])
-	err = writeFile(tw, header, tarFile)
-	if err != nil {
+	if err = newItemInsideTarGz(tw, contents, header); err != nil {
 		return err
 	}
 
 	*sizep += file.Size()
-	created[file.Source] = true
 	return nil
 }
 
@@ -500,9 +515,8 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 			Mode:     0755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
-			ModTime:  time.Now(),
 		}); err != nil {
-			return fmt.Errorf("failed to create folder: %w", err)
+			return fmt.Errorf("failed to create folder %s: %w", path, err)
 		}
 		created[path] = true
 	}

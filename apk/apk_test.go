@@ -116,7 +116,7 @@ func TestCreateBuilderData(t *testing.T) {
 
 	assert.NoError(t, builderData(tw))
 
-	assert.Equal(t, 8712, buf.Len())
+	assert.Equal(t, 11784, buf.Len())
 }
 
 func TestCombineToApk(t *testing.T) {
