@@ -15,7 +15,7 @@ require (
 	github.com/golangci/revgrep v0.0.0-20180812185044-276a5c0a1039 // indirect
 	github.com/google/rpmpack v0.0.0-20201225075926-0a97c2c4b688
 	github.com/goreleaser/chglog v0.1.2
-	github.com/goreleaser/fileglob v0.3.1
+	github.com/goreleaser/fileglob v0.4.0
 	github.com/gostaticanalysis/analysisutil v0.6.1 // indirect
 	github.com/imdario/mergo v0.3.11
 	github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af // indirect
