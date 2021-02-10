@@ -149,24 +149,15 @@ func TestPathsToCreate(t *testing.T) {
 func TestDefaultWithArch(t *testing.T) {
 	expectedPaxRecords := map[string]map[string]string{
 		"usr/share/doc/fake/fake.txt": {
-			"APK-TOOLS.checksum.MD5":    "666f6f3d6261720ad41d8cd98f00b204e9800998ecf8427e",
-			"APK-TOOLS.checksum.SHA1":   "666f6f3d6261720ada39a3ee5e6b4b0d3255bfef95601890afd80709",
-			"APK-TOOLS.checksum.SHA256": "666f6f3d6261720ae3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			"APK-TOOLS.checksum.SHA512": "666f6f3d6261720acf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+			"APK-TOOLS.checksum.SHA1":   "96c335dc28122b5f09a4cef74b156cd24c23784c",
 			"mtime":                     "1551704668.328",
 		},
 		"usr/local/bin/fake": {
-			"APK-TOOLS.checksum.MD5":    "6563686f20746573740ad41d8cd98f00b204e9800998ecf8427e",
-			"APK-TOOLS.checksum.SHA1":   "6563686f20746573740ada39a3ee5e6b4b0d3255bfef95601890afd80709",
-			"APK-TOOLS.checksum.SHA256": "6563686f20746573740ae3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			"APK-TOOLS.checksum.SHA512": "6563686f20746573740acf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+			"APK-TOOLS.checksum.SHA1":   "f46cece3eeb7d9ed5cb244d902775427be71492d",
 			"mtime":                     "1597696911.186869419",
 		},
 		"etc/fake/fake.conf": {
-			"APK-TOOLS.checksum.MD5":    "666f6f3d6261720ad41d8cd98f00b204e9800998ecf8427e",
-			"APK-TOOLS.checksum.SHA1":   "666f6f3d6261720ada39a3ee5e6b4b0d3255bfef95601890afd80709",
-			"APK-TOOLS.checksum.SHA256": "666f6f3d6261720ae3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			"APK-TOOLS.checksum.SHA512": "666f6f3d6261720acf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+			"APK-TOOLS.checksum.SHA1":   "96c335dc28122b5f09a4cef74b156cd24c23784c",
 			"mtime":                     "1551704668.328",
 		},
 	}
