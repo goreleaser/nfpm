@@ -31,10 +31,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto"
-	_ "crypto/md5"
 	_ "crypto/sha1" // nolint:gosec
-	_ "crypto/sha256"
-	_ "crypto/sha512"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -72,13 +69,6 @@ var archToAlpine = map[string]string{
 	"arm64": "aarch64",
 
 	// "s390x":  "???",
-}
-
-var supportedChecksumHash = map[crypto.Hash]string{
-	crypto.MD5:    "MD5",
-	crypto.SHA1:   "SHA1",
-	crypto.SHA256: "SHA256",
-	crypto.SHA512: "SHA512",
 }
 
 // Default apk packager.
@@ -388,18 +378,17 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 	header.Format = tar.FormatPAX
 	header.PAXRecords = make(map[string]string)
 
-	for hasher, name := range supportedChecksumHash {
-		if !hasher.Available() {
-			continue
-		}
-		hash := hasher.New()
-		header.PAXRecords[fmt.Sprintf("APK-TOOLS.checksum.%s", name)] = fmt.Sprintf("%x", hash.Sum(content))
+	hasher := crypto.SHA1.New()
+	_, err := hasher.Write(content)
+	if err!=nil{
+		return fmt.Errorf("failed to hash content of file %s: %w", header.Name, err)
 	}
+	header.PAXRecords["APK-TOOLS.checksum.SHA1"] = fmt.Sprintf("%x", hasher.Sum(nil))
 	if err := out.WriteHeader(header); err != nil {
-		return fmt.Errorf("cannot write header of %s file to control.tar.gz: %w", header.Name, err)
+		return fmt.Errorf("cannot write header of %s file to apk: %w", header.Name, err)
 	}
 	if _, err := out.Write(content); err != nil {
-		return fmt.Errorf("cannot write %s file to control.tar.gz: %w", header.Name, err)
+		return fmt.Errorf("cannot write %s file to apk: %w", header.Name, err)
 	}
 	return nil
 }

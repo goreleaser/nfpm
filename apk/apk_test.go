@@ -147,13 +147,34 @@ func TestPathsToCreate(t *testing.T) {
 }
 
 func TestDefaultWithArch(t *testing.T) {
+	expectedChecksums := map[string]string{
+		"usr/share/doc/fake/fake.txt": "96c335dc28122b5f09a4cef74b156cd24c23784c",
+		"usr/local/bin/fake":          "f46cece3eeb7d9ed5cb244d902775427be71492d",
+		"etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
+	}
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
-			var err = Default.Package(info, ioutil.Discard)
-			assert.NoError(t, err)
+
+			var f bytes.Buffer
+			require.NoError(t, Default.Package(info, &f))
+
+			gz, err := gzip.NewReader(&f)
+			require.NoError(t, err)
+			defer gz.Close()
+			tr := tar.NewReader(gz)
+
+			for {
+				hdr, err := tr.Next()
+				if errors.Is(err, io.EOF) {
+					break // End of archive
+				}
+				require.NoError(t, err)
+
+				require.Equal(t, expectedChecksums[hdr.Name], hdr.PAXRecords["APK-TOOLS.checksum.SHA1"], hdr.Name)
+			}
 		})
 	}
 }
