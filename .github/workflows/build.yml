@@ -32,6 +32,8 @@ jobs:
           go test -v -race -count=1 ./...
   goreleaser:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_CLI_EXPERIMENTAL: "enabled"
     steps:
       -
         name: Checkout
