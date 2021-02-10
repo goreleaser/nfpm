@@ -147,19 +147,10 @@ func TestPathsToCreate(t *testing.T) {
 }
 
 func TestDefaultWithArch(t *testing.T) {
-	expectedPaxRecords := map[string]map[string]string{
-		"usr/share/doc/fake/fake.txt": {
-			"APK-TOOLS.checksum.SHA1":   "96c335dc28122b5f09a4cef74b156cd24c23784c",
-			"mtime":                     "1551704668.328",
-		},
-		"usr/local/bin/fake": {
-			"APK-TOOLS.checksum.SHA1":   "f46cece3eeb7d9ed5cb244d902775427be71492d",
-			"mtime":                     "1597696911.186869419",
-		},
-		"etc/fake/fake.conf": {
-			"APK-TOOLS.checksum.SHA1":   "96c335dc28122b5f09a4cef74b156cd24c23784c",
-			"mtime":                     "1551704668.328",
-		},
+	expectedChecksums := map[string]string{
+		"usr/share/doc/fake/fake.txt": "96c335dc28122b5f09a4cef74b156cd24c23784c",
+		"usr/local/bin/fake":          "f46cece3eeb7d9ed5cb244d902775427be71492d",
+		"etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
 	}
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
@@ -182,7 +173,7 @@ func TestDefaultWithArch(t *testing.T) {
 				}
 				require.NoError(t, err)
 
-				require.Equal(t, expectedPaxRecords[hdr.Name], hdr.PAXRecords, hdr.Name)
+				require.Equal(t, expectedChecksums[hdr.Name], hdr.PAXRecords["APK-TOOLS.checksum.SHA1"], hdr.Name)
 			}
 		})
 	}
