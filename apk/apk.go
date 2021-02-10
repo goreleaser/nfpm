@@ -30,8 +30,8 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
-	"crypto"
-	_ "crypto/sha1" // nolint:gosec
+	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -237,7 +237,7 @@ func writeTgz(w io.Writer, kind tarKind, builder func(tw *tar.Writer) error, dig
 
 func createData(dataTgz io.Writer, info *nfpm.Info, sizep *int64) ([]byte, error) {
 	builderData := createBuilderData(info, sizep)
-	dataDigest, err := writeTgz(dataTgz, tarFull, builderData, crypto.SHA256.New())
+	dataDigest, err := writeTgz(dataTgz, tarFull, builderData, sha256.New())
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,7 @@ func createData(dataTgz io.Writer, info *nfpm.Info, sizep *int64) ([]byte, error
 
 func createControl(controlTgz io.Writer, info *nfpm.Info, size int64, dataDigest []byte) ([]byte, error) {
 	builderControl := createBuilderControl(info, size, dataDigest)
-	controlDigest, err := writeTgz(controlTgz, tarCut, builderControl, crypto.SHA1.New()) // nolint:gosec
+	controlDigest, err := writeTgz(controlTgz, tarCut, builderControl, sha1.New()) // nolint:gosec
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func createSignature(signatureTgz io.Writer, info *nfpm.Info, controlSHA1Digest 
 	signatureBuilder := createSignatureBuilder(controlSHA1Digest, info)
 	// we don't actually need to produce a digest here, but writeTgz
 	// requires it so we just use SHA1 since it is already imported
-	_, err := writeTgz(signatureTgz, tarCut, signatureBuilder, crypto.SHA1.New()) // nolint:gosec
+	_, err := writeTgz(signatureTgz, tarCut, signatureBuilder, sha1.New()) // nolint:gosec
 	if err != nil {
 		return &nfpm.ErrSigningFailure{Err: err}
 	}
@@ -378,7 +378,7 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 	header.Format = tar.FormatPAX
 	header.PAXRecords = make(map[string]string)
 
-	hasher := crypto.SHA1.New()
+	hasher := sha1.New()
 	_, err := hasher.Write(content)
 	if err!=nil{
 		return fmt.Errorf("failed to hash content of file %s: %w", header.Name, err)
