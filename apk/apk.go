@@ -396,10 +396,10 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 		header.PAXRecords[fmt.Sprintf("APK-TOOLS.checksum.%s", name)] = fmt.Sprintf("%x", hash.Sum(content))
 	}
 	if err := out.WriteHeader(header); err != nil {
-		return fmt.Errorf("cannot write header of %s file to control.tar.gz: %w", header.Name, err)
+		return fmt.Errorf("cannot write header of %s file to apk: %w", header.Name, err)
 	}
 	if _, err := out.Write(content); err != nil {
-		return fmt.Errorf("cannot write %s file to control.tar.gz: %w", header.Name, err)
+		return fmt.Errorf("cannot write %s file to apk: %w", header.Name, err)
 	}
 	return nil
 }

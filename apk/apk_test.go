@@ -147,13 +147,52 @@ func TestPathsToCreate(t *testing.T) {
 }
 
 func TestDefaultWithArch(t *testing.T) {
+	expectedPaxRecords := map[string]map[string]string{
+		"usr/share/doc/fake/fake.txt": {
+			"APK-TOOLS.checksum.MD5":    "666f6f3d6261720ad41d8cd98f00b204e9800998ecf8427e",
+			"APK-TOOLS.checksum.SHA1":   "666f6f3d6261720ada39a3ee5e6b4b0d3255bfef95601890afd80709",
+			"APK-TOOLS.checksum.SHA256": "666f6f3d6261720ae3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			"APK-TOOLS.checksum.SHA512": "666f6f3d6261720acf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+			"mtime":                     "1551704668.328",
+		},
+		"usr/local/bin/fake": {
+			"APK-TOOLS.checksum.MD5":    "6563686f20746573740ad41d8cd98f00b204e9800998ecf8427e",
+			"APK-TOOLS.checksum.SHA1":   "6563686f20746573740ada39a3ee5e6b4b0d3255bfef95601890afd80709",
+			"APK-TOOLS.checksum.SHA256": "6563686f20746573740ae3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			"APK-TOOLS.checksum.SHA512": "6563686f20746573740acf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+			"mtime":                     "1597696911.186869419",
+		},
+		"etc/fake/fake.conf": {
+			"APK-TOOLS.checksum.MD5":    "666f6f3d6261720ad41d8cd98f00b204e9800998ecf8427e",
+			"APK-TOOLS.checksum.SHA1":   "666f6f3d6261720ada39a3ee5e6b4b0d3255bfef95601890afd80709",
+			"APK-TOOLS.checksum.SHA256": "666f6f3d6261720ae3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			"APK-TOOLS.checksum.SHA512": "666f6f3d6261720acf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+			"mtime":                     "1551704668.328",
+		},
+	}
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
-			var err = Default.Package(info, ioutil.Discard)
-			assert.NoError(t, err)
+
+			var f bytes.Buffer
+			require.NoError(t, Default.Package(info, &f))
+
+			gz, err := gzip.NewReader(&f)
+			require.NoError(t, err)
+			defer gz.Close()
+			tr := tar.NewReader(gz)
+
+			for {
+				hdr, err := tr.Next()
+				if errors.Is(err, io.EOF) {
+					break // End of archive
+				}
+				require.NoError(t, err)
+
+				require.Equal(t, expectedPaxRecords[hdr.Name], hdr.PAXRecords, hdr.Name)
+			}
 		})
 	}
 }
