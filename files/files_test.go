@@ -1,9 +1,11 @@
 package files_test
 
 import (
+	"os"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,6 +41,61 @@ contents:
 		assert.Equal(t, f.Source, "a")
 		assert.Equal(t, f.Destination, "b")
 	}
+}
+
+func TestFileInfoDefault(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+- src: files_test.go
+  dst: b
+`))
+	dec.KnownFields(true)
+	err := dec.Decode(&config)
+	require.NoError(t, err)
+
+	config.Contents, err = files.ExpandContentGlobs(config.Contents, true)
+	require.NoError(t, err)
+	assert.Len(t, config.Contents, 1)
+
+	fi, err := os.Stat("files_test.go")
+	require.NoError(t, err)
+
+	f := config.Contents[0]
+	assert.Equal(t, f.Source, "files_test.go")
+	assert.Equal(t, f.Destination, "b")
+	assert.Equal(t, f.FileInfo.Mode, fi.Mode())
+	assert.Equal(t, f.FileInfo.MTime, fi.ModTime())
+}
+
+func TestFileInfo(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+- src: files_test.go
+  dst: b
+  type: "config|noreplace"
+  packager: "rpm"
+  file_info:
+    mode: 0123
+    mtime: 2008-01-02T15:04:05Z
+`))
+	dec.KnownFields(true)
+	err := dec.Decode(&config)
+	require.NoError(t, err)
+
+	config.Contents, err = files.ExpandContentGlobs(config.Contents, true)
+	require.NoError(t, err)
+	assert.Len(t, config.Contents, 1)
+
+	ct, err := time.Parse(time.RFC3339, "2008-01-02T15:04:05Z")
+	require.NoError(t, err)
+
+	f := config.Contents[0]
+	assert.Equal(t, f.Source, "files_test.go")
+	assert.Equal(t, f.Destination, "b")
+	assert.Equal(t, f.FileInfo.Mode, os.FileMode(0123))
+	assert.Equal(t, f.FileInfo.MTime, ct)
 }
 
 func TestRace(t *testing.T) {
