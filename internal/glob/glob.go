@@ -51,7 +51,7 @@ func (e ErrGlobNoMatch) Error() string {
 // First the longest common prefix (lcp) of all globbed files is found. The destination
 // for each globbed file is then dst joined with src with the lcp trimmed off.
 func Glob(pattern, dst string) (map[string]string, error) {
-	matches, err := fileglob.Glob(pattern)
+	matches, err := fileglob.Glob(filepath.ToSlash(pattern))
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
