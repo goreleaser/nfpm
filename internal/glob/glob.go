@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/goreleaser/fileglob"
 )
+
+var backslashIgnoringMeta = regexp.MustCompile(`\\([^*?\[\]{}])`)
 
 // longestCommonPrefix returns the longest prefix of all strings the argument
 // slice. If the slice is empty the empty string is returned.
@@ -51,7 +54,7 @@ func (e ErrGlobNoMatch) Error() string {
 // First the longest common prefix (lcp) of all globbed files is found. The destination
 // for each globbed file is then dst joined with src with the lcp trimmed off.
 func Glob(pattern, dst string) (map[string]string, error) {
-	matches, err := fileglob.Glob(pattern)
+	matches, err := fileglob.Glob(toSlashIgnoreMeta(pattern))
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
@@ -82,4 +85,13 @@ func Glob(pattern, dst string) (map[string]string, error) {
 		files[src] = globdst
 	}
 	return files, nil
+}
+
+// Replaces windows path separators, while ignoring escaped meta characters
+func toSlashIgnoreMeta(pattern string) string {
+	if os.PathSeparator == '\\' {
+		return backslashIgnoringMeta.ReplaceAllString(pattern, "/$1")
+	} else {
+		return pattern
+	}
 }
