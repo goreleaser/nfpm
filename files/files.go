@@ -70,8 +70,12 @@ func (c *Content) WithFileInfoDefaults() *Content {
 	}
 	info, err := os.Stat(cc.Source)
 	if err == nil {
-		cc.FileInfo.MTime = info.ModTime()
-		cc.FileInfo.Mode = info.Mode()
+		if cc.FileInfo.MTime.IsZero() {
+			cc.FileInfo.MTime = info.ModTime()
+		}
+		if cc.FileInfo.Mode == 0 {
+			cc.FileInfo.Mode = info.Mode()
+		}
 		cc.FileInfo.Size = info.Size()
 	}
 	if cc.FileInfo.MTime.IsZero() {
