@@ -180,7 +180,8 @@ func appendWithUniqueDestination(slice []*Content, elems ...*Content) ([]*Conten
 	}
 
 	for _, elem := range elems {
-		if present, ok := alreadyPresent[elem.Destination]; ok {
+		present, ok := alreadyPresent[elem.Destination]
+		if ok && (present.Packager == "" || elem.Packager == "" || present.Packager == elem.Packager) {
 			return nil, fmt.Errorf(
 				"cannot add %s because %s is already present at the same destination (%s): %w",
 				elem.Source, present.Source, present.Destination, ErrContentCollision)
