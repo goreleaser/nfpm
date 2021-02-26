@@ -131,7 +131,7 @@ func TestCollision(t *testing.T) {
 		require.ErrorIs(t, err, files.ErrContentCollision)
 	})
 
-	t.Run("no collision due different packagers", func(t *testing.T) {
+	t.Run("no collision due to different per-file packagers", func(t *testing.T) {
 		configuredFiles := []*files.Content{
 			{Source: "../testdata/whatever.conf", Destination: "/samedestination", Packager: "foo"},
 			{Source: "../testdata/whatever2.conf", Destination: "/samedestination", Packager: "bar"},
