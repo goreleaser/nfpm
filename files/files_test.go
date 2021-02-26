@@ -121,11 +121,33 @@ contents:
 }
 
 func TestCollision(t *testing.T) {
-	configuredFiles := []*files.Content{
-		{Source: "../testdata/whatever.conf", Destination: "/samedestination"},
-		{Source: "../testdata/whatever2.conf", Destination: "/samedestination"},
-	}
+	t.Run("collision between files for all packagers", func(t *testing.T) {
+		configuredFiles := []*files.Content{
+			{Source: "../testdata/whatever.conf", Destination: "/samedestination"},
+			{Source: "../testdata/whatever2.conf", Destination: "/samedestination"},
+		}
 
-	_, err := files.ExpandContentGlobs(configuredFiles, true)
-	require.ErrorIs(t, err, files.ErrContentCollision)
+		_, err := files.ExpandContentGlobs(configuredFiles, true)
+		require.ErrorIs(t, err, files.ErrContentCollision)
+	})
+
+	t.Run("no collision due different packagers", func(t *testing.T) {
+		configuredFiles := []*files.Content{
+			{Source: "../testdata/whatever.conf", Destination: "/samedestination", Packager: "foo"},
+			{Source: "../testdata/whatever2.conf", Destination: "/samedestination", Packager: "bar"},
+		}
+
+		_, err := files.ExpandContentGlobs(configuredFiles, true)
+		require.NoError(t, err)
+	})
+
+	t.Run("collision between file for all packagers and file for specific packager", func(t *testing.T) {
+		configuredFiles := []*files.Content{
+			{Source: "../testdata/whatever.conf", Destination: "/samedestination", Packager: "foo"},
+			{Source: "../testdata/whatever2.conf", Destination: "/samedestination", Packager: ""},
+		}
+
+		_, err := files.ExpandContentGlobs(configuredFiles, true)
+		require.ErrorIs(t, err, files.ErrContentCollision)
+	})
 }
