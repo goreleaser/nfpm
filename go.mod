@@ -12,11 +12,10 @@ require (
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/google/rpmpack v0.0.0-20201225075926-0a97c2c4b688
 	github.com/goreleaser/chglog v0.1.2
-	github.com/goreleaser/fileglob v0.4.0
+	github.com/goreleaser/fileglob v1.0.1
 	github.com/imdario/mergo v0.3.11
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/sassoftware/go-rpmutils v0.0.0-20190420191620-a8f1baeba37b
-	github.com/spf13/afero v1.5.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
