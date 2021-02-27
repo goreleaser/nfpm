@@ -966,6 +966,7 @@ func readAndFormatAsDebChangelog(changelogFileName, packageName string) (string,
 }
 
 func symlinkTo(tb testing.TB, fileName string) string {
+	tb.Helper()
 	target, err := filepath.Abs(fileName)
 	assert.NoError(tb, err)
 

@@ -795,6 +795,7 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 }
 
 func symlinkTo(tb testing.TB, fileName string) string {
+	tb.Helper()
 	target, err := filepath.Abs(fileName)
 	assert.NoError(tb, err)
 
