@@ -88,7 +88,6 @@ func (c *Config) expandEnvVars() {
 	c.Info.RPM.Signature.KeyPassphrase = generalPassphrase
 	c.Info.APK.Signature.KeyPassphrase = generalPassphrase
 
-
 	debPassphrase := os.ExpandEnv("$NFPM_DEB_PASSPHRASE")
 	if debPassphrase != "" {
 		c.Info.Deb.Signature.KeyPassphrase = debPassphrase
@@ -244,7 +243,7 @@ type PackageSignature struct {
 }
 
 type RPMSignature struct {
-	PackageSignature    `yaml:",inline"`
+	PackageSignature `yaml:",inline"`
 }
 
 type APK struct {
@@ -252,7 +251,7 @@ type APK struct {
 }
 
 type APKSignature struct {
-	PackageSignature    `yaml:",inline"`
+	PackageSignature `yaml:",inline"`
 	// defaults to <maintainer email>.rsa.pub
 	KeyName string `yaml:"key_name,omitempty"`
 }
@@ -266,7 +265,7 @@ type Deb struct {
 }
 
 type DebSignature struct {
-	PackageSignature    `yaml:",inline"`
+	PackageSignature `yaml:",inline"`
 	// origin, maint or archive (defaults to origin)
 	Type string `yaml:"type,omitempty"`
 }

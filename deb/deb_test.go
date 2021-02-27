@@ -90,7 +90,7 @@ func TestDeb(t *testing.T) {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
-			var err = Default.Package(info, ioutil.Discard)
+			err := Default.Package(info, ioutil.Discard)
 			assert.NoError(t, err)
 		})
 	}
@@ -108,7 +108,7 @@ func extractDebVersion(deb *bytes.Buffer) string {
 func TestDebVersionWithDash(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0-beta"
-	var err = Default.Package(info, ioutil.Discard)
+	err := Default.Package(info, ioutil.Discard)
 	assert.NoError(t, err)
 }
 
@@ -116,9 +116,9 @@ func TestDebVersion(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0" //nolint:golint,goconst
 	var buf bytes.Buffer
-	var err = writeControl(&buf, controlData{info, 0})
+	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
-	var v = extractDebVersion(&buf)
+	v := extractDebVersion(&buf)
 	assert.Equal(t, "1.0.0", v)
 }
 
@@ -127,9 +127,9 @@ func TestDebVersionWithRelease(t *testing.T) {
 	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Release = "1"
 	var buf bytes.Buffer
-	var err = writeControl(&buf, controlData{info, 0})
+	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
-	var v = extractDebVersion(&buf)
+	v := extractDebVersion(&buf)
 	assert.Equal(t, "1.0.0-1", v)
 }
 
@@ -195,9 +195,9 @@ func TestControl(t *testing.T) {
 		Info:          exampleInfo(),
 		InstalledSize: 10,
 	}))
-	var golden = "testdata/control.golden"
+	golden := "testdata/control.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
@@ -206,11 +206,11 @@ func TestControl(t *testing.T) {
 
 func TestSpecialFiles(t *testing.T) {
 	var w bytes.Buffer
-	var out = tar.NewWriter(&w)
+	out := tar.NewWriter(&w)
 	filePath := "testdata/templates.golden"
-	assert.Error(t, newFilePathInsideTarGz(out, "doesnotexit", "templates", 0644))
-	require.NoError(t, newFilePathInsideTarGz(out, filePath, "templates", 0644))
-	var in = tar.NewReader(&w)
+	assert.Error(t, newFilePathInsideTarGz(out, "doesnotexit", "templates", 0o644))
+	require.NoError(t, newFilePathInsideTarGz(out, filePath, "templates", 0o644))
+	in := tar.NewReader(&w)
 	header, err := in.Next()
 	require.NoError(t, err)
 	assert.Equal(t, "templates", header.FileInfo().Name())
@@ -249,9 +249,9 @@ func TestNoJoinsControl(t *testing.T) {
 		}),
 		InstalledSize: 10,
 	}))
-	var golden = "testdata/control2.golden"
+	golden := "testdata/control2.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
@@ -259,7 +259,7 @@ func TestNoJoinsControl(t *testing.T) {
 }
 
 func TestDebFileDoesNotExist(t *testing.T) {
-	var err = Default.Package(
+	err := Default.Package(
 		nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
@@ -293,7 +293,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 }
 
 func TestDebNoFiles(t *testing.T) {
-	var err = Default.Package(
+	err := Default.Package(
 		nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
@@ -316,7 +316,7 @@ func TestDebNoFiles(t *testing.T) {
 }
 
 func TestDebNoInfo(t *testing.T) {
-	var err = Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
+	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
 	assert.Error(t, err)
 }
 
@@ -370,9 +370,9 @@ func TestMinimalFields(t *testing.T) {
 			Section:     "default",
 		}),
 	}))
-	var golden = "testdata/minimal.golden"
+	golden := "testdata/minimal.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
@@ -392,9 +392,9 @@ func TestDebEpoch(t *testing.T) {
 			Section:     "default",
 		}),
 	}))
-	var golden = "testdata/withepoch.golden"
+	golden := "testdata/withepoch.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
@@ -421,9 +421,9 @@ func TestDebRules(t *testing.T) {
 			},
 		}),
 	}))
-	var golden = "testdata/rules.golden"
+	golden := "testdata/rules.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
@@ -442,9 +442,9 @@ func TestMultilineFields(t *testing.T) {
 			Section:     "default",
 		}),
 	}))
-	var golden = "testdata/multiline.golden"
+	golden := "testdata/multiline.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0600))
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
@@ -464,16 +464,26 @@ func TestDEBConventionalFileName(t *testing.T) {
 		Expected   string
 		Metadata   string
 	}{
-		{Version: "1.2.3", Release: "", Prerelease: "", Metadata: "",
-			Expected: fmt.Sprintf("%s_1.2.3_%s.deb", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "4", Prerelease: "", Metadata: "",
-			Expected: fmt.Sprintf("%s_1.2.3-4_%s.deb", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "4", Prerelease: "5", Metadata: "",
-			Expected: fmt.Sprintf("%s_1.2.3-4~5_%s.deb", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "", Prerelease: "5", Metadata: "",
-			Expected: fmt.Sprintf("%s_1.2.3~5_%s.deb", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "1", Prerelease: "5", Metadata: "git",
-			Expected: fmt.Sprintf("%s_1.2.3-1~5+git_%s.deb", info.Name, info.Arch)},
+		{
+			Version: "1.2.3", Release: "", Prerelease: "", Metadata: "",
+			Expected: fmt.Sprintf("%s_1.2.3_%s.deb", info.Name, info.Arch),
+		},
+		{
+			Version: "1.2.3", Release: "4", Prerelease: "", Metadata: "",
+			Expected: fmt.Sprintf("%s_1.2.3-4_%s.deb", info.Name, info.Arch),
+		},
+		{
+			Version: "1.2.3", Release: "4", Prerelease: "5", Metadata: "",
+			Expected: fmt.Sprintf("%s_1.2.3-4~5_%s.deb", info.Name, info.Arch),
+		},
+		{
+			Version: "1.2.3", Release: "", Prerelease: "5", Metadata: "",
+			Expected: fmt.Sprintf("%s_1.2.3~5_%s.deb", info.Name, info.Arch),
+		},
+		{
+			Version: "1.2.3", Release: "1", Prerelease: "5", Metadata: "git",
+			Expected: fmt.Sprintf("%s_1.2.3-1~5+git_%s.deb", info.Name, info.Arch),
+		},
 	}
 
 	for _, testCase := range testCases {

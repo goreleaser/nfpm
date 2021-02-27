@@ -82,8 +82,8 @@ func TestComplex(t *testing.T) {
 }
 
 func TestConfigNoReplace(t *testing.T) {
-	var target = "./testdata/acceptance/tmp/noreplace_old_rpm.rpm"
-	require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0700))
+	target := "./testdata/acceptance/tmp/noreplace_old_rpm.rpm"
+	require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0o700))
 
 	config, err := nfpm.ParseFile("./testdata/acceptance/config-noreplace-old.yaml")
 	require.NoError(t, err)
@@ -281,14 +281,14 @@ func (t testWriter) Write(p []byte) (n int, err error) {
 }
 
 func accept(t *testing.T, params acceptParms) {
-	var configFile = filepath.Join("./testdata/acceptance/", params.Conf)
+	configFile := filepath.Join("./testdata/acceptance/", params.Conf)
 	tmp, err := filepath.Abs("./testdata/acceptance/tmp")
 	require.NoError(t, err)
-	var packageName = params.Name + "." + params.Format
-	var target = filepath.Join(tmp, packageName)
+	packageName := params.Name + "." + params.Format
+	target := filepath.Join(tmp, packageName)
 	t.Log("package: " + target)
 
-	require.NoError(t, os.MkdirAll(tmp, 0700))
+	require.NoError(t, os.MkdirAll(tmp, 0o700))
 
 	config, err := nfpm.ParseFile(configFile)
 	require.NoError(t, err)

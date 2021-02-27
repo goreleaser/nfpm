@@ -38,14 +38,14 @@ func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, e
 	}
 
 	blockData := block.Bytes
-	if x509.IsEncryptedPEMBlock(block) {
+	if x509.IsEncryptedPEMBlock(block) { //nolint:staticcheck
 		if passphrase == "" {
 			return nil, errNoPassphrase
 		}
 
 		var decryptedBlockData []byte
 
-		decryptedBlockData, err = x509.DecryptPEMBlock(block, []byte(passphrase))
+		decryptedBlockData, err = x509.DecryptPEMBlock(block, []byte(passphrase)) //nolint:staticcheck
 		if err != nil {
 			return nil, fmt.Errorf("decrypt private key PEM block: %w", err)
 		}

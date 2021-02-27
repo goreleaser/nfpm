@@ -83,9 +83,11 @@ func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) er
 	return err
 }
 
-var errMoreThanOneKey = errors.New("more than one signing key in keyring")
-var errNoKeys = errors.New("no signing key in keyring")
-var errNoPassword = errors.New("key is encrypted but no passphrase was provided")
+var (
+	errMoreThanOneKey = errors.New("more than one signing key in keyring")
+	errNoKeys         = errors.New("no signing key in keyring")
+	errNoPassword     = errors.New("key is encrypted but no passphrase was provided")
+)
 
 func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 	fileContent, err := ioutil.ReadFile(keyFile)

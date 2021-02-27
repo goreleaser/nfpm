@@ -294,7 +294,7 @@ func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) er
 		// the file name will have to start with .SIGN.RSA256 or .SIGN.RSA512.
 		signHeader := &tar.Header{
 			Name: fmt.Sprintf(".SIGN.RSA.%s", keyname),
-			Mode: 0600,
+			Mode: 0o600,
 			Size: int64(len(signature)),
 		}
 
@@ -325,7 +325,7 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 
 		infoHeader := &tar.Header{
 			Name: ".PKGINFO",
-			Mode: 0600,
+			Mode: 0o600,
 			Size: int64(len(infoContent)),
 		}
 
@@ -368,7 +368,7 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 	return newItemInsideTarGz(out, content, &tar.Header{
 		Name:     files.ToNixPath(dest),
 		Size:     int64(len(content)),
-		Mode:     0755,
+		Mode:     0o755,
 		ModTime:  file.ModTime(),
 		Typeflag: tar.TypeReg,
 	})
@@ -380,7 +380,7 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 
 	hasher := sha1.New()
 	_, err := hasher.Write(content)
-	if err!=nil{
+	if err != nil {
 		return fmt.Errorf("failed to hash content of file %s: %w", header.Name, err)
 	}
 	header.PAXRecords["APK-TOOLS.checksum.SHA1"] = fmt.Sprintf("%x", hasher.Sum(nil))
@@ -394,7 +394,7 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 }
 
 func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error {
-	var created = map[string]bool{}
+	created := map[string]bool{}
 
 	return func(tw *tar.Writer) error {
 		// handle empty folders
@@ -501,7 +501,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 		}
 		if err := tarw.WriteHeader(&tar.Header{
 			Name:     files.ToNixPath(path + "/"),
-			Mode:     0755,
+			Mode:     0o755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
 		}); err != nil {
@@ -514,7 +514,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 
 func pathsToCreate(dst string) []string {
 	var paths []string
-	var base = dst[1:]
+	base := dst[1:]
 	for {
 		base = filepath.Dir(base)
 		if base == "." {
@@ -570,7 +570,7 @@ type controlData struct {
 }
 
 func writeControl(w io.Writer, data controlData) error {
-	var tmpl = template.New("control")
+	tmpl := template.New("control")
 	tmpl.Funcs(template.FuncMap{
 		"multiline": func(strs string) string {
 			ret := strings.ReplaceAll(strs, "\n", "\n  ")

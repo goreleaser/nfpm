@@ -94,7 +94,7 @@ contents:
 	f := config.Contents[0]
 	assert.Equal(t, f.Source, "files_test.go")
 	assert.Equal(t, f.Destination, "b")
-	assert.Equal(t, f.FileInfo.Mode, os.FileMode(0123))
+	assert.Equal(t, f.FileInfo.Mode, os.FileMode(0o123))
 	assert.Equal(t, f.FileInfo.MTime, ct)
 }
 
