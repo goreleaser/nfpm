@@ -102,7 +102,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: fun
 
 	debianBinary := []byte("2.0\n")
 
-	var w = ar.NewWriter(deb)
+	w := ar.NewWriter(deb)
 	if err := w.WriteGlobalHeader(); err != nil {
 		return fmt.Errorf("cannot write ar header to deb file: %w", err)
 	}
@@ -152,10 +152,10 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: fun
 }
 
 func addArFile(w *ar.Writer, name string, body []byte) error {
-	var header = ar.Header{
+	header := ar.Header{
 		Name:    files.ToNixPath(name),
 		Size:    int64(len(body)),
-		Mode:    0644,
+		Mode:    0o644,
 		ModTime: time.Now(),
 	}
 	if err := w.WriteHeader(&header); err != nil {
@@ -167,15 +167,15 @@ func addArFile(w *ar.Writer, name string, body []byte) error {
 
 func createDataTarGz(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64, err error) {
 	var buf bytes.Buffer
-	var compress = gzip.NewWriter(&buf)
-	var out = tar.NewWriter(compress)
+	compress := gzip.NewWriter(&buf)
+	out := tar.NewWriter(compress)
 
 	// the writers are properly closed later, this is just in case that we have
 	// an error in another part of the code.
 	defer out.Close()      // nolint: errcheck
 	defer compress.Close() // nolint: errcheck
 
-	var created = map[string]bool{}
+	created := map[string]bool{}
 	if err = createEmptyFoldersInsideTarGz(info, out, created); err != nil {
 		return nil, nil, 0, err
 	}
@@ -271,7 +271,7 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 }
 
 func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (int64, error) {
-	tarFile, err := os.OpenFile(file.Source, os.O_RDONLY, 0600) //nolint:gosec
+	tarFile, err := os.OpenFile(file.Source, os.O_RDONLY, 0o600) //nolint:gosec
 	if err != nil {
 		return 0, fmt.Errorf("could not add tarFile to the archive: %w", err)
 	}
@@ -288,7 +288,7 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 	if err := tw.WriteHeader(header); err != nil {
 		return 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %w", file.Source, err)
 	}
-	var digest = md5.New() // nolint:gas
+	digest := md5.New() // nolint:gas
 	if _, err := io.Copy(tw, io.TeeReader(tarFile, digest)); err != nil {
 		return 0, fmt.Errorf("failed to copy: %w", err)
 	}
@@ -300,7 +300,7 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 
 func createChangelogInsideTarGz(tarw *tar.Writer, md5w io.Writer, created map[string]bool, info *nfpm.Info) (int64, error) {
 	var buf bytes.Buffer
-	var out = gzip.NewWriter(&buf)
+	out := gzip.NewWriter(&buf)
 	// the writers are properly closed later, this is just in case that we have
 	// an error in another part of the code.
 	defer out.Close() // nolint: errcheck
@@ -326,7 +326,7 @@ func createChangelogInsideTarGz(tarw *tar.Writer, md5w io.Writer, created map[st
 		return 0, err
 	}
 
-	var digest = md5.New() // nolint:gas
+	digest := md5.New() // nolint:gas
 	if _, err = digest.Write(changelogData); err != nil {
 		return 0, err
 	}
@@ -364,8 +364,8 @@ func formatChangelog(info *nfpm.Info) (string, error) {
 // nolint:funlen
 func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarGz []byte, err error) {
 	var buf bytes.Buffer
-	var compress = gzip.NewWriter(&buf)
-	var out = tar.NewWriter(compress)
+	compress := gzip.NewWriter(&buf)
+	out := tar.NewWriter(compress)
 	// the writers are properly closed later, this is just in case that we have
 	// an error in another part of the code.
 	defer out.Close()      // nolint: errcheck
@@ -410,30 +410,30 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		mode     int64
 	}
 
-	var specialFiles = map[string]*fileAndMode{}
+	specialFiles := map[string]*fileAndMode{}
 	specialFiles[info.Scripts.PreInstall] = &fileAndMode{
 		fileName: "preinst",
-		mode:     0755,
+		mode:     0o755,
 	}
 	specialFiles[info.Scripts.PostInstall] = &fileAndMode{
 		fileName: "postinst",
-		mode:     0755,
+		mode:     0o755,
 	}
 	specialFiles[info.Scripts.PreRemove] = &fileAndMode{
 		fileName: "prerm",
-		mode:     0755,
+		mode:     0o755,
 	}
 	specialFiles[info.Scripts.PostRemove] = &fileAndMode{
 		fileName: "postrm",
-		mode:     0755,
+		mode:     0o755,
 	}
 	specialFiles[info.Overridables.Deb.Scripts.Rules] = &fileAndMode{
 		fileName: "rules",
-		mode:     0755,
+		mode:     0o755,
 	}
 	specialFiles[info.Overridables.Deb.Scripts.Templates] = &fileAndMode{
 		fileName: "templates",
-		mode:     0644,
+		mode:     0o644,
 	}
 
 	for path, destMode := range specialFiles {
@@ -467,7 +467,7 @@ func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	return newItemInsideTarGz(out, content, &tar.Header{
 		Name:     normalizePath(name),
 		Size:     int64(len(content)),
-		Mode:     0644,
+		Mode:     0o644,
 		ModTime:  time.Now(),
 		Typeflag: tar.TypeReg,
 		Format:   tar.FormatGNU,
@@ -512,7 +512,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 		}
 		if err := tarw.WriteHeader(&tar.Header{
 			Name:     path,
-			Mode:     0755,
+			Mode:     0o755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
 			ModTime:  time.Now(),
@@ -525,8 +525,8 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 }
 
 func pathsToCreate(dst string) []string {
-	var paths = []string{}
-	var base = strings.TrimPrefix(dst, "/")
+	paths := []string{}
+	base := strings.TrimPrefix(dst, "/")
 	for {
 		base = filepath.Dir(base)
 		if base == "." {
@@ -536,7 +536,7 @@ func pathsToCreate(dst string) []string {
 	}
 	// we don't really need to create those things in order apparently, but,
 	// it looks really weird if we don't.
-	var result = []string{}
+	result := []string{}
 	for i := len(paths) - 1; i >= 0; i-- {
 		result = append(result, paths[i])
 	}
@@ -635,7 +635,7 @@ type controlData struct {
 }
 
 func writeControl(w io.Writer, data controlData) error {
-	var tmpl = template.New("control")
+	tmpl := template.New("control")
 	tmpl.Funcs(template.FuncMap{
 		"join": func(strs []string) string {
 			return strings.Trim(strings.Join(strs, ", "), " ")

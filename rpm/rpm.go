@@ -306,7 +306,7 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 		rpm.AddFile(
 			rpmpack.RPMFile{
 				Name:  dir,
-				Mode:  uint(040755),
+				Mode:  uint(0o40755),
 				MTime: uint32(time.Now().Unix()),
 				Owner: "root",
 				Group: "root",
@@ -331,7 +331,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 		case "ghost":
 			rpmFileType = rpmpack.GhostFile
 			if file.FileInfo.Mode == 0 {
-				file.FileInfo.Mode = os.FileMode(0644)
+				file.FileInfo.Mode = os.FileMode(0o644)
 			}
 		case "doc":
 			rpmFileType = rpmpack.DocFile

@@ -180,12 +180,12 @@ func TestDefaultWithArch(t *testing.T) {
 }
 
 func TestNoInfo(t *testing.T) {
-	var err = Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
+	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
 	assert.Error(t, err)
 }
 
 func TestFileDoesNotExist(t *testing.T) {
-	var err = Default.Package(
+	err := Default.Package(
 		nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
@@ -219,7 +219,7 @@ func TestFileDoesNotExist(t *testing.T) {
 }
 
 func TestNoFiles(t *testing.T) {
-	var err = Default.Package(
+	err := Default.Package(
 		nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
@@ -252,10 +252,10 @@ func TestCreateBuilderControl(t *testing.T) {
 	tw := tar.NewWriter(&w)
 	assert.NoError(t, builderControl(tw))
 
-	var control = string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
-	var golden = "testdata/TestCreateBuilderControl.golden"
+	control := string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
+	golden := "testdata/TestCreateBuilderControl.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0655)) // nolint: gosec
+		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
@@ -280,10 +280,10 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 	tw := tar.NewWriter(&w)
 	assert.NoError(t, builderControl(tw))
 
-	var control = string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
-	var golden = "testdata/TestCreateBuilderControlScripts.golden"
+	control := string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
+	golden := "testdata/TestCreateBuilderControlScripts.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0655)) // nolint: gosec
+		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
@@ -296,9 +296,9 @@ func TestControl(t *testing.T) {
 		Info:          exampleInfo(),
 		InstalledSize: 10,
 	}))
-	var golden = "testdata/TestControl.golden"
+	golden := "testdata/TestControl.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655)) // nolint: gosec
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	assert.NoError(t, err)
@@ -384,7 +384,7 @@ func TestDisableGlobbing(t *testing.T) {
 func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
 	t.Helper()
 
-	var tr = tar.NewReader(bytes.NewReader(tarFile))
+	tr := tar.NewReader(bytes.NewReader(tarFile))
 
 	for {
 		hdr, err := tr.Next()
@@ -416,16 +416,26 @@ func TestAPKConventionalFileName(t *testing.T) {
 		Prerelease string
 		Expect     string
 	}{
-		{Arch: "amd64", Version: "1.2.3",
-			Expect: "default_1.2.3_x86_64.apk"},
-		{Arch: "386", Version: "1.2.3", Meta: "git",
-			Expect: "default_1.2.3+git_x86.apk"},
-		{Arch: "386", Version: "1.2.3", Meta: "git", Release: "1",
-			Expect: "default_1.2.3-1+git_x86.apk"},
-		{Arch: "all", Version: "1.2.3",
-			Expect: "default_1.2.3_all.apk"},
-		{Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "5",
-			Expect: "default_1.2.3-1~5_x86.apk"},
+		{
+			Arch: "amd64", Version: "1.2.3",
+			Expect: "default_1.2.3_x86_64.apk",
+		},
+		{
+			Arch: "386", Version: "1.2.3", Meta: "git",
+			Expect: "default_1.2.3+git_x86.apk",
+		},
+		{
+			Arch: "386", Version: "1.2.3", Meta: "git", Release: "1",
+			Expect: "default_1.2.3-1+git_x86.apk",
+		},
+		{
+			Arch: "all", Version: "1.2.3",
+			Expect: "default_1.2.3_all.apk",
+		},
+		{
+			Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "5",
+			Expect: "default_1.2.3-1~5_x86.apk",
+		},
 	}
 
 	for _, testCase := range testCases {

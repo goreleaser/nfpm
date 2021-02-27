@@ -57,7 +57,7 @@ func main() {
 }
 
 func initFile(config string) error {
-	return ioutil.WriteFile(config, []byte(example), 0600)
+	return ioutil.WriteFile(config, []byte(example), 0o600)
 }
 
 var errInsufficientParams = errors.New("a packager must be specified if target is a directory or blank")

@@ -6,10 +6,8 @@ TEST_PARALLEL?=2
 CONTAINER_RUNTIME?=docker
 export CONTAINER_RUNTIME
 
-
 export PATH := ./bin:$(PATH)
 export GO111MODULE := on
-export GOPROXY := https://proxy.golang.org,https://gocenter.io,direct
 
 # Install all the build and lint dependencies
 setup:
@@ -35,14 +33,10 @@ cover: test
 .PHONY: cover
 
 fmt:
-	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
+	gofumpt -w .
 .PHONY: fmt
 
-lint: check
-	golangci-lint run
-.PHONY: check
-
-ci: build lint test acceptance
+ci: build test acceptance
 .PHONY: ci
 
 build:
