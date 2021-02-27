@@ -1,5 +1,3 @@
-//go:generate go install github.com/golangci/golangci-lint/cmd/golangci-lint
-
 // Package nfpm provides ways to package programs in some linux packaging
 // formats.
 package nfpm
