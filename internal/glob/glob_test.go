@@ -54,7 +54,7 @@ func TestGlob(t *testing.T) {
 		files, err := Glob(pattern, "/foo/fake")
 		require.NoError(t, err)
 		require.Len(t, files, 1)
-		require.Equal(t, "/foo/fake", files[abs])
+		require.Equal(t, "/foo/fake", files[filepath.ToSlash(abs)])
 	})
 
 	t.Run("single file", func(t *testing.T) {

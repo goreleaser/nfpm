@@ -384,7 +384,7 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 	abs, err := filepath.Abs("../testdata/whatever.confzzz")
 	require.NoError(t, err)
 	err = Default.Package(info, ioutil.Discard)
-	assert.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", abs))
+	assert.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
 func TestRPMMultiArch(t *testing.T) {

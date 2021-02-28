@@ -218,7 +218,7 @@ func TestFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", abs))
+	assert.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
 func TestNoFiles(t *testing.T) {
