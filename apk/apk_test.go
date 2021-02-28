@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -185,7 +186,9 @@ func TestNoInfo(t *testing.T) {
 }
 
 func TestFileDoesNotExist(t *testing.T) {
-	err := Default.Package(
+	abs, err := filepath.Abs("../testdata/whatever.confzzz")
+	require.NoError(t, err)
+	err = Default.Package(
 		nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
@@ -215,7 +218,7 @@ func TestFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, "matching \"../testdata/whatever.confzzz\": file does not exist")
+	assert.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", abs))
 }
 
 func TestNoFiles(t *testing.T) {
