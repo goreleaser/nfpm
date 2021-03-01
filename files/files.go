@@ -130,7 +130,11 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 			continue
 		}
 
-		globbed, err = glob.Glob(f.Source, f.Destination, fileglob.QuoteMeta)
+		var options []fileglob.OptFunc
+		if disableGlobbing {
+			options = append(options, fileglob.QuoteMeta)
+		}
+		globbed, err = glob.Glob(f.Source, f.Destination, options...)
 		if err != nil {
 			return nil, err
 		}
