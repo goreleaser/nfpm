@@ -12,7 +12,6 @@ export GO111MODULE := on
 # Install all the build and lint dependencies
 setup:
 	go mod download
-	go generate -v ./...
 	git config core.hooksPath .githooks
 .PHONY: setup
 
@@ -20,8 +19,12 @@ pull_test_imgs:
 	grep FROM ./testdata/acceptance/*.dockerfile | cut -f2 -d' ' | sort | uniq | while read -r img; do $(CONTAINER_RUNTIME) pull "$$img"; done
 .PHONY: pull_test_imgs
 
-acceptance: pull_test_imgs
-	make -e TEST_OPTIONS="-tags=acceptance" test
+acceptance:
+ifeq ($(uname_S), Windows)
+	make test
+else
+	make -e TEST_OPTIONS="-tags=acceptance" pull_test_imgs test
+endif
 .PHONY: acceptance
 
 test:

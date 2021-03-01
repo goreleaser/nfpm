@@ -39,6 +39,7 @@ jobs:
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
+        if: matrix.os == 'ubuntu-latest'
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -78,6 +79,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
       -
         name: Clear
-        if: always()
+        if: matrix.os == 'ubuntu-latest'
         run: |
           rm -f ${HOME}/.docker/config.json
