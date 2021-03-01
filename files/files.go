@@ -118,9 +118,6 @@ func (c *Content) Sys() interface{} {
 func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents, err error) {
 	for _, f := range contents {
 		var globbed map[string]string
-		if disableGlobbing {
-			f.Source = fileglob.QuoteMeta(f.Source)
-		}
 
 		switch f.Type {
 		case "ghost", "symlink":
@@ -133,7 +130,7 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 			continue
 		}
 
-		globbed, err = glob.Glob(f.Source, f.Destination)
+		globbed, err = glob.Glob(f.Source, f.Destination, fileglob.QuoteMeta)
 		if err != nil {
 			return nil, err
 		}
