@@ -92,6 +92,7 @@ nfpms:
   license: MIT
   vendor: GoReleaser
   formats:
+  - apk
   - deb
   - rpm
 scoop:
