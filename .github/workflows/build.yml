@@ -45,13 +45,15 @@ jobs:
         uses: docker/setup-buildx-action@v1
         if: matrix.os == 'ubuntu-latest'
       -
-        name: Make Setup
-        run: |
-          make setup
+        name: Setup
+        run: make setup
       -
-        name: Make CI
-        run: |
-          make ci
+        name: Test
+        run: make build test
+      -
+        name: Acceptance tests
+        run: make acceptance
+        if: matrix.os == 'ubuntu-latest'
       -
         name: Upload coverage
         uses: codecov/codecov-action@v1
