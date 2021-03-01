@@ -12,7 +12,6 @@ export GO111MODULE := on
 # Install all the build and lint dependencies
 setup:
 	go mod download
-	go generate -v ./...
 	git config core.hooksPath .githooks
 .PHONY: setup
 
