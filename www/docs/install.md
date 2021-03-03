@@ -68,7 +68,7 @@ $ cd nfpm
 **Get the dependencies:**
 
 ```console
-$ go mod download
+$ go mod tidy
 ```
 
 **Build:**

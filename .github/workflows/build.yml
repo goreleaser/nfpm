@@ -55,6 +55,9 @@ jobs:
         run: make acceptance
         if: matrix.os == 'ubuntu-latest'
       -
+        name: Diff
+        run: git diff
+      -
         name: Upload coverage
         uses: codecov/codecov-action@v1
         if: matrix.os == 'ubuntu-latest'
