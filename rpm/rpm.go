@@ -266,6 +266,13 @@ func toRelation(items []string) (rpmpack.Relations, error) {
 }
 
 func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
+	if info.RPM.Scripts.PreTrans != "" {
+		data, err := ioutil.ReadFile(info.RPM.Scripts.PreTrans)
+		if err != nil {
+			return err
+		}
+		rpm.AddPretrans(string(data))
+	}
 	if info.Scripts.PreInstall != "" {
 		data, err := ioutil.ReadFile(info.Scripts.PreInstall)
 		if err != nil {
@@ -296,6 +303,14 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 			return err
 		}
 		rpm.AddPostun(string(data))
+	}
+
+	if info.RPM.Scripts.PostTrans != "" {
+		data, err := ioutil.ReadFile(info.RPM.Scripts.PostTrans)
+		if err != nil {
+			return err
+		}
+		rpm.AddPosttrans(string(data))
 	}
 
 	return nil

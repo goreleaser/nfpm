@@ -76,6 +76,12 @@ func exampleInfo() *nfpm.Info {
 				PreRemove:   "../testdata/scripts/preremove.sh",
 				PostRemove:  "../testdata/scripts/postremove.sh",
 			},
+			RPM: nfpm.RPM{
+				Scripts: nfpm.RPMScripts{
+					PreTrans:  "../testdata/scripts/pretrans.sh",
+					PostTrans: "../testdata/scripts/posttrans.sh",
+				},
+			},
 		},
 	})
 }
@@ -366,6 +372,22 @@ echo "Postinstall" > /dev/null
 
 echo "Postremove" > /dev/null
 `, data, "Postremove script does not match")
+
+	rpmPreTransTag := 1151
+	data, err = rpm.Header.GetString(rpmPreTransTag)
+	require.NoError(t, err)
+	assert.Equal(t, `#!/bin/bash
+
+echo "Pretrans" > /dev/null
+`, data, "Pretrans script does not match")
+
+	rpmPostTransTag := 1152
+	data, err = rpm.Header.GetString(rpmPostTransTag)
+	require.NoError(t, err)
+	assert.Equal(t, `#!/bin/bash
+
+echo "Posttrans" > /dev/null
+`, data, "Posttrans script does not match")
 }
 
 func TestRPMFileDoesNotExist(t *testing.T) {

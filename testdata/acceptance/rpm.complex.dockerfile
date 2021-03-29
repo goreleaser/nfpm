@@ -17,6 +17,8 @@ RUN test -d /var/log/whatever
 RUN test -d /usr/share/foo
 RUN test -f /tmp/preinstall-proof
 RUN test -f /tmp/postinstall-proof
+RUN test -f /tmp/pretrans-proof
+RUN test -f /tmp/posttrans-proof
 RUN test ! -f /tmp/preremove-proof
 RUN test ! -f /tmp/postremove-proof
 RUN echo wat >> /etc/foo/whatever.conf
