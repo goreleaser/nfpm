@@ -631,6 +631,7 @@ func TestRPMSignature(t *testing.T) {
 
 	keyring, err := openpgp.ReadKeyRing(bytes.NewReader(pubkeyFileContent))
 	require.NoError(t, err)
+	require.NotNil(t, keyring, "cannot verify sigs with an empty keyring")
 
 	var rpmBuffer bytes.Buffer
 	err = Default.Package(info, &rpmBuffer)

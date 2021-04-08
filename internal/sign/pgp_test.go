@@ -3,96 +3,103 @@ package sign
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/AlekSi/pointer"
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/openpgp"
 
 	"github.com/goreleaser/nfpm/v2"
 )
 
 const pass = "hunter2"
 
+var testCases = []struct {
+	name        string
+	privKeyFile string
+	pubKeyFile  string
+	pass        string
+	keyId       *string
+}{
+	{"protected", "testdata/privkey.gpg", "testdata/pubkey", pass, nil},
+	{"unprotected", "testdata/privkey_unprotected.gpg", "testdata/pubkey", "", nil},
+	{"armored protected", "testdata/privkey.asc", "testdata/pubkey", pass, nil},
+	{"armored unprotected", "testdata/privkey_unprotected.asc", "testdata/pubkey", "", nil},
+	{"gpg subkey unprotected", "testdata/privkey_unprotected_subkey_only.asc", "testdata/pubkey", "", nil},
+	{"protected-with-key-id", "testdata/privkey.gpg", "testdata/pubkey", pass, pointer.ToString("bc8acdd415bd80b3")},
+	{"unprotected-with-key-id", "testdata/privkey_unprotected.gpg", "testdata/pubkey", "", pointer.ToString("bc8acdd415bd80b3")},
+	{"armored protected-with-key-id", "testdata/privkey.asc", "testdata/pubkey", pass, pointer.ToString("bc8acdd415bd80b3")},
+	{"armored unprotected-with-key-id", "testdata/privkey_unprotected.asc", "testdata/pubkey", "", pointer.ToString("bc8acdd415bd80b3")},
+	{"gpg subkey unprotected-with-key-id", "testdata/privkey_unprotected_subkey_only.asc", "testdata/pubkey", "", pointer.ToString("9890904dfb2ec88a")},
+}
+
 func TestPGPSignerAndVerify(t *testing.T) {
 	data := []byte("testdata")
-	verifierKeyring := readArmoredKeyring(t, "testdata/pubkey.asc")
-
-	testCases := []struct {
-		name    string
-		keyFile string
-		pass    string
-	}{
-		{"protected", "testdata/privkey.gpg", pass},
-		{"unprotected", "testdata/privkey_unprotected.gpg", ""},
-		{"armored protected", "testdata/privkey.asc", pass},
-		{"armored unprotected", "testdata/privkey_unprotected.asc", ""},
-	}
-
 	for _, testCase := range testCases {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
-			sig, err := PGPSigner(testCase.keyFile, testCase.pass)(data)
+			armoredPublicKey := fmt.Sprintf("%s.asc", testCase.pubKeyFile)
+			gpgPublicKey := fmt.Sprintf("%s.gpg", testCase.pubKeyFile)
+			sig, err := PGPSignerWithKeyID(testCase.privKeyFile, testCase.pass, testCase.keyId)(data)
 			require.NoError(t, err)
 
-			_, err = openpgp.CheckDetachedSignature(verifierKeyring,
-				bytes.NewReader(data), bytes.NewReader(sig))
-			assert.NoError(t, err)
+			err = PGPVerify(bytes.NewReader(data), sig, armoredPublicKey)
+			require.NoError(t, err)
 
-			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.asc")
-			assert.NoError(t, err)
-
-			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.gpg")
-			assert.NoError(t, err)
+			err = PGPVerify(bytes.NewReader(data), sig, gpgPublicKey)
+			require.NoError(t, err)
+			if testCase.keyId != nil {
+				var pgpSignature *crypto.PGPSignature
+				if isASCII(sig) {
+					pgpSignature, err = crypto.NewPGPSignatureFromArmored(string(sig))
+					require.NoError(t, err)
+				} else {
+					pgpSignature = crypto.NewPGPSignature(sig)
+				}
+				sigID, _ := pgpSignature.GetSignatureKeyIDs()
+				require.Len(t, sigID, 1)
+				require.Equal(t, *testCase.keyId, fmt.Sprintf("%x", sigID[0]))
+			}
 		})
 	}
 }
 
 func TestArmoredDetachSignAndVerify(t *testing.T) {
 	data := []byte("testdata")
-	verifierKeyring := readArmoredKeyring(t, "testdata/pubkey.asc")
-
-	testCases := []struct {
-		name    string
-		keyFile string
-		pass    string
-	}{
-		{"protected", "testdata/privkey.gpg", pass},
-		{"unprotected", "testdata/privkey_unprotected.gpg", ""},
-		{"armored protected", "testdata/privkey.asc", pass},
-		{"armored unprotected", "testdata/privkey_unprotected.asc", ""},
-	}
-
 	for _, testCase := range testCases {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
-			sig, err := PGPArmoredDetachSign(bytes.NewReader(data),
-				testCase.keyFile, testCase.pass)
+			armoredPublicKey := fmt.Sprintf("%s.asc", testCase.pubKeyFile)
+			gpgPublicKey := fmt.Sprintf("%s.gpg", testCase.pubKeyFile)
+			sig, err := PGPArmoredDetachSignWithKeyID(
+				bytes.NewReader(data),
+				testCase.privKeyFile,
+				testCase.pass,
+				testCase.keyId,
+			)
 			require.NoError(t, err)
 
-			_, err = openpgp.CheckArmoredDetachedSignature(verifierKeyring,
-				bytes.NewReader(data), bytes.NewReader(sig))
-			assert.NoError(t, err)
+			err = PGPVerify(bytes.NewReader(data), sig, armoredPublicKey)
+			require.NoError(t, err)
 
-			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.asc")
-			assert.NoError(t, err)
-
-			err = PGPVerify(bytes.NewReader(data), sig, "testdata/pubkey.gpg")
-			assert.NoError(t, err)
+			err = PGPVerify(bytes.NewReader(data), sig, gpgPublicKey)
+			require.NoError(t, err)
+			if testCase.keyId != nil {
+				var pgpSignature *crypto.PGPSignature
+				if isASCII(sig) {
+					pgpSignature, err = crypto.NewPGPSignatureFromArmored(string(sig))
+					require.NoError(t, err)
+				} else {
+					pgpSignature = crypto.NewPGPSignature(sig)
+				}
+				sigID, _ := pgpSignature.GetSignatureKeyIDs()
+				require.Len(t, sigID, 1)
+				require.Equal(t, *testCase.keyId, fmt.Sprintf("%x", sigID[0]))
+			}
 		})
 	}
-}
-
-func readArmoredKeyring(t *testing.T, fileName string) openpgp.EntityList {
-	t.Helper()
-	content, err := ioutil.ReadFile(fileName)
-	require.NoError(t, err)
-
-	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(content))
-	require.NoError(t, err)
-
-	return keyring
 }
 
 func TestPGPSignerError(t *testing.T) {
@@ -100,7 +107,7 @@ func TestPGPSignerError(t *testing.T) {
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
-	assert.True(t, errors.As(err, &expectedError))
+	require.True(t, errors.As(err, &expectedError))
 }
 
 func TestNoSigningKey(t *testing.T) {
@@ -115,8 +122,7 @@ func TestMultipleKeys(t *testing.T) {
 
 func TestWrongPass(t *testing.T) {
 	_, err := readSigningKey("testdata/privkey.asc", "password123")
-	require.EqualError(t, err,
-		"decrypt secret signing key: openpgp: invalid data: private key checksum failure")
+	require.Contains(t, err.Error(), "private key checksum failure")
 }
 
 func TestEmptyPass(t *testing.T) {
@@ -137,9 +143,9 @@ func TestReadKey(t *testing.T) {
 func TestIsASCII(t *testing.T) {
 	data, err := ioutil.ReadFile("testdata/privkey.asc")
 	require.NoError(t, err)
-	assert.True(t, isASCII(data))
+	require.True(t, isASCII(data))
 
 	data, err = ioutil.ReadFile("testdata/privkey.gpg")
 	require.NoError(t, err)
-	assert.False(t, isASCII(data))
+	require.False(t, isASCII(data))
 }

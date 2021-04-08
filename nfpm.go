@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/AlekSi/pointer"
 	"github.com/Masterminds/semver/v3"
 	"github.com/goreleaser/chglog"
 	"github.com/imdario/mergo"
@@ -79,6 +80,9 @@ func (c *Config) expandEnvVars() {
 	c.Info.Deb.Signature.KeyFile = os.ExpandEnv(c.Deb.Signature.KeyFile)
 	c.Info.RPM.Signature.KeyFile = os.ExpandEnv(c.RPM.Signature.KeyFile)
 	c.Info.APK.Signature.KeyFile = os.ExpandEnv(c.APK.Signature.KeyFile)
+	c.Info.Deb.Signature.KeyID = pointer.ToString(os.ExpandEnv(pointer.GetString(c.Deb.Signature.KeyID)))
+	c.Info.RPM.Signature.KeyID = pointer.ToString(os.ExpandEnv(pointer.GetString(c.RPM.Signature.KeyID)))
+	c.Info.APK.Signature.KeyID = pointer.ToString(os.ExpandEnv(pointer.GetString(c.APK.Signature.KeyID)))
 
 	// Package signing passphrase
 	generalPassphrase := os.ExpandEnv("$NFPM_PASSPHRASE")
@@ -236,8 +240,9 @@ type RPM struct {
 
 type PackageSignature struct {
 	// PGP secret key, can be ASCII-armored
-	KeyFile       string `yaml:"key_file,omitempty"`
-	KeyPassphrase string `yaml:"-"` // populated from environment variable
+	KeyFile       string  `yaml:"key_file,omitempty"`
+	KeyID         *string `yaml:"key_id,omitempty"`
+	KeyPassphrase string  `yaml:"-"` // populated from environment variable
 }
 
 type RPMSignature struct {

@@ -2,13 +2,16 @@ package sign
 
 import (
 	"bytes"
+	"crypto"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strconv"
 	"unicode"
 
-	"golang.org/x/crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 
 	"github.com/goreleaser/nfpm/v2"
 )
@@ -16,7 +19,18 @@ import (
 // PGPSigner returns a PGP signer that creates a detached non-ASCII-armored
 // signature and is compatible with rpmpack's signature API.
 func PGPSigner(keyFile, passphrase string) func([]byte) ([]byte, error) {
+	return PGPSignerWithKeyID(keyFile, passphrase, nil)
+}
+
+// PGPSignerWithKeyID returns a PGP signer that creates a detached non-ASCII-armored
+// signature and is compatible with rpmpack's signature API.
+func PGPSignerWithKeyID(keyFile, passphrase string, hexKeyId *string) func([]byte) ([]byte, error) {
 	return func(data []byte) ([]byte, error) {
+		keyId, err := parseKeyID(hexKeyId)
+		if err != nil {
+			return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyId, err)
+		}
+
 		key, err := readSigningKey(keyFile, passphrase)
 		if err != nil {
 			return nil, &nfpm.ErrSigningFailure{Err: err}
@@ -24,7 +38,10 @@ func PGPSigner(keyFile, passphrase string) func([]byte) ([]byte, error) {
 
 		var signature bytes.Buffer
 
-		err = openpgp.DetachSign(&signature, key, bytes.NewReader(data), nil)
+		err = openpgp.DetachSign(&signature, key, bytes.NewReader(data), &packet.Config{
+			SigningKeyId: keyId,
+			DefaultHash:  crypto.SHA256,
+		})
 		if err != nil {
 			return nil, &nfpm.ErrSigningFailure{Err: err}
 		}
@@ -35,6 +52,16 @@ func PGPSigner(keyFile, passphrase string) func([]byte) ([]byte, error) {
 
 // PGPArmoredDetachSign creates an ASCII-armored detached signature.
 func PGPArmoredDetachSign(message io.Reader, keyFile, passphrase string) ([]byte, error) {
+	return PGPArmoredDetachSignWithKeyID(message, keyFile, passphrase, nil)
+}
+
+// PGPArmoredDetachSignWithKeyID creates an ASCII-armored detached signature.
+func PGPArmoredDetachSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKeyId *string) ([]byte, error) {
+	keyId, err := parseKeyID(hexKeyId)
+	if err != nil {
+		return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyId, err)
+	}
+
 	key, err := readSigningKey(keyFile, passphrase)
 	if err != nil {
 		return nil, fmt.Errorf("armored detach sign: %w", err)
@@ -42,7 +69,10 @@ func PGPArmoredDetachSign(message io.Reader, keyFile, passphrase string) ([]byte
 
 	var signature bytes.Buffer
 
-	err = openpgp.ArmoredDetachSign(&signature, key, message, nil)
+	err = openpgp.ArmoredDetachSign(&signature, key, message, &packet.Config{
+		SigningKeyId: keyId,
+		DefaultHash:  crypto.SHA256,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("armored detach sign: %w", err)
 	}
@@ -75,12 +105,24 @@ func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) er
 	}
 
 	if isASCII(signature) {
-		_, err = openpgp.CheckArmoredDetachedSignature(keyring, message, bytes.NewReader(signature))
+		_, err = openpgp.CheckArmoredDetachedSignature(keyring, message, bytes.NewReader(signature), nil)
 		return err
 	}
 
-	_, err = openpgp.CheckDetachedSignature(keyring, message, bytes.NewReader(signature))
+	_, err = openpgp.CheckDetachedSignature(keyring, message, bytes.NewReader(signature), nil)
 	return err
+}
+
+func parseKeyID(hexKeyId *string) (uint64, error) {
+	if hexKeyId == nil || *hexKeyId == "" {
+		return 0, nil
+	}
+
+	result, err := strconv.ParseUint(*hexKeyId, 16, 64)
+	if err != nil {
+		return 0, err
+	}
+	return result, nil
 }
 
 var (
@@ -108,7 +150,6 @@ func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 			return nil, fmt.Errorf("decoding PGP keyring: %w", err)
 		}
 	}
-
 	var key *openpgp.Entity
 
 	for _, candidate := range entityList {
@@ -135,10 +176,17 @@ func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 		if passphrase == "" {
 			return nil, errNoPassword
 		}
-
-		err = key.PrivateKey.Decrypt([]byte(passphrase))
+		pw := []byte(passphrase)
+		err = key.PrivateKey.Decrypt(pw)
 		if err != nil {
 			return nil, fmt.Errorf("decrypt secret signing key: %w", err)
+		}
+		for _, sub := range key.Subkeys {
+			if sub.PrivateKey != nil {
+				if err := sub.PrivateKey.Decrypt(pw); err != nil {
+					return nil, fmt.Errorf("gopenpgp: error in unlocking sub key: %w", err)
+				}
+			}
 		}
 	}
 
