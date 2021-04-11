@@ -289,6 +289,7 @@ type DebTriggers struct {
 type DebScripts struct {
 	Rules     string `yaml:"rules,omitempty"`
 	Templates string `yaml:"templates,omitempty"`
+	Config    string `yaml:"config,omitempty"`
 }
 
 // Scripts contains information about maintainer scripts for packages.
