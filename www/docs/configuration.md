@@ -222,6 +222,8 @@ deb:
     rules: foo.sh
     # Deb templates file, when using debconf.
     templates: templates
+    # Deb config maintainer script for asking questions when using debconf.
+    config: config
 
   # Custom deb triggers
   triggers:
