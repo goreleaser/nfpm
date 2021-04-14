@@ -434,6 +434,10 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		fileName: "templates",
 		mode:     0o644,
 	}
+	specialFiles[info.Overridables.Deb.Scripts.Config] = &fileAndMode{
+		fileName: "config",
+		mode:     0o755,
+	}
 
 	for path, destMode := range specialFiles {
 		if path != "" {

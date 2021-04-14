@@ -18,3 +18,5 @@ contents:
 deb:
   scripts:
     rules: ./testdata/acceptance/scripts/rules.sh
+    templates: ./testdata/acceptance/scripts/templates
+    config: ./testdata/acceptance/scripts/config
