@@ -3,7 +3,6 @@ ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.rpm
 RUN echo -e "fastestmirror=true\ndeltarpm=true\n" | tee -a /etc/dnf/dnf.conf
-RUN dnf check-update
 
 
 # ---- minimal test ----
