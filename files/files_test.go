@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -35,11 +34,60 @@ contents:
 	dec.KnownFields(true)
 	err := dec.Decode(&config)
 	require.NoError(t, err)
-	assert.Len(t, config.Contents, 2)
+	require.Len(t, config.Contents, 2)
 	for _, f := range config.Contents {
 		t.Logf("%+#v\n", f)
-		assert.Equal(t, f.Source, "a")
-		assert.Equal(t, f.Destination, "b")
+		require.Equal(t, f.Source, "a")
+		require.Equal(t, f.Destination, "b")
+	}
+}
+
+func TestDeepPathsWithGlob(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+- src: testdata/globtest/**/*
+  dst: /bla
+  file_info:
+    mode: 0644
+    mtime: 2008-01-02T15:04:05Z
+`))
+	dec.KnownFields(true)
+	err := dec.Decode(&config)
+	require.NoError(t, err)
+	require.Len(t, config.Contents, 1)
+	parsedContents, err := files.ExpandContentGlobs(config.Contents, false)
+	require.NoError(t, err)
+	for _, f := range parsedContents {
+		switch f.Source {
+		case "testdata/globtest/nested/b.txt":
+			require.Equal(t, "/bla/nested/b.txt", f.Destination)
+		case "testdata/globtest/multi-nested/subdir/c.txt":
+			require.Equal(t, "/bla/multi-nested/subdir/c.txt", f.Destination)
+		}
+	}
+}
+
+func TestDeepPathsWithoutGlob(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+- src: testdata/deep-paths/
+  dst: /bla
+`))
+	dec.KnownFields(true)
+	err := dec.Decode(&config)
+	require.NoError(t, err)
+	require.Len(t, config.Contents, 1)
+	parsedContents, err := files.ExpandContentGlobs(config.Contents, true)
+	require.NoError(t, err)
+	for _, f := range parsedContents {
+		switch f.Source {
+		case "testdata/deep-paths/nested1/nested2/a.txt":
+			require.Equal(t, "/bla/nested1/nested2/a.txt", f.Destination)
+		default:
+			t.Errorf("unknown source %s", f.Source)
+		}
 	}
 }
 
@@ -56,16 +104,16 @@ contents:
 
 	config.Contents, err = files.ExpandContentGlobs(config.Contents, true)
 	require.NoError(t, err)
-	assert.Len(t, config.Contents, 1)
+	require.Len(t, config.Contents, 1)
 
 	fi, err := os.Stat("files_test.go")
 	require.NoError(t, err)
 
 	f := config.Contents[0]
-	assert.Equal(t, f.Source, "files_test.go")
-	assert.Equal(t, f.Destination, "b")
-	assert.Equal(t, f.FileInfo.Mode, fi.Mode())
-	assert.Equal(t, f.FileInfo.MTime, fi.ModTime())
+	require.Equal(t, f.Source, "files_test.go")
+	require.Equal(t, f.Destination, "b")
+	require.Equal(t, f.FileInfo.Mode, fi.Mode())
+	require.Equal(t, f.FileInfo.MTime, fi.ModTime())
 }
 
 func TestFileInfo(t *testing.T) {
@@ -86,16 +134,16 @@ contents:
 
 	config.Contents, err = files.ExpandContentGlobs(config.Contents, true)
 	require.NoError(t, err)
-	assert.Len(t, config.Contents, 1)
+	require.Len(t, config.Contents, 1)
 
 	ct, err := time.Parse(time.RFC3339, "2008-01-02T15:04:05Z")
 	require.NoError(t, err)
 
 	f := config.Contents[0]
-	assert.Equal(t, f.Source, "files_test.go")
-	assert.Equal(t, f.Destination, "b")
-	assert.Equal(t, f.FileInfo.Mode, os.FileMode(0o123))
-	assert.Equal(t, f.FileInfo.MTime, ct)
+	require.Equal(t, f.Source, "files_test.go")
+	require.Equal(t, f.Destination, "b")
+	require.Equal(t, f.FileInfo.Mode, os.FileMode(0o123))
+	require.Equal(t, f.FileInfo.MTime, ct)
 }
 
 func TestRace(t *testing.T) {

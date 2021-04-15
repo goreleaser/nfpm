@@ -130,7 +130,7 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 			continue
 		}
 
-		var options []fileglob.OptFunc
+		options := []fileglob.OptFunc{fileglob.MatchDirectoryIncludesContents}
 		if disableGlobbing {
 			options = append(options, fileglob.QuoteMeta)
 		}

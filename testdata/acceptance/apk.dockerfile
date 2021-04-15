@@ -1,10 +1,104 @@
-FROM alpine
+FROM alpine AS test_base
 ARG package
+RUN echo "${package}"
 COPY ${package} /tmp/foo.apk
+
+
+# ---- minimal test ----
+FROM test_base AS min
 RUN apk add --allow-untrusted /tmp/foo.apk
+
+
+# ---- symlink test ----
+FROM min AS symlink
+RUN ls -l /path/to/symlink | grep "/path/to/symlink -> /etc/foo/whatever.conf"
+
+
+# ---- simple test ----
+FROM min AS simple
 RUN test -e /usr/local/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN echo wat >> /etc/foo/whatever.conf
 RUN apk del foo
 RUN test -f /etc/foo/whatever.conf
 RUN test ! -f /usr/local/bin/fake
+
+
+# ---- no-glob test ----
+FROM min AS no-glob
+RUN test -d /usr/share/whatever/
+RUN test -f /usr/share/whatever/file1
+RUN test -f /usr/share/whatever/file2
+RUN test -d /usr/share/whatever/folder2
+RUN test -f /usr/share/whatever/folder2/file1
+RUN test -f /usr/share/whatever/folder2/file2
+
+
+# ---- complex test ----
+FROM min AS complex
+RUN test -e /usr/local/bin/fake
+RUN test -f /etc/foo/whatever.conf
+RUN test -d /usr/share/whatever/
+RUN test -d /usr/share/whatever/folder
+RUN test -f /usr/share/whatever/folder/file1
+RUN test -f /usr/share/whatever/folder/file2
+RUN test -d /usr/share/whatever/folder/folder2
+RUN test -f /usr/share/whatever/folder/folder2/file1
+RUN test -f /usr/share/whatever/folder/folder2/file2
+RUN test -d /var/log/whatever
+RUN test -d /usr/share/foo
+RUN test -f /tmp/preinstall-proof
+RUN test -f /tmp/postinstall-proof
+RUN test ! -f /tmp/preremove-proof
+RUN test ! -f /tmp/postremove-proof
+RUN echo wat >> /etc/foo/whatever.conf
+RUN apk del foo
+RUN test -f /etc/foo/whatever.conf
+RUN test ! -f /usr/local/bin/fake
+RUN test -f /tmp/preremove-proof
+RUN test -f /tmp/postremove-proof
+RUN test ! -d /var/log/whatever
+RUN test ! -d /usr/share/foo
+
+
+# ---- signed test ----
+FROM test_base AS signed
+COPY keys/rsa_unprotected.pub /etc/apk/keys/john@example.com.rsa.pub
+RUN apk verify /tmp/foo.apk | grep "/tmp/foo.apk: 0 - OK"
+RUN apk add  /tmp/foo.apk
+
+
+# ---- overrides test ----
+FROM min AS overrides
+RUN test -e /usr/local/bin/fake
+RUN test -f /etc/foo/whatever.conf
+RUN test ! -f /tmp/preinstall-proof
+RUN test -f /tmp/postinstall-proof
+RUN test ! -f /tmp/preremove-proof
+RUN test ! -f /tmp/postremove-proof
+RUN echo wat >> /etc/foo/whatever.conf
+RUN apk del foo
+RUN test -f /etc/foo/whatever.conf
+RUN test ! -f /usr/local/bin/fake
+RUN test -f /tmp/preremove-proof
+RUN test ! -f /tmp/postremove-proof
+
+
+# ---- meta test ----
+FROM min AS meta
+RUN command -v zsh
+RUN command -v fish
+
+
+# ---- env-var-version test ----
+FROM min AS env-var-version
+ENV EXPECTVER="foo-1.0.0~0.1.b1+git.abcdefgh description:"
+RUN apk info foo | grep "foo-" | grep " description:" > found
+RUN export FOUND_VER="$(cat found)" && \
+    echo "Expected: '${EXPECTVER}' :: Found: '${FOUND_VER}'" && \
+    test "${FOUND_VER}" = "${EXPECTVER}"
+
+
+# ---- changelog test ----
+FROM min AS withchangelog
+RUN echo "No Changelog support for apk?"

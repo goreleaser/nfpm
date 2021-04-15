@@ -1,0 +1,11 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3-beta"
+maintainer: "Foo Bar"
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/acceptance/folder
+    dst: /usr/share/whatever
