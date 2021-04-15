@@ -2,6 +2,7 @@ FROM fedora AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.rpm
+RUN echo -e "fastestmirror=true\ndeltarpm=true\n" | tee -a /etc/dnf/dnf.conf
 
 
 # ---- minimal test ----
@@ -74,11 +75,11 @@ RUN rpm -vK /tmp/foo.rpm
 RUN rpm -vK /tmp/foo.rpm | grep "RSA/SHA256 Signature, key ID 15bd80b3: OK"
 
 # Test with a repo
-RUN yum install -y createrepo yum-utils
+RUN dnf install -y createrepo yum-utils
 RUN rm -rf /etc/yum.repos.d/*.repo
 COPY keys/test.rpm.repo /etc/yum.repos.d/test.rpm.repo
 RUN createrepo /tmp
-RUN yum install -y foo
+RUN dnf install -y foo
 
 
 # ---- overrides test ----
