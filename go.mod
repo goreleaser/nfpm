@@ -14,7 +14,7 @@ require (
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/go-git/go-git/v5 v5.3.0 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
-	github.com/google/rpmpack v0.0.0-20201225075926-0a97c2c4b688
+	github.com/google/rpmpack v0.0.0-20210410105602-e20c988a6f5a
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/goreleaser/chglog v0.1.2
 	github.com/goreleaser/fileglob v1.2.0
