@@ -102,3 +102,28 @@ RUN export FOUND_VER="$(cat found)" && \
 # ---- changelog test ----
 FROM min AS withchangelog
 RUN echo "No Changelog support for apk?"
+
+
+# ---- upgrade test ----
+FROM test_base AS upgrade
+ARG oldpackage
+RUN echo "${oldpackage}"
+COPY ${oldpackage} /tmp/old_foo.apk
+RUN apk add --allow-untrusted /tmp/old_foo.apk
+
+RUN test -f /tmp/preinstall-proof
+RUN cat /tmp/preinstall-proof | grep "Install"
+
+RUN test -f /tmp/postinstall-proof
+RUN cat /tmp/postinstall-proof | grep "Install"
+
+RUN test ! -f /tmp/preupgrade-proof
+RUN test ! -f /tmp/postupgrade-proof
+
+RUN echo modified > /etc/regular.conf
+RUN echo modified > /etc/noreplace.conf
+
+RUN apk add --allow-untrusted /tmp/foo.apk
+
+RUN test -f /tmp/preupgrade-proof
+RUN test -f /tmp/postupgrade-proof
