@@ -340,10 +340,12 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 		//
 		// exit 0
 		for script, dest := range map[string]string{
-			info.Scripts.PreInstall:  ".pre-install",
-			info.Scripts.PostInstall: ".post-install",
-			info.Scripts.PreRemove:   ".pre-deinstall",
-			info.Scripts.PostRemove:  ".post-deinstall",
+			info.Scripts.PreInstall:      ".pre-install",
+			info.APK.Scripts.PreUpgrade:  ".pre-upgrade",
+			info.Scripts.PostInstall:     ".post-install",
+			info.APK.Scripts.PostUpgrade: ".post-upgrade",
+			info.Scripts.PreRemove:       ".pre-deinstall",
+			info.Scripts.PostRemove:      ".post-deinstall",
 		} {
 			if script != "" {
 				if err := newScriptInsideTarGz(tw, script, dest); err != nil {

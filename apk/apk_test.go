@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/nfpm/v2"
@@ -101,8 +100,8 @@ func verifyArch(t *testing.T, nfpmArch, expectedArch string) {
 	info := exampleInfo()
 	info.Arch = nfpmArch
 
-	assert.NoError(t, Default.Package(info, ioutil.Discard))
-	assert.Equal(t, expectedArch, info.Arch)
+	require.NoError(t, Default.Package(info, ioutil.Discard))
+	require.Equal(t, expectedArch, info.Arch)
 }
 
 func TestCreateBuilderData(t *testing.T) {
@@ -115,9 +114,9 @@ func TestCreateBuilderData(t *testing.T) {
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
 
-	assert.NoError(t, builderData(tw))
+	require.NoError(t, builderData(tw))
 
-	assert.Equal(t, 11784, buf.Len())
+	require.Equal(t, 11784, buf.Len())
 }
 
 func TestCombineToApk(t *testing.T) {
@@ -129,8 +128,8 @@ func TestCombineToApk(t *testing.T) {
 
 	var bufTarget bytes.Buffer
 
-	assert.NoError(t, combineToApk(&bufTarget, &bufData, &bufControl))
-	assert.Equal(t, 2, bufTarget.Len())
+	require.NoError(t, combineToApk(&bufTarget, &bufData, &bufControl))
+	require.Equal(t, 2, bufTarget.Len())
 }
 
 func TestPathsToCreate(t *testing.T) {
@@ -142,7 +141,7 @@ func TestPathsToCreate(t *testing.T) {
 		parts := parts
 		pathToTest := pathToTest
 		t.Run(fmt.Sprintf("pathToTest: '%s'", pathToTest), func(t *testing.T) {
-			assert.Equal(t, parts, pathsToCreate(pathToTest))
+			require.Equal(t, parts, pathsToCreate(pathToTest))
 		})
 	}
 }
@@ -182,7 +181,7 @@ func TestDefaultWithArch(t *testing.T) {
 
 func TestNoInfo(t *testing.T) {
 	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestFileDoesNotExist(t *testing.T) {
@@ -218,7 +217,7 @@ func TestFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
+	require.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
 func TestNoFiles(t *testing.T) {
@@ -241,7 +240,7 @@ func TestNoFiles(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestCreateBuilderControl(t *testing.T) {
@@ -253,7 +252,7 @@ func TestCreateBuilderControl(t *testing.T) {
 
 	var w bytes.Buffer
 	tw := tar.NewWriter(&w)
-	assert.NoError(t, builderControl(tw))
+	require.NoError(t, builderControl(tw))
 
 	control := string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
 	golden := "testdata/TestCreateBuilderControl.golden"
@@ -261,8 +260,8 @@ func TestCreateBuilderControl(t *testing.T) {
 		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
-	assert.NoError(t, err)
-	assert.Equal(t, string(bts), control)
+	require.NoError(t, err)
+	require.Equal(t, string(bts), control)
 }
 
 func TestCreateBuilderControlScripts(t *testing.T) {
@@ -273,6 +272,10 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 		PreRemove:   "../testdata/scripts/preremove.sh",
 		PostRemove:  "../testdata/scripts/postremove.sh",
 	}
+	info.APK.Scripts = nfpm.APKScripts{
+		PreUpgrade:  "../testdata/scripts/preupgrade.sh",
+		PostUpgrade: "../testdata/scripts/postupgrade.sh",
+	}
 	err := info.Validate()
 	require.NoError(t, err)
 
@@ -281,7 +284,7 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 
 	var w bytes.Buffer
 	tw := tar.NewWriter(&w)
-	assert.NoError(t, builderControl(tw))
+	require.NoError(t, builderControl(tw))
 
 	control := string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
 	golden := "testdata/TestCreateBuilderControlScripts.golden"
@@ -289,13 +292,27 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
-	assert.NoError(t, err)
-	assert.Equal(t, string(bts), control)
+	require.NoError(t, err)
+	require.Equal(t, string(bts), control)
+
+	// Validate scripts are correct
+	script := string(extractFromTar(t, w.Bytes(), ".pre-install"))
+	require.Contains(t, script, `echo "Preinstall" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".post-install"))
+	require.Contains(t, script, `echo "Postinstall" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".pre-upgrade"))
+	require.Contains(t, script, `echo "PreUpgrade" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".post-upgrade"))
+	require.Contains(t, script, `echo "PostUpgrade" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".pre-deinstall"))
+	require.Contains(t, script, `echo "Preremove" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".post-deinstall"))
+	require.Contains(t, script, `echo "Postremove" > /dev/null`)
 }
 
 func TestControl(t *testing.T) {
 	var w bytes.Buffer
-	assert.NoError(t, writeControl(&w, controlData{
+	require.NoError(t, writeControl(&w, controlData{
 		Info:          exampleInfo(),
 		InstalledSize: 10,
 	}))
@@ -304,8 +321,8 @@ func TestControl(t *testing.T) {
 		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
-	assert.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	require.NoError(t, err)
+	require.Equal(t, string(bts), w.String())
 }
 
 func TestSignature(t *testing.T) {
@@ -450,7 +467,7 @@ func TestAPKConventionalFileName(t *testing.T) {
 			Release:         testCase.Release,
 			Prerelease:      testCase.Prerelease,
 		}
-		assert.Equal(t, testCase.Expect, Default.ConventionalFileName(info))
+		require.Equal(t, testCase.Expect, Default.ConventionalFileName(info))
 	}
 }
 
@@ -463,5 +480,5 @@ func TestPackageSymlinks(t *testing.T) {
 			Type:        "symlink",
 		},
 	}
-	assert.NoError(t, Default.Package(info, ioutil.Discard))
+	require.NoError(t, Default.Package(info, ioutil.Discard))
 }

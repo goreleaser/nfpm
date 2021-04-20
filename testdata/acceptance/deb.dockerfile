@@ -145,3 +145,31 @@ RUN dpkg -i /tmp/foo.deb 2>&1 | grep "foo breaks dummy"
 # make sure foo can be installed if dummy is not installed
 RUN dpkg -r dummy
 RUN dpkg -i /tmp/foo.deb
+
+
+# ---- upgrade test ----
+FROM test_base AS upgrade
+ARG oldpackage
+RUN echo "${oldpackage}"
+COPY ${oldpackage} /tmp/old_foo.deb
+RUN dpkg -i /tmp/old_foo.deb
+
+RUN test -f /tmp/preinstall-proof
+RUN cat /tmp/preinstall-proof | grep "Install"
+
+RUN test -f /tmp/postinstall-proof
+RUN cat /tmp/postinstall-proof | grep "Install"
+
+RUN dpkg -i /tmp/foo.deb
+
+RUN test -f /tmp/preremove-proof
+RUN cat /tmp/preremove-proof | grep "Upgrade"
+
+RUN test -f /tmp/postremove-proof
+RUN cat /tmp/postremove-proof | grep "Upgrade"
+
+RUN test -f /tmp/preinstall-proof
+RUN cat /tmp/preinstall-proof | grep "Upgrade"
+
+RUN test -f /tmp/postinstall-proof
+RUN cat /tmp/postinstall-proof | grep "Upgrade"
