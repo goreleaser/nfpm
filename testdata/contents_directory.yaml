@@ -1,0 +1,8 @@
+# Configuration file used to unit test enhanced file map
+name: "foo"
+arch: "amd64"
+version: "v1.2.3"
+disable_globbing: true
+contents:
+  - src: "testdata/globtest"
+    dst: "/etc/foo"

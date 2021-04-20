@@ -124,8 +124,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: fun
 		data := io.MultiReader(bytes.NewReader(debianBinary), bytes.NewReader(controlTarGz),
 			bytes.NewReader(dataTarGz))
 
-		sig, err := sign.PGPArmoredDetachSign(data, info.Deb.Signature.KeyFile,
-			info.Deb.Signature.KeyPassphrase)
+		sig, err := sign.PGPArmoredDetachSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
 		if err != nil {
 			return &nfpm.ErrSigningFailure{Err: err}
 		}
@@ -434,6 +433,10 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 	specialFiles[info.Overridables.Deb.Scripts.Templates] = &fileAndMode{
 		fileName: "templates",
 		mode:     0o644,
+	}
+	specialFiles[info.Overridables.Deb.Scripts.Config] = &fileAndMode{
+		fileName: "config",
+		mode:     0o755,
 	}
 
 	for path, destMode := range specialFiles {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/goreleaser/fileglob"
 )
@@ -51,6 +52,13 @@ func (e ErrGlobNoMatch) Error() string {
 // First the longest common prefix (lcp) of all globbed files is found. The destination
 // for each globbed file is then dst joined with src with the lcp trimmed off.
 func Glob(pattern, dst string, options ...fileglob.OptFunc) (map[string]string, error) {
+	if strings.HasPrefix(pattern, "../") {
+		p, err := filepath.Abs(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve pattern: %s: %w", pattern, err)
+		}
+		pattern = filepath.ToSlash(p)
+	}
 	matches, err := fileglob.Glob(pattern, append(options, fileglob.MaybeRootFS)...)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, err
@@ -63,11 +71,12 @@ func Glob(pattern, dst string, options ...fileglob.OptFunc) (map[string]string, 
 		return nil, ErrGlobNoMatch{pattern}
 	}
 	files := make(map[string]string)
-	prefix := longestCommonPrefix(matches)
+	prefix := pattern
 	// the prefix may not be a complete path or may use glob patterns, in that case use the parent directory
 	if _, err := os.Stat(prefix); os.IsNotExist(err) || fileglob.ContainsMatchers(pattern) {
-		prefix = filepath.Dir(prefix)
+		prefix = filepath.Dir(longestCommonPrefix(matches))
 	}
+
 	for _, src := range matches {
 		// only include files
 		if f, err := os.Stat(src); err == nil && f.Mode().IsDir() {

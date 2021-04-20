@@ -1,0 +1,14 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar"
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+- src: ./testdata/whatever.conf
+  dst: /etc/foo/whatever.conf
+- src: /etc/foo/whatever.conf
+  dst: /path/to/symlink
+  type: symlink
