@@ -35,6 +35,10 @@ scripts:
   postinstall: ./testdata/acceptance/scripts/postinstall.sh
   preremove: ./testdata/acceptance/scripts/preremove.sh
   postremove: ./testdata/acceptance/scripts/postremove.sh
+rpm:
+  scripts:
+    pretrans: ./testdata/acceptance/scripts/pretrans.sh
+    posttrans: ./testdata/acceptance/scripts/posttrans.sh
 apk:
   scripts:
     preupgrade: ./testdata/acceptance/scripts/preupgrade.sh
