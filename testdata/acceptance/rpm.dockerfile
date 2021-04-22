@@ -149,15 +149,35 @@ RUN rpm -e foo
 RUN test -f /etc/foo/whatever.conf.rpmsave
 RUN test ! -f /usr/local/bin/fake
 
-# ---- config-noreplace test ----
-FROM test_base AS config-noreplace
-COPY tmp/noreplace_old_rpm.rpm /tmp/old_foo.rpm
+# ---- upgrade test ----
+FROM test_base AS upgrade
+ARG oldpackage
+RUN echo "${oldpackage}"
+COPY ${oldpackage} /tmp/old_foo.rpm
 RUN rpm -ivh /tmp/old_foo.rpm
+
+RUN test -f /tmp/preinstall-proof
+RUN cat /tmp/preinstall-proof | grep "Install"
+
+RUN test -f /tmp/postinstall-proof
+RUN cat /tmp/postinstall-proof | grep "Install"
 
 RUN echo modified > /etc/regular.conf
 RUN echo modified > /etc/noreplace.conf
 
 RUN rpm -ivh /tmp/foo.rpm --upgrade
+
+RUN test -f /tmp/preremove-proof
+RUN cat /tmp/preremove-proof | grep "Upgrade"
+
+RUN test -f /tmp/postremove-proof
+RUN cat /tmp/postremove-proof | grep "Upgrade"
+
+RUN test -f /tmp/preinstall-proof
+RUN cat /tmp/preinstall-proof | grep "Upgrade"
+
+RUN test -f /tmp/postinstall-proof
+RUN cat /tmp/postinstall-proof | grep "Upgrade"
 
 RUN cat /etc/regular.conf | grep foo=baz
 RUN test -f /etc/regular.conf.rpmsave

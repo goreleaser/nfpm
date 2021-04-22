@@ -64,37 +64,67 @@ func TestCore(t *testing.T) {
 	}
 }
 
-func TestConfigNoReplace(t *testing.T) {
+func TestUpgrade(t *testing.T) {
 	t.Parallel()
-	target := "./testdata/acceptance/tmp/noreplace_old_rpm.rpm"
-	require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0o700))
+	testNames := []string{
+		"upgrade",
+	}
+	for _, name := range testNames {
+		for format, architecture := range formatArchs {
+			for _, arch := range architecture {
+				func(tt *testing.T, testName, testFormat, testArch string) {
+					tt.Run(fmt.Sprintf("%s/%s/%s", testFormat, testArch, testName), func(ttt *testing.T) {
+						ttt.Parallel()
+						if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
+							ttt.Skip("ppc64le arch not supported in pipeline")
+						}
+						oldpkg := fmt.Sprintf("tmp/%s_%s.v1.%s", testName, testArch, testFormat)
+						target := fmt.Sprintf("./testdata/acceptance/%s", oldpkg)
+						require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0o700))
 
-	config, err := nfpm.ParseFile("./testdata/acceptance/rpm.config-noreplace-old.yaml")
-	require.NoError(t, err)
+						config, err := nfpm.ParseFileWithEnvMapping(fmt.Sprintf("./testdata/acceptance/%s.v1.yaml", testName),
+							func(s string) string {
+								switch s {
+								case "BUILD_ARCH":
+									return testArch
+								case "SEMVER":
+									return "v1.0.0-0.1.b1+git.abcdefgh"
+								default:
+									return os.Getenv(s)
+								}
+							},
+						)
+						require.NoError(t, err)
 
-	info, err := config.Get("rpm")
-	require.NoError(t, err)
-	require.NoError(t, nfpm.Validate(info))
+						info, err := config.Get(testFormat)
+						require.NoError(t, err)
+						require.NoError(t, nfpm.Validate(info))
 
-	pkg, err := nfpm.Get("rpm")
-	require.NoError(t, err)
+						pkg, err := nfpm.Get(testFormat)
+						require.NoError(t, err)
 
-	f, err := os.Create(target)
-	require.NoError(t, err)
-	info.Target = target
-	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
-	t.Run("rpm/config-noreplace", func(t *testing.T) {
-		accept(t, acceptParms{
-			Name:   "noreplace_rpm",
-			Conf:   "rpm.config-noreplace.yaml",
-			Format: "rpm",
-			Docker: dockerParams{
-				File:   "rpm.dockerfile",
-				Target: "config-noreplace",
-				Arch:   "amd64",
-			},
-		})
-	})
+						f, err := os.Create(target)
+						require.NoError(t, err)
+						defer f.Close()
+						info.Target = target
+						require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
+
+						accept(ttt, acceptParms{
+							Name:   fmt.Sprintf("%s_%s.v2", testName, testArch),
+							Conf:   fmt.Sprintf("%s.v2.yaml", testName),
+							Format: testFormat,
+							Docker: dockerParams{
+								File:      fmt.Sprintf("%s.dockerfile", testFormat),
+								Target:    testName,
+								Arch:      testArch,
+								BuildArgs: []string{fmt.Sprintf("oldpackage=%s", oldpkg)},
+							},
+						})
+					})
+				}(t, name, format, arch)
+			}
+		}
+	}
 }
 
 func TestCompression(t *testing.T) {

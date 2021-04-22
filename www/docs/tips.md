@@ -15,7 +15,7 @@
 
 ### Example Multi platform post-install script
 ```bash
-#!/bin/bash
+#!/bin/sh
 
 # Step 1, decide if we should use systemd or init/upstart
 use_systemctl="True"
@@ -36,11 +36,7 @@ cleanup() {
     fi
 }
 
-# Step 2, check if this is a clean install or an upgrade
-# [ -z "$1" ] == alpine linux - Note alpine uses a separate post-upgrade script
-# [ "$1" = "1" ] == RPM clean install
-# { [ "$1" = "configure" ] && [ -z "$2" ] ;} == deb clean install
-if [ -z "$1" ] || [ "$1" = "1" ] || { [ "$1" = "configure" ] && [ -z "$2" ] ;}; then
+cleanInstall() {
     printf "\033[32m Post Install of an clean install\033[0m\n"
     # Step 3 (clean install), enable the service in the proper way for this platform
     if [ "${use_systemctl}" = "False" ]; then
@@ -66,37 +62,79 @@ if [ -z "$1" ] || [ "$1" = "1" ] || { [ "$1" = "configure" ] && [ -z "$2" ] ;}; 
         systemctl enable <SERVICE NAME> ||:
         systemctl restart <SERVICE NAME> ||:
     fi
-else
+}
+
+upgrade() {
     printf "\033[32m Post Install of an upgrade\033[0m\n"
     # Step 3(upgrade), do what you need
     ...
+}
+
+# Step 2, check if this is a clean install or an upgrade
+action="$1"
+if  [ "$1" = "configure" ] && [ -z "$2" ]; then
+  # Alpine linux does not pass args, and deb passes $1=configure
+  action="install"
+elif [ "$1" = "configure" ] && [ -n "$2" ]; then
+    # deb passes $1=configure $2=<current version>
+    action="upgrade"
 fi
+
+case "$action" in
+  "1" | "install")
+    cleanInstall
+    ;;
+  "2" | "upgrade")
+    printf "\033[32m Post Install of an upgrade\033[0m\n"
+    upgrade
+    ;;
+  *)
+    # $1 == version being installed  
+    printf "\033[32m Alpine\033[0m"
+    cleanInstall
+    ;;
+esac
 
 # Step 4, clean up unused files, yes you get a warning when you remove the package, but that is ok. 
 cleanup
 ```
 ### Example Multi platform (RPM & Deb) post-remove script
 ```bash
-#!/bin/bash
+#!/bin/sh
+
+cleanInstall() {
+    printf "\033[32m Post Install of a clean install\033[0m\n"
+}
+
+upgrade() {
+    printf "\033[32m Post Install of an upgrade\033[0m\n"
+}
 
 action="$1"
-if [ -z "$1" ]; then
-  # Alpine linux does not pass args, so set what you want the post-remove to be
-  # Also it uses a separate pre/post-upgrade script
-  action=purge
+if  [ "$1" = "configure" ] && [ -z "$2" ]; then
+  # Alpine linux does not pass args, and deb passes $1=configure
+  action="install"
+elif [ "$1" = "configure" ] && [ -n "$2" ]; then
+    # deb passes $1=configure $2=<current version>
+    action="upgrade"
 fi
 
 case "$action" in
-  "0", "remove")
-    printf "\033[32m Post Remove of a normal remove\033[0m\n"
+  "1" | "install")
+    printf "\033[32m Post Install of a clean install\033[0m\n"
+    cleanInstall
     ;;
-  "1", "upgrade")
-    printf "\033[32m Post Remove of an upgrade\033[0m\n"
+  "2" | "upgrade")
+    printf "\033[32m Post Install of an upgrade\033[0m\n"
+    upgrade
     ;;
-  "purge")
-    printf "\033[32m Post Remove purge, deb only\033[0m\n"
+  *)
+    # $1 == version being installed  
+    printf "\033[32m Alpine\033[0m"
+    cleanInstall
     ;;
 esac
+
 ```
 
 ### Deb & RPM

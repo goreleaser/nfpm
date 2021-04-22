@@ -274,12 +274,18 @@ type RPMSignature struct {
 
 type APK struct {
 	Signature APKSignature `yaml:"signature,omitempty"`
+	Scripts   APKScripts   `yaml:"scripts,omitempty"`
 }
 
 type APKSignature struct {
 	PackageSignature `yaml:",inline"`
 	// defaults to <maintainer email>.rsa.pub
 	KeyName string `yaml:"key_name,omitempty"`
+}
+
+type APKScripts struct {
+	PreUpgrade  string `yaml:"preupgrade,omitempty"`
+	PostUpgrade string `yaml:"postupgrade,omitempty"`
 }
 
 // Deb is custom configs that are only available on deb packages.

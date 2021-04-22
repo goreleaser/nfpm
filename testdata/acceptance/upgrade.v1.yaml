@@ -1,18 +1,18 @@
 name: "foo"
 arch: "${BUILD_ARCH}"
 platform: "linux"
-version: "v1.2.3-beta"
+version: "v1.2.3"
 maintainer: "Foo Bar"
 depends:
-- bash
+  - bash
 provides:
-- fake
+  - fake
 recommends:
-- fish
+  - fish
 replaces:
-- foo
+  - foo
 suggests:
-- zsh
+  - zsh
 description: |
   Foo bar
     Multiple lines
@@ -20,25 +20,20 @@ vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
 contents:
-- src: ./testdata/fake
-  dst: /usr/local/bin/fake
-- src: ./testdata/acceptance/folder/*
-  dst: /usr/share/whatever/folder/
-- src: ./testdata/whatever.conf
-  dst: /etc/foo/whatever.conf
-  type: config
+  - src: ./testdata/whatever.conf
+    dst: /etc/regular.conf
+    type: config
+  - src: ./testdata/whatever.conf
+    dst: /etc/noreplace.conf
+    type: config|noreplace
 empty_folders:
-- /var/log/whatever
-- /usr/share/foo
+  - /var/log/whatever
+  - /usr/share/foo
 scripts:
   preinstall: ./testdata/acceptance/scripts/preinstall.sh
   postinstall: ./testdata/acceptance/scripts/postinstall.sh
   preremove: ./testdata/acceptance/scripts/preremove.sh
   postremove: ./testdata/acceptance/scripts/postremove.sh
-rpm:
-  scripts:
-    pretrans: ./testdata/acceptance/scripts/pretrans.sh
-    posttrans: ./testdata/acceptance/scripts/posttrans.sh
 apk:
   scripts:
     preupgrade: ./testdata/acceptance/scripts/preupgrade.sh
