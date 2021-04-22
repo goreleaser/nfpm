@@ -232,14 +232,14 @@ func (i *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 }
 
 func (i *Info) parseSemver() {
-	if v, err := semver.NewVersion(info.Version); err == nil {
-		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
+	if v, err := semver.NewVersion(i.Version); err == nil {
+		i.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
 		if info.Prerelease == "" {
-			info.Prerelease = v.Prerelease()
+			i.Prerelease = v.Prerelease()
 		}
 
-		if info.VersionMetadata == "" {
-			info.VersionMetadata = v.Metadata()
+		if i.VersionMetadata == "" {
+			i.VersionMetadata = v.Metadata()
 		}
 	}
 }
