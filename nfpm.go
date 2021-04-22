@@ -234,7 +234,7 @@ func (i *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 func (i *Info) parseSemver() {
 	if v, err := semver.NewVersion(i.Version); err == nil {
 		i.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if info.Prerelease == "" {
+		if i.Prerelease == "" {
 			i.Prerelease = v.Prerelease()
 		}
 
