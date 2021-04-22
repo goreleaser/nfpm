@@ -174,7 +174,7 @@ type Info struct {
 	Platform        string `yaml:"platform,omitempty"`
 	Epoch           string `yaml:"epoch,omitempty"`
 	Version         string `yaml:"version,omitempty"`
-	KeepVersion     bool   `yaml:"keep_version"`
+	VersionSchema   string `yaml:"version_schema,omitempty"`
 	Release         string `yaml:"release,omitempty"`
 	Prerelease      string `yaml:"prerelease,omitempty"`
 	VersionMetadata string `yaml:"version_metadata,omitempty"`
@@ -211,6 +211,19 @@ func (i *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 		Name:    i.Name,
 		Entries: entries,
 	}, nil
+}
+
+func (i *Info) parseSemver() {
+	if v, err := semver.NewVersion(info.Version); err == nil {
+		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
+		if info.Prerelease == "" {
+			info.Prerelease = v.Prerelease()
+		}
+
+		if info.VersionMetadata == "" {
+			info.VersionMetadata = v.Metadata()
+		}
+	}
 }
 
 // Overridables contain the field which are overridable in a package.
@@ -341,20 +354,16 @@ func WithDefaults(info *Info) *Info {
 	if info.Version == "" {
 		info.Version = "v0.0.0-rc0"
 	}
-	if !info.KeepVersion {
-		// parse the version as a semver so we can properly split the parts
-		// and support proper ordering for both rpm and deb
-		if v, err := semver.NewVersion(info.Version); err == nil {
-			info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-			if info.Prerelease == "" {
-				info.Prerelease = v.Prerelease()
-			}
-
-			if info.VersionMetadata == "" {
-				info.VersionMetadata = v.Metadata()
-			}
-		}
-	}
+	
+        switch info.VersionSchema {
+            case "none":
+                // No change to the version or prerelease info set in the YAML file
+                break
+            case "semver":
+                fallthrough
+            default:
+                info.parseSemver()
+        }
 
 	return info
 }
