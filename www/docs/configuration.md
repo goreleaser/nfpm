@@ -19,6 +19,12 @@ platform: linux
 # This will expand any env var you set in the field, eg version: v${SEMVER}
 version: v1.2.3
 
+# Version Schema allows you to specify how to parse the version String.
+# Default is `semver`
+#   `semver` parse the version string as a valid semver version
+#   `none` skip trying to parse the version string and just use what is passed in
+version_schema: semver
+
 # Version Epoch.
 # Default is extracted from `version` if it is semver compatible.
 epoch: 2
