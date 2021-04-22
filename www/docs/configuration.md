@@ -190,6 +190,13 @@ overrides:
 
 # Custom configuration applied only to the RPM packager.
 rpm:
+  # RPM specific scripts.
+  scripts:
+    # The pretrans script runs before all RPM package transactions / stages.
+    pretrans: ./scripts/pretrans.sh
+    # The posttrans script runs after all RPM package transactions / stages.
+    posttrans: ./scripts/posttrans.sh
+
   # The package group. This option is deprecated by most distros
   # but required by old distros like CentOS 5 / EL 5 and earlier.
   group: Unspecified

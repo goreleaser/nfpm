@@ -100,6 +100,14 @@ esac
 ```
 
 ### Deb & RPM
+* On upgrade, the scripts are being executed in the following order:
+    1. `pretrans` of new package (only applies to RPM)
+    2. `preinstall` of new package
+    3. `postinstall` of new package
+    4. `preremove` of old package
+    5. `postremove` of old package
+    6. `posttrans` of new package (only applies to RPM)
+
 * `postremove` runs **AFTER** `postinstall` when you are upgrading a package. 
    * So you need to be careful if you are deleting files in `postremove`
 
