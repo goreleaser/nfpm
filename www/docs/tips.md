@@ -146,9 +146,6 @@ esac
     5. `postremove` of old package
     6. `posttrans` of new package (only applies to RPM)
 
-* `postremove` runs **AFTER** `postinstall` when you are upgrading a package. 
-   * So you need to be careful if you are deleting files in `postremove`
-
 ## Systemd and upstart/init
 ### upstart / init
 * try to just say no to supporting this, but if you must make sure you have a single script that works on all platforms you need to support.
