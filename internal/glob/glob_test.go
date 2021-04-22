@@ -1,6 +1,7 @@
 package glob
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -46,6 +47,16 @@ func TestGlob(t *testing.T) {
 		require.Equal(t, "/foo/bar/dir_c/test_c.txt", files["testdata/dir_a/dir_c/test_c.txt"])
 	})
 
+	t.Run("to parent", func(t *testing.T) {
+		pattern := "../../testdata/fake"
+		abs, err := filepath.Abs(pattern)
+		require.NoError(t, err)
+		files, err := Glob(pattern, "/foo/fake")
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		require.Equal(t, "/foo/fake", files[filepath.ToSlash(abs)])
+	})
+
 	t.Run("single file", func(t *testing.T) {
 		files, err := Glob("testdata/dir_a/dir_b/*", "/foo/bar")
 		require.NoError(t, err)
@@ -62,7 +73,7 @@ func TestGlob(t *testing.T) {
 
 	t.Run("nil value", func(t *testing.T) {
 		files, err := Glob("does/not/exist", "/foo/bar")
-		require.EqualError(t, err, "matching \"does/not/exist\": file does not exist")
+		require.EqualError(t, err, "matching \"./does/not/exist\": file does not exist")
 		require.Nil(t, files)
 	})
 

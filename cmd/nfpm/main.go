@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/alecthomas/kingpin"
 
@@ -19,7 +20,10 @@ import (
 
 // nolint: gochecknoglobals
 var (
-	version = "master"
+	version = "dev"
+	commit  = ""
+	date    = ""
+	builtBy = ""
 
 	app    = kingpin.New("nfpm", "not-fpm packages apps in some formats")
 	config = app.Flag("config", "config file").
@@ -40,7 +44,7 @@ var (
 )
 
 func main() {
-	app.Version(version)
+	app.Version(buildVersion(version, commit, date, builtBy))
 	app.VersionFlag.Short('v')
 	app.HelpFlag.Short('h')
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
@@ -56,8 +60,25 @@ func main() {
 	}
 }
 
+func buildVersion(version, commit, date, builtBy string) string {
+	result := "nfpm version " + version
+	if commit != "" {
+		result = fmt.Sprintf("%s\ncommit: %s", result, commit)
+	}
+	if date != "" {
+		result = fmt.Sprintf("%s\nbuilt at: %s", result, date)
+	}
+	if builtBy != "" {
+		result = fmt.Sprintf("%s\nbuilt by: %s", result, builtBy)
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Sum != "" {
+		result = fmt.Sprintf("%s\nmodule version: %s, checksum: %s", result, info.Main.Version, info.Main.Sum)
+	}
+	return result
+}
+
 func initFile(config string) error {
-	return ioutil.WriteFile(config, []byte(example), 0600)
+	return ioutil.WriteFile(config, []byte(example), 0o600)
 }
 
 var errInsufficientParams = errors.New("a packager must be specified if target is a directory or blank")

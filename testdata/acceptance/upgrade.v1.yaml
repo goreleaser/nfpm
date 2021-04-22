@@ -1,0 +1,40 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar"
+depends:
+  - bash
+provides:
+  - fake
+recommends:
+  - fish
+replaces:
+  - foo
+suggests:
+  - zsh
+description: |
+  Foo bar
+    Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/whatever.conf
+    dst: /etc/regular.conf
+    type: config
+  - src: ./testdata/whatever.conf
+    dst: /etc/noreplace.conf
+    type: config|noreplace
+empty_folders:
+  - /var/log/whatever
+  - /usr/share/foo
+scripts:
+  preinstall: ./testdata/acceptance/scripts/preinstall.sh
+  postinstall: ./testdata/acceptance/scripts/postinstall.sh
+  preremove: ./testdata/acceptance/scripts/preremove.sh
+  postremove: ./testdata/acceptance/scripts/postremove.sh
+apk:
+  scripts:
+    preupgrade: ./testdata/acceptance/scripts/preupgrade.sh
+    postupgrade: ./testdata/acceptance/scripts/postupgrade.sh

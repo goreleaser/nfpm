@@ -1,7 +1,0 @@
-name: foo
-arch: amd64
-version: 1.2.3
-license: MIT
-contents:
-- src: ./testdata/fake
-  dst: /usr/local/bin/fake

@@ -76,6 +76,12 @@ func exampleInfo() *nfpm.Info {
 				PreRemove:   "../testdata/scripts/preremove.sh",
 				PostRemove:  "../testdata/scripts/postremove.sh",
 			},
+			RPM: nfpm.RPM{
+				Scripts: nfpm.RPMScripts{
+					PreTrans:  "../testdata/scripts/pretrans.sh",
+					PostTrans: "../testdata/scripts/posttrans.sh",
+				},
+			},
 		},
 	})
 }
@@ -85,7 +91,7 @@ func TestRPM(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, Default.Package(exampleInfo(), f))
 
-	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
 	defer func() {
 		f.Close()
@@ -131,7 +137,7 @@ func TestRPMGroup(t *testing.T) {
 	info.RPM.Group = "Unspecified"
 	require.NoError(t, Default.Package(info, f))
 
-	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
 	defer func() {
 		f.Close()
@@ -152,14 +158,14 @@ func TestRPMSummary(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
 	require.NoError(t, err)
 
-	var customSummary = "This is my custom summary"
+	customSummary := "This is my custom summary"
 	info := exampleInfo()
 	info.RPM.Group = "Unspecified"
 	info.RPM.Summary = customSummary
 
 	require.NoError(t, Default.Package(info, f))
 
-	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
 	defer func() {
 		f.Close()
@@ -179,7 +185,7 @@ func TestWithRPMTags(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
 	require.NoError(t, err)
 
-	var info = exampleInfo()
+	info := exampleInfo()
 	info.Release = "3"
 	info.Epoch = "42"
 	info.RPM = nfpm.RPM{
@@ -188,7 +194,7 @@ func TestWithRPMTags(t *testing.T) {
 	info.Description = "first line\nsecond line\nthird line"
 	require.NoError(t, Default.Package(info, f))
 
-	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
 	defer func() {
 		f.Close()
@@ -312,7 +318,7 @@ func TestWithInvalidEpoch(t *testing.T) {
 		assert.NoError(t, err)
 	}()
 
-	var info = exampleInfo()
+	info := exampleInfo()
 	info.Release = "3"
 	info.Epoch = "-1"
 	info.RPM = nfpm.RPM{
@@ -328,7 +334,7 @@ func TestRPMScripts(t *testing.T) {
 	require.NoError(t, err)
 	err = Default.Package(info, f)
 	require.NoError(t, err)
-	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0600) //nolint:gosec
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
 	defer func() {
 		f.Close()
@@ -366,6 +372,22 @@ echo "Postinstall" > /dev/null
 
 echo "Postremove" > /dev/null
 `, data, "Postremove script does not match")
+
+	rpmPreTransTag := 1151
+	data, err = rpm.Header.GetString(rpmPreTransTag)
+	require.NoError(t, err)
+	assert.Equal(t, `#!/bin/bash
+
+echo "Pretrans" > /dev/null
+`, data, "Pretrans script does not match")
+
+	rpmPostTransTag := 1152
+	data, err = rpm.Header.GetString(rpmPostTransTag)
+	require.NoError(t, err)
+	assert.Equal(t, `#!/bin/bash
+
+echo "Posttrans" > /dev/null
+`, data, "Posttrans script does not match")
 }
 
 func TestRPMFileDoesNotExist(t *testing.T) {
@@ -381,8 +403,10 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 			Type:        "config",
 		},
 	}
-	var err = Default.Package(info, ioutil.Discard)
-	assert.EqualError(t, err, "matching \"../testdata/whatever.confzzz\": file does not exist")
+	abs, err := filepath.Abs("../testdata/whatever.confzzz")
+	require.NoError(t, err)
+	err = Default.Package(info, ioutil.Discard)
+	assert.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
 func TestRPMMultiArch(t *testing.T) {
@@ -443,16 +467,26 @@ func TestRPMConventionalFileName(t *testing.T) {
 		Expected   string
 		Metadata   string
 	}{
-		{Version: "1.2.3", Release: "", Prerelease: "", Metadata: "",
-			Expected: fmt.Sprintf("%s-1.2.3.%s.rpm", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "4", Prerelease: "", Metadata: "",
-			Expected: fmt.Sprintf("%s-1.2.3-4.%s.rpm", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "4", Prerelease: "5", Metadata: "",
-			Expected: fmt.Sprintf("%s-1.2.3~5-4.%s.rpm", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "", Prerelease: "5", Metadata: "",
-			Expected: fmt.Sprintf("%s-1.2.3~5.%s.rpm", info.Name, info.Arch)},
-		{Version: "1.2.3", Release: "1", Prerelease: "5", Metadata: "git",
-			Expected: fmt.Sprintf("%s-1.2.3~5+git-1.%s.rpm", info.Name, info.Arch)},
+		{
+			Version: "1.2.3", Release: "", Prerelease: "", Metadata: "",
+			Expected: fmt.Sprintf("%s-1.2.3.%s.rpm", info.Name, info.Arch),
+		},
+		{
+			Version: "1.2.3", Release: "4", Prerelease: "", Metadata: "",
+			Expected: fmt.Sprintf("%s-1.2.3-4.%s.rpm", info.Name, info.Arch),
+		},
+		{
+			Version: "1.2.3", Release: "4", Prerelease: "5", Metadata: "",
+			Expected: fmt.Sprintf("%s-1.2.3~5-4.%s.rpm", info.Name, info.Arch),
+		},
+		{
+			Version: "1.2.3", Release: "", Prerelease: "5", Metadata: "",
+			Expected: fmt.Sprintf("%s-1.2.3~5.%s.rpm", info.Name, info.Arch),
+		},
+		{
+			Version: "1.2.3", Release: "1", Prerelease: "5", Metadata: "git",
+			Expected: fmt.Sprintf("%s-1.2.3~5+git-1.%s.rpm", info.Name, info.Arch),
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -619,6 +653,7 @@ func TestRPMSignature(t *testing.T) {
 
 	keyring, err := openpgp.ReadKeyRing(bytes.NewReader(pubkeyFileContent))
 	require.NoError(t, err)
+	require.NotNil(t, keyring, "cannot verify sigs with an empty keyring")
 
 	var rpmBuffer bytes.Buffer
 	err = Default.Package(info, &rpmBuffer)
@@ -643,9 +678,7 @@ func TestRPMSignatureError(t *testing.T) {
 }
 
 func TestRPMGhostFiles(t *testing.T) {
-	var (
-		filename = "/usr/lib/casper.a"
-	)
+	filename := "/usr/lib/casper.a"
 
 	info := &nfpm.Info{
 		Name:        "rpm-ghost",
@@ -675,7 +708,7 @@ func TestRPMGhostFiles(t *testing.T) {
 		Mode int
 	}
 	expected := []headerFileInfo{
-		{filename, 0, cpio.S_ISREG | 0644},
+		{filename, 0, cpio.S_ISREG | 0o644},
 	}
 	actual := make([]headerFileInfo, 0)
 	for _, fileInfo := range headerFiles {
@@ -787,6 +820,7 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 }
 
 func symlinkTo(tb testing.TB, fileName string) string {
+	tb.Helper()
 	target, err := filepath.Abs(fileName)
 	assert.NoError(tb, err)
 

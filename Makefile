@@ -3,25 +3,24 @@ TEST_PATTERN?=.
 TEST_OPTIONS?=
 TEST_TIMEOUT?=15m
 TEST_PARALLEL?=2
+DOCKER_BUILDKIT?=1
+export DOCKER_BUILDKIT
 
 export PATH := ./bin:$(PATH)
 export GO111MODULE := on
-export GOPROXY := https://proxy.golang.org,https://gocenter.io,direct
 
 # Install all the build and lint dependencies
 setup:
-	go mod download
-	go generate -v ./...
+	go mod tidy
 	git config core.hooksPath .githooks
 .PHONY: setup
 
-
 pull_test_imgs:
-	grep FROM ./testdata/acceptance/*.dockerfile | cut -f2 -d' ' | sort | uniq | while read -r img; do docker pull "$$img"; done
+	grep -m 1 FROM ./testdata/acceptance/*.dockerfile | cut -f2 -d' ' | sort | uniq | while read -r img; do docker pull "$$img"; done
 .PHONY: pull_test_imgs
 
 acceptance: pull_test_imgs
-	make -e TEST_OPTIONS="-tags=acceptance" test
+	make -e TEST_PARALLEL="4" -e TEST_OPTIONS="-tags=acceptance" -e TEST_TIMEOUT="60m" -e SOURCE_FILES="acceptance_test.go" test
 .PHONY: acceptance
 
 test:
@@ -33,14 +32,14 @@ cover: test
 .PHONY: cover
 
 fmt:
-	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
+	gofumpt -w .
 .PHONY: fmt
 
 lint: check
 	golangci-lint run
 .PHONY: check
 
-ci: build lint test acceptance
+ci: lint test
 .PHONY: ci
 
 build:

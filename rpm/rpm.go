@@ -103,7 +103,7 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 	}
 
 	if info.RPM.Signature.KeyFile != "" {
-		rpm.SetPGPSigner(sign.PGPSigner(info.RPM.Signature.KeyFile, info.RPM.Signature.KeyPassphrase))
+		rpm.SetPGPSigner(sign.PGPSignerWithKeyID(info.RPM.Signature.KeyFile, info.RPM.Signature.KeyPassphrase, info.RPM.Signature.KeyID))
 	}
 
 	addEmptyDirsRPM(info, rpm)
@@ -266,6 +266,13 @@ func toRelation(items []string) (rpmpack.Relations, error) {
 }
 
 func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
+	if info.RPM.Scripts.PreTrans != "" {
+		data, err := ioutil.ReadFile(info.RPM.Scripts.PreTrans)
+		if err != nil {
+			return err
+		}
+		rpm.AddPretrans(string(data))
+	}
 	if info.Scripts.PreInstall != "" {
 		data, err := ioutil.ReadFile(info.Scripts.PreInstall)
 		if err != nil {
@@ -298,6 +305,14 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 		rpm.AddPostun(string(data))
 	}
 
+	if info.RPM.Scripts.PostTrans != "" {
+		data, err := ioutil.ReadFile(info.RPM.Scripts.PostTrans)
+		if err != nil {
+			return err
+		}
+		rpm.AddPosttrans(string(data))
+	}
+
 	return nil
 }
 
@@ -306,7 +321,7 @@ func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
 		rpm.AddFile(
 			rpmpack.RPMFile{
 				Name:  dir,
-				Mode:  uint(040755),
+				Mode:  uint(0o40755),
 				MTime: uint32(time.Now().Unix()),
 				Owner: "root",
 				Group: "root",
@@ -331,7 +346,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 		case "ghost":
 			rpmFileType = rpmpack.GhostFile
 			if file.FileInfo.Mode == 0 {
-				file.FileInfo.Mode = os.FileMode(0644)
+				file.FileInfo.Mode = os.FileMode(0o644)
 			}
 		case "doc":
 			rpmFileType = rpmpack.DocFile

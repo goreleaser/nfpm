@@ -30,7 +30,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
-	"crypto/sha1" // nolint:gosec
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -38,7 +38,6 @@ import (
 	"hash"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/mail"
 	"os"
 	"path/filepath"
@@ -204,6 +203,7 @@ func writeTgz(w io.Writer, kind tarKind, builder func(tw *tar.Writer) error, dig
 	}
 
 	// handle the cut vs full tars
+	// TODO: document this better, why do we need to call bw.Flush twice if it is a full tar vs the cut tar?
 	if err = bw.Flush(); err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) er
 		// the file name will have to start with .SIGN.RSA256 or .SIGN.RSA512.
 		signHeader := &tar.Header{
 			Name: fmt.Sprintf(".SIGN.RSA.%s", keyname),
-			Mode: 0600,
+			Mode: 0o600,
 			Size: int64(len(signature)),
 		}
 
@@ -325,7 +325,7 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 
 		infoHeader := &tar.Header{
 			Name: ".PKGINFO",
-			Mode: 0600,
+			Mode: 0o600,
 			Size: int64(len(infoContent)),
 		}
 
@@ -340,10 +340,12 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 		//
 		// exit 0
 		for script, dest := range map[string]string{
-			info.Scripts.PreInstall:  ".pre-install",
-			info.Scripts.PostInstall: ".post-install",
-			info.Scripts.PreRemove:   ".pre-deinstall",
-			info.Scripts.PostRemove:  ".post-deinstall",
+			info.Scripts.PreInstall:      ".pre-install",
+			info.APK.Scripts.PreUpgrade:  ".pre-upgrade",
+			info.Scripts.PostInstall:     ".post-install",
+			info.APK.Scripts.PostUpgrade: ".post-upgrade",
+			info.Scripts.PreRemove:       ".pre-deinstall",
+			info.Scripts.PostRemove:      ".post-deinstall",
 		} {
 			if script != "" {
 				if err := newScriptInsideTarGz(tw, script, dest); err != nil {
@@ -357,36 +359,44 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 }
 
 func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
-	file, err := os.Open(path) //nolint:gosec
+	file, err := os.Stat(path) //nolint:gosec
 	if err != nil {
 		return err
 	}
-	content, err := ioutil.ReadAll(file)
+	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	return newItemInsideTarGz(out, content, &tar.Header{
 		Name:     files.ToNixPath(dest),
 		Size:     int64(len(content)),
-		Mode:     0755,
-		ModTime:  time.Now(),
+		Mode:     0o755,
+		ModTime:  file.ModTime(),
 		Typeflag: tar.TypeReg,
-		Format:   tar.FormatGNU,
 	})
 }
 
 func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) error {
+	header.Format = tar.FormatPAX
+	header.PAXRecords = make(map[string]string)
+
+	hasher := sha1.New()
+	_, err := hasher.Write(content)
+	if err != nil {
+		return fmt.Errorf("failed to hash content of file %s: %w", header.Name, err)
+	}
+	header.PAXRecords["APK-TOOLS.checksum.SHA1"] = fmt.Sprintf("%x", hasher.Sum(nil))
 	if err := out.WriteHeader(header); err != nil {
-		return fmt.Errorf("cannot write header of %s file to control.tar.gz: %w", header.Name, err)
+		return fmt.Errorf("cannot write header of %s file to apk: %w", header.Name, err)
 	}
 	if _, err := out.Write(content); err != nil {
-		return fmt.Errorf("cannot write %s file to control.tar.gz: %w", header.Name, err)
+		return fmt.Errorf("cannot write %s file to apk: %w", header.Name, err)
 	}
 	return nil
 }
 
 func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error {
-	var created = map[string]bool{}
+	created := map[string]bool{}
 
 	return func(tw *tar.Writer) error {
 		// handle empty folders
@@ -430,11 +440,13 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
 			fallthrough
 		default:
-			err = copyToTarAndDigest(file, tw, sizep, created)
+			err = copyToTarAndDigest(file, tw, sizep)
 		}
 		if err != nil {
 			return err
 		}
+		created[file.Source] = true
+		created[file.Destination[1:]] = true
 	}
 
 	return nil
@@ -446,31 +458,25 @@ func createSymlinkInsideTarGz(file *files.Content, out *tar.Writer) error {
 		Linkname: file.Source,
 		Typeflag: tar.TypeSymlink,
 		ModTime:  file.FileInfo.MTime,
-		Format:   tar.FormatGNU,
 	})
 }
 
-func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64, created map[string]bool) error {
-	tarFile, err := os.OpenFile(file.Source, os.O_RDONLY, 0600) //nolint:gosec
+func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error {
+	contents, err := ioutil.ReadFile(file.Source)
 	if err != nil {
-		return fmt.Errorf("could not add file to the archive: %w", err)
+		return err
 	}
-	// don't care if it errs while closing...
-	defer tarFile.Close() // nolint: errcheck
 	header, err := tar.FileInfoHeader(file, file.Source)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 
 	header.Name = files.ToNixPath(file.Destination[1:])
-	err = writeFile(tw, header, tarFile)
-	if err != nil {
+	if err = newItemInsideTarGz(tw, contents, header); err != nil {
 		return err
 	}
 
 	*sizep += file.Size()
-	created[file.Source] = true
 	return nil
 }
 
@@ -497,12 +503,11 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 		}
 		if err := tarw.WriteHeader(&tar.Header{
 			Name:     files.ToNixPath(path + "/"),
-			Mode:     0755,
+			Mode:     0o755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
-			ModTime:  time.Now(),
 		}); err != nil {
-			return fmt.Errorf("failed to create folder: %w", err)
+			return fmt.Errorf("failed to create folder %s: %w", path, err)
 		}
 		created[path] = true
 	}
@@ -511,7 +516,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 
 func pathsToCreate(dst string) []string {
 	var paths []string
-	var base = dst[1:]
+	base := dst[1:]
 	for {
 		base = filepath.Dir(base)
 		if base == "." {
@@ -567,7 +572,7 @@ type controlData struct {
 }
 
 func writeControl(w io.Writer, data controlData) error {
-	var tmpl = template.New("control")
+	tmpl := template.New("control")
 	tmpl.Funcs(template.FuncMap{
 		"multiline": func(strs string) string {
 			ret := strings.ReplaceAll(strs, "\n", "\n  ")

@@ -100,10 +100,17 @@ contents:
     dst: /etc/foo.conf
     type: config
 
-  # Simple symlink
-  #	Will result in `ln -s /sbin/foo /usr/local/bin/foo`.
-  - src: /sbin/foo
-    dst: /usr/local/bin/foo
+  # Simple symlink at /usr/local/bin/foo which points to /sbin/foo, which is
+  # the same behaviour as `ln -s /sbin/foo /usr/local/bin/foo`.
+  #
+  # This also means that both "src" and "dst" are paths inside the package (or
+  # rather paths in the file system where the package will be installed) and
+  # not in the build environment. This is different from regular files where
+  # "src" is a path in the build environment. However, this convention results
+  # in "dst" always being the file that is created when installing the
+  # package.
+  - src: /actual/path/to/foo
+    dst: /usr/bin/foo
     type: symlink
 
   # Corresponds to `%config(noreplace)` if the packager is rpm, otherwise it is just a config file
@@ -183,6 +190,13 @@ overrides:
 
 # Custom configuration applied only to the RPM packager.
 rpm:
+  # RPM specific scripts.
+  scripts:
+    # The pretrans script runs before all RPM package transactions / stages.
+    pretrans: ./scripts/pretrans.sh
+    # The posttrans script runs after all RPM package transactions / stages.
+    posttrans: ./scripts/posttrans.sh
+
   # The package group. This option is deprecated by most distros
   # but required by old distros like CentOS 5 / EL 5 and earlier.
   group: Unspecified
@@ -198,9 +212,14 @@ rpm:
   signature:
     # PGP secret key (can also be ASCII-armored), the passphrase is taken
     # from the environment variable $NFPM_RPM_PASSPHRASE with a fallback
-    # to #NFPM_PASSPHRASE.
+    # to $NFPM_PASSPHRASE.
     # This will expand any env var you set in the field, eg key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
+    # PGP secret key id in hex format, if it is not set it will select the first subkey
+    # that has the signing flag set. You may need to set this if you want to use the primary key as the signing key
+    # or to support older versions of RPM < 4.13.0 which cannot validate a signed RPM that used a subkey to sign
+    # This will expand any env var you set in the field, eg key_id: ${RPM_SIGNING_KEY_ID}
+    key_id: bc8acdd415bd80b3
 
 # Custom configuration applied only to the Deb packager.
 deb:
@@ -210,6 +229,8 @@ deb:
     rules: foo.sh
     # Deb templates file, when using debconf.
     templates: templates
+    # Deb config maintainer script for asking questions when using debconf.
+    config: config
 
   # Custom deb triggers
   triggers:
@@ -232,25 +253,31 @@ deb:
   signature:
     # PGP secret key (can also be ASCII-armored). The passphrase is taken
     # from the environment variable $NFPM_DEB_PASSPHRASE with a fallback
-    # to #NFPM_PASSPHRASE.
+    # to $NFPM_PASSPHRASE.
     # This will expand any env var you set in the field, eg key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
     # The type describes the signers role, possible values are "origin",
     # "maint" and "archive". If unset, the type defaults to "origin".
     type: origin
+    # PGP secret key id in hex format, if it is not set it will select the first subkey
+    # that has the signing flag set. You may need to set this if you want to use the primary key as the signing key
+    # This will expand any env var you set in the field, eg key_id: ${DEB_SIGNING_KEY_ID}
+    key_id: bc8acdd415bd80b3
 
 apk:
   # The package is signed if a key_file is set
   signature:
     # RSA private key in the PEM format. The passphrase is taken from
     # the environment variable $NFPM_APK_PASSPHRASE with a fallback
-    # to #NFPM_PASSPHRASE.
+    # to $NFPM_PASSPHRASE.
     # This will expand any env var you set in the field, eg key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
     # The name of the signing key. When verifying a package, the signature
     # is matched to the public key store in /etc/apk/keys/<key_name>.rsa.pub.
     # If unset, it defaults to the maintainer email address.
     key_name: origin
+    # APK does not use pgp keys, so the key_id field is ignored.
+    key_id: ignored
 ```
 
 ## Templating

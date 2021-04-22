@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/goreleaser/nfpm/v2"
@@ -100,8 +100,8 @@ func verifyArch(t *testing.T, nfpmArch, expectedArch string) {
 	info := exampleInfo()
 	info.Arch = nfpmArch
 
-	assert.NoError(t, Default.Package(info, ioutil.Discard))
-	assert.Equal(t, expectedArch, info.Arch)
+	require.NoError(t, Default.Package(info, ioutil.Discard))
+	require.Equal(t, expectedArch, info.Arch)
 }
 
 func TestCreateBuilderData(t *testing.T) {
@@ -114,9 +114,9 @@ func TestCreateBuilderData(t *testing.T) {
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
 
-	assert.NoError(t, builderData(tw))
+	require.NoError(t, builderData(tw))
 
-	assert.Equal(t, 8712, buf.Len())
+	require.Equal(t, 11784, buf.Len())
 }
 
 func TestCombineToApk(t *testing.T) {
@@ -128,8 +128,8 @@ func TestCombineToApk(t *testing.T) {
 
 	var bufTarget bytes.Buffer
 
-	assert.NoError(t, combineToApk(&bufTarget, &bufData, &bufControl))
-	assert.Equal(t, 2, bufTarget.Len())
+	require.NoError(t, combineToApk(&bufTarget, &bufData, &bufControl))
+	require.Equal(t, 2, bufTarget.Len())
 }
 
 func TestPathsToCreate(t *testing.T) {
@@ -141,30 +141,53 @@ func TestPathsToCreate(t *testing.T) {
 		parts := parts
 		pathToTest := pathToTest
 		t.Run(fmt.Sprintf("pathToTest: '%s'", pathToTest), func(t *testing.T) {
-			assert.Equal(t, parts, pathsToCreate(pathToTest))
+			require.Equal(t, parts, pathsToCreate(pathToTest))
 		})
 	}
 }
 
 func TestDefaultWithArch(t *testing.T) {
+	expectedChecksums := map[string]string{
+		"usr/share/doc/fake/fake.txt": "96c335dc28122b5f09a4cef74b156cd24c23784c",
+		"usr/local/bin/fake":          "f46cece3eeb7d9ed5cb244d902775427be71492d",
+		"etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
+	}
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
-			var err = Default.Package(info, ioutil.Discard)
-			assert.NoError(t, err)
+
+			var f bytes.Buffer
+			require.NoError(t, Default.Package(info, &f))
+
+			gz, err := gzip.NewReader(&f)
+			require.NoError(t, err)
+			defer gz.Close()
+			tr := tar.NewReader(gz)
+
+			for {
+				hdr, err := tr.Next()
+				if errors.Is(err, io.EOF) {
+					break // End of archive
+				}
+				require.NoError(t, err)
+
+				require.Equal(t, expectedChecksums[hdr.Name], hdr.PAXRecords["APK-TOOLS.checksum.SHA1"], hdr.Name)
+			}
 		})
 	}
 }
 
 func TestNoInfo(t *testing.T) {
-	var err = Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
-	assert.Error(t, err)
+	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
+	require.Error(t, err)
 }
 
 func TestFileDoesNotExist(t *testing.T) {
-	var err = Default.Package(
+	abs, err := filepath.Abs("../testdata/whatever.confzzz")
+	require.NoError(t, err)
+	err = Default.Package(
 		nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
@@ -194,11 +217,11 @@ func TestFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, "matching \"../testdata/whatever.confzzz\": file does not exist")
+	require.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
 func TestNoFiles(t *testing.T) {
-	var err = Default.Package(
+	err := Default.Package(
 		nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
@@ -217,7 +240,7 @@ func TestNoFiles(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestCreateBuilderControl(t *testing.T) {
@@ -229,16 +252,16 @@ func TestCreateBuilderControl(t *testing.T) {
 
 	var w bytes.Buffer
 	tw := tar.NewWriter(&w)
-	assert.NoError(t, builderControl(tw))
+	require.NoError(t, builderControl(tw))
 
-	var control = string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
-	var golden = "testdata/TestCreateBuilderControl.golden"
+	control := string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
+	golden := "testdata/TestCreateBuilderControl.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0655)) // nolint: gosec
+		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
-	assert.NoError(t, err)
-	assert.Equal(t, string(bts), control)
+	require.NoError(t, err)
+	require.Equal(t, string(bts), control)
 }
 
 func TestCreateBuilderControlScripts(t *testing.T) {
@@ -249,6 +272,10 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 		PreRemove:   "../testdata/scripts/preremove.sh",
 		PostRemove:  "../testdata/scripts/postremove.sh",
 	}
+	info.APK.Scripts = nfpm.APKScripts{
+		PreUpgrade:  "../testdata/scripts/preupgrade.sh",
+		PostUpgrade: "../testdata/scripts/postupgrade.sh",
+	}
 	err := info.Validate()
 	require.NoError(t, err)
 
@@ -257,31 +284,45 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 
 	var w bytes.Buffer
 	tw := tar.NewWriter(&w)
-	assert.NoError(t, builderControl(tw))
+	require.NoError(t, builderControl(tw))
 
-	var control = string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
-	var golden = "testdata/TestCreateBuilderControlScripts.golden"
+	control := string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
+	golden := "testdata/TestCreateBuilderControlScripts.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0655)) // nolint: gosec
+		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
-	assert.NoError(t, err)
-	assert.Equal(t, string(bts), control)
+	require.NoError(t, err)
+	require.Equal(t, string(bts), control)
+
+	// Validate scripts are correct
+	script := string(extractFromTar(t, w.Bytes(), ".pre-install"))
+	require.Contains(t, script, `echo "Preinstall" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".post-install"))
+	require.Contains(t, script, `echo "Postinstall" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".pre-upgrade"))
+	require.Contains(t, script, `echo "PreUpgrade" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".post-upgrade"))
+	require.Contains(t, script, `echo "PostUpgrade" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".pre-deinstall"))
+	require.Contains(t, script, `echo "Preremove" > /dev/null`)
+	script = string(extractFromTar(t, w.Bytes(), ".post-deinstall"))
+	require.Contains(t, script, `echo "Postremove" > /dev/null`)
 }
 
 func TestControl(t *testing.T) {
 	var w bytes.Buffer
-	assert.NoError(t, writeControl(&w, controlData{
+	require.NoError(t, writeControl(&w, controlData{
 		Info:          exampleInfo(),
 		InstalledSize: 10,
 	}))
-	var golden = "testdata/TestControl.golden"
+	golden := "testdata/TestControl.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0655)) // nolint: gosec
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o655)) // nolint: gosec
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
-	assert.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	require.NoError(t, err)
+	require.Equal(t, string(bts), w.String())
 }
 
 func TestSignature(t *testing.T) {
@@ -363,7 +404,7 @@ func TestDisableGlobbing(t *testing.T) {
 func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
 	t.Helper()
 
-	var tr = tar.NewReader(bytes.NewReader(tarFile))
+	tr := tar.NewReader(bytes.NewReader(tarFile))
 
 	for {
 		hdr, err := tr.Next()
@@ -395,16 +436,26 @@ func TestAPKConventionalFileName(t *testing.T) {
 		Prerelease string
 		Expect     string
 	}{
-		{Arch: "amd64", Version: "1.2.3",
-			Expect: "default_1.2.3_x86_64.apk"},
-		{Arch: "386", Version: "1.2.3", Meta: "git",
-			Expect: "default_1.2.3+git_x86.apk"},
-		{Arch: "386", Version: "1.2.3", Meta: "git", Release: "1",
-			Expect: "default_1.2.3-1+git_x86.apk"},
-		{Arch: "all", Version: "1.2.3",
-			Expect: "default_1.2.3_all.apk"},
-		{Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "5",
-			Expect: "default_1.2.3-1~5_x86.apk"},
+		{
+			Arch: "amd64", Version: "1.2.3",
+			Expect: "default_1.2.3_x86_64.apk",
+		},
+		{
+			Arch: "386", Version: "1.2.3", Meta: "git",
+			Expect: "default_1.2.3+git_x86.apk",
+		},
+		{
+			Arch: "386", Version: "1.2.3", Meta: "git", Release: "1",
+			Expect: "default_1.2.3-1+git_x86.apk",
+		},
+		{
+			Arch: "all", Version: "1.2.3",
+			Expect: "default_1.2.3_all.apk",
+		},
+		{
+			Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "5",
+			Expect: "default_1.2.3-1~5_x86.apk",
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -416,7 +467,7 @@ func TestAPKConventionalFileName(t *testing.T) {
 			Release:         testCase.Release,
 			Prerelease:      testCase.Prerelease,
 		}
-		assert.Equal(t, testCase.Expect, Default.ConventionalFileName(info))
+		require.Equal(t, testCase.Expect, Default.ConventionalFileName(info))
 	}
 }
 
@@ -429,5 +480,5 @@ func TestPackageSymlinks(t *testing.T) {
 			Type:        "symlink",
 		},
 	}
-	assert.NoError(t, Default.Package(info, ioutil.Discard))
+	require.NoError(t, Default.Package(info, ioutil.Discard))
 }
