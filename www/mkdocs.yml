@@ -22,7 +22,6 @@ plugins:
   - minify:
       minify_html: true
 
-
 extra:
   social:
     - icon: fontawesome/brands/github-alt
@@ -39,6 +38,11 @@ nav:
 - install.md
 - usage.md
 - configuration.md
+- Command Line Usage:
+    - nfpm: cmd/nfpm.md
+    - nfpm init: cmd/nfpm.md
+    - nfpm package: cmd/nfpm_package.md
+    - nfpm completion: cmd/nfpm_completion.md
 - tips.md
 - contributing.md
 - sponsors.md

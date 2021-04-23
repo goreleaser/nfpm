@@ -1,3 +1,4 @@
 FROM alpine
-COPY nfpm /usr/local/bin/nfpm
+COPY nfpm_*.apk /tmp/
+RUN apk add --allow-untrusted /tmp/nfpm_*.apk
 ENTRYPOINT ["/usr/local/bin/nfpm"]
