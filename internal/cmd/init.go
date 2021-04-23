@@ -8,7 +8,7 @@ import (
 )
 
 type initCmd struct {
-	cmd *cobra.Command
+	cmd    *cobra.Command
 	config string
 }
 
@@ -22,7 +22,7 @@ func newInitCmd() *initCmd {
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := os.WriteFile(root.config, []byte(example), 0666); err != nil {
+			if err := os.WriteFile(root.config, []byte(example), 0o666); err != nil {
 				return fmt.Errorf("failed to create example file: %w", err)
 			}
 			return nil

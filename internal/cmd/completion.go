@@ -1,6 +1,5 @@
 package cmd
 
-
 import "github.com/spf13/cobra"
 
 type completionCmd struct {
@@ -73,4 +72,3 @@ To load completions for each session, execute once:
 	root.cmd = cmd
 	return root
 }
-

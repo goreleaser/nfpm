@@ -33,4 +33,3 @@ func newDocsCmd() *docsCmd {
 	root.cmd = cmd
 	return root
 }
-
