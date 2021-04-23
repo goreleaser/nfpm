@@ -28,8 +28,6 @@ dockers:
       - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
     dockerfile: Dockerfile
     use_buildx: true
-    binaries:
-      - nfpm
     build_flag_templates:
       - "--pull"
       - "--label=org.opencontainers.image.created={{.Date}}"
@@ -43,8 +41,6 @@ dockers:
       - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
     dockerfile: Dockerfile
     use_buildx: true
-    binaries:
-      - nfpm
     build_flag_templates:
       - "--pull"
       - "--label=org.opencontainers.image.created={{.Date}}"
