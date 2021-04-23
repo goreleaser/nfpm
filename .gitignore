@@ -13,3 +13,4 @@ coverage.out
 www/site
 .idea/
 testdata/acceptance/tmp/
+completions/

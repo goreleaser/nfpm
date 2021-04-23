@@ -7,28 +7,39 @@ Here are the steps for each of them:
 
 ## Install the pre-compiled binary
 
-**homebrew tap** (only on macOS for now):
+**homebrew tap** (official):
 
-```console
-$ brew install goreleaser/tap/nfpm
+```sh
+brew install goreleaser/tap/nfpm
+```
+
+**homebrew** (may not be the latest version):
+
+```sh
+brew install nfpm
 ```
 
 **scoop**:
 
-```console
-$ scoop bucket add goreleaser https://github.com/goreleaser/scoop-bucket.git
-$ scoop install nfpm
+```sh
+scoop bucket add goreleaser https://github.com/goreleaser/scoop-bucket.git
+scoop install nfpm
 ```
 
-**deb/rpm**:
+**deb/rpm/apk**:
 
-Download the `.deb` or `.rpm` from the [releases page][releases] and
-install with `dpkg -i` and `rpm -i` respectively.
+Download the `.deb`, `.rpm` or `.apk` from the [releases page][releases] and install them with the appropriate tools.
 
-**Shell script**:
+**shell script**:
 
-```console
-$ curl -sfL https://install.goreleaser.com/github.com/goreleaser/nfpm.sh | sh
+```sh
+curl -sfL https://install.goreleaser.com/github.com/goreleaser/nfpm.sh | sh
+```
+
+**go install**:
+
+```sh
+go install github.com/goreleaser/nfpm
 ```
 
 **manually**:
@@ -41,13 +52,12 @@ copy to the desired location.
 You can also use it within a Docker container. To do that, you'll need to
 execute something more-or-less like the following:
 
-```console
-$ docker run --rm \
-  -v $PWD:/tmp/pkg \
-  goreleaser/nfpm pkg --config /tmp/pkg/foo.yml --target /tmp/pkg/foo.rpm
+```sh
+docker run --rm -v $PWD:/tmp/pkg goreleaser/nfpm package \
+	--config /tmp/pkg/foo.yml \
+	--target /tmp \
+	--packager deb
 ```
-
-[releases]: https://github.com/goreleaser/nfpm/releases
 
 ## Compiling from source
 
@@ -58,27 +68,29 @@ steps on our [contributing guide](/contributing).
 
 If you just want to build from source for whatever reason, follow these steps:
 
-**Clone:**
+**clone:**
 
-```console
-$ git clone https://github.com/goreleaser/nfpm
-$ cd nfpm
+```sh
+git clone https://github.com/goreleaser/nfpm
+cd nfpm
 ```
 
-**Get the dependencies:**
+**get the dependencies:**
 
-```console
-$ go mod tidy
+```sh
+go mod tidy
 ```
 
-**Build:**
+**build:**
 
-```console
-$ go build -o nfpm cmd/nfpm/main.go
+```sh
+go build -o nfpm ./cmd/nfpm
 ```
 
-**Verify it works:**
+**verify it works:**
 
-```console
-$ ./nfpm --version
+```sh
+./nfpm --version
 ```
+
+[releases]: https://github.com/goreleaser/nfpm/releases

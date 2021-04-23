@@ -1,27 +1,26 @@
 # Usage
 
+NFPM can be used both as command line tool or as a library.
+
 ## Command Line
 
 To create a sample config file, run:
 
-```console
-$ nfpm init
+```sh
+nfpm init
 ```
 
 You can then customize it and package to the formats you want:
 
-```console
-$ nfpm pkg --packager deb --target /tmp/
-using deb packager...
-created package: /tmp/foo_1.0.0_amd64.deb
-
-$ nfpm pkg --packager rpm --target /tmp/
-using rpm packager...
-created package: /tmp/foo-1.0.0.x86_64.rpm
+```sh
+nfpm pkg --packager deb --target /tmp/
+nfpm pkg --packager rpm --target /tmp/
 ```
+
+You can learn about it in more detail in the [command line reference section](/cmd/nfpm/).
 
 ## Go Library
 
-Check the [GoDocs](https://pkg.go.dev/github.com/goreleaser/nfpm/v2?tab=doc) page,
-as well as [NFPM command line implementation](https://github.com/goreleaser/nfpm/blob/master/cmd/nfpm/main.go)
+Check out the [GoDocs page](https://pkg.go.dev/github.com/goreleaser/nfpm/v2?tab=doc),
+the [NFPM command line implementation](https://github.com/goreleaser/nfpm/blob/master/cmd/nfpm/main.go)
 and [GoReleaser's usage](https://github.com/goreleaser/goreleaser/blob/master/internal/pipe/nfpm/nfpm.go).

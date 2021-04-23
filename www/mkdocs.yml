@@ -12,6 +12,19 @@ theme:
   favicon: static/favicon.ico
   include_search_page: false
   search_index_only: true
+  features:
+    - navigation.instant
+  palette:
+    - media: "(prefers-color-scheme: light)"  # Light mode
+      scheme: default
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: dark)"  # Dark mode
+      scheme: slate
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
 
 plugins:
   # disable temporarely because its freezing the page
@@ -21,7 +34,6 @@ plugins:
       - en
   - minify:
       minify_html: true
-
 
 extra:
   social:
@@ -38,6 +50,11 @@ nav:
 - index.md
 - install.md
 - usage.md
+- Command Line Reference:
+    - nfpm: cmd/nfpm.md
+    - nfpm init: cmd/nfpm_init.md
+    - nfpm package: cmd/nfpm_package.md
+    - nfpm completion: cmd/nfpm_completion.md
 - configuration.md
 - tips.md
 - contributing.md
