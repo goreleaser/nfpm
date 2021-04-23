@@ -38,7 +38,8 @@ func TestGet(t *testing.T) {
 
 func TestDefaultsVersion(t *testing.T) {
 	info := &nfpm.Info{
-		Version: "v1.0.0",
+		Version:       "v1.0.0",
+		VersionSchema: "semver",
 	}
 	info = nfpm.WithDefaults(info)
 	require.NotEmpty(t, info.Platform)
@@ -79,6 +80,17 @@ func TestDefaultsVersion(t *testing.T) {
 	}
 	info = nfpm.WithDefaults(info)
 	require.Equal(t, "1.0.0", info.Version)
+	require.Equal(t, "2", info.Release)
+	require.Equal(t, "beta1", info.Prerelease)
+
+	info = &nfpm.Info{
+		Version:       "this.is.my.version",
+		VersionSchema: "none",
+		Release:       "2",
+		Prerelease:    "beta1",
+	}
+	info = nfpm.WithDefaults(info)
+	require.Equal(t, "this.is.my.version", info.Version)
 	require.Equal(t, "2", info.Release)
 	require.Equal(t, "beta1", info.Prerelease)
 }
