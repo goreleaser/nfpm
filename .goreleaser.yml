@@ -124,3 +124,5 @@ scoop:
   homepage:  https://goreleaser.com
   description: NFPM is a simple, 0-dependencies, deb, rpm and apk packager.
   license: MIT
+release:
+  discussion_category_name: "New Releases"
