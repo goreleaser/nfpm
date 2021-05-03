@@ -390,19 +390,6 @@ func WithDefaults(info *Info) *Info {
 		info.Version = "v0.0.0-rc0"
 	}
 
-	// parse the version as a semver so we can properly split the parts
-	// and support proper ordering for both rpm and deb
-	if v, err := semver.NewVersion(info.Version); err == nil {
-		info.Version = fmt.Sprintf("%d.%d.%d", v.Major(), v.Minor(), v.Patch())
-		if info.Prerelease == "" {
-			info.Prerelease = v.Prerelease()
-		}
-
-		if info.VersionMetadata == "" {
-			info.VersionMetadata = v.Metadata()
-		}
-	}
-
 	switch info.VersionSchema {
 	case "none":
 		// No change to the version or prerelease info set in the YAML file
