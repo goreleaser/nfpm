@@ -39,7 +39,7 @@ curl -sfL https://install.goreleaser.com/github.com/goreleaser/nfpm.sh | sh
 **go install**:
 
 ```sh
-go install github.com/goreleaser/nfpm
+go install github.com/goreleaser/nfpm/cmd/nfpm@latest
 ```
 
 **manually**:
