@@ -1,0 +1,31 @@
+name: generate
+
+on:
+  push:
+    branches:
+      - 'master'
+    paths:
+      - '.github/workflows/generate.yml'
+      - 'www/*'
+      - 'cmd/*'
+      - 'internal/cmd/*'
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: checkout
+        uses: actions/checkout@v2
+      -
+        name: setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      -
+        name: docs
+        run: ./scripts/cmd_docs.sh
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "docs: update cmd docs"
+          branch: master
