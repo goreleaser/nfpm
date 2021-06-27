@@ -1,6 +1,6 @@
 # Usage
 
-NFPM can be used both as command line tool or as a library.
+nFPM can be used both as command line tool or as a library.
 
 ## Command Line
 
@@ -22,5 +22,5 @@ You can learn about it in more detail in the [command line reference section](/c
 ## Go Library
 
 Check out the [GoDocs page](https://pkg.go.dev/github.com/goreleaser/nfpm/v2?tab=doc),
-the [NFPM command line implementation](https://github.com/goreleaser/nfpm/blob/master/cmd/nfpm/main.go)
+the [nFPM command line implementation](https://github.com/goreleaser/nfpm/blob/master/cmd/nfpm/main.go)
 and [GoReleaser's usage](https://github.com/goreleaser/goreleaser/blob/master/internal/pipe/nfpm/nfpm.go).

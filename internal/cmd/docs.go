@@ -15,7 +15,7 @@ func newDocsCmd() *docsCmd {
 	root := &docsCmd{}
 	cmd := &cobra.Command{
 		Use:                   "docs",
-		Short:                 "Generates NFPM's command line docs",
+		Short:                 "Generates nFPM's command line docs",
 		SilenceUsage:          true,
 		DisableFlagsInUseLine: true,
 		Hidden:                true,
@@ -25,7 +25,7 @@ func newDocsCmd() *docsCmd {
 			return doc.GenMarkdownTreeCustom(root.cmd.Root(), "www/docs/cmd", func(_ string) string {
 				return ""
 			}, func(s string) string {
-				return "/cmd/" + strings.TrimSuffix(s, ".md")
+				return "/cmd/" + strings.TrimSuffix(s, ".md") + "/"
 			})
 		},
 	}

@@ -91,7 +91,7 @@ brews:
     name: homebrew-tap
   folder: Formula
   homepage:  https://github.com/goreleaser/nfpm
-  description: NFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+  description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
   test: |
     system "#{bin}/nfpm -v"
   install: |-
@@ -102,7 +102,7 @@ brews:
 nfpms:
 - file_name_template: '{{ .ProjectName }}_{{ .Arch }}'
   homepage:  https://github.com/goreleaser/nfpm
-  description: NFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+  description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
   maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
   license: MIT
   vendor: GoReleaser
@@ -122,7 +122,7 @@ scoop:
     owner: goreleaser
     name: scoop-bucket
   homepage:  https://goreleaser.com
-  description: NFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+  description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
   license: MIT
 release:
   discussion_category_name: "New Releases"

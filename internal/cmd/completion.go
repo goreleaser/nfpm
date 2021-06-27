@@ -10,8 +10,8 @@ func newCompletionCmd() *completionCmd {
 	root := &completionCmd{}
 	cmd := &cobra.Command{
 		Use:   "completion [bash|zsh|fish]",
-		Short: "Prints shell autocompletion scripts for NFPM",
-		Long: `Allows you to setup your shell to completions NFPM commands and flags.
+		Short: "Prints shell autocompletion scripts for nFPM",
+		Long: `Allows you to setup your shell to completions nFPM commands and flags.
 
 #### Bash
 

@@ -1,8 +1,8 @@
-# NFPM
+# nFPM
 
 ![](/static/banner.svg)
 
-NFPM is a simple, 0-dependencies, `deb`, `rpm` and `apk` packager.
+nFPM is a simple, 0-dependencies, `deb`, `rpm` and `apk` packager.
 
 ## Why
 
@@ -12,10 +12,10 @@ and other softwares.
 I wanted something that could be used as a binary and/or as a library and that
 was really simple.
 
-So I decided to create NFPM: a **simpler**, **0-dependency**,
+So I decided to create nFPM: a **simpler**, **0-dependency**,
 **as-little-assumptions-as-possible** alternative to fpm.
 
-## NFPM is Not FPM
+## nFPM is not FPM
 
 This is a subtle way of saying it wont have all features, nor all
 formats that fpm has: it is supposed to be simpler.

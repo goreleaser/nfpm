@@ -1,7 +1,7 @@
 <p align="center">
   <img alt="GoReleaser Logo" src="https://avatars2.githubusercontent.com/u/24697112?v=3&s=200" height="140" />
-  <h3 align="center">NFPM</h3>
-  <p align="center">NFPM is a simple, 0-dependencies, deb, rpm and apk packager.</p>
+  <h3 align="center">nFPM</h3>
+  <p align="center">nFPM is a simple, 0-dependencies, deb, rpm and apk packager.</p>
   <p align="center">
     <a href="https://github.com/goreleaser/nfpm/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/goreleaser/nfpm.svg?style=for-the-badge"></a>
     <a href="/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=for-the-badge"></a>
@@ -21,7 +21,7 @@ and other softwares.
 I wanted something that could be used as a binary and/or as a library and that
 was really simple.
 
-So I created NFPM: a simpler, 0-dependency, as-little-assumptions-as-possible alternative to fpm.
+So I created nFPM: a simpler, 0-dependency, as-little-assumptions-as-possible alternative to fpm.
 
 ## Usage
 

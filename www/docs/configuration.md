@@ -290,5 +290,5 @@ apk:
 
 Templating is not and will not be supported.
 
-If you really need it, you can build on top of NFPM, use `envsubst`, `jsonnet`
+If you really need it, you can build on top of nFPM, use `envsubst`, `jsonnet`
 or apply some other templating on top of it.

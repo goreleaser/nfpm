@@ -1,10 +1,10 @@
 # nfpm completion
 
-Prints shell autocompletion scripts for NFPM
+Prints shell autocompletion scripts for nFPM
 
 ## Synopsis
 
-Allows you to setup your shell to completions NFPM commands and flags.
+Allows you to setup your shell to completions nFPM commands and flags.
 
 ### Bash
 
@@ -56,5 +56,5 @@ nfpm completion [bash|zsh|fish]
 
 ## See also
 
-* [nfpm](/cmd/nfpm)	 - Packages apps on RPM, Deb and APK formats based on a YAML configuration file
+* [nfpm](/cmd/nfpm/)	 - Packages apps on RPM, Deb and APK formats based on a YAML configuration file
 
