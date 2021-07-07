@@ -16,6 +16,6 @@ nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
 
 * [nfpm completion](/cmd/nfpm_completion/)	 - generate the autocompletion script for the specified shell
 * [nfpm init](/cmd/nfpm_init/)	 - creates a sample nfpm.yaml config file
-* [nfpm jsonschema](/cmd/nfpm_jsonschema/)	 - creates a JSON schema file
+* [nfpm jsonschema](/cmd/nfpm_jsonschema/)	 - outputs nFPM's JSON schema
 * [nfpm package](/cmd/nfpm_package/)	 - creates a package based on the given the given config file and flags
 
