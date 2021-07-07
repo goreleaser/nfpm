@@ -12,6 +12,7 @@ git checkout -- go.*
 go mod edit -replace github.com/spf13/cobra=github.com/caarlos0/cobra@completions-md
 go mod tidy
 go run ./cmd/nfpm docs
+go run ./cmd/nfpm schema -o ./www/docs/static/schema.json
 
 "$SED" \
 	-i'' \
