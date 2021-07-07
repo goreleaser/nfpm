@@ -1,6 +1,6 @@
 # nfpm jsonschema
 
-creates a JSON schema file
+outputs nFPM's JSON schema
 
 ```
 nfpm jsonschema [flags]

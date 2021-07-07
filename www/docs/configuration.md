@@ -292,3 +292,20 @@ Templating is not and will not be supported.
 
 If you really need it, you can build on top of nFPM, use `envsubst`, `jsonnet`
 or apply some other templating on top of it.
+
+
+## JSON Schema
+
+nFPM also has a [jsonschema][] file which you can use to have better editor support:
+
+```
+https://nfpm.goreleaser.com/schema.json
+```
+
+You can also generate it for your specific version using the [`nfpm jsonschema`][schema] command.
+
+Note that it is in early stages.
+Any help and/or feedback is greatly appreciated!
+
+[jsonschema]: http://json-schema.org/draft/2020-12/json-schema-validation.html
+[schema]: /cmd/nfpm_jsonschema/
