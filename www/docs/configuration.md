@@ -304,3 +304,5 @@ https://nfpm.goreleaser.com/schema.json
 
 Note that it is in early stages.
 Any help and/or feedback is greatly appreciated!
+
+[jsonschema]: http://json-schema.org/draft/2020-12/json-schema-validation.html
