@@ -7,7 +7,12 @@ if which gsed >/dev/null 2>&1; then
 fi
 
 rm -rf www/docs/cmd/*.md
+
+git checkout -- go.*
+go mod edit -replace github.com/spf13/cobra=github.com/caarlos0/cobra@completions-md
+go mod tidy
 go run ./cmd/nfpm docs
+
 "$SED" \
 	-i'' \
 	-e 's/SEE ALSO/See also/g' \
@@ -16,3 +21,6 @@ go run ./cmd/nfpm docs
 	-e 's/^#### /### /g' \
 	-e 's/^##### /#### /g' \
 	./www/docs/cmd/*.md
+
+
+git checkout -- go.*
