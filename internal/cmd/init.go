@@ -17,7 +17,7 @@ func newInitCmd() *initCmd {
 	cmd := &cobra.Command{
 		Use:           "init",
 		Aliases:       []string{"i"},
-		Short:         "Creates a sample nfpm.yaml config file",
+		Short:         "creates a sample nfpm.yaml config file",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
@@ -29,7 +29,7 @@ func newInitCmd() *initCmd {
 		},
 	}
 
-	cmd.Flags().StringVarP(&root.config, "config", "f", "nfpm.yaml", "Path to the to-be-created config file")
+	cmd.Flags().StringVarP(&root.config, "config", "f", "nfpm.yaml", "path to the to-be-created config file")
 
 	root.cmd = cmd
 	return root

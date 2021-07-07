@@ -23,7 +23,7 @@ func newPackageCmd() *packageCmd {
 	cmd := &cobra.Command{
 		Use:           "package",
 		Aliases:       []string{"pkg", "p"},
-		Short:         "Creates a package based on the given the given config file and flags",
+		Short:         "creates a package based on the given the given config file and flags",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
@@ -32,9 +32,9 @@ func newPackageCmd() *packageCmd {
 		},
 	}
 
-	cmd.Flags().StringVarP(&root.config, "config", "f", "nfpm.yaml", "Config file to be used")
-	cmd.Flags().StringVarP(&root.target, "target", "t", "", "Where to save the generated package (filename, folder or empty for current folder)")
-	cmd.Flags().StringVarP(&root.packager, "packager", "p", "", "Which packager implementation to use [apk|deb|rpm]")
+	cmd.Flags().StringVarP(&root.config, "config", "f", "nfpm.yaml", "config file to be used")
+	cmd.Flags().StringVarP(&root.target, "target", "t", "", "where to save the generated package (filename, folder or empty for current folder)")
+	cmd.Flags().StringVarP(&root.packager, "packager", "p", "", "which packager implementation to use [apk|deb|rpm]")
 
 	root.cmd = cmd
 	return root
