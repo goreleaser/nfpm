@@ -8,10 +8,12 @@ generate the autocompletion script for fish
 Generate the autocompletion script for the fish shell.
 
 To load completions in your current shell session:
-$ nfpm completion fish | source
+
+	nfpm completion fish | source
 
 To load completions for every new session, execute once:
-$ nfpm completion fish > ~/.config/fish/completions/nfpm.fish
+
+	nfpm completion fish > ~/.config/fish/completions/nfpm.fish
 
 You will need to start a new shell for this setup to take effect.
 

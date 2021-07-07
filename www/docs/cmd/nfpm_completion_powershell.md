@@ -8,7 +8,8 @@ generate the autocompletion script for powershell
 Generate the autocompletion script for powershell.
 
 To load completions in your current shell session:
-PS C:\> nfpm completion powershell | Out-String | Invoke-Expression
+
+	nfpm completion powershell | Out-String | Invoke-Expression
 
 To load completions for every new session, add the output of the above command
 to your powershell profile.
