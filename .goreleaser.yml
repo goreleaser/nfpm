@@ -126,3 +126,15 @@ scoop:
   license: MIT
 release:
   discussion_category_name: "New Releases"
+  footer: |
+    ---
+
+    - Check out [GoReleaser](https://goreleaser.com): it integrates nFPM to the build of your Go projects.
+
+furies:
+  - account: goreleaser
+
+announce:
+  twitter:
+    enabled: true
+    message_template: 'nFPM {{ .Tag }} was just released! See whats new: https://github.com/goreleaser/nfpm/releases/tag/{{ .Tag }}'
