@@ -64,7 +64,7 @@ curl -sfL https://install.goreleaser.com/github.com/goreleaser/nfpm.sh | sh
 go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 ```
 
-### Manually
+### manually
 
 Download the pre-compiled binaries from the [releases page][releases] and copy them to the desired location.
 
