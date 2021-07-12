@@ -22,7 +22,7 @@ brew install nfpm
     The [formula in homebrew-core](https://github.com/Homebrew/homebrew-core/blob/master/Formula/nfpm.rb) might be slightly outdated.
     Use our homebrew tap to always get the latest updates.
 
-#### scoop
+### scoop
 
 ```sh
 scoop bucket add goreleaser https://github.com/goreleaser/scoop-bucket.git
@@ -48,7 +48,7 @@ gpgcheck=0' | sudo tee /etc/yum.repos.d/goreleaser.repo
 sudo yum install nfpm
 ```
 
-#### deb, apk and rpm packages
+### deb, apk and rpm packages
 
 Download the `.deb`, `.rpm` or `.apk` from the [releases page][releases] and install them with the appropriate tools.
 
