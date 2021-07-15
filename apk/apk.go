@@ -491,7 +491,7 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 			return err
 		}
 		out.WriteHeader(&tar.Header{
-			Name:     files.ToNixPath(filepath.Join(folder.Path)),
+			Name:     files.ToNixPath(folder.Path),
 			Mode:     int64(folder.Mode),
 			ModTime:  folder.MTime,
 			Format:   tar.FormatGNU,
