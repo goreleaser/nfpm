@@ -262,9 +262,18 @@ func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map
 		// this .nope is actually not created, because createTree ignore the
 		// last part of the path, assuming it is a file.
 		// TODO: should probably refactor this
-		if err := createTree(out, files.ToNixPath(filepath.Join(folder, ".nope")), created); err != nil {
+		if err := createTree(out, files.ToNixPath(filepath.Join(filepath.Dir(folder.Path), ".nope")), created); err != nil {
 			return err
 		}
+		out.WriteHeader(&tar.Header{
+			Name:     normalizePath(folder.Path),
+			Mode:     int64(folder.Mode),
+			ModTime:  folder.MTime,
+			Format:   tar.FormatGNU,
+			Uname:    folder.Owner,
+			Gname:    folder.Group,
+			Typeflag: tar.TypeDir,
+		})
 	}
 	return nil
 }
@@ -284,6 +293,8 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 	}
 	header.Format = tar.FormatGNU
 	header.Name = normalizePath(file.Destination)
+	header.Uname = file.FileInfo.Owner
+	header.Gname = file.FileInfo.Group
 	if err := tw.WriteHeader(header); err != nil {
 		return 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %w", file.Source, err)
 	}

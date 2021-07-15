@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/chglog"
@@ -76,9 +77,9 @@ func exampleInfo() *nfpm.Info {
 					Type:        "config",
 				},
 			},
-			EmptyFolders: []string{
-				"/var/log/whatever",
-				"/usr/share/whatever",
+			EmptyFolders: []*files.EmptyFolder{
+				{Path: "/var/log/whatever", Owner: "root", Group: "root", Mode: 0o755, MTime: time.Now()},
+				{Path: "/usr/share/whatever"},
 			},
 		},
 	})

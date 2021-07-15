@@ -114,6 +114,36 @@ func (c *Content) Sys() interface{} {
 	return nil
 }
 
+type EmptyFolder struct {
+	Path  string      `yaml:"path,omitempty"`
+	Owner string      `yaml:"owner,omitempty"`
+	Group string      `yaml:"group"`
+	Mode  os.FileMode `yaml:"mode,omitempty"`
+	MTime time.Time   `yaml:"mtime,omitempty"`
+}
+
+type EmptyFolders []*EmptyFolder
+
+func (f *EmptyFolder) WithFolderInfoDefaults() *EmptyFolder {
+	cf := &EmptyFolder{
+		Path:  f.Path,
+		Owner: f.Owner,
+		Group: f.Group,
+		Mode:  f.Mode,
+		MTime: f.MTime,
+	}
+	if cf.Owner == "" {
+		cf.Owner = "root"
+	}
+	if cf.Group == "" {
+		cf.Group = "root"
+	}
+	if cf.MTime.IsZero() {
+		cf.MTime = time.Now().UTC()
+	}
+	return cf
+}
+
 // ExpandContentGlobs gathers all of the real files to be copied into the package.
 func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents, err error) {
 	for _, f := range contents {

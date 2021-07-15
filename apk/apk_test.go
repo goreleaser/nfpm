@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -76,9 +77,9 @@ func exampleInfo() *nfpm.Info {
 					Type:        "config",
 				},
 			},
-			EmptyFolders: []string{
-				"/var/log/whatever",
-				"/usr/share/whatever",
+			EmptyFolders: []*files.EmptyFolder{
+				{Path: "/var/log/whatever", Owner: "root", Group: "root", Mode: 0o755, MTime: time.Now()},
+				{Path: "/usr/share/whatever"},
 			},
 		},
 	})
