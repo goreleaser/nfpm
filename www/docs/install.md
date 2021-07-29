@@ -32,7 +32,7 @@ scoop install nfpm
 ### apt
 
 ```sh
-echo 'deb [trusted=yes] https://apt.fury.io/goreleaser/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
+echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
 sudo apt update
 sudo apt install nfpm
 ```
@@ -42,7 +42,7 @@ sudo apt install nfpm
 ```sh
 echo '[goreleaser]
 name=GoReleaser
-baseurl=https://yum.fury.io/goreleaser/
+baseurl=https://repo.goreleaser.com/yum/
 enabled=1
 gpgcheck=0' | sudo tee /etc/yum.repos.d/goreleaser.repo
 sudo yum install nfpm
