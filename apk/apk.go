@@ -472,6 +472,8 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	}
 
 	header.Name = files.ToNixPath(file.Destination[1:])
+	header.Uname = file.FileInfo.Owner
+	header.Gname = file.FileInfo.Group
 	if err = newItemInsideTarGz(tw, contents, header); err != nil {
 		return err
 	}

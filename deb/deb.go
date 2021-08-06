@@ -284,6 +284,8 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 	}
 	header.Format = tar.FormatGNU
 	header.Name = normalizePath(file.Destination)
+	header.Uname = file.FileInfo.Owner
+	header.Gname = file.FileInfo.Group
 	if err := tw.WriteHeader(header); err != nil {
 		return 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %w", file.Source, err)
 	}
