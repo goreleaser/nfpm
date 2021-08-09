@@ -248,18 +248,18 @@ func (i *Info) parseSemver() {
 
 // Overridables contain the field which are overridable in a package.
 type Overridables struct {
-	Replaces     []string       `yaml:"replaces,omitempty" jsonschema:"title=replaces directive,example=nfpm"`
-	Provides     []string       `yaml:"provides,omitempty" jsonschema:"title=provides directive,example=nfpm"`
-	Depends      []string       `yaml:"depends,omitempty" jsonschema:"title=depends directive,example=nfpm"`
-	Recommends   []string       `yaml:"recommends,omitempty" jsonschema:"title=recommends directive,example=nfpm"`
-	Suggests     []string       `yaml:"suggests,omitempty" jsonschema:"title=suggests directive,example=nfpm"`
-	Conflicts    []string       `yaml:"conflicts,omitempty" jsonschema:"title=conflicts directive,example=nfpm"`
-	Contents     files.Contents `yaml:"contents,omitempty" jsonschema:"title=files to add to the package"`
-	EmptyFolders []string       `yaml:"empty_folders,omitempty" jsonschema:"title=empty folders to be created when installing the package,example=/var/log/nfpm"`
-	Scripts      Scripts        `yaml:"scripts,omitempty" jsonschema:"title=scripts to execute"`
-	RPM          RPM            `yaml:"rpm,omitempty" jsonschema:"title=rpm-specific settings"`
-	Deb          Deb            `yaml:"deb,omitempty" jsonschema:"title=deb-specific settings"`
-	APK          APK            `yaml:"apk,omitempty" jsonschema:"title=apk-specific settings"`
+	Replaces     []string           `yaml:"replaces,omitempty" jsonschema:"title=replaces directive,example=nfpm"`
+	Provides     []string           `yaml:"provides,omitempty" jsonschema:"title=provides directive,example=nfpm"`
+	Depends      []string           `yaml:"depends,omitempty" jsonschema:"title=depends directive,example=nfpm"`
+	Recommends   []string           `yaml:"recommends,omitempty" jsonschema:"title=recommends directive,example=nfpm"`
+	Suggests     []string           `yaml:"suggests,omitempty" jsonschema:"title=suggests directive,example=nfpm"`
+	Conflicts    []string           `yaml:"conflicts,omitempty" jsonschema:"title=conflicts directive,example=nfpm"`
+	Contents     files.Contents     `yaml:"contents,omitempty" jsonschema:"title=files to add to the package"`
+	EmptyFolders files.EmptyFolders `yaml:"empty_folders,omitempty" jsonschema:"title=empty folders to be created when installing the package"`
+	Scripts      Scripts            `yaml:"scripts,omitempty" jsonschema:"title=scripts to execute"`
+	RPM          RPM                `yaml:"rpm,omitempty" jsonschema:"title=rpm-specific settings"`
+	Deb          Deb                `yaml:"deb,omitempty" jsonschema:"title=deb-specific settings"`
+	APK          APK                `yaml:"apk,omitempty" jsonschema:"title=apk-specific settings"`
 }
 
 // RPM is custom configs that are only available on RPM packages.
@@ -389,7 +389,7 @@ func WithDefaults(info *Info) *Info {
 	if info.Version == "" {
 		info.Version = "v0.0.0-rc0"
 	}
-
+	info.EmptyFolders = info.EmptyFolders.WithFolderDefaults()
 	switch info.VersionSchema {
 	case "none":
 		// No change to the version or prerelease info set in the YAML file
