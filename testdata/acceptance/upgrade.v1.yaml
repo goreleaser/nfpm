@@ -27,8 +27,12 @@ contents:
     dst: /etc/noreplace.conf
     type: config|noreplace
 empty_folders:
-  - /var/log/whatever
-  - /usr/share/foo
+  - path: /var/log/whatever
+  - path: /usr/share/foo
+    owner: root
+    group: root
+    mtime: 2008-01-02T15:04:05Z
+    mode: 0700
 scripts:
   preinstall: ./testdata/acceptance/scripts/preinstall.sh
   postinstall: ./testdata/acceptance/scripts/postinstall.sh

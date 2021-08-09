@@ -168,7 +168,12 @@ contents:
 
 # Empty folders your package may need created. (overridable)
 empty_folders:
-  - /var/log/foo
+  - path: /var/log/whatever
+  - path: /usr/share/foo
+    owner: root
+    group: root
+    mtime: 2008-01-02T15:04:05Z
+    mode: 0700
 
 # Scripts to run at specific stages. (overridable)
 scripts:

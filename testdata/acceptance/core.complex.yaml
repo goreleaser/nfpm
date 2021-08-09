@@ -4,15 +4,15 @@ platform: "linux"
 version: "v1.2.3-beta"
 maintainer: "Foo Bar"
 depends:
-- bash
+  - bash
 provides:
-- fake
+  - fake
 recommends:
-- fish
+  - fish
 replaces:
-- foo
+  - foo
 suggests:
-- zsh
+  - zsh
 description: |
   Foo bar
     Multiple lines
@@ -20,16 +20,20 @@ vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
 contents:
-- src: ./testdata/fake
-  dst: /usr/local/bin/fake
-- src: ./testdata/acceptance/folder/*
-  dst: /usr/share/whatever/folder/
-- src: ./testdata/whatever.conf
-  dst: /etc/foo/whatever.conf
-  type: config
+  - src: ./testdata/fake
+    dst: /usr/local/bin/fake
+  - src: ./testdata/acceptance/folder/*
+    dst: /usr/share/whatever/folder/
+  - src: ./testdata/whatever.conf
+    dst: /etc/foo/whatever.conf
+    type: config
 empty_folders:
-- /var/log/whatever
-- /usr/share/foo
+  - path: /var/log/whatever
+  - path: /usr/share/foo
+    owner: root
+    group: root
+    mtime: 2008-01-02T15:04:05Z
+    mode: 0700
 scripts:
   preinstall: ./testdata/acceptance/scripts/preinstall.sh
   postinstall: ./testdata/acceptance/scripts/postinstall.sh

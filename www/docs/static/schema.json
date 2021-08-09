@@ -1,624 +1,651 @@
 {
-		"$schema": "http://json-schema.org/draft-04/schema#",
-		"$ref": "#/definitions/Config",
-		"description": "nFPM configuration definition file",
-		"definitions": {
-			"APK": {
-				"properties": {
-					"signature": {
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"$ref": "#/definitions/Config",
+	"description": "nFPM configuration definition file",
+	"definitions": {
+		"APK": {
+			"properties": {
+				"signature": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/APKSignature",
+					"title": "apk signature"
+				},
+				"scripts": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/APKScripts",
+					"title": "apk scripts"
+				}
+			},
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"APKScripts": {
+			"properties": {
+				"preupgrade": {
+					"type": "string",
+					"title": "pre upgrade script"
+				},
+				"postupgrade": {
+					"type": "string",
+					"title": "post upgrade script"
+				}
+			},
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"APKSignature": {
+			"properties": {
+				"key_file": {
+					"type": "string",
+					"title": "key file",
+					"examples": [
+						"key.gpg"
+					]
+				},
+				"key_id": {
+					"type": "string",
+					"title": "key id",
+					"examples": [
+						"bc8acdd415bd80b3"
+					]
+				},
+				"key_name": {
+					"type": "string",
+					"title": "key name",
+					"default": "maintainer_email.rsa.pub",
+					"examples": [
+						"origin"
+					]
+				}
+			},
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"Config": {
+			"required": [
+				"name",
+				"arch",
+				"version"
+			],
+			"properties": {
+				"replaces": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "replaces directive"
+				},
+				"provides": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "provides directive"
+				},
+				"depends": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "depends directive"
+				},
+				"recommends": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "recommends directive"
+				},
+				"suggests": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "suggests directive"
+				},
+				"conflicts": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "conflicts directive"
+				},
+				"contents": {
+					"items": {
 						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/APKSignature",
-						"title": "apk signature"
+						"$ref": "#/definitions/Content"
 					},
-					"scripts": {
+					"type": "array",
+					"title": "files to add to the package"
+				},
+				"empty_folders": {
+					"items": {
 						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/APKScripts",
-						"title": "apk scripts"
-					}
+						"$ref": "#/definitions/EmptyFolder"
+					},
+					"type": "array",
+					"title": "empty folders to be created when installing the package"
 				},
-				"additionalProperties": false,
-				"type": "object"
-			},
-			"APKScripts": {
-				"properties": {
-					"preupgrade": {
-						"type": "string",
-						"title": "pre upgrade script"
-					},
-					"postupgrade": {
-						"type": "string",
-						"title": "post upgrade script"
-					}
+				"scripts": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/Scripts",
+					"title": "scripts to execute"
 				},
-				"additionalProperties": false,
-				"type": "object"
-			},
-			"APKSignature": {
-				"properties": {
-					"key_file": {
-						"type": "string",
-						"title": "key file",
-						"examples": [
-							"key.gpg"
-						]
-					},
-					"key_id": {
-						"type": "string",
-						"title": "key id",
-						"examples": [
-							"bc8acdd415bd80b3"
-						]
-					},
-					"key_name": {
-						"type": "string",
-						"title": "key name",
-						"default": "maintainer_email.rsa.pub",
-						"examples": [
-							"origin"
-						]
-					}
+				"rpm": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/RPM",
+					"title": "rpm-specific settings"
 				},
-				"additionalProperties": false,
-				"type": "object"
-			},
-			"Config": {
-				"required": [
-					"name",
-					"arch",
-					"version"
-				],
-				"properties": {
-					"replaces": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "replaces directive"
-					},
-					"provides": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "provides directive"
-					},
-					"depends": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "depends directive"
-					},
-					"recommends": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "recommends directive"
-					},
-					"suggests": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "suggests directive"
-					},
-					"conflicts": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "conflicts directive"
-					},
-					"contents": {
-						"items": {
+				"deb": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/Deb",
+					"title": "deb-specific settings"
+				},
+				"apk": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/APK",
+					"title": "apk-specific settings"
+				},
+				"name": {
+					"type": "string",
+					"title": "package name"
+				},
+				"arch": {
+					"type": "string",
+					"title": "target architecture",
+					"examples": [
+						"amd64"
+					]
+				},
+				"platform": {
+					"type": "string",
+					"title": "target platform",
+					"default": "linux",
+					"examples": [
+						"linux"
+					]
+				},
+				"epoch": {
+					"type": "string",
+					"title": "version epoch",
+					"default": "extracted from version",
+					"examples": [
+						"2"
+					]
+				},
+				"version": {
+					"type": "string",
+					"title": "version",
+					"examples": [
+						"v1.0.2",
+						"2.0.1"
+					]
+				},
+				"version_schema": {
+					"enum": [
+						"semver",
+						"none"
+					],
+					"type": "string",
+					"title": "version schema",
+					"default": "semver"
+				},
+				"release": {
+					"type": "string",
+					"title": "version release",
+					"examples": [
+						"1"
+					]
+				},
+				"prerelease": {
+					"type": "string",
+					"title": "version prerelease",
+					"default": "extracted from version"
+				},
+				"version_metadata": {
+					"type": "string",
+					"title": "version metadata",
+					"examples": [
+						"git"
+					]
+				},
+				"section": {
+					"type": "string",
+					"title": "package section",
+					"examples": [
+						"default"
+					]
+				},
+				"priority": {
+					"type": "string",
+					"title": "package priority",
+					"examples": [
+						"extra"
+					]
+				},
+				"maintainer": {
+					"type": "string",
+					"title": "package maintainer",
+					"examples": [
+						"me@example.com"
+					]
+				},
+				"description": {
+					"type": "string",
+					"title": "package description"
+				},
+				"vendor": {
+					"type": "string",
+					"title": "package vendor",
+					"examples": [
+						"MyCorp"
+					]
+				},
+				"homepage": {
+					"type": "string",
+					"title": "package homepage",
+					"examples": [
+						"https://example.com"
+					]
+				},
+				"license": {
+					"type": "string",
+					"title": "package license",
+					"examples": [
+						"MIT"
+					]
+				},
+				"changelog": {
+					"type": "string",
+					"title": "package changelog",
+					"description": "see https://github.com/goreleaser/chglog for more details",
+					"examples": [
+						"changelog.yaml"
+					]
+				},
+				"disable_globbing": {
+					"type": "boolean",
+					"title": "wether to disable file globbing"
+				},
+				"overrides": {
+					"patternProperties": {
+						".*": {
 							"$schema": "http://json-schema.org/draft-04/schema#",
-							"$ref": "#/definitions/Content"
-						},
-						"type": "array",
-						"title": "files to add to the package"
+							"$ref": "#/definitions/Overridables"
+						}
 					},
-					"empty_folders": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "empty folders to be created when installing the package"
-					},
-					"scripts": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/Scripts",
-						"title": "scripts to execute"
-					},
-					"rpm": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/RPM",
-						"title": "rpm-specific settings"
-					},
-					"deb": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/Deb",
-						"title": "deb-specific settings"
-					},
-					"apk": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/APK",
-						"title": "apk-specific settings"
-					},
-					"name": {
-						"type": "string",
-						"title": "package name"
-					},
-					"arch": {
-						"type": "string",
-						"title": "target architecture",
-						"examples": [
-							"amd64"
-						]
-					},
-					"platform": {
-						"type": "string",
-						"title": "target platform",
-						"default": "linux",
-						"examples": [
-							"linux"
-						]
-					},
-					"epoch": {
-						"type": "string",
-						"title": "version epoch",
-						"default": "extracted from version",
-						"examples": [
-							"2"
-						]
-					},
-					"version": {
-						"type": "string",
-						"title": "version",
-						"examples": [
-							"v1.0.2",
-							"2.0.1"
-						]
-					},
-					"version_schema": {
-						"enum": [
-							"semver",
-							"none"
-						],
-						"type": "string",
-						"title": "version schema",
-						"default": "semver"
-					},
-					"release": {
-						"type": "string",
-						"title": "version release",
-						"examples": [
-							"1"
-						]
-					},
-					"prerelease": {
-						"type": "string",
-						"title": "version prerelease",
-						"default": "extracted from version"
-					},
-					"version_metadata": {
-						"type": "string",
-						"title": "version metadata",
-						"examples": [
-							"git"
-						]
-					},
-					"section": {
-						"type": "string",
-						"title": "package section",
-						"examples": [
-							"default"
-						]
-					},
-					"priority": {
-						"type": "string",
-						"title": "package priority",
-						"examples": [
-							"extra"
-						]
-					},
-					"maintainer": {
-						"type": "string",
-						"title": "package maintainer",
-						"examples": [
-							"me@example.com"
-						]
-					},
-					"description": {
-						"type": "string",
-						"title": "package description"
-					},
-					"vendor": {
-						"type": "string",
-						"title": "package vendor",
-						"examples": [
-							"MyCorp"
-						]
-					},
-					"homepage": {
-						"type": "string",
-						"title": "package homepage",
-						"examples": [
-							"https://example.com"
-						]
-					},
-					"license": {
-						"type": "string",
-						"title": "package license",
-						"examples": [
-							"MIT"
-						]
-					},
-					"changelog": {
-						"type": "string",
-						"title": "package changelog",
-						"description": "see https://github.com/goreleaser/chglog for more details",
-						"examples": [
-							"changelog.yaml"
-						]
-					},
-					"disable_globbing": {
-						"type": "boolean",
-						"title": "wether to disable file globbing"
-					},
-					"overrides": {
-						"patternProperties": {
-							".*": {
-								"$schema": "http://json-schema.org/draft-04/schema#",
-								"$ref": "#/definitions/Overridables"
-							}
-						},
-						"type": "object",
-						"title": "overrides",
-						"description": "override some fields when packaging with a specific packager"
-					}
-				},
-				"additionalProperties": false,
-				"type": "object"
+					"type": "object",
+					"title": "overrides",
+					"description": "override some fields when packaging with a specific packager"
+				}
 			},
-			"Content": {
-				"properties": {
-					"src": {
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"Content": {
+			"properties": {
+				"src": {
+					"type": "string"
+				},
+				"dst": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string"
+				},
+				"packager": {
+					"type": "string"
+				},
+				"file_info": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/ContentFileInfo"
+				}
+			},
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"ContentFileInfo": {
+			"required": [
+				"group"
+			],
+			"properties": {
+				"owner": {
+					"type": "string"
+				},
+				"group": {
+					"type": "string"
+				},
+				"mode": {
+					"type": "integer"
+				},
+				"mtime": {
+					"type": "string",
+					"format": "date-time"
+				}
+			},
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"EmptyFolder": {
+			"properties": {
+				"path": {
+					"type": "string"
+				},
+				"owner": {
+					"type": "string"
+				},
+				"group": {
+					"type": "string"
+				},
+				"packager": {
+					"type": "string"
+				},
+				"mode": {
+					"type": "integer"
+				},
+				"mtime": {
+					"type": "string",
+					"format": "date-time"
+				}
+			},
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"Deb": {
+			"properties": {
+				"scripts": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/DebScripts",
+					"title": "scripts"
+				},
+				"triggers": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/DebTriggers",
+					"title": "triggers"
+				},
+				"breaks": {
+					"items": {
 						"type": "string"
 					},
-					"dst": {
+					"type": "array",
+					"title": "breaks"
+				},
+				"signature": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/DebSignature",
+					"title": "signature"
+				}
+			},
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"DebScripts": {
+			"properties": {
+				"rules": {
+					"type": "string",
+					"title": "rules"
+				},
+				"templates": {
+					"type": "string",
+					"title": "templates"
+				},
+				"config": {
+					"type": "string",
+					"title": "config"
+				}
+			},
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"DebSignature": {
+			"properties": {
+				"key_file": {
+					"type": "string",
+					"title": "key file",
+					"examples": [
+						"key.gpg"
+					]
+				},
+				"key_id": {
+					"type": "string",
+					"title": "key id",
+					"examples": [
+						"bc8acdd415bd80b3"
+					]
+				},
+				"type": {
+					"enum": [
+						"origin",
+						"maint",
+						"archive"
+					],
+					"type": "string",
+					"title": "signer role",
+					"default": "origin"
+				}
+			},
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"DebTriggers": {
+			"properties": {
+				"interest": {
+					"items": {
 						"type": "string"
 					},
-					"type": {
+					"type": "array",
+					"title": "interest"
+				},
+				"interest_await": {
+					"items": {
 						"type": "string"
 					},
-					"packager": {
+					"type": "array",
+					"title": "interest await"
+				},
+				"interest_noawait": {
+					"items": {
 						"type": "string"
 					},
-					"file_info": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/ContentFileInfo"
-					}
+					"type": "array",
+					"title": "interest noawait"
 				},
-				"additionalProperties": false,
-				"type": "object"
-			},
-			"ContentFileInfo": {
-				"required": [
-					"group"
-				],
-				"properties": {
-					"owner": {
+				"activate": {
+					"items": {
 						"type": "string"
 					},
-					"group": {
+					"type": "array",
+					"title": "activate"
+				},
+				"activate_await": {
+					"items": {
 						"type": "string"
 					},
-					"mode": {
-						"type": "integer"
-					},
-					"mtime": {
-						"type": "string",
-						"format": "date-time"
-					}
+					"type": "array",
+					"title": "activate await"
 				},
-				"additionalProperties": false,
-				"type": "object"
+				"activate_noawait": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "activate noawait"
+				}
 			},
-			"Deb": {
-				"properties": {
-					"scripts": {
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"Overridables": {
+			"properties": {
+				"replaces": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "replaces directive"
+				},
+				"provides": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "provides directive"
+				},
+				"depends": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "depends directive"
+				},
+				"recommends": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "recommends directive"
+				},
+				"suggests": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "suggests directive"
+				},
+				"conflicts": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array",
+					"title": "conflicts directive"
+				},
+				"contents": {
+					"items": {
+						"$ref": "#/definitions/Content"
+					},
+					"type": "array",
+					"title": "files to add to the package"
+				},
+				"empty_folders": {
+					"items": {
 						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/DebScripts",
-						"title": "scripts"
+						"$ref": "#/definitions/EmptyFolder"
 					},
-					"triggers": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/DebTriggers",
-						"title": "triggers"
-					},
-					"breaks": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "breaks"
-					},
-					"signature": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/DebSignature",
-						"title": "signature"
-					}
+					"type": "array",
+					"title": "empty folders to be created when installing the package"
 				},
-				"additionalProperties": false,
-				"type": "object"
+				"scripts": {
+					"$ref": "#/definitions/Scripts",
+					"title": "scripts to execute"
+				},
+				"rpm": {
+					"$ref": "#/definitions/RPM",
+					"title": "rpm-specific settings"
+				},
+				"deb": {
+					"$ref": "#/definitions/Deb",
+					"title": "deb-specific settings"
+				},
+				"apk": {
+					"$ref": "#/definitions/APK",
+					"title": "apk-specific settings"
+				}
 			},
-			"DebScripts": {
-				"properties": {
-					"rules": {
-						"type": "string",
-						"title": "rules"
-					},
-					"templates": {
-						"type": "string",
-						"title": "templates"
-					},
-					"config": {
-						"type": "string",
-						"title": "config"
-					}
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"RPM": {
+			"properties": {
+				"scripts": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/RPMScripts",
+					"title": "rpm-specific scripts"
 				},
-				"additionalProperties": false,
-				"type": "object"
+				"group": {
+					"type": "string",
+					"title": "package group",
+					"examples": [
+						"Unspecified"
+					]
+				},
+				"summary": {
+					"type": "string",
+					"title": "package summary"
+				},
+				"compression": {
+					"enum": [
+						"gzip",
+						"lzma",
+						"xz"
+					],
+					"type": "string",
+					"title": "compression algorithm to be used",
+					"default": "gzip"
+				},
+				"signature": {
+					"$schema": "http://json-schema.org/draft-04/schema#",
+					"$ref": "#/definitions/RPMSignature",
+					"title": "rpm signature"
+				}
 			},
-			"DebSignature": {
-				"properties": {
-					"key_file": {
-						"type": "string",
-						"title": "key file",
-						"examples": [
-							"key.gpg"
-						]
-					},
-					"key_id": {
-						"type": "string",
-						"title": "key id",
-						"examples": [
-							"bc8acdd415bd80b3"
-						]
-					},
-					"type": {
-						"enum": [
-							"origin",
-							"maint",
-							"archive"
-						],
-						"type": "string",
-						"title": "signer role",
-						"default": "origin"
-					}
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"RPMScripts": {
+			"properties": {
+				"pretrans": {
+					"type": "string",
+					"title": "pretrans script"
 				},
-				"additionalProperties": false,
-				"type": "object"
+				"posttrans": {
+					"type": "string",
+					"title": "posttrans script"
+				}
 			},
-			"DebTriggers": {
-				"properties": {
-					"interest": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "interest"
-					},
-					"interest_await": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "interest await"
-					},
-					"interest_noawait": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "interest noawait"
-					},
-					"activate": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "activate"
-					},
-					"activate_await": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "activate await"
-					},
-					"activate_noawait": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "activate noawait"
-					}
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"RPMSignature": {
+			"properties": {
+				"key_file": {
+					"type": "string",
+					"title": "key file",
+					"examples": [
+						"key.gpg"
+					]
 				},
-				"additionalProperties": false,
-				"type": "object"
+				"key_id": {
+					"type": "string",
+					"title": "key id",
+					"examples": [
+						"bc8acdd415bd80b3"
+					]
+				}
 			},
-			"Overridables": {
-				"properties": {
-					"replaces": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "replaces directive"
-					},
-					"provides": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "provides directive"
-					},
-					"depends": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "depends directive"
-					},
-					"recommends": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "recommends directive"
-					},
-					"suggests": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "suggests directive"
-					},
-					"conflicts": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "conflicts directive"
-					},
-					"contents": {
-						"items": {
-							"$ref": "#/definitions/Content"
-						},
-						"type": "array",
-						"title": "files to add to the package"
-					},
-					"empty_folders": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "empty folders to be created when installing the package"
-					},
-					"scripts": {
-						"$ref": "#/definitions/Scripts",
-						"title": "scripts to execute"
-					},
-					"rpm": {
-						"$ref": "#/definitions/RPM",
-						"title": "rpm-specific settings"
-					},
-					"deb": {
-						"$ref": "#/definitions/Deb",
-						"title": "deb-specific settings"
-					},
-					"apk": {
-						"$ref": "#/definitions/APK",
-						"title": "apk-specific settings"
-					}
+			"additionalProperties": false,
+			"type": "object"
+		},
+		"Scripts": {
+			"properties": {
+				"preinstall": {
+					"type": "string",
+					"title": "pre install"
 				},
-				"additionalProperties": false,
-				"type": "object"
+				"postinstall": {
+					"type": "string",
+					"title": "post install"
+				},
+				"preremove": {
+					"type": "string",
+					"title": "pre remove"
+				},
+				"postremove": {
+					"type": "string",
+					"title": "post remove"
+				}
 			},
-			"RPM": {
-				"properties": {
-					"scripts": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/RPMScripts",
-						"title": "rpm-specific scripts"
-					},
-					"group": {
-						"type": "string",
-						"title": "package group",
-						"examples": [
-							"Unspecified"
-						]
-					},
-					"summary": {
-						"type": "string",
-						"title": "package summary"
-					},
-					"compression": {
-						"enum": [
-							"gzip",
-							"lzma",
-							"xz"
-						],
-						"type": "string",
-						"title": "compression algorithm to be used",
-						"default": "gzip"
-					},
-					"signature": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/RPMSignature",
-						"title": "rpm signature"
-					}
-				},
-				"additionalProperties": false,
-				"type": "object"
-			},
-			"RPMScripts": {
-				"properties": {
-					"pretrans": {
-						"type": "string",
-						"title": "pretrans script"
-					},
-					"posttrans": {
-						"type": "string",
-						"title": "posttrans script"
-					}
-				},
-				"additionalProperties": false,
-				"type": "object"
-			},
-			"RPMSignature": {
-				"properties": {
-					"key_file": {
-						"type": "string",
-						"title": "key file",
-						"examples": [
-							"key.gpg"
-						]
-					},
-					"key_id": {
-						"type": "string",
-						"title": "key id",
-						"examples": [
-							"bc8acdd415bd80b3"
-						]
-					}
-				},
-				"additionalProperties": false,
-				"type": "object"
-			},
-			"Scripts": {
-				"properties": {
-					"preinstall": {
-						"type": "string",
-						"title": "pre install"
-					},
-					"postinstall": {
-						"type": "string",
-						"title": "post install"
-					},
-					"preremove": {
-						"type": "string",
-						"title": "pre remove"
-					},
-					"postremove": {
-						"type": "string",
-						"title": "post remove"
-					}
-				},
-				"additionalProperties": false,
-				"type": "object"
-			}
+			"additionalProperties": false,
+			"type": "object"
 		}
 	}
+}
