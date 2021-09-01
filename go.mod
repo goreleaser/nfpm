@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/ProtonMail/go-crypto v0.0.0-20210512092938-c05353c2d58c
-	github.com/ProtonMail/gopenpgp/v2 v2.2.1
+	github.com/ProtonMail/gopenpgp/v2 v2.2.2
 	github.com/alecthomas/jsonschema v0.0.0-20210526225647-edb03dcab7bc
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/go-git/go-git/v5 v5.3.0 // indirect
