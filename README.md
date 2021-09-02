@@ -39,7 +39,7 @@ easy and will surely help the developers at least buy some ☕️ or 🍺!
 
 ## Stargazers over time
 
-[![goreleaser/nfpm stargazers over time](https://starcharts.herokuapp.com/goreleaser/nfpm.svg)](https://starcharts.herokuapp.com/goreleaser/nfpm)
+[![goreleaser/nfpm stargazers over time](https://starchart.cc/goreleaser/nfpm.svg)](https://starcharts.herokuapp.com/goreleaser/nfpm)
 
 ---
 
