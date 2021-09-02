@@ -255,7 +255,7 @@ deb:
     - some-package
 
   # Compression algorithm (gzip (default), xz or none).
-  compression: lzma
+  compression: xz
 
   # The package is signed if a key_file is set
   signature:
