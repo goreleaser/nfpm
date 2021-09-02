@@ -146,6 +146,13 @@ RUN dpkg -i /tmp/foo.deb 2>&1 | grep "foo breaks dummy"
 RUN dpkg -r dummy
 RUN dpkg -i /tmp/foo.deb
 
+# ---- compression test ----
+FROM min AS compression
+RUN test -e /usr/local/bin/fake
+RUN test -f /etc/foo/whatever.conf
+RUN echo wat >> /etc/foo/whatever.conf
+RUN dpkg -r foo
+RUN test ! -f /usr/local/bin/fake
 
 # ---- upgrade test ----
 FROM test_base AS upgrade
