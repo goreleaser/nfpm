@@ -91,7 +91,7 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: fun
 		return err
 	}
 
-	dataTarGz, md5sums, instSize, dataTarballName, err := createDataTarball(info)
+	dataTarball, md5sums, instSize, dataTarballName, err := createDataTarball(info)
 	if err != nil {
 		return err
 	}
@@ -116,14 +116,14 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: fun
 		return fmt.Errorf("cannot add control.tar.gz to deb: %w", err)
 	}
 
-	if err := addArFile(w, dataTarballName, dataTarGz); err != nil {
+	if err := addArFile(w, dataTarballName, dataTarball); err != nil {
 		return fmt.Errorf("cannot add data.tar.gz to deb: %w", err)
 	}
 
 	// TODO: refactor this
 	if info.Deb.Signature.KeyFile != "" {
 		data := io.MultiReader(bytes.NewReader(debianBinary), bytes.NewReader(controlTarGz),
-			bytes.NewReader(dataTarGz))
+			bytes.NewReader(dataTarball))
 
 		sig, err := sign.PGPArmoredDetachSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
 		if err != nil {
@@ -171,7 +171,8 @@ type nopCloser struct {
 
 func (nopCloser) Close() error { return nil }
 
-func createDataTarball(info *nfpm.Info) (dataTarGz, md5sums []byte, instSize int64, name string, err error) {
+func createDataTarball(info *nfpm.Info) (dataTarBall, md5sums []byte,
+	instSize int64, name string, err error) {
 	var (
 		dataTarball            bytes.Buffer
 		dataTarballWriteCloser io.WriteCloser
@@ -233,8 +234,8 @@ func fillDataTar(info *nfpm.Info, w io.Writer) (md5sums []byte, instSize int64, 
 	return md5buf.Bytes(), instSize, nil
 }
 
-func createSymlinkInsideTarGz(file *files.Content, out *tar.Writer) error {
-	return newItemInsideTarGz(out, []byte{}, &tar.Header{
+func createSymlinkInsideTar(file *files.Content, out *tar.Writer) error {
+	return newItemInsideTar(out, []byte{}, &tar.Header{
 		Name:     normalizePath(file.Destination),
 		Linkname: file.Source,
 		Typeflag: tar.TypeSymlink,
@@ -259,7 +260,7 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 			// skip ghost files in apk
 			continue
 		case "symlink":
-			err = createSymlinkInsideTarGz(file, tw)
+			err = createSymlinkInsideTar(file, tw)
 		case "doc":
 			// nolint:gocritic
 			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
@@ -375,7 +376,7 @@ func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
 		return 0, err
 	}
 
-	if err = newFileInsideTarGz(tarw, changelogName, changelogData); err != nil {
+	if err = newFileInsideTar(tarw, changelogName, changelogData); err != nil {
 		return 0, err
 	}
 
@@ -440,7 +441,7 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 	}
 
 	for name, content := range filesToCreate {
-		if err := newFileInsideTarGz(out, name, content); err != nil {
+		if err := newFileInsideTar(out, name, content); err != nil {
 			return nil, err
 		}
 	}
@@ -482,7 +483,7 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 
 	for path, destMode := range specialFiles {
 		if path != "" {
-			if err := newFilePathInsideTarGz(out, path, destMode.fileName, destMode.mode); err != nil {
+			if err := newFilePathInsideTar(out, path, destMode.fileName, destMode.mode); err != nil {
 				return nil, err
 			}
 		}
@@ -497,7 +498,7 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 	return buf.Bytes(), nil
 }
 
-func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) error {
+func newItemInsideTar(out *tar.Writer, content []byte, header *tar.Header) error {
 	if err := out.WriteHeader(header); err != nil {
 		return fmt.Errorf("cannot write header of %s file to control.tar.gz: %w", header.Name, err)
 	}
@@ -507,8 +508,8 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 	return nil
 }
 
-func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
-	return newItemInsideTarGz(out, content, &tar.Header{
+func newFileInsideTar(out *tar.Writer, name string, content []byte) error {
+	return newItemInsideTar(out, content, &tar.Header{
 		Name:     normalizePath(name),
 		Size:     int64(len(content)),
 		Mode:     0o644,
@@ -518,7 +519,7 @@ func newFileInsideTarGz(out *tar.Writer, name string, content []byte) error {
 	})
 }
 
-func newFilePathInsideTarGz(out *tar.Writer, path, dest string, mode int64) error {
+func newFilePathInsideTar(out *tar.Writer, path, dest string, mode int64) error {
 	file, err := os.Open(path) //nolint:gosec
 	if err != nil {
 		return err
@@ -527,7 +528,7 @@ func newFilePathInsideTarGz(out *tar.Writer, path, dest string, mode int64) erro
 	if err != nil {
 		return err
 	}
-	return newItemInsideTarGz(out, content, &tar.Header{
+	return newItemInsideTar(out, content, &tar.Header{
 		Name:     normalizePath(dest),
 		Size:     int64(len(content)),
 		Mode:     mode,

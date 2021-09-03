@@ -209,8 +209,8 @@ func TestSpecialFiles(t *testing.T) {
 	var w bytes.Buffer
 	out := tar.NewWriter(&w)
 	filePath := "testdata/templates.golden"
-	assert.Error(t, newFilePathInsideTarGz(out, "doesnotexit", "templates", 0o644))
-	require.NoError(t, newFilePathInsideTarGz(out, filePath, "templates", 0o644))
+	assert.Error(t, newFilePathInsideTar(out, "doesnotexit", "templates", 0o644))
+	require.NoError(t, newFilePathInsideTar(out, filePath, "templates", 0o644))
 	in := tar.NewReader(&w)
 	header, err := in.Next()
 	require.NoError(t, err)
@@ -547,12 +547,12 @@ func TestDebChangelogData(t *testing.T) {
 	err := info.Validate()
 	require.NoError(t, err)
 
-	dataTarGz, _, _, dataTarballName, err := createDataTarball(info)
+	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
 	dataChangelogGz := extractFileFromTar(t,
-		inflate(t, dataTarballName, dataTarGz), changelogName)
+		inflate(t, dataTarballName, dataTarball), changelogName)
 
 	dataChangelog := inflate(t, "gz", dataChangelogGz)
 	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
@@ -570,12 +570,12 @@ func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
 	err := info.Validate()
 	require.NoError(t, err)
 
-	dataTarGz, _, _, dataTarballName, err := createDataTarball(info)
+	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
 
-	assert.False(t, tarContains(t, inflate(t, dataTarballName, dataTarGz), changelogName))
+	assert.False(t, tarContains(t, inflate(t, dataTarballName, dataTarball), changelogName))
 }
 
 func TestDebTriggers(t *testing.T) {
@@ -671,11 +671,11 @@ func TestSymlinkInFiles(t *testing.T) {
 	realSymlinkTarget, err := ioutil.ReadFile(symlinkTarget)
 	require.NoError(t, err)
 
-	dataTarGz, _, _, dataTarballName, err := createDataTarball(info)
+	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	packagedSymlinkTarget := extractFileFromTar(t,
-		inflate(t, dataTarballName, dataTarGz), packagedTarget)
+		inflate(t, dataTarballName, dataTarball), packagedTarget)
 
 	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
 }
@@ -709,18 +709,18 @@ func TestSymlink(t *testing.T) {
 	err := info.Validate()
 	require.NoError(t, err)
 
-	dataTarGz, _, _, dataTarballName, err := createDataTarball(info)
+	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	packagedSymlinkHeader := extractFileHeaderFromTar(t,
-		inflate(t, dataTarballName, dataTarGz), symlink)
+		inflate(t, dataTarballName, dataTarball), symlink)
 
 	assert.Equal(t, symlink, path.Join("/", packagedSymlinkHeader.Name)) // nolint:gosec
 	assert.Equal(t, uint8(tar.TypeSymlink), packagedSymlinkHeader.Typeflag)
 	assert.Equal(t, symlinkTarget, packagedSymlinkHeader.Linkname)
 }
 
-func TestEnsureRelativePrefixInTarGzFiles(t *testing.T) {
+func TestEnsureRelativePrefixInTarballs(t *testing.T) {
 	info := exampleInfo()
 	info.Contents = []*files.Content{
 		{
@@ -733,9 +733,9 @@ func TestEnsureRelativePrefixInTarGzFiles(t *testing.T) {
 	err := info.Validate()
 	require.NoError(t, err)
 
-	dataTarGz, md5sums, instSize, tarballName, err := createDataTarball(info)
+	dataTarball, md5sums, instSize, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
-	testRelativePathPrefixInTar(t, inflate(t, tarballName, dataTarGz))
+	testRelativePathPrefixInTar(t, inflate(t, tarballName, dataTarball))
 
 	controlTarGz, err := createControl(instSize, md5sums, info)
 	require.NoError(t, err)
@@ -755,7 +755,7 @@ func TestMD5Sums(t *testing.T) {
 		}
 	}
 
-	dataTarGz, md5sums, instSize, tarballName, err := createDataTarball(info)
+	dataTarball, md5sums, instSize, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	controlTarGz, err := createControl(instSize, md5sums, info)
@@ -766,7 +766,7 @@ func TestMD5Sums(t *testing.T) {
 	lines := strings.Split(strings.TrimRight(string(md5sumsFile), "\n"), "\n")
 	require.Equal(t, nFiles, len(lines))
 
-	dataTar := inflate(t, tarballName, dataTarGz)
+	dataTar := inflate(t, tarballName, dataTarball)
 
 	for _, line := range lines {
 		parts := strings.Fields(line)
@@ -807,11 +807,11 @@ func TestDebsigsSignature(t *testing.T) {
 
 	debBinary := extractFileFromAr(t, deb.Bytes(), "debian-binary")
 	controlTarGz := extractFileFromAr(t, deb.Bytes(), "control.tar.gz")
-	dataTarGz := extractFileFromAr(t, deb.Bytes(), findDataTarball(t, deb.Bytes()))
+	dataTarball := extractFileFromAr(t, deb.Bytes(), findDataTarball(t, deb.Bytes()))
 	signature := extractFileFromAr(t, deb.Bytes(), "_gpgorigin")
 
 	message := io.MultiReader(bytes.NewReader(debBinary),
-		bytes.NewReader(controlTarGz), bytes.NewReader(dataTarGz))
+		bytes.NewReader(controlTarGz), bytes.NewReader(dataTarball))
 
 	err = sign.PGPVerify(message, signature, "../internal/sign/testdata/pubkey.asc")
 	require.NoError(t, err)
@@ -840,13 +840,13 @@ func TestDisableGlobbing(t *testing.T) {
 	}
 	require.NoError(t, info.Validate())
 
-	dataTarGz, _, _, tarballName, err := createDataTarball(info)
+	dataTarball, _, _, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	expectedContent, err := ioutil.ReadFile("../testdata/{file}[")
 	require.NoError(t, err)
 
-	actualContent := extractFileFromTar(t, inflate(t, tarballName, dataTarGz), "/test/{file}[")
+	actualContent := extractFileFromTar(t, inflate(t, tarballName, dataTarball), "/test/{file}[")
 
 	assert.Equal(t, expectedContent, actualContent)
 }
@@ -877,8 +877,8 @@ func TestCompressionAlgorithms(t *testing.T) {
 			dataTarballName := findDataTarball(t, deb.Bytes())
 			assert.Equal(t, dataTarballName, testCase.dataTarballName)
 
-			dataTarGz := extractFileFromAr(t, deb.Bytes(), dataTarballName)
-			dataTar := inflate(t, dataTarballName, dataTarGz)
+			dataTarball := extractFileFromAr(t, deb.Bytes(), dataTarballName)
+			dataTar := inflate(t, dataTarballName, dataTarball)
 
 			for _, file := range info.Contents {
 				tarContains(t, dataTar, file.Destination)
