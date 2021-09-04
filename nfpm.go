@@ -306,10 +306,11 @@ type APKScripts struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Scripts   DebScripts   `yaml:"scripts,omitempty" jsonschema:"title=scripts"`
-	Triggers  DebTriggers  `yaml:"triggers,omitempty" jsonschema:"title=triggers"`
-	Breaks    []string     `yaml:"breaks,omitempty" jsonschema:"title=breaks"`
-	Signature DebSignature `yaml:"signature,omitempty" jsonschema:"title=signature"`
+	Scripts     DebScripts   `yaml:"scripts,omitempty" jsonschema:"title=scripts"`
+	Triggers    DebTriggers  `yaml:"triggers,omitempty" jsonschema:"title=triggers"`
+	Breaks      []string     `yaml:"breaks,omitempty" jsonschema:"title=breaks"`
+	Signature   DebSignature `yaml:"signature,omitempty" jsonschema:"title=signature"`
+	Compression string       `yaml:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
 }
 
 type DebSignature struct {

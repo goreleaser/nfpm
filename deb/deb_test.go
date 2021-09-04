@@ -22,6 +22,7 @@ import (
 	"github.com/goreleaser/chglog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/xi2/xz"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
@@ -208,8 +209,8 @@ func TestSpecialFiles(t *testing.T) {
 	var w bytes.Buffer
 	out := tar.NewWriter(&w)
 	filePath := "testdata/templates.golden"
-	assert.Error(t, newFilePathInsideTarGz(out, "doesnotexit", "templates", 0o644))
-	require.NoError(t, newFilePathInsideTarGz(out, filePath, "templates", 0o644))
+	assert.Error(t, newFilePathInsideTar(out, "doesnotexit", "templates", 0o644))
+	require.NoError(t, newFilePathInsideTar(out, filePath, "templates", 0o644))
 	in := tar.NewReader(&w)
 	header, err := in.Next()
 	require.NoError(t, err)
@@ -512,11 +513,9 @@ func TestDebChangelogControl(t *testing.T) {
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
 
-	controlChangelog, err := extractFileFromTarGz(controlTarGz, "changelog")
-	require.NoError(t, err)
+	controlChangelog := extractFileFromTar(t, inflate(t, "gz", controlTarGz), "changelog")
 
-	goldenChangelog, err := readAndFormatAsDebChangelog(info.Changelog, info.Name)
-	require.NoError(t, err)
+	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
 
 	assert.Equal(t, goldenChangelog, string(controlChangelog))
 }
@@ -534,8 +533,7 @@ func TestDebNoChangelogControlWithoutChangelogConfigured(t *testing.T) {
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
 
-	_, err = extractFileFromTarGz(controlTarGz, "changelog")
-	assert.EqualError(t, err, os.ErrNotExist.Error())
+	assert.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "changelog"))
 }
 
 func TestDebChangelogData(t *testing.T) {
@@ -549,18 +547,15 @@ func TestDebChangelogData(t *testing.T) {
 	err := info.Validate()
 	require.NoError(t, err)
 
-	dataTarGz, _, _, err := createDataTarGz(info)
+	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
-	dataChangelogGz, err := extractFileFromTarGz(dataTarGz, changelogName)
-	require.NoError(t, err)
+	dataChangelogGz := extractFileFromTar(t,
+		inflate(t, dataTarballName, dataTarball), changelogName)
 
-	dataChangelog, err := gzipInflate(dataChangelogGz)
-	require.NoError(t, err)
-
-	goldenChangelog, err := readAndFormatAsDebChangelog(info.Changelog, info.Name)
-	require.NoError(t, err)
+	dataChangelog := inflate(t, "gz", dataChangelogGz)
+	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
 
 	assert.Equal(t, goldenChangelog, string(dataChangelog))
 }
@@ -575,12 +570,12 @@ func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
 	err := info.Validate()
 	require.NoError(t, err)
 
-	dataTarGz, _, _, err := createDataTarGz(info)
+	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
-	_, err = extractFileFromTarGz(dataTarGz, changelogName)
-	assert.EqualError(t, err, os.ErrNotExist.Error())
+
+	assert.False(t, tarContains(t, inflate(t, dataTarballName, dataTarball), changelogName))
 }
 
 func TestDebTriggers(t *testing.T) {
@@ -608,8 +603,7 @@ func TestDebTriggers(t *testing.T) {
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
 
-	controlTriggers, err := extractFileFromTarGz(controlTarGz, "triggers")
-	require.NoError(t, err)
+	controlTriggers := extractFileFromTar(t, inflate(t, "gz", controlTarGz), "triggers")
 
 	goldenTriggers := createTriggers(info)
 
@@ -648,8 +642,7 @@ func TestDebNoTriggersInControlIfNoneProvided(t *testing.T) {
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
 
-	_, err = extractFileFromTarGz(controlTarGz, "triggers")
-	assert.EqualError(t, err, os.ErrNotExist.Error())
+	assert.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "triggers"))
 }
 
 func TestSymlinkInFiles(t *testing.T) {
@@ -678,11 +671,11 @@ func TestSymlinkInFiles(t *testing.T) {
 	realSymlinkTarget, err := ioutil.ReadFile(symlinkTarget)
 	require.NoError(t, err)
 
-	dataTarGz, _, _, err := createDataTarGz(info)
+	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
-	packagedSymlinkTarget, err := extractFileFromTarGz(dataTarGz, packagedTarget)
-	require.NoError(t, err)
+	packagedSymlinkTarget := extractFileFromTar(t,
+		inflate(t, dataTarballName, dataTarball), packagedTarget)
 
 	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
 }
@@ -716,18 +709,18 @@ func TestSymlink(t *testing.T) {
 	err := info.Validate()
 	require.NoError(t, err)
 
-	dataTarGz, _, _, err := createDataTarGz(info)
+	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
-	packagedSymlinkHeader, err := extractFileHeaderFromTarGz(dataTarGz, symlink)
-	require.NoError(t, err)
+	packagedSymlinkHeader := extractFileHeaderFromTar(t,
+		inflate(t, dataTarballName, dataTarball), symlink)
 
 	assert.Equal(t, symlink, path.Join("/", packagedSymlinkHeader.Name)) // nolint:gosec
 	assert.Equal(t, uint8(tar.TypeSymlink), packagedSymlinkHeader.Typeflag)
 	assert.Equal(t, symlinkTarget, packagedSymlinkHeader.Linkname)
 }
 
-func TestEnsureRelativePrefixInTarGzFiles(t *testing.T) {
+func TestEnsureRelativePrefixInTarballs(t *testing.T) {
 	info := exampleInfo()
 	info.Contents = []*files.Content{
 		{
@@ -740,13 +733,13 @@ func TestEnsureRelativePrefixInTarGzFiles(t *testing.T) {
 	err := info.Validate()
 	require.NoError(t, err)
 
-	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
+	dataTarball, md5sums, instSize, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
-	testRelativePathPrefixInTarGzFiles(t, dataTarGz)
+	testRelativePathPrefixInTar(t, inflate(t, tarballName, dataTarball))
 
 	controlTarGz, err := createControl(instSize, md5sums, info)
 	require.NoError(t, err)
-	testRelativePathPrefixInTarGzFiles(t, controlTarGz)
+	testRelativePathPrefixInTar(t, inflate(t, "gz", controlTarGz))
 }
 
 func TestMD5Sums(t *testing.T) {
@@ -762,17 +755,18 @@ func TestMD5Sums(t *testing.T) {
 		}
 	}
 
-	dataTarGz, md5sums, instSize, err := createDataTarGz(info)
+	dataTarball, md5sums, instSize, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	controlTarGz, err := createControl(instSize, md5sums, info)
 	require.NoError(t, err)
 
-	md5sumsFile, err := extractFileFromTarGz(controlTarGz, "./md5sums")
-	require.NoError(t, err)
+	md5sumsFile := extractFileFromTar(t, inflate(t, "gz", controlTarGz), "./md5sums")
 
 	lines := strings.Split(strings.TrimRight(string(md5sumsFile), "\n"), "\n")
 	require.Equal(t, nFiles, len(lines))
+
+	dataTar := inflate(t, tarballName, dataTarball)
 
 	for _, line := range lines {
 		parts := strings.Fields(line)
@@ -780,20 +774,15 @@ func TestMD5Sums(t *testing.T) {
 
 		md5sum, fileName := parts[0], parts[1]
 
-		fileContent, err := extractFileFromTarGz(dataTarGz, fileName)
-		require.NoError(t, err)
-
 		digest := md5.New() // nolint:gosec
-		_, err = digest.Write(fileContent)
+		_, err = digest.Write(extractFileFromTar(t, dataTar, fileName))
 		require.NoError(t, err)
 		assert.Equal(t, md5sum, hex.EncodeToString(digest.Sum(nil)))
 	}
 }
 
-func testRelativePathPrefixInTarGzFiles(t *testing.T, tarGzFile []byte) {
-	t.Helper()
-	tarFile, err := gzipInflate(tarGzFile)
-	require.NoError(t, err)
+func testRelativePathPrefixInTar(tb testing.TB, tarFile []byte) {
+	tb.Helper()
 
 	tr := tar.NewReader(bytes.NewReader(tarFile))
 	for {
@@ -801,9 +790,9 @@ func testRelativePathPrefixInTarGzFiles(t *testing.T, tarGzFile []byte) {
 		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
-		require.NoError(t, err)
+		require.NoError(tb, err)
 
-		assert.True(t, strings.HasPrefix(hdr.Name, "./"), "%s does not start with './'", hdr.Name)
+		assert.True(tb, strings.HasPrefix(hdr.Name, "./"), "%s does not start with './'", hdr.Name)
 	}
 }
 
@@ -816,20 +805,13 @@ func TestDebsigsSignature(t *testing.T) {
 	err := Default.Package(info, &deb)
 	require.NoError(t, err)
 
-	debBinary, err := extractFileFromAr(deb.Bytes(), "debian-binary")
-	require.NoError(t, err)
-
-	controlTarGz, err := extractFileFromAr(deb.Bytes(), "control.tar.gz")
-	require.NoError(t, err)
-
-	dataTarGz, err := extractFileFromAr(deb.Bytes(), "data.tar.gz")
-	require.NoError(t, err)
-
-	signature, err := extractFileFromAr(deb.Bytes(), "_gpgorigin")
-	require.NoError(t, err)
+	debBinary := extractFileFromAr(t, deb.Bytes(), "debian-binary")
+	controlTarGz := extractFileFromAr(t, deb.Bytes(), "control.tar.gz")
+	dataTarball := extractFileFromAr(t, deb.Bytes(), findDataTarball(t, deb.Bytes()))
+	signature := extractFileFromAr(t, deb.Bytes(), "_gpgorigin")
 
 	message := io.MultiReader(bytes.NewReader(debBinary),
-		bytes.NewReader(controlTarGz), bytes.NewReader(dataTarGz))
+		bytes.NewReader(controlTarGz), bytes.NewReader(dataTarball))
 
 	err = sign.PGPVerify(message, signature, "../internal/sign/testdata/pubkey.asc")
 	require.NoError(t, err)
@@ -858,149 +840,234 @@ func TestDisableGlobbing(t *testing.T) {
 	}
 	require.NoError(t, info.Validate())
 
-	dataTarGz, _, _, err := createDataTarGz(info)
+	dataTarball, _, _, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
 	expectedContent, err := ioutil.ReadFile("../testdata/{file}[")
 	require.NoError(t, err)
 
-	actualContent, err := extractFileFromTarGz(dataTarGz, "/test/{file}[")
-	require.NoError(t, err)
+	actualContent := extractFileFromTar(t, inflate(t, tarballName, dataTarball), "/test/{file}[")
 
 	assert.Equal(t, expectedContent, actualContent)
 }
 
-func extractFileFromTarGz(tarGzFile []byte, filename string) ([]byte, error) {
-	tarFile, err := gzipInflate(tarGzFile)
-	if err != nil {
-		return nil, err
+func TestCompressionAlgorithms(t *testing.T) {
+	testCases := []struct {
+		algorithm       string
+		dataTarballName string
+	}{
+		{"gzip", "data.tar.gz"},
+		{"", "data.tar.gz"}, // test current default
+		{"xz", "data.tar.xz"},
+		{"none", "data.tar"},
 	}
 
-	tr := tar.NewReader(bytes.NewReader(tarFile))
-	for {
-		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			break // End of archive
-		}
-		if err != nil {
-			return nil, err
-		}
+	for _, testCase := range testCases {
+		testCase := testCase
 
-		if path.Join("/", hdr.Name) != path.Join("/", filename) { // nolint:gosec
-			continue
-		}
+		t.Run(testCase.algorithm, func(t *testing.T) {
+			info := exampleInfo()
+			info.Deb.Compression = testCase.algorithm
 
-		fileContents, err := ioutil.ReadAll(tr)
-		if err != nil {
-			return nil, err
-		}
+			var deb bytes.Buffer
 
-		return fileContents, nil
+			err := Default.Package(info, &deb)
+			require.NoError(t, err)
+
+			dataTarballName := findDataTarball(t, deb.Bytes())
+			assert.Equal(t, dataTarballName, testCase.dataTarballName)
+
+			dataTarball := extractFileFromAr(t, deb.Bytes(), dataTarballName)
+			dataTar := inflate(t, dataTarballName, dataTarball)
+
+			for _, file := range info.Contents {
+				tarContains(t, dataTar, file.Destination)
+			}
+		})
 	}
-
-	return nil, os.ErrNotExist
 }
 
-func extractFileHeaderFromTarGz(tarGzFile []byte, filename string) (*tar.Header, error) {
-	tarFile, err := gzipInflate(tarGzFile)
-	if err != nil {
-		return nil, err
-	}
-
-	tr := tar.NewReader(bytes.NewReader(tarFile))
-	for {
-		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			break // End of archive
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		if path.Join("/", hdr.Name) != path.Join("/", filename) { // nolint:gosec
-			continue
-		}
-
-		return hdr, nil
-	}
-
-	return nil, os.ErrNotExist
-}
-
-func gzipInflate(data []byte) ([]byte, error) {
-	gzr, err := gzip.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-
-	inflatedData, err := ioutil.ReadAll(gzr)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = gzr.Close(); err != nil {
-		return nil, err
-	}
-
-	return inflatedData, nil
-}
-
-func readAndFormatAsDebChangelog(changelogFileName, packageName string) (string, error) {
-	changelogEntries, err := chglog.Parse(changelogFileName)
-	if err != nil {
-		return "", err
-	}
-
-	tpl, err := chglog.DebTemplate()
-	if err != nil {
-		return "", err
-	}
-
-	debChangelog, err := chglog.FormatChangelog(&chglog.PackageChangeLog{
-		Name:    packageName,
-		Entries: changelogEntries,
-	}, tpl)
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(debChangelog) + "\n", nil
-}
-
-func symlinkTo(tb testing.TB, fileName string) string {
+func extractFileFromTar(tb testing.TB, tarFile []byte, filename string) []byte {
 	tb.Helper()
-	target, err := filepath.Abs(fileName)
-	assert.NoError(tb, err)
 
-	symlinkName := filepath.Join(tb.TempDir(), "symlink")
-	err = os.Symlink(target, symlinkName)
-	assert.NoError(tb, err)
-
-	return files.ToNixPath(symlinkName)
-}
-
-func extractFileFromAr(arFile []byte, filename string) ([]byte, error) {
-	tr := ar.NewReader(bytes.NewReader(arFile))
+	tr := tar.NewReader(bytes.NewReader(tarFile))
 	for {
 		hdr, err := tr.Next()
 		if errors.Is(err, io.EOF) {
 			break // End of archive
 		}
-		if err != nil {
-			return nil, err
-		}
+		require.NoError(tb, err)
 
 		if path.Join("/", hdr.Name) != path.Join("/", filename) {
 			continue
 		}
 
 		fileContents, err := ioutil.ReadAll(tr)
-		if err != nil {
-			return nil, err
-		}
+		require.NoError(tb, err)
 
-		return fileContents, nil
+		return fileContents
 	}
 
-	return nil, os.ErrNotExist
+	tb.Fatalf("file %q does not exist in tar", filename)
+
+	return nil
+}
+
+func tarContains(tb testing.TB, tarFile []byte, filename string) bool {
+	tb.Helper()
+
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		if path.Join("/", hdr.Name) == path.Join("/", filename) { // nolint:gosec
+			return true
+		}
+	}
+
+	return false
+}
+
+func extractFileHeaderFromTar(tb testing.TB, tarFile []byte, filename string) *tar.Header {
+	tb.Helper()
+
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		if path.Join("/", hdr.Name) != path.Join("/", filename) { // nolint:gosec
+			continue
+		}
+
+		return hdr
+	}
+
+	tb.Fatalf("file %q does not exist in tar", filename)
+
+	return nil
+}
+
+func inflate(tb testing.TB, nameOrType string, data []byte) []byte {
+	tb.Helper()
+
+	ext := filepath.Ext(nameOrType)
+	if ext == "" {
+		ext = nameOrType
+	} else {
+		ext = strings.TrimPrefix(ext, ".")
+	}
+
+	dataReader := bytes.NewReader(data)
+
+	var (
+		inflateReadCloser io.ReadCloser
+		err               error
+	)
+
+	switch ext {
+	case "gz", "gzip":
+		inflateReadCloser, err = gzip.NewReader(dataReader)
+		require.NoError(tb, err)
+	case "xz":
+		r, err := xz.NewReader(dataReader, 0)
+		require.NoError(tb, err)
+		inflateReadCloser = io.NopCloser(r)
+	case "tar", "": // no compression
+		inflateReadCloser = io.NopCloser(dataReader)
+	default:
+		tb.Fatalf("invalid inflation type: %s", ext)
+	}
+
+	inflatedData, err := ioutil.ReadAll(inflateReadCloser)
+	require.NoError(tb, err)
+
+	err = inflateReadCloser.Close()
+	require.NoError(tb, err)
+
+	return inflatedData
+}
+
+func readAndFormatAsDebChangelog(tb testing.TB, changelogFileName, packageName string) string {
+	tb.Helper()
+
+	changelogEntries, err := chglog.Parse(changelogFileName)
+	require.NoError(tb, err)
+
+	tpl, err := chglog.DebTemplate()
+	require.NoError(tb, err)
+
+	debChangelog, err := chglog.FormatChangelog(&chglog.PackageChangeLog{
+		Name:    packageName,
+		Entries: changelogEntries,
+	}, tpl)
+	require.NoError(tb, err)
+
+	return strings.TrimSpace(debChangelog) + "\n"
+}
+
+func symlinkTo(tb testing.TB, fileName string) string {
+	tb.Helper()
+	target, err := filepath.Abs(fileName)
+	require.NoError(tb, err)
+
+	symlinkName := filepath.Join(tb.TempDir(), "symlink")
+	err = os.Symlink(target, symlinkName)
+	require.NoError(tb, err)
+
+	return files.ToNixPath(symlinkName)
+}
+
+func findDataTarball(tb testing.TB, arFile []byte) string {
+	tb.Helper()
+
+	tr := ar.NewReader(bytes.NewReader(arFile))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		if strings.HasPrefix(path.Join("/", hdr.Name), "/data.tar") {
+			return hdr.Name
+		}
+	}
+
+	tb.Fatalf("data taball does not exist in ar")
+
+	return ""
+}
+
+func extractFileFromAr(tb testing.TB, arFile []byte, filename string) []byte {
+	tb.Helper()
+
+	tr := ar.NewReader(bytes.NewReader(arFile))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		if path.Join("/", hdr.Name) != path.Join("/", filename) {
+			continue
+		}
+
+		fileContents, err := ioutil.ReadAll(tr)
+		require.NoError(tb, err)
+
+		return fileContents
+	}
+
+	tb.Fatalf("file %q does not exist in ar", filename)
+
+	return nil
 }

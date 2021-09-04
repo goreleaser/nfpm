@@ -127,7 +127,7 @@ func TestUpgrade(t *testing.T) {
 	}
 }
 
-func TestCompression(t *testing.T) {
+func TestRPMCompression(t *testing.T) {
 	t.Parallel()
 	format := "rpm"
 	compressFormats := []string{"gzip", "xz", "lzma"}
@@ -148,6 +148,34 @@ func TestCompression(t *testing.T) {
 							Target:    "compression",
 							Arch:      testArch,
 							BuildArgs: []string{fmt.Sprintf("compression=%s", testCompFormat)},
+						},
+					})
+				})
+			}(t, compFormat, arch)
+		}
+	}
+}
+
+func TestDebCompression(t *testing.T) {
+	t.Parallel()
+	format := "deb"
+	compressFormats := []string{"gzip", "xz", "none"}
+	for _, arch := range formatArchs[format] {
+		for _, compFormat := range compressFormats {
+			func(tt *testing.T, testCompFormat, testArch string) {
+				tt.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testCompFormat), func(ttt *testing.T) {
+					ttt.Parallel()
+					if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
+						ttt.Skip("ppc64le arch not supported in pipeline")
+					}
+					accept(ttt, acceptParms{
+						Name:   fmt.Sprintf("%s_compression_%s", testCompFormat, testArch),
+						Conf:   fmt.Sprintf("deb.%s.compression.yaml", testCompFormat),
+						Format: format,
+						Docker: dockerParams{
+							File:   fmt.Sprintf("%s.dockerfile", format),
+							Target: "compression",
+							Arch:   testArch,
 						},
 					})
 				})

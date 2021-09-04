@@ -165,7 +165,6 @@ contents:
       owner: notRoot
       group: notRoot
 
-
 # Empty folders your package may need created. (overridable)
 empty_folders:
   - /var/log/foo
@@ -211,7 +210,7 @@ rpm:
   # description, but can be explicitly provided here.
   summary: Explicit Summary for Sample Package
 
-  # Compression algorithm.
+  # Compression algorithm (gzip (default), lzma or xz).
   compression: lzma
 
   # The package is signed if a key_file is set
@@ -255,6 +254,9 @@ deb:
   breaks:
     - some-package
 
+  # Compression algorithm (gzip (default), xz or none).
+  compression: xz
+
   # The package is signed if a key_file is set
   signature:
     # PGP secret key (can also be ASCII-armored). The passphrase is taken
@@ -292,7 +294,6 @@ Templating is not and will not be supported.
 
 If you really need it, you can build on top of nFPM, use `envsubst`, `jsonnet`
 or apply some other templating on top of it.
-
 
 ## JSON Schema
 
