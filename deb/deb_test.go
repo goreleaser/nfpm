@@ -856,9 +856,9 @@ func TestCompressionAlgorithms(t *testing.T) {
 		algorithm       string
 		dataTarballName string
 	}{
-		{"gzip", "data.tar.gz"},
-		{"", "data.tar.gz"}, // test current default
+		{"", "data.tar.xz"}, // test current default
 		{"xz", "data.tar.xz"},
+		{"gzip", "data.tar.gz"},
 		{"none", "data.tar"},
 	}
 

@@ -254,7 +254,7 @@ deb:
   breaks:
     - some-package
 
-  # Compression algorithm (gzip (default), xz or none).
+  # Compression algorithm (xz (default), gzip or none).
   compression: xz
 
   # The package is signed if a key_file is set

@@ -179,15 +179,15 @@ func createDataTarball(info *nfpm.Info) (dataTarBall, md5sums []byte,
 	)
 
 	switch info.Deb.Compression {
-	case "", "gzip": // the default for now
-		dataTarballWriteCloser = gzip.NewWriter(&dataTarball)
-		name = "data.tar.gz"
-	case "xz":
+	case "", "xz": // the default
 		dataTarballWriteCloser, err = xz.NewWriter(&dataTarball)
 		if err != nil {
 			return nil, nil, 0, "", err
 		}
 		name = "data.tar.xz"
+	case "gzip":
+		dataTarballWriteCloser = gzip.NewWriter(&dataTarball)
+		name = "data.tar.gz"
 	case "none":
 		dataTarballWriteCloser = nopCloser{Writer: &dataTarball}
 		name = "data.tar"
