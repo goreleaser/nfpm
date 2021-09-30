@@ -238,9 +238,6 @@ func fillDataTar(info *nfpm.Info, w io.Writer) (md5sums []byte, instSize int64, 
 	defer out.Close() // nolint: errcheck
 
 	created := map[string]bool{}
-	if err = createEmptyFoldersInsideDataTar(info, out, created); err != nil {
-		return nil, 0, err
-	}
 
 	md5buf, instSize, err := createFilesInsideDataTar(info, out, created)
 	if err != nil {
@@ -281,6 +278,11 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 			continue
 		case "symlink":
 			err = createSymlinkInsideTar(file, tw)
+		case "dir":
+			// this .nope is actually not created, because createTree ignore the
+			// last part of the path, assuming it is a file.
+			// TODO: should probably refactor this
+			err = createTree(tw, filepath.Join(file.Destination, ".nope"), created)
 		case "doc":
 			// nolint:gocritic
 			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
@@ -316,18 +318,6 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 	}
 
 	return md5buf, instSize, nil
-}
-
-func createEmptyFoldersInsideDataTar(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
-	for _, folder := range info.EmptyFolders {
-		// this .nope is actually not created, because createTree ignore the
-		// last part of the path, assuming it is a file.
-		// TODO: should probably refactor this
-		if err := createTree(out, files.ToNixPath(filepath.Join(folder, ".nope")), created); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (int64, error) {

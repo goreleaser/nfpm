@@ -189,6 +189,7 @@ func TestRPMSpecific(t *testing.T) {
 	format := "rpm"
 	testNames := []string{
 		"release",
+		"directories",
 	}
 	for _, name := range testNames {
 		for _, arch := range formatArchs[format] {

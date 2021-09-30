@@ -75,10 +75,14 @@ func exampleInfo() *nfpm.Info {
 					Destination: "/etc/fake/fake.conf",
 					Type:        "config",
 				},
-			},
-			EmptyFolders: []string{
-				"/var/log/whatever",
-				"/usr/share/whatever",
+				{
+					Destination: "/var/log/whatever",
+					Type:        "dir",
+				},
+				{
+					Destination: "/usr/share/whatever",
+					Type:        "dir",
+				},
 			},
 		},
 	})
@@ -749,7 +753,7 @@ func TestMD5Sums(t *testing.T) {
 
 	nFiles := 1
 	for _, f := range info.Contents {
-		if f.Packager == "" || f.Packager == "deb" {
+		if (f.Packager == "" || f.Packager == "deb") && f.Type != "dir" {
 			nFiles++
 		}
 	}
@@ -778,6 +782,48 @@ func TestMD5Sums(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, md5sum, hex.EncodeToString(digest.Sum(nil)))
 	}
+}
+
+func TestDirectories(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/file",
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/bar/file",
+		},
+		{
+			Destination: "/etc/bar",
+			Type:        "dir",
+		},
+		{
+			Destination: "/etc/baz",
+			Type:        "dir",
+		},
+	}
+
+	require.NoError(t, info.Validate())
+
+	deflatedDataTarball, _, _, dataTarballName, err := createDataTarball(info)
+	require.NoError(t, err)
+	dataTarball := inflate(t, dataTarballName, deflatedDataTarball)
+
+	// for debs all implicit or explicit directories are created in the tarball
+	h := extractFileHeaderFromTar(t, dataTarball, "/etc")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, dataTarball, "/etc/foo")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, dataTarball, "/etc/bar")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, dataTarball, "/etc/baz")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 }
 
 func testRelativePathPrefixInTar(tb testing.TB, tarFile []byte) {

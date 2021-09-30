@@ -399,12 +399,6 @@ func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error
 	created := map[string]bool{}
 
 	return func(tw *tar.Writer) error {
-		// handle empty folders
-		if err := createEmptyFoldersInsideTarGz(info, tw, created); err != nil {
-			return err
-		}
-
-		// handle Files
 		return createFilesInsideTarGz(info, tw, created, sizep)
 	}
 }
@@ -423,6 +417,11 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			continue
 		case "symlink":
 			err = createSymlinkInsideTarGz(file, tw)
+		case "dir":
+			// this .nope is actually not created, because createTree ignore the
+			// last part of the path, assuming it is a file.
+			// TODO: should probably refactor this
+			err = createTree(tw, filepath.Join(file.Destination, ".nope"), created)
 		case "doc":
 			// nolint:gocritic
 			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
@@ -479,18 +478,6 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	}
 
 	*sizep += file.Size()
-	return nil
-}
-
-func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
-	for _, folder := range info.EmptyFolders {
-		// this .nope is actually not created, because createTree ignore the
-		// last part of the path, assuming it is a file.
-		// TODO: should probably refactor this
-		if err := createTree(out, files.ToNixPath(filepath.Join(folder, ".nope")), created); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

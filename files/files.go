@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/goreleaser/fileglob"
@@ -42,6 +43,11 @@ func (c Contents) Swap(i, j int) {
 
 func (c Contents) Less(i, j int) bool {
 	a, b := c[i], c[j]
+
+	if a.Type == "dir" || b.Type != "dir" {
+		return true
+	}
+
 	if a.Type != b.Type {
 		return len(a.Type) < len(b.Type)
 	}
@@ -49,6 +55,16 @@ func (c Contents) Less(i, j int) bool {
 		return a.Source < b.Source
 	}
 	return a.Destination < b.Destination
+}
+
+func (c Contents) ContainsDestination(dst string) bool {
+	for _, content := range c {
+		if strings.TrimRight(content.Destination, "/") == strings.TrimRight(dst, "/") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c *Content) WithFileInfoDefaults() *Content {
@@ -68,6 +84,14 @@ func (c *Content) WithFileInfoDefaults() *Content {
 	if cc.FileInfo.Group == "" {
 		cc.FileInfo.Group = "root"
 	}
+	if cc.Type == "dir" && cc.FileInfo.Mode == 0 {
+		cc.FileInfo.Mode = 0o755
+	}
+
+	if cc.Source == "" {
+		return cc
+	}
+
 	info, err := os.Stat(cc.Source)
 	if err == nil {
 		if cc.FileInfo.MTime.IsZero() {
@@ -120,8 +144,9 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 		var globbed map[string]string
 
 		switch f.Type {
-		case "ghost", "symlink":
-			// Ghost and symlink files need to be in the list, but dont glob them because they do not really exist
+		case "ghost", "symlink", "dir":
+			// Directories and ghost or symlink files need to be in the list,
+			// but dont glob them because they do not really exist
 			files, err = appendWithUniqueDestination(files, f.WithFileInfoDefaults())
 			if err != nil {
 				return nil, err
