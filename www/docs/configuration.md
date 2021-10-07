@@ -46,9 +46,13 @@ release: 1
 section: default
 
 # Priority.
+# Defaults to `optional` on deb
+# Defaults to empty on rpm and apk
 priority: extra
 
-# Maintaner.
+# Maintainer.
+# Defaults to `unset maintainer unset@example.com` on debs
+# Defaults to empty on rpm and apk
 maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 
 # Description.
