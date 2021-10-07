@@ -1,4 +1,4 @@
-FROM ubuntu AS test_base
+FROM ubuntu:20.04 AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.deb
