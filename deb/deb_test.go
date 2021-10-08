@@ -1080,7 +1080,7 @@ func TestEmptyButRequiredDebFields(t *testing.T) {
 	Default.SetPackagerDefaults(item)
 
 	require.Equal(t, "optional", item.Priority)
-	require.Equal(t, "unset maintainer unset@example.com", item.Maintainer)
+	require.Equal(t, "Unset Maintainer <unset@localhost>", item.Maintainer)
 
 	var deb bytes.Buffer
 	err := Default.Package(item, &deb)

@@ -51,8 +51,9 @@ section: default
 priority: extra
 
 # Maintainer.
-# Defaults to `unset maintainer unset@example.com` on debs
 # Defaults to empty on rpm and apk
+# Leaving this field empty on 'deb' packages is deprecated, and will be removed
+# in a future release
 maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 
 # Description.
