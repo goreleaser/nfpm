@@ -30,7 +30,7 @@ const (
 	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L154
 	tagChangelogText = 1082
 
-	isLink = 0120000 // Symbolic link
+	isLink = 0o120000 // Symbolic link
 
 	changelogNotesTemplate = `
 {{- range .Changes }}{{$note := splitList "\n" .Note}}
