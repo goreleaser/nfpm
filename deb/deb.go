@@ -167,7 +167,7 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 	// if in the long run we should be more strict about this and error when
 	// not set?
 	if info.Maintainer == "" {
-		log.Println("DEPRECATION WARNING: Unset 'maintainer' field on deb packages is deprecated and will be removed in a future version")
+		log.Println("DEPRECATION WARNING: Leaving the 'maintainer' field unset will not be allowed in a future version")
 		info.Maintainer = "Unset Maintainer <unset@localhost>"
 	}
 }
