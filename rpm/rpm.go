@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/google/rpmpack"
-	"github.com/sassoftware/go-rpmutils/cpio"
 
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
@@ -30,6 +29,8 @@ const (
 	tagChangelogName = 1081
 	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L154
 	tagChangelogText = 1082
+
+	isLink = 0120000 // Symbolic link
 
 	changelogNotesTemplate = `
 {{- range .Changes }}{{$note := splitList "\n" .Note}}
@@ -376,7 +377,7 @@ func addSymlinksInsideRPM(symlinks files.Contents, rpm *rpmpack.RPM) {
 		rpm.AddFile(rpmpack.RPMFile{
 			Name:  file.Destination,
 			Body:  []byte(file.Source),
-			Mode:  uint(cpio.S_ISLNK),
+			Mode:  uint(isLink),
 			MTime: uint32(file.FileInfo.MTime.Unix()),
 			Owner: file.FileInfo.Owner,
 			Group: file.FileInfo.Group,
