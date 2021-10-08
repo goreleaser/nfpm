@@ -94,8 +94,6 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 	// Set up some deb specific defaults
 	d.SetPackagerDefaults(info)
 
-	// Debs requires a few additional pieces of info to completely behave
-
 	dataTarball, md5sums, instSize, dataTarballName, err := createDataTarball(info)
 	if err != nil {
 		return err
