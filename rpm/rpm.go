@@ -30,7 +30,8 @@ const (
 	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L154
 	tagChangelogText = 1082
 
-	isLink = 0o120000 // Symbolic link
+	// Symbolic link
+	tagLink = 0o120000
 
 	changelogNotesTemplate = `
 {{- range .Changes }}{{$note := splitList "\n" .Note}}
@@ -376,8 +377,9 @@ func addSymlinksInsideRPM(symlinks files.Contents, rpm *rpmpack.RPM) {
 	for _, file := range symlinks {
 		rpm.AddFile(rpmpack.RPMFile{
 			Name:  file.Destination,
-			Body:  []byte(file.Source),
-			Mode:  uint(isLink),
+			Body:
+			uint(tagLink),[]byte(file.Source),
+			Mode:
 			MTime: uint32(file.FileInfo.MTime.Unix()),
 			Owner: file.FileInfo.Owner,
 			Group: file.FileInfo.Group,
