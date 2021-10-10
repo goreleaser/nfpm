@@ -1,7 +1,6 @@
 # Contributing
 
-By participating to this project, you agree to abide our [code of
-conduct](/CODE_OF_CONDUCT.md).
+By participating to this project, you agree to abide our [code of conduct](/CODE_OF_CONDUCT.md).
 
 ## Setup your machine
 
@@ -9,32 +8,34 @@ conduct](/CODE_OF_CONDUCT.md).
 
 Prerequisites:
 
-* `make`
-* [Go 1.17+](https://golang.org/doc/install)
+- [Task](https://taskfile.dev/#/installation)
+- [Go 1.17+](https://golang.org/doc/install)
+- [Docker](https://www.docker.com/)
+- `gpg` (probably already installed on your system)
 
 Clone `nfpm` from source:
 
 ```sh
-$ git clone git@github.com:goreleaser/nfpm.git
-$ cd nfpm
+git clone git@github.com:goreleaser/nfpm.git
+cd nfpm
 ```
 
 Install the build and lint dependencies:
 
 ```console
-$ make setup
+task setup
 ```
 
 A good way of making sure everything is all right is running the test suite:
 
 ```console
-$ make test
+task test
 ```
 
 If on the ARM tests you are seeing `standard_init_linux.go:211: exec user process caused "exec format error"`:
 
 ```console
-$ sudo docker run --rm --privileged hypriot/qemu-register
+sudo docker run --rm --privileged hypriot/qemu-register
 ```
 
 ## Test your change
@@ -42,13 +43,13 @@ $ sudo docker run --rm --privileged hypriot/qemu-register
 You can create a branch for your changes and try to build from the source as you go:
 
 ```console
-$ make build
+task build
 ```
 
 When you are satisfied with the changes, we suggest you run:
 
 ```console
-$ make ci
+task ci
 ```
 
 Which runs all the linters and tests.
