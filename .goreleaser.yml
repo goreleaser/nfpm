@@ -91,8 +91,9 @@ brews:
     owner: goreleaser
     name: homebrew-tap
   folder: Formula
-  homepage:  https://github.com/goreleaser/nfpm
+  homepage: https://nfpm.goreleaser.com
   description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+  license: MIT
   test: |
     system "#{bin}/nfpm -v"
   install: |-
@@ -100,9 +101,16 @@ brews:
     bash_completion.install "completions/nfpm.bash" => "nfpm"
     zsh_completion.install "completions/nfpm.zsh" => "_nfpm"
     fish_completion.install "completions/nfpm.fish"
+rigs:
+  - rig:
+      owner: goreleaser
+      name: fish-food
+    homepage: https://nfpm.goreleaser.com
+    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+    license: MIT
 nfpms:
 - file_name_template: '{{ .ProjectName }}_{{ .Arch }}'
-  homepage:  https://github.com/goreleaser/nfpm
+  homepage: https://nfpm.goreleaser.com
   description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
   maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
   license: MIT
@@ -122,7 +130,7 @@ scoop:
   bucket:
     owner: goreleaser
     name: scoop-bucket
-  homepage:  https://goreleaser.com
+  homepage: https://goreleaser.com
   description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
   license: MIT
 release:
@@ -138,4 +146,4 @@ furies:
 announce:
   twitter:
     enabled: true
-    message_template: 'nFPM {{ .Tag }} was just released! See whats new: https://github.com/goreleaser/nfpm/releases/tag/{{ .Tag }}'
+    message_template: 'nFPM {{ .Tag }} was just released! See whats new: https://nfpm.goreleaser.com/releases/tag/{{ .Tag }}'
