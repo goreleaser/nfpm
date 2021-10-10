@@ -68,6 +68,7 @@ docker_manifests:
       - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
       - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
 changelog:
+  use: github
   filters:
     exclude:
       - Merge
