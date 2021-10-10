@@ -61,16 +61,16 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 	}
 
 	version := info.Version
-	if info.Release != "" {
-		version += "-" + info.Release
-	}
-
 	if info.Prerelease != "" {
 		version += "~" + info.Prerelease
 	}
 
 	if info.VersionMetadata != "" {
 		version += "+" + info.VersionMetadata
+	}
+
+	if info.Release != "" {
+		version += "-" + info.Release
 	}
 
 	// package_version_architecture.package-type

@@ -477,7 +477,7 @@ func TestDEBConventionalFileName(t *testing.T) {
 		},
 		{
 			Version: "1.2.3", Release: "4", Prerelease: "5", Metadata: "",
-			Expected: fmt.Sprintf("%s_1.2.3-4~5_%s.deb", info.Name, info.Arch),
+			Expected: fmt.Sprintf("%s_1.2.3~5-4_%s.deb", info.Name, info.Arch),
 		},
 		{
 			Version: "1.2.3", Release: "", Prerelease: "5", Metadata: "",
@@ -485,7 +485,7 @@ func TestDEBConventionalFileName(t *testing.T) {
 		},
 		{
 			Version: "1.2.3", Release: "1", Prerelease: "5", Metadata: "git",
-			Expected: fmt.Sprintf("%s_1.2.3-1~5+git_%s.deb", info.Name, info.Arch),
+			Expected: fmt.Sprintf("%s_1.2.3~5+git-1_%s.deb", info.Name, info.Arch),
 		},
 	}
 
