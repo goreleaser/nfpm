@@ -1,11 +1,14 @@
 env:
   - GO111MODULE=on
+
 before:
   hooks:
     - go mod tidy
     - ./scripts/completions.sh
+
 gomod:
   proxy: true
+
 builds:
 - main: ./cmd/nfpm
   env:
@@ -22,6 +25,7 @@ builds:
     - -trimpath
   ldflags:
     - -s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }} -X main.date={{ .CommitDate }} -X main.builtBy=goreleaser
+
 dockers:
   - image_templates:
       - 'goreleaser/nfpm:{{ .Tag }}-amd64'
@@ -50,6 +54,7 @@ dockers:
       - "--label=org.opencontainers.image.source={{.GitURL}}"
       - "--platform=linux/arm64/v8"
     goarch: arm64
+
 docker_manifests:
   - name_template: 'goreleaser/nfpm:{{ .Tag }}'
     image_templates:
@@ -67,11 +72,13 @@ docker_manifests:
     image_templates:
       - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
       - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
+
 changelog:
   use: github
   filters:
     exclude:
       - Merge
+
 archives:
 - replacements:
     darwin: Darwin
@@ -86,6 +93,7 @@ archives:
     - README.md
     - LICENSE.md
     - completions/*
+
 brews:
 - tap:
     owner: goreleaser
@@ -101,6 +109,7 @@ brews:
     bash_completion.install "completions/nfpm.bash" => "nfpm"
     zsh_completion.install "completions/nfpm.zsh" => "_nfpm"
     fish_completion.install "completions/nfpm.fish"
+
 rigs:
   - rig:
       owner: goreleaser
@@ -108,6 +117,20 @@ rigs:
     homepage: https://nfpm.goreleaser.com
     description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
     license: MIT
+
+scoop:
+  bucket:
+    owner: goreleaser
+    name: scoop-bucket
+  homepage: https://nfpm.goreleaser.com
+  description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+  license: MIT
+release:
+  footer: |
+    ---
+
+    - Check out [GoReleaser](https://goreleaser.com): it integrates nFPM to the release pipeline of your Go projects.
+
 nfpms:
 - file_name_template: '{{ .ProjectName }}_{{ .Arch }}'
   homepage: https://nfpm.goreleaser.com
@@ -126,19 +149,7 @@ nfpms:
       dst: /usr/share/fish/completions/nfpm.fish
     - src: ./completions/nfpm.zsh
       dst: /usr/local/share/zsh/site-functions/_nfpm
-scoop:
-  bucket:
-    owner: goreleaser
-    name: scoop-bucket
-  homepage: https://goreleaser.com
-  description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
-  license: MIT
-release:
-  discussion_category_name: "New Releases"
-  footer: |
-    ---
 
-    - Check out [GoReleaser](https://goreleaser.com): it integrates nFPM to the build of your Go projects.
 
 furies:
   - account: goreleaser
