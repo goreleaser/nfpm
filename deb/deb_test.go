@@ -1071,3 +1071,18 @@ func extractFileFromAr(tb testing.TB, arFile []byte, filename string) []byte {
 
 	return nil
 }
+
+func TestEmptyButRequiredDebFields(t *testing.T) {
+	item := nfpm.WithDefaults(&nfpm.Info{
+		Name:    "foo",
+		Version: "v1.0.0",
+	})
+	Default.SetPackagerDefaults(item)
+
+	require.Equal(t, "optional", item.Priority)
+	require.Equal(t, "Unset Maintainer <unset@localhost>", item.Maintainer)
+
+	var deb bytes.Buffer
+	err := Default.Package(item, &deb)
+	require.NoError(t, err)
+}

@@ -46,9 +46,14 @@ release: 1
 section: default
 
 # Priority.
+# Defaults to `optional` on deb
+# Defaults to empty on rpm and apk
 priority: extra
 
-# Maintaner.
+# Maintainer.
+# Defaults to empty on rpm and apk
+# Leaving this field empty on 'deb' packages is deprecated, and will be removed
+# in a future release
 maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 
 # Description.
