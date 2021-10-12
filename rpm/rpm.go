@@ -13,14 +13,11 @@ import (
 	"time"
 
 	"github.com/google/rpmpack"
-	"github.com/sassoftware/go-rpmutils/cpio"
-
+	"github.com/goreleaser/chglog"
+	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
-
-	"github.com/goreleaser/chglog"
-
-	"github.com/goreleaser/nfpm/v2"
+	"github.com/sassoftware/go-rpmutils/cpio"
 )
 
 const (

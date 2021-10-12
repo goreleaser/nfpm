@@ -1,3 +1,4 @@
+//go:build acceptance
 // +build acceptance
 
 package nfpm_test
@@ -9,12 +10,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/goreleaser/nfpm/v2"
 	_ "github.com/goreleaser/nfpm/v2/apk"
 	_ "github.com/goreleaser/nfpm/v2/deb"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
+	"github.com/stretchr/testify/require"
 )
 
 // nolint: gochecknoglobals

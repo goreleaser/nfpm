@@ -14,11 +14,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
+	"github.com/stretchr/testify/require"
 )
 
 // nolint: gochecknoglobals

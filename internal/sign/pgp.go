@@ -12,7 +12,6 @@ import (
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
-
 	"github.com/goreleaser/nfpm/v2"
 )
 

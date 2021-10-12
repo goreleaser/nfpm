@@ -14,14 +14,13 @@ import (
 	"time"
 
 	"github.com/goreleaser/chglog"
+	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/openpgp"
-
-	"github.com/goreleaser/nfpm/v2"
-	"github.com/goreleaser/nfpm/v2/files"
 )
 
 func exampleInfo() *nfpm.Info {

@@ -8,10 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRegister(t *testing.T) {
