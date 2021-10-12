@@ -61,16 +61,16 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 	}
 
 	version := info.Version
-	if info.Release != "" {
-		version += "-" + info.Release
-	}
-
 	if info.Prerelease != "" {
 		version += "~" + info.Prerelease
 	}
 
 	if info.VersionMetadata != "" {
 		version += "+" + info.VersionMetadata
+	}
+
+	if info.Release != "" {
+		version += "-" + info.Release
 	}
 
 	// package_version_architecture.package-type
@@ -82,7 +82,7 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 var ErrInvalidSignatureType = errors.New("invalid signature type")
 
 // Package writes a new deb package to the given writer using the given info.
-func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: funlen
+func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: funlen
 	arch, ok := archToDebian[info.Arch]
 	if ok {
 		info.Arch = arch
@@ -90,6 +90,9 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: fun
 	if err = info.Validate(); err != nil {
 		return err
 	}
+
+	// Set up some deb specific defaults
+	d.SetPackagerDefaults(info)
 
 	dataTarball, md5sums, instSize, dataTarballName, err := createDataTarball(info)
 	if err != nil {
@@ -149,6 +152,24 @@ func (*Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: fun
 	}
 
 	return nil
+}
+
+func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
+	// Priority should be set on all packages per:
+	//   https://www.debian.org/doc/debian-policy/ch-archive.html#priorities
+	// "optional" seems to be the safe/sane default here
+	if info.Priority == "" {
+		info.Priority = "optional"
+	}
+
+	// The safe thing here feels like defaulting to something like below.
+	// That will prevent existing configs from breaking anyway...  Wondering
+	// if in the long run we should be more strict about this and error when
+	// not set?
+	if info.Maintainer == "" {
+		log.Println("DEPRECATION WARNING: Leaving the 'maintainer' field unset will not be allowed in a future version")
+		info.Maintainer = "Unset Maintainer <unset@localhost>"
+	}
 }
 
 func addArFile(w *ar.Writer, name string, body []byte) error {

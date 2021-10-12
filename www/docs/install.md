@@ -22,6 +22,13 @@ brew install nfpm
     The [formula in homebrew-core](https://github.com/Homebrew/homebrew-core/blob/master/Formula/nfpm.rb) might be slightly outdated.
     Use our homebrew tap to always get the latest updates.
 
+### gofish
+
+```sh
+gofish rig add https://github.com/goreleaser/fish-food
+gofish install github.com/goreleaser/fish-food/nfpm
+```
+
 ### scoop
 
 ```sh

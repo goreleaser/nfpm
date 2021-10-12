@@ -27,19 +27,24 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       -
+        name: Set up Task
+        uses: arduino/setup-task@v1
+      -
         name: Cache Go modules
         uses: actions/cache@v1
         with:
-          path: ~/go/pkg/mod
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
       -
         name: Setup
-        run: make setup
+        run: task setup
       -
-        name: Make Unit Tests
-        run: make test
+        name: Unit Tests
+        run: task test
       -
         name: Diff
         run: git diff
@@ -72,10 +77,15 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       -
+        name: Set up Task
+        uses: arduino/setup-task@v1
+      -
         name: Cache Go modules
         uses: actions/cache@v1
         with:
-          path: ~/go/pkg/mod
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
@@ -86,13 +96,11 @@ jobs:
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       -
-        name: Make Setup
-        run: |
-          make setup
+        name: Setup
+        run: task setup
       -
-        name: Make Acceptance
-        run: |
-          TEST_PATTERN=/${{ matrix.pkgFormat }}/${{ matrix.pkgPlatform }}/ make acceptance
+        name: Acceptance
+        run: TEST_PATTERN=/${{ matrix.pkgFormat }}/${{ matrix.pkgPlatform }}/ task acceptance
   goreleaser:
     strategy:
       matrix:
@@ -114,19 +122,24 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       -
+        name: Set up Task
+        uses: arduino/setup-task@v1
+      -
         name: Cache Go modules
         uses: actions/cache@v1
         with:
-          path: ~/go/pkg/mod
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
       -
         name: Setup
-        run: make setup
+        run: task setup
       -
-        name: Make build
-        run: make build
+        name: Build
+        run: task build
       -
         name: Login to Docker Hub
         if: startsWith(github.ref, 'refs/tags/v')

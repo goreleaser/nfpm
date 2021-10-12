@@ -477,7 +477,7 @@ func TestDEBConventionalFileName(t *testing.T) {
 		},
 		{
 			Version: "1.2.3", Release: "4", Prerelease: "5", Metadata: "",
-			Expected: fmt.Sprintf("%s_1.2.3-4~5_%s.deb", info.Name, info.Arch),
+			Expected: fmt.Sprintf("%s_1.2.3~5-4_%s.deb", info.Name, info.Arch),
 		},
 		{
 			Version: "1.2.3", Release: "", Prerelease: "5", Metadata: "",
@@ -485,7 +485,7 @@ func TestDEBConventionalFileName(t *testing.T) {
 		},
 		{
 			Version: "1.2.3", Release: "1", Prerelease: "5", Metadata: "git",
-			Expected: fmt.Sprintf("%s_1.2.3-1~5+git_%s.deb", info.Name, info.Arch),
+			Expected: fmt.Sprintf("%s_1.2.3~5+git-1_%s.deb", info.Name, info.Arch),
 		},
 	}
 
@@ -1070,4 +1070,19 @@ func extractFileFromAr(tb testing.TB, arFile []byte, filename string) []byte {
 	tb.Fatalf("file %q does not exist in ar", filename)
 
 	return nil
+}
+
+func TestEmptyButRequiredDebFields(t *testing.T) {
+	item := nfpm.WithDefaults(&nfpm.Info{
+		Name:    "foo",
+		Version: "v1.0.0",
+	})
+	Default.SetPackagerDefaults(item)
+
+	require.Equal(t, "optional", item.Priority)
+	require.Equal(t, "Unset Maintainer <unset@localhost>", item.Maintainer)
+
+	var deb bytes.Buffer
+	err := Default.Package(item, &deb)
+	require.NoError(t, err)
 }
