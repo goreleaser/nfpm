@@ -83,6 +83,18 @@ tasks:
     cmds:
       - task: ci
 
+  docs:generate:
+    desc: Generate docs
+    cmds:
+      - ./scripts/cmd_docs.sh
+    sources:
+      - cmd/*.go
+      - ./scripts/cmd_docs.sh
+      - CONTRIBUTING.md
+    generates:
+      - www/docs/cmd/*.md
+      - www/docs/contributing.md
+
   docs:imgs:
     desc: Download and resize images
     cmds:
@@ -95,7 +107,14 @@ tasks:
   docs:serve:
     desc: Start documentation server
     cmds:
+      - task: docs:generate
       - '{{.DOCKER}} run --rm -it -p 8000:8000 -v ${PWD}/www:/docs docker.io/squidfunk/mkdocs-material'
+
+  docs:build:
+    desc: Build docs
+    cmds:
+      - task: docs:generate
+      - '{{.DOCKER}} run --rm -v ${PWD}/www:/docs docker.io/squidfunk/mkdocs-material build'
 
   docs:vercel:build:
     desc: Build documentation for deploying to Vercel
