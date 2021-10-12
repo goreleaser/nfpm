@@ -19,6 +19,8 @@ jobs:
       -
         name: Set up Task
         uses: arduino/setup-task@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       -
         name: build
         run: task docs:build
