@@ -13,13 +13,10 @@ import (
 	"time"
 
 	"github.com/google/rpmpack"
-
+	"github.com/goreleaser/chglog"
+	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
-
-	"github.com/goreleaser/chglog"
-
-	"github.com/goreleaser/nfpm/v2"
 )
 
 const (
@@ -377,9 +374,8 @@ func addSymlinksInsideRPM(symlinks files.Contents, rpm *rpmpack.RPM) {
 	for _, file := range symlinks {
 		rpm.AddFile(rpmpack.RPMFile{
 			Name:  file.Destination,
-			Body:
-			uint(tagLink),[]byte(file.Source),
-			Mode:
+			Body:  []byte(file.Source),
+			Mode:  uint(tagLink),
 			MTime: uint32(file.FileInfo.MTime.Unix()),
 			Owner: file.FileInfo.Owner,
 			Group: file.FileInfo.Group,

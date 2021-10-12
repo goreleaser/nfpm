@@ -19,11 +19,10 @@ import (
 
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/chglog"
-	"github.com/ulikunitz/xz"
-
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
+	"github.com/ulikunitz/xz"
 )
 
 const packagerName = "deb"

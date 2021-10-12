@@ -11,10 +11,9 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/Masterminds/semver/v3"
 	"github.com/goreleaser/chglog"
+	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/imdario/mergo"
 	"gopkg.in/yaml.v3"
-
-	"github.com/goreleaser/nfpm/v2/files"
 )
 
 // nolint: gochecknoglobals

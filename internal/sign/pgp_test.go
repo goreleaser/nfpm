@@ -9,9 +9,8 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/stretchr/testify/require"
-
 	"github.com/goreleaser/nfpm/v2"
+	"github.com/stretchr/testify/require"
 )
 
 const pass = "hunter2"
