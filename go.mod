@@ -6,7 +6,7 @@ require (
 	github.com/AlekSi/pointer v1.1.0
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/ProtonMail/go-crypto v0.0.0-20210920160938-87db9fbc61c7
-	github.com/ProtonMail/gopenpgp/v2 v2.2.4
+	github.com/ProtonMail/gopenpgp/v2 v2.2.2
 	github.com/alecthomas/jsonschema v0.0.0-20210920000243-787cd8204a0d
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/google/rpmpack v0.0.0-20210518075352-dc539ef4f2ea
