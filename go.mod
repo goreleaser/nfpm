@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/AlekSi/pointer v1.1.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/ProtonMail/go-crypto v0.0.0-20210920160938-87db9fbc61c7
+	github.com/ProtonMail/go-crypto v0.0.0-20210512092938-c05353c2d58c
 	github.com/ProtonMail/gopenpgp/v2 v2.2.2
 	github.com/alecthomas/jsonschema v0.0.0-20210920000243-787cd8204a0d
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
@@ -62,4 +62,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/sassoftware/go-rpmutils => github.com/caarlos0/go-rpmutils v0.2.1-0.20211008203014-a0965bbd3754
+replace github.com/sassoftware/go-rpmutils => github.com/caarlos0/go-rpmutils v0.2.1-0.20211012234905-ebb3fe8a5fce
