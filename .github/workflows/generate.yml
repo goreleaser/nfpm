@@ -25,8 +25,8 @@ jobs:
       -
         name: Set up Task
         uses: arduino/setup-task@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       -
         name: Refresh docs
         run: task docs:generate
