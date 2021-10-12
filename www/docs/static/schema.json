@@ -348,6 +348,16 @@
 						"$schema": "http://json-schema.org/draft-04/schema#",
 						"$ref": "#/definitions/DebSignature",
 						"title": "signature"
+					},
+					"compression": {
+						"enum": [
+							"gzip",
+							"xz",
+							"none"
+						],
+						"type": "string",
+						"title": "compression algorithm to be used",
+						"default": "gzip"
 					}
 				},
 				"additionalProperties": false,

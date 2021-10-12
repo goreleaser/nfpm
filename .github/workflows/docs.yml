@@ -17,9 +17,18 @@ jobs:
         name: checkout
         uses: actions/checkout@v2
       -
+        name: Set up Task
+        uses: arduino/setup-task@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      -
+        name: setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      -
         name: build
-        run: |
-          docker run --rm -v ${PWD}/www:/docs squidfunk/mkdocs-material build
+        run: task docs:build
       -
         name: htmltest
         uses: wjdp/htmltest-action@master
