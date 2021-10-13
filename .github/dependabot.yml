@@ -5,14 +5,6 @@ updates:
   schedule:
     interval: daily
   open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: github.com/goreleaser/fileglob
-    versions:
-    - 1.1.1
-  - dependency-name: github.com/golangci/golangci-lint
-    versions:
-    - 1.37.0
-    - 1.37.1
-  - dependency-name: github.com/stretchr/testify
-    versions:
-    - 1.7.0
+  commit_message:
+    prefix: "feat"
+    include_scope: true
