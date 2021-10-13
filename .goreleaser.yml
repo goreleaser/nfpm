@@ -5,6 +5,7 @@ before:
   hooks:
     - go mod tidy
     - ./scripts/completions.sh
+    - wget -c https://raw.githubusercontent.com/goreleaser/goreleaser/master/cosign.key -O /tmp/goreleaser_cosign.key
 
 gomod:
   proxy: true
@@ -73,12 +74,6 @@ docker_manifests:
       - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
       - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
 
-changelog:
-  use: github
-  filters:
-    exclude:
-      - Merge
-
 archives:
 - replacements:
     darwin: Darwin
@@ -125,11 +120,6 @@ scoop:
   homepage: https://nfpm.goreleaser.com
   description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
   license: MIT
-release:
-  footer: |
-    ---
-
-    - Check out [GoReleaser](https://goreleaser.com): it integrates nFPM to the release pipeline of your Go projects.
 
 nfpms:
 - file_name_template: '{{ .ProjectName }}_{{ .Arch }}'
@@ -154,7 +144,42 @@ nfpms:
 furies:
   - account: goreleaser
 
+signs:
+- cmd: cosign
+  stdin: '{{ .Env.COSIGN_PWD }}'
+  args: ["sign-blob", "-key=/tmp/goreleaser_cosign.key", "-output=${signature}", "${artifact}"]
+  artifacts: checksum
+
+docker_signs:
+- artifacts: manifests
+  stdin: '{{ .Env.COSIGN_PWD }}'
+  args: ["sign", "-key=/tmp/goreleaser_cosign.key", "${artifact}"]
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+    - Merge pull request
+    - Merge branch
+    - go mod tidy
+
+checksum:
+  name_template: 'checksums.txt'
+
+release:
+  footer: |
+    ---
+
+    - Check out [GoReleaser](https://goreleaser.com): it integrates nFPM to the release pipeline of your Go projects.
+
 announce:
+  skip: "{{gt .Patch 0}}"
   twitter:
     enabled: true
-    message_template: 'nFPM {{ .Tag }} was just released! See whats new: https://nfpm.goreleaser.com/releases/tag/{{ .Tag }}'
+    message_template: "nFPM {{ .Tag }} was just released! See what's new: https://github.com/goreleaser/nfpm/releases/tag/{{ .Tag }}"
+  discord:
+    enabled: true
+    message_template: "nFPM {{ .Tag }} is out! See what's new: https://github.com/goreleaser/goreleaser/releases/tag/{{ .Tag }}"
