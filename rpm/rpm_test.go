@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
@@ -20,7 +21,6 @@ import (
 	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/openpgp"
 )
 
 func exampleInfo() *nfpm.Info {
