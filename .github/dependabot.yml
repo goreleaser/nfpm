@@ -9,7 +9,7 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "feat"
-      include_scope: true
+      include: "scope"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -19,7 +19,7 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "feat"
-      include_scope: true
+      include: "scope"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -29,5 +29,5 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "feat"
-      include_scope: true
+      include: "scope"
 
