@@ -1,10 +1,33 @@
 version: 2
 updates:
-- package-ecosystem: gomod
-  directory: "/"
-  schedule:
-    interval: daily
-  open-pull-requests-limit: 10
-  commit-message:
-    prefix: "feat"
-    include_scope: true
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "08:00"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "feat"
+      include_scope: true
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "08:00"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "feat"
+      include_scope: true
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "08:00"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "feat"
+      include_scope: true
+
