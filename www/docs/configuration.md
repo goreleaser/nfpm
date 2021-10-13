@@ -9,6 +9,7 @@ A commented out `nfpm.yaml` config file example:
 name: foo
 
 # Architecture. (required)
+# This will expand any env var you set in the field, eg version: ${GOARCH}
 arch: amd64
 
 # Platform.
