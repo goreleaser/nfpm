@@ -59,12 +59,6 @@ sudo yum install nfpm
 
 Download the `.deb`, `.rpm` or `.apk` from the [releases page][releases] and install them with the appropriate tools.
 
-### shell script
-
-```sh
-curl -sfL https://install.goreleaser.com/github.com/goreleaser/nfpm.sh | sh
-```
-
 ### go install
 
 ```sh
