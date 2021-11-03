@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -166,7 +165,7 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 	// if in the long run we should be more strict about this and error when
 	// not set?
 	if info.Maintainer == "" {
-		log.Println("DEPRECATION WARNING: Leaving the 'maintainer' field unset will not be allowed in a future version")
+		fmt.Fprintf(os.Stderr, "DEPRECATION WARNING: Leaving the 'maintainer' field unset will not be allowed in a future version")
 		info.Maintainer = "Unset Maintainer <unset@localhost>"
 	}
 }
@@ -263,10 +262,41 @@ func createSymlinkInsideTar(file *files.Content, out *tar.Writer) error {
 
 func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 	created map[string]bool) (md5buf bytes.Buffer, instSize int64, err error) {
+	// create explicit directories first
 	for _, file := range info.Contents {
+		// at this point, we don't are about other types yet
+		if file.Type != "dir" {
+			continue
+		}
+
+		// only consider contents for this packager
 		if file.Packager != "" && file.Packager != packagerName {
 			continue
 		}
+
+		err = tw.WriteHeader(&tar.Header{
+			Name:     file.Destination,
+			Mode:     int64(file.FileInfo.Mode),
+			Typeflag: tar.TypeDir,
+			Format:   tar.FormatGNU,
+			Uname:    file.FileInfo.Owner,
+			Gname:    file.FileInfo.Group,
+			ModTime:  file.FileInfo.MTime,
+		})
+		if err != nil {
+			return md5buf, 0, err
+		}
+
+		created[strings.TrimPrefix(file.Destination, "/")] = true
+	}
+
+	// create files and implicit directories
+	for _, file := range info.Contents {
+		// only consider contents for this packager
+		if file.Packager != "" && file.Packager != packagerName {
+			continue
+		}
+		// create implicit directory structure below the current content
 		if err = createTree(tw, file.Destination, created); err != nil {
 			return md5buf, 0, err
 		}
@@ -276,28 +306,15 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 		case "ghost":
 			// skip ghost files in apk
 			continue
+		case "dir":
+			// already handled above
+			continue
 		case "symlink":
 			err = createSymlinkInsideTar(file, tw)
-		case "dir":
-			// this .nope is actually not created, because createTree ignore the
-			// last part of the path, assuming it is a file.
-			// TODO: should probably refactor this
-			err = createTree(tw, filepath.Join(file.Destination, ".nope"), created)
-		case "doc":
+		case "doc", "licence", "license", "readme", "config", "config|noreplace":
 			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
-		case "licence", "license":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
-		case "readme":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
-		case "config", "config|noreplace":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
+			// ignoring `emptyFallthrough: remove empty case containing only
+			// fallthrough to default case`
 			fallthrough
 		default:
 			size, err = copyToTarAndDigest(file, tw, &md5buf)
@@ -330,7 +347,6 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 
 	header, err := tar.FileInfoHeader(file, file.Source)
 	if err != nil {
-		log.Print(err)
 		return 0, err
 	}
 	header.Format = tar.FormatGNU

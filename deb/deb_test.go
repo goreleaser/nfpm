@@ -798,6 +798,10 @@ func TestDirectories(t *testing.T) {
 		{
 			Destination: "/etc/bar",
 			Type:        "dir",
+			FileInfo: &files.ContentFileInfo{
+				Owner: "test",
+				Mode:  0o700,
+			},
 		},
 		{
 			Destination: "/etc/baz",
@@ -821,9 +825,57 @@ func TestDirectories(t *testing.T) {
 	h = extractFileHeaderFromTar(t, dataTarball, "/etc/bar")
 	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	require.Equal(t, h.Mode, int64(0o700))
+	require.Equal(t, h.Uname, "test")
 	h = extractFileHeaderFromTar(t, dataTarball, "/etc/baz")
 	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+}
+
+func TestNoDuplicateContents(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/file",
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/file2",
+		},
+		{
+			Destination: "/etc/foo",
+			Type:        "dir",
+		},
+		{
+			Destination: "/etc/baz",
+			Type:        "dir",
+		},
+	}
+
+	require.NoError(t, info.Validate())
+
+	deflatedDataTarball, _, _, dataTarballName, err := createDataTarball(info)
+	require.NoError(t, err)
+	dataTarball := inflate(t, dataTarballName, deflatedDataTarball)
+
+	exists := map[string]bool{}
+
+	tr := tar.NewReader(bytes.NewReader(dataTarball))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(t, err)
+
+		_, ok := exists[hdr.Name]
+		if ok {
+			t.Fatalf("%s exists more than once in tarball", hdr.Name)
+		}
+
+		exists[hdr.Name] = true
+	}
 }
 
 func testRelativePathPrefixInTar(tb testing.TB, tarFile []byte) {
