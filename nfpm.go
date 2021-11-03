@@ -372,8 +372,9 @@ func Validate(info *Info) (err error) {
 	}
 
 	if len(info.EmptyFolders) > 0 {
-		fmt.Fprintf(os.Stderr, "empty_folders is deprecated, create content with type "+
-			"'dir' and directoy name as 'dst' instead")
+		fmt.Fprintf(os.Stderr, "DEPRECATION WARNING: 'empty_folders' is deprecated and "+
+			"will be removed in a future version, create content with type 'dir' and "+
+			"directoy name as 'dst' instead")
 
 		for _, emptyFolder := range info.EmptyFolders {
 			if contents.ContainsDestination(emptyFolder) {
