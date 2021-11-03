@@ -786,12 +786,12 @@ func TestDirectories(t *testing.T) {
 	// claiming explicit ownership of /etc/bar which already contains a file
 	h, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), "/etc/bar")
 	require.NoError(t, err)
-	require.NotEqual(t, h.Mode()&int(rpmDirectoryFlag), 0)
+	require.NotEqual(t, h.Mode()&int(tagDirectory), 0)
 
 	// creating an empty folder (which also implies ownership)
 	h, err = extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), "/etc/baz")
 	require.NoError(t, err)
-	require.Equal(t, h.Mode(), int(rpmDirectoryFlag|0o700))
+	require.Equal(t, h.Mode(), int(tagDirectory|0o700))
 }
 
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {

@@ -29,6 +29,8 @@ const (
 
 	// Symbolic link
 	tagLink = 0o120000
+	// Directory
+	tagDirectory = 0o40000
 
 	changelogNotesTemplate = `
 {{- range .Changes }}{{$note := splitList "\n" .Note}}
@@ -315,10 +317,6 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 }
 
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
-	// sort.Slice(info.Contents, func(i, j int) bool {
-	// 	return info.Contents[i].Type == "dir" && info.Contents[j].Type != "dir"
-	// })
-
 	for _, content := range info.Contents {
 		if content.Packager != "" && content.Packager != packagerName {
 			continue
@@ -361,8 +359,6 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 	return nil
 }
 
-var rpmDirectoryFlag uint = 0o40000
-
 func asRPMDirectory(content *files.Content) (*rpmpack.RPMFile, error) {
 	if content.Source != "" {
 		return nil, fmt.Errorf(
@@ -371,7 +367,7 @@ func asRPMDirectory(content *files.Content) (*rpmpack.RPMFile, error) {
 
 	return &rpmpack.RPMFile{
 		Name:  content.Destination,
-		Mode:  uint(content.Mode()) | rpmDirectoryFlag,
+		Mode:  uint(content.Mode()) | tagDirectory,
 		MTime: uint32(time.Now().Unix()),
 		Owner: content.FileInfo.Owner,
 		Group: content.FileInfo.Group,
