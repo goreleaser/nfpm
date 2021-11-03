@@ -44,17 +44,15 @@ func (c Contents) Swap(i, j int) {
 func (c Contents) Less(i, j int) bool {
 	a, b := c[i], c[j]
 
-	if a.Type == "dir" || b.Type != "dir" {
-		return true
+	if a.Destination != b.Destination {
+		return a.Destination != b.Destination
 	}
 
 	if a.Type != b.Type {
-		return len(a.Type) < len(b.Type)
+		return a.Type < b.Type
 	}
-	if a.Source != b.Source {
-		return a.Source < b.Source
-	}
-	return a.Destination < b.Destination
+
+	return a.Packager < b.Packager
 }
 
 func (c Contents) ContainsDestination(dst string) bool {
