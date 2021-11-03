@@ -53,8 +53,7 @@ priority: extra
 
 # Maintainer.
 # Defaults to empty on rpm and apk
-# Leaving this field empty on 'deb' packages is deprecated, and will be removed
-# in a future release
+# Leaving the 'maintainer' field unset will not be allowed in a future version
 maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 
 # Description.
