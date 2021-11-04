@@ -275,7 +275,7 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 		}
 
 		err = tw.WriteHeader(&tar.Header{
-			Name:     file.Destination,
+			Name:     files.ToNixPath(strings.Trim(file.Destination, "/") + "/"),
 			Mode:     int64(file.FileInfo.Mode),
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
@@ -599,7 +599,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 
 func pathsToCreate(dst string) []string {
 	paths := []string{}
-	base := strings.TrimPrefix(dst, "/")
+	base := strings.Trim(dst, "/")
 	for {
 		base = filepath.Dir(base)
 		if base == "." {
