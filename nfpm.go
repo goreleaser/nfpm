@@ -378,7 +378,7 @@ func Validate(info *Info) (err error) {
 
 		for _, emptyFolder := range info.EmptyFolders {
 			if contents.ContainsDestination(emptyFolder) {
-				return fmt.Errorf("empty folder already exists in contents")
+				return fmt.Errorf("empty folder already exists in contents: %s", emptyFolder)
 			}
 
 			contents = append(contents, &files.Content{
@@ -387,6 +387,10 @@ func Validate(info *Info) (err error) {
 			})
 		}
 	}
+
+	// The deprecated EmptyFolders are already converted to contents, so we
+	// remove it such that Validate can be called more than once.
+	info.EmptyFolders = nil
 
 	info.Contents = contents
 
