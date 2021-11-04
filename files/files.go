@@ -45,7 +45,7 @@ func (c Contents) Less(i, j int) bool {
 	a, b := c[i], c[j]
 
 	if a.Destination != b.Destination {
-		return a.Destination != b.Destination
+		return a.Destination < b.Destination
 	}
 
 	if a.Type != b.Type {
