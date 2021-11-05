@@ -86,20 +86,25 @@ func (c *Content) WithFileInfoDefaults() *Content {
 		cc.FileInfo.Mode = 0o755
 	}
 
-	if cc.Source == "" {
-		return cc
+	// determine if we still need info
+	fileInfoAlreadyComplete := (!cc.FileInfo.MTime.IsZero() &&
+		cc.FileInfo.Mode != 0 &&
+		(cc.FileInfo.Size != 0 || cc.Type == "dir"))
+
+	// only stat source when we actually need more information
+	if cc.Source != "" && !fileInfoAlreadyComplete {
+		info, err := os.Stat(cc.Source)
+		if err == nil {
+			if cc.FileInfo.MTime.IsZero() {
+				cc.FileInfo.MTime = info.ModTime()
+			}
+			if cc.FileInfo.Mode == 0 {
+				cc.FileInfo.Mode = info.Mode()
+			}
+			cc.FileInfo.Size = info.Size()
+		}
 	}
 
-	info, err := os.Stat(cc.Source)
-	if err == nil {
-		if cc.FileInfo.MTime.IsZero() {
-			cc.FileInfo.MTime = info.ModTime()
-		}
-		if cc.FileInfo.Mode == 0 {
-			cc.FileInfo.Mode = info.Mode()
-		}
-		cc.FileInfo.Size = info.Size()
-	}
 	if cc.FileInfo.MTime.IsZero() {
 		cc.FileInfo.MTime = time.Now().UTC()
 	}
