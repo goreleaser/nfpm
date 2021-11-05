@@ -71,6 +71,19 @@ var archToAlpine = map[string]string{
 	// "s390x":  "???",
 }
 
+func ensureValidArch(info *nfpm.Info) *nfpm.Info {
+	if info.APK.Arch != "" {
+		info.Arch = info.APK.Arch
+	} else {
+		arch, ok := archToAlpine[info.Arch]
+		if ok {
+			info.Arch = arch
+		}
+	}
+
+	return info
+}
+
 // Default apk packager.
 // nolint: gochecknoglobals
 var Default = &Apk{}
@@ -79,12 +92,7 @@ var Default = &Apk{}
 type Apk struct{}
 
 func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
-	// TODO: verify this
-	arch, ok := archToAlpine[info.Arch]
-	if !ok {
-		arch = info.Arch
-	}
-
+	info = ensureValidArch(info)
 	version := info.Version
 	if info.Release != "" {
 		version += "-" + info.Release
@@ -98,20 +106,12 @@ func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 		version += "+" + info.VersionMetadata
 	}
 
-	return fmt.Sprintf("%s_%s_%s.apk", info.Name, version, arch)
+	return fmt.Sprintf("%s_%s_%s.apk", info.Name, version, info.Arch)
 }
 
 // Package writes a new apk package to the given writer using the given info.
 func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
-	if info.APK.APKArch != "" {
-		info.Arch = info.APK.APKArch
-	} else {
-		arch, ok := archToAlpine[info.Arch]
-		if ok {
-			info.Arch = arch
-		}
-	}
-
+	info = ensureValidArch(info)
 	if err = info.Validate(); err != nil {
 		return err
 	}

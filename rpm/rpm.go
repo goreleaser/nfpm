@@ -61,8 +61,8 @@ var archToRPM = map[string]string{
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
-	if info.APK.APKArch != "" {
-		info.Arch = info.APK.APKArch
+	if info.RPM.Arch != "" {
+		info.Arch = info.RPM.Arch
 	} else {
 		arch, ok := archToRPM[info.Arch]
 		if ok {
