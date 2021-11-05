@@ -82,10 +82,15 @@ var ErrInvalidSignatureType = errors.New("invalid signature type")
 
 // Package writes a new deb package to the given writer using the given info.
 func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: funlen
-	arch, ok := archToDebian[info.Arch]
-	if ok {
-		info.Arch = arch
+	if info.Deb.DebArch != "" {
+		info.Arch = info.Deb.DebArch
+	} else {
+		arch, ok := archToDebian[info.Arch]
+		if ok {
+			info.Arch = arch
+		}
 	}
+
 	if err = info.Validate(); err != nil {
 		return err
 	}

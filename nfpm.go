@@ -263,6 +263,7 @@ type Overridables struct {
 
 // RPM is custom configs that are only available on RPM packages.
 type RPM struct {
+	RPMArch     string       `yaml:"rpm_arch,omitempty" jsonschema:"title=architecture in rpm nomenclature"`
 	Scripts     RPMScripts   `yaml:"scripts,omitempty" jsonschema:"title=rpm-specific scripts"`
 	Group       string       `yaml:"group,omitempty" jsonschema:"title=package group,example=Unspecified"`
 	Summary     string       `yaml:"summary,omitempty" jsonschema:"title=package summary"`
@@ -288,6 +289,7 @@ type RPMSignature struct {
 }
 
 type APK struct {
+	APKArch   string       `yaml:"apk_arch,omitempty" jsonschema:"title=architecture in apk nomenclature"`
 	Signature APKSignature `yaml:"signature,omitempty" jsonschema:"title=apk signature"`
 	Scripts   APKScripts   `yaml:"scripts,omitempty" jsonschema:"title=apk scripts"`
 }
@@ -305,6 +307,7 @@ type APKScripts struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
+	DebArch     string       `yaml:"deb_arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
 	Scripts     DebScripts   `yaml:"scripts,omitempty" jsonschema:"title=scripts"`
 	Triggers    DebTriggers  `yaml:"triggers,omitempty" jsonschema:"title=triggers"`
 	Breaks      []string     `yaml:"breaks,omitempty" jsonschema:"title=breaks"`

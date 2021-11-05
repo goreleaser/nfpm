@@ -103,13 +103,15 @@ func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 
 // Package writes a new apk package to the given writer using the given info.
 func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
-	arch, ok := archToAlpine[info.Arch]
-	if ok {
-		info.Arch = arch
+	if info.APK.APKArch != "" {
+		info.Arch = info.APK.APKArch
+	} else {
+		arch, ok := archToAlpine[info.Arch]
+		if ok {
+			info.Arch = arch
+		}
 	}
-	if info.Arch == "" {
-		info.Arch = archToAlpine["amd64"]
-	}
+
 	if err = info.Validate(); err != nil {
 		return err
 	}
