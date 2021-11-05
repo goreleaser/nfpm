@@ -28,7 +28,7 @@ tasks:
     generates:
       - ./nfpm
     cmds:
-      - go build
+      - go build ./cmd/nfpm
 
   acceptance:pull:
     desc: Pull acceptance test images
