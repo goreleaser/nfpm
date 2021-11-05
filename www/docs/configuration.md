@@ -166,6 +166,7 @@ contents:
   - src: path/to/foo
     dst: /usr/local/foo
     file_info:
+      # Make sure that the mode is specified in octal, e.g. 0644 instead of 644.
       mode: 0644
       mtime: 2008-01-02T15:04:05Z
       owner: notRoot

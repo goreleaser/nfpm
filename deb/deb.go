@@ -343,6 +343,10 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 		log.Print(err)
 		return 0, err
 	}
+
+	// tar.FileInfoHeader only uses file.Mode().Perm() which masks the mode with
+	// 0o777 which we don't want because we want to be able to set the suid bit.
+	header.Mode = int64(file.Mode())
 	header.Format = tar.FormatGNU
 	header.Name = normalizePath(file.Destination)
 	header.Uname = file.FileInfo.Owner
