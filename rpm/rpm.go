@@ -365,11 +365,6 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 }
 
 func asRPMDirectory(content *files.Content) (*rpmpack.RPMFile, error) {
-	if content.Source != "" {
-		return nil, fmt.Errorf(
-			"content of type 'dir' cannot have 'src', use 'dst' as directory name")
-	}
-
 	return &rpmpack.RPMFile{
 		Name:  content.Destination,
 		Mode:  uint(content.Mode()) | tagDirectory,
