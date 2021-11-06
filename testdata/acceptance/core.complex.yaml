@@ -27,6 +27,10 @@ contents:
 - src: ./testdata/whatever.conf
   dst: /etc/foo/whatever.conf
   type: config
+- src: ./testdata/fake
+  dst: /usr/sbin/fake
+  file_info:
+    mode: 04755
 empty_folders:
 - /var/log/whatever
 - /usr/share/foo
