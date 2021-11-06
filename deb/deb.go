@@ -43,6 +43,19 @@ var archToDebian = map[string]string{
 	"ppc64le": "ppc64el",
 }
 
+func ensureValidArch(info *nfpm.Info) *nfpm.Info {
+	if info.Deb.Arch != "" {
+		info.Arch = info.Deb.Arch
+	} else {
+		arch, ok := archToDebian[info.Arch]
+		if ok {
+			info.Arch = arch
+		}
+	}
+
+	return info
+}
+
 // Default deb packager.
 // nolint: gochecknoglobals
 var Default = &Deb{}
@@ -54,10 +67,7 @@ type Deb struct{}
 // to the conventions for debian packages. See:
 // https://manpages.debian.org/buster/dpkg-dev/dpkg-name.1.en.html
 func (*Deb) ConventionalFileName(info *nfpm.Info) string {
-	arch, ok := archToDebian[info.Arch]
-	if !ok {
-		arch = info.Arch
-	}
+	info = ensureValidArch(info)
 
 	version := info.Version
 	if info.Prerelease != "" {
@@ -73,7 +83,7 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 	}
 
 	// package_version_architecture.package-type
-	return fmt.Sprintf("%s_%s_%s.deb", info.Name, version, arch)
+	return fmt.Sprintf("%s_%s_%s.deb", info.Name, version, info.Arch)
 }
 
 // ErrInvalidSignatureType happens if the signature type of a deb is not one of
@@ -82,10 +92,7 @@ var ErrInvalidSignatureType = errors.New("invalid signature type")
 
 // Package writes a new deb package to the given writer using the given info.
 func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: funlen
-	arch, ok := archToDebian[info.Arch]
-	if ok {
-		info.Arch = arch
-	}
+	info = ensureValidArch(info)
 	if err = info.Validate(); err != nil {
 		return err
 	}

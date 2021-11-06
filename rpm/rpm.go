@@ -61,10 +61,15 @@ var archToRPM = map[string]string{
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
-	arch, ok := archToRPM[info.Arch]
-	if ok {
-		info.Arch = arch
+	if info.RPM.Arch != "" {
+		info.Arch = info.RPM.Arch
+	} else {
+		arch, ok := archToRPM[info.Arch]
+		if ok {
+			info.Arch = arch
+		}
 	}
+
 	return info
 }
 
