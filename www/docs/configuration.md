@@ -164,7 +164,9 @@ contents:
     packager: apk
 
   # Sometimes it is important to be able to set the mtime, mode, owner, or group for a file
-  # that differs from what is on the local build system at build time.
+  # that differs from what is on the local build system at build time. The owner (if different
+  # than 'root') has to be always specified manually in 'file_info' as it will not be copied
+  # from the 'src' file.
   - src: path/to/foo
     dst: /usr/local/foo
     file_info:
