@@ -75,7 +75,7 @@ func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Conf
 
 	WithDefaults(&config.Info)
 
-	return config, config.Validate()
+	return config, nil
 }
 
 // ParseFile decodes YAML data from a file path into a configuration struct.
