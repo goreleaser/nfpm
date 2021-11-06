@@ -75,7 +75,7 @@ func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Conf
 
 	WithDefaults(&config.Info)
 
-	return config, config.Validate()
+	return config, nil
 }
 
 // ParseFile decodes YAML data from a file path into a configuration struct.
@@ -263,6 +263,7 @@ type Overridables struct {
 
 // RPM is custom configs that are only available on RPM packages.
 type RPM struct {
+	Arch        string       `yaml:"arch,omitempty" jsonschema:"title=architecture in rpm nomenclature"`
 	Scripts     RPMScripts   `yaml:"scripts,omitempty" jsonschema:"title=rpm-specific scripts"`
 	Group       string       `yaml:"group,omitempty" jsonschema:"title=package group,example=Unspecified"`
 	Summary     string       `yaml:"summary,omitempty" jsonschema:"title=package summary"`
@@ -288,6 +289,7 @@ type RPMSignature struct {
 }
 
 type APK struct {
+	Arch      string       `yaml:"arch,omitempty" jsonschema:"title=architecture in apk nomenclature"`
 	Signature APKSignature `yaml:"signature,omitempty" jsonschema:"title=apk signature"`
 	Scripts   APKScripts   `yaml:"scripts,omitempty" jsonschema:"title=apk scripts"`
 }
@@ -305,6 +307,7 @@ type APKScripts struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
+	Arch        string       `yaml:"arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
 	Scripts     DebScripts   `yaml:"scripts,omitempty" jsonschema:"title=scripts"`
 	Triggers    DebTriggers  `yaml:"triggers,omitempty" jsonschema:"title=triggers"`
 	Breaks      []string     `yaml:"breaks,omitempty" jsonschema:"title=breaks"`
@@ -359,7 +362,7 @@ func Validate(info *Info) (err error) {
 	if info.Name == "" {
 		return ErrFieldEmpty{"name"}
 	}
-	if info.Arch == "" {
+	if info.Arch == "" && (info.Deb.Arch == "" || info.RPM.Arch == "" || info.APK.Arch == "") {
 		return ErrFieldEmpty{"arch"}
 	}
 	if info.Version == "" {

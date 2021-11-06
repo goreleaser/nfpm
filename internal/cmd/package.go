@@ -72,10 +72,6 @@ func doPackage(configPath, target, packager string) error {
 
 	info = nfpm.WithDefaults(info)
 
-	if err = nfpm.Validate(info); err != nil {
-		return err
-	}
-
 	fmt.Printf("using %s packager...\n", packager)
 	pkg, err := nfpm.Get(packager)
 	if err != nil {

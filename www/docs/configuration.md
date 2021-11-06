@@ -10,6 +10,9 @@ name: foo
 
 # Architecture. (required)
 # This will expand any env var you set in the field, eg version: ${GOARCH}
+# The architecture is specified using Go nomenclature (GOARCH) and translated
+# to the platform specific equivalent. In order to manually set the architecture
+# to a platform specific value, use deb_arch, rpm_arch and apk_arch.
 arch: amd64
 
 # Platform.
@@ -165,6 +168,7 @@ contents:
   - src: path/to/foo
     dst: /usr/local/foo
     file_info:
+      # Make sure that the mode is specified in octal, e.g. 0644 instead of 644.
       mode: 0644
       mtime: 2008-01-02T15:04:05Z
       owner: notRoot
@@ -210,6 +214,9 @@ overrides:
 
 # Custom configuration applied only to the RPM packager.
 rpm:
+  # rpm specific architecture name that overrides "arch" without performing any replacements.
+  rpm_arch: ia64
+
   # RPM specific scripts.
   scripts:
     # The pretrans script runs before all RPM package transactions / stages.
@@ -243,6 +250,9 @@ rpm:
 
 # Custom configuration applied only to the Deb packager.
 deb:
+  # deb specific architecture name that overrides "arch" without performing any replacements.
+  deb_arch: arm
+
   # Custom deb special files.
   scripts:
     # Deb rules script.
@@ -288,6 +298,9 @@ deb:
     key_id: bc8acdd415bd80b3
 
 apk:
+  # apk specific architecture name that overrides "arch" without performing any replacements.
+  apk_arch: armhf
+
   # The package is signed if a key_file is set
   signature:
     # RSA private key in the PEM format. The passphrase is taken from

@@ -153,21 +153,30 @@ func TestValidateError(t *testing.T) {
 	}
 }
 
+func parseAndValidate(filename string) (nfpm.Config, error) {
+	config, err := nfpm.ParseFile(filename)
+	if err == nil {
+		err = config.Validate()
+	}
+
+	return config, err
+}
+
 func TestParseFile(t *testing.T) {
 	nfpm.ClearPackagers()
-	_, err := nfpm.ParseFile("./testdata/overrides.yaml")
+	_, err := parseAndValidate("./testdata/overrides.yaml")
 	require.Error(t, err)
 	nfpm.RegisterPackager("deb", &fakePackager{})
 	nfpm.RegisterPackager("rpm", &fakePackager{})
 	nfpm.RegisterPackager("apk", &fakePackager{})
-	_, err = nfpm.ParseFile("./testdata/overrides.yaml")
+	_, err = parseAndValidate("./testdata/overrides.yaml")
 	require.NoError(t, err)
-	_, err = nfpm.ParseFile("./testdata/doesnotexist.yaml")
+	_, err = parseAndValidate("./testdata/doesnotexist.yaml")
 	require.Error(t, err)
 	os.Setenv("RPM_KEY_FILE", "my/rpm/key/file")
 	os.Setenv("TEST_RELEASE_ENV_VAR", "1234")
 	os.Setenv("TEST_PRERELEASE_ENV_VAR", "beta1")
-	config, err := nfpm.ParseFile("./testdata/env-fields.yaml")
+	config, err := parseAndValidate("./testdata/env-fields.yaml")
 	require.NoError(t, err)
 	require.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
 	require.Equal(t, "1234", config.Release)
@@ -178,22 +187,22 @@ func TestParseFile(t *testing.T) {
 }
 
 func TestParseEnhancedFile(t *testing.T) {
-	config, err := nfpm.ParseFile("./testdata/contents.yaml")
+	config, err := parseAndValidate("./testdata/contents.yaml")
 	require.NoError(t, err)
-	require.Equal(t, config.Name, "contents foo")
+	require.Equal(t, "contents foo", config.Name)
 	shouldFind := 5
 	require.Len(t, config.Contents, shouldFind)
 }
 
 func TestParseEnhancedNestedGlobFile(t *testing.T) {
-	config, err := nfpm.ParseFile("./testdata/contents_glob.yaml")
+	config, err := parseAndValidate("./testdata/contents_glob.yaml")
 	require.NoError(t, err)
 	shouldFind := 3
 	require.Len(t, config.Contents, shouldFind)
 }
 
 func TestParseEnhancedNestedNoGlob(t *testing.T) {
-	config, err := nfpm.ParseFile("./testdata/contents_directory.yaml")
+	config, err := parseAndValidate("./testdata/contents_directory.yaml")
 	require.NoError(t, err)
 	shouldFind := 3
 	require.Len(t, config.Contents, shouldFind)

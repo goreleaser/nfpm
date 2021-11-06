@@ -143,34 +143,35 @@ func (c *Content) Sys() interface{} {
 
 // ExpandContentGlobs gathers all of the real files to be copied into the package.
 func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents, err error) {
+	options := []fileglob.OptFunc{fileglob.MatchDirectoryIncludesContents}
+	if disableGlobbing {
+		options = append(options, fileglob.QuoteMeta)
+	}
+
 	for _, f := range contents {
 		var globbed map[string]string
 
 		switch f.Type {
 		case "ghost", "symlink", "dir":
-			// Directories and ghost or symlink files need to be in the list,
-			// but dont glob them because they do not really exist
-			files, err = appendWithUniqueDestination(files, f.WithFileInfoDefaults())
+			// Ghost and symlink files need to be in the list, but dont glob them because they do not really exist
+			files = append(files, f.WithFileInfoDefaults())
+		default:
+			globbed, err = glob.Glob(f.Source, f.Destination, options...)
 			if err != nil {
 				return nil, err
 			}
 
-			continue
+			files, err = appendGlobbedFiles(files, globbed, f)
+			if err != nil {
+				return nil, err
+			}
 		}
 
-		options := []fileglob.OptFunc{fileglob.MatchDirectoryIncludesContents}
-		if disableGlobbing {
-			options = append(options, fileglob.QuoteMeta)
-		}
-		globbed, err = glob.Glob(f.Source, f.Destination, options...)
-		if err != nil {
-			return nil, err
-		}
+	}
 
-		files, err = appendGlobbedFiles(globbed, f, files)
-		if err != nil {
-			return nil, err
-		}
+	err = checkNoCollisions(files)
+	if err != nil {
+		return nil, err
 	}
 
 	// sort the files for reproducibility and general cleanliness
@@ -179,8 +180,7 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 	return files, nil
 }
 
-func appendGlobbedFiles(globbed map[string]string, origFile *Content, incFiles Contents) (files Contents, err error) {
-	files = append(files, incFiles...)
+func appendGlobbedFiles(all Contents, globbed map[string]string, origFile *Content) (Contents, error) {
 	for src, dst := range globbed {
 		newFile := &Content{
 			Destination: ToNixPath(dst),
@@ -190,28 +190,21 @@ func appendGlobbedFiles(globbed map[string]string, origFile *Content, incFiles C
 			Packager:    origFile.Packager,
 		}
 
-		files, err = appendWithUniqueDestination(files, newFile.WithFileInfoDefaults())
-		if err != nil {
-			return nil, err
-		}
+		all = append(all, newFile.WithFileInfoDefaults())
 	}
 
-	return files, nil
+	return all, nil
 }
 
 var ErrContentCollision = fmt.Errorf("content collision")
 
-func appendWithUniqueDestination(slice []*Content, elems ...*Content) ([]*Content, error) {
+func checkNoCollisions(contents Contents) error {
 	alreadyPresent := map[string]*Content{}
 
-	for _, presentElem := range slice {
-		alreadyPresent[presentElem.Destination] = presentElem
-	}
-
-	for _, elem := range elems {
+	for _, elem := range contents {
 		present, ok := alreadyPresent[elem.Destination]
 		if ok && (present.Packager == "" || elem.Packager == "" || present.Packager == elem.Packager) {
-			return nil, fmt.Errorf(
+			return fmt.Errorf(
 				"cannot add %s because %s is already present at the same destination (%s): %w",
 				elem.Source, present.Source, present.Destination, ErrContentCollision)
 		}
@@ -219,7 +212,7 @@ func appendWithUniqueDestination(slice []*Content, elems ...*Content) ([]*Conten
 		alreadyPresent[elem.Destination] = elem
 	}
 
-	return append(slice, elems...), nil
+	return nil
 }
 
 // ToNixPath converts the given path to a nix-style path.
