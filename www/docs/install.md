@@ -109,7 +109,7 @@ You can also use it within a Docker container. To do that, you'll need to
 execute something more-or-less like the following:
 
 ```sh
-docker run --rm -v $PWD:/tmp/pkg goreleaser/nfpm package \
+docker run --rm -v $PWD:/tmp -w /tmp goreleaser/nfpm package \
 	--config /tmp/pkg/foo.yml \
 	--target /tmp \
 	--packager deb
