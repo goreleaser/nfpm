@@ -52,12 +52,17 @@ var Default = &RPM{}
 // RPM is a RPM packager implementation.
 type RPM struct{}
 
+// https://docs.fedoraproject.org/ro/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch01s03.html
 // nolint: gochecknoglobals
 var archToRPM = map[string]string{
-	"all":   "noarch",
-	"amd64": "x86_64",
-	"386":   "i386",
-	"arm64": "aarch64",
+	"all":    "noarch",
+	"amd64":  "x86_64",
+	"386":    "i386",
+	"arm64":  "aarch64",
+	"arm6":   "arm6l",
+	"arm7":   "arm7l",
+	"mips":   "mips",
+	"mipsle": "mipsel",
 	// TODO: other arches
 }
 
