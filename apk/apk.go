@@ -62,23 +62,18 @@ func init() {
 var archToAlpine = map[string]string{
 	"386":   "x86",
 	"amd64": "x86_64",
-
 	"arm":   "armhf",
 	"arm6":  "armhf",
 	"arm7":  "armhf",
 	"arm64": "aarch64",
-
-	// "s390x":  "???",
+	// TODO: other arches
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	if info.APK.Arch != "" {
 		info.Arch = info.APK.Arch
-	} else {
-		arch, ok := archToAlpine[info.Arch]
-		if ok {
-			info.Arch = arch
-		}
+	} else if arch, ok := archToAlpine[info.Arch]; ok {
+		info.Arch = arch
 	}
 
 	return info

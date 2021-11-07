@@ -60,16 +60,14 @@ var archToRPM = map[string]string{
 	"amd64": "x86_64",
 	"386":   "i386",
 	"arm64": "aarch64",
+	// TODO: other arches
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	if info.RPM.Arch != "" {
 		info.Arch = info.RPM.Arch
-	} else {
-		arch, ok := archToRPM[info.Arch]
-		if ok {
-			info.Arch = arch
-		}
+	} else if arch, ok := archToRPM[info.Arch]; ok {
+		info.Arch = arch
 	}
 
 	return info

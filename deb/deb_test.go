@@ -23,7 +23,6 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xi2/xz"
 )
@@ -95,7 +94,7 @@ func TestDeb(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
 			err := Default.Package(info, ioutil.Discard)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 	}
 }
@@ -113,7 +112,7 @@ func TestDebVersionWithDash(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0-beta"
 	err := Default.Package(info, ioutil.Discard)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestDebVersion(t *testing.T) {
@@ -123,7 +122,7 @@ func TestDebVersion(t *testing.T) {
 	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
 	v := extractDebVersion(&buf)
-	assert.Equal(t, "1.0.0", v)
+	require.Equal(t, "1.0.0", v)
 }
 
 func TestDebVersionWithRelease(t *testing.T) {
@@ -134,7 +133,7 @@ func TestDebVersionWithRelease(t *testing.T) {
 	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
 	v := extractDebVersion(&buf)
-	assert.Equal(t, "1.0.0-1", v)
+	require.Equal(t, "1.0.0-1", v)
 }
 
 func TestDebVersionWithPrerelease(t *testing.T) {
@@ -146,7 +145,7 @@ func TestDebVersionWithPrerelease(t *testing.T) {
 	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
 	v := extractDebVersion(&buf)
-	assert.Equal(t, "1.0.0~1", v)
+	require.Equal(t, "1.0.0~1", v)
 }
 
 func TestDebVersionWithReleaseAndPrerelease(t *testing.T) {
@@ -159,7 +158,7 @@ func TestDebVersionWithReleaseAndPrerelease(t *testing.T) {
 	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
 	v := extractDebVersion(&buf)
-	assert.Equal(t, "1.0.0-2~rc1", v)
+	require.Equal(t, "1.0.0-2~rc1", v)
 }
 
 func TestDebVersionWithVersionMetadata(t *testing.T) {
@@ -171,7 +170,7 @@ func TestDebVersionWithVersionMetadata(t *testing.T) {
 	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
 	v := extractDebVersion(&buf)
-	assert.Equal(t, "1.0.0+meta", v)
+	require.Equal(t, "1.0.0+meta", v)
 
 	buf.Reset()
 
@@ -180,7 +179,7 @@ func TestDebVersionWithVersionMetadata(t *testing.T) {
 	err = writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
 	v = extractDebVersion(&buf)
-	assert.Equal(t, "1.0.0+meta", v)
+	require.Equal(t, "1.0.0+meta", v)
 
 	buf.Reset()
 
@@ -190,12 +189,12 @@ func TestDebVersionWithVersionMetadata(t *testing.T) {
 	err = writeControl(&buf, controlData{nfpm.WithDefaults(info), 0})
 	require.NoError(t, err)
 	v = extractDebVersion(&buf)
-	assert.Equal(t, "1.0.0~alpha+meta", v)
+	require.Equal(t, "1.0.0~alpha+meta", v)
 }
 
 func TestControl(t *testing.T) {
 	var w bytes.Buffer
-	assert.NoError(t, writeControl(&w, controlData{
+	require.NoError(t, writeControl(&w, controlData{
 		Info:          exampleInfo(),
 		InstalledSize: 10,
 	}))
@@ -205,32 +204,32 @@ func TestControl(t *testing.T) {
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	require.Equal(t, string(bts), w.String())
 }
 
 func TestSpecialFiles(t *testing.T) {
 	var w bytes.Buffer
 	out := tar.NewWriter(&w)
 	filePath := "testdata/templates.golden"
-	assert.Error(t, newFilePathInsideTar(out, "doesnotexit", "templates", 0o644))
+	require.Error(t, newFilePathInsideTar(out, "doesnotexit", "templates", 0o644))
 	require.NoError(t, newFilePathInsideTar(out, filePath, "templates", 0o644))
 	in := tar.NewReader(&w)
 	header, err := in.Next()
 	require.NoError(t, err)
-	assert.Equal(t, "templates", header.FileInfo().Name())
+	require.Equal(t, "templates", header.FileInfo().Name())
 	mode, err := strconv.ParseInt("0644", 8, 64)
 	require.NoError(t, err)
-	assert.Equal(t, int64(header.FileInfo().Mode()), mode)
+	require.Equal(t, int64(header.FileInfo().Mode()), mode)
 	data, err := ioutil.ReadAll(in)
 	require.NoError(t, err)
 	org, err := ioutil.ReadFile(filePath)
 	require.NoError(t, err)
-	assert.Equal(t, data, org)
+	require.Equal(t, data, org)
 }
 
 func TestNoJoinsControl(t *testing.T) {
 	var w bytes.Buffer
-	assert.NoError(t, writeControl(&w, controlData{
+	require.NoError(t, writeControl(&w, controlData{
 		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "foo",
 			Arch:        "amd64",
@@ -259,7 +258,7 @@ func TestNoJoinsControl(t *testing.T) {
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	require.Equal(t, string(bts), w.String())
 }
 
 func TestDebFileDoesNotExist(t *testing.T) {
@@ -295,7 +294,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
+	require.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
 func TestDebNoFiles(t *testing.T) {
@@ -318,12 +317,12 @@ func TestDebNoFiles(t *testing.T) {
 		}),
 		ioutil.Discard,
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestDebNoInfo(t *testing.T) {
 	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestConffiles(t *testing.T) {
@@ -347,7 +346,7 @@ func TestConffiles(t *testing.T) {
 	err := info.Validate()
 	require.NoError(t, err)
 	out := conffiles(info)
-	assert.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
+	require.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
 }
 
 func TestPathsToCreate(t *testing.T) {
@@ -359,14 +358,14 @@ func TestPathsToCreate(t *testing.T) {
 		parts := parts
 		filePath := filePath
 		t.Run(fmt.Sprintf("path: '%s'", filePath), func(t *testing.T) {
-			assert.Equal(t, parts, pathsToCreate(filePath))
+			require.Equal(t, parts, pathsToCreate(filePath))
 		})
 	}
 }
 
 func TestMinimalFields(t *testing.T) {
 	var w bytes.Buffer
-	assert.NoError(t, writeControl(&w, controlData{
+	require.NoError(t, writeControl(&w, controlData{
 		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "minimal",
 			Arch:        "arm64",
@@ -382,12 +381,12 @@ func TestMinimalFields(t *testing.T) {
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	require.Equal(t, string(bts), w.String())
 }
 
 func TestDebEpoch(t *testing.T) {
 	var w bytes.Buffer
-	assert.NoError(t, writeControl(&w, controlData{
+	require.NoError(t, writeControl(&w, controlData{
 		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "withepoch",
 			Arch:        "arm64",
@@ -404,12 +403,12 @@ func TestDebEpoch(t *testing.T) {
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	require.Equal(t, string(bts), w.String())
 }
 
 func TestDebRules(t *testing.T) {
 	var w bytes.Buffer
-	assert.NoError(t, writeControl(&w, controlData{
+	require.NoError(t, writeControl(&w, controlData{
 		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "lala",
 			Arch:        "arm64",
@@ -433,12 +432,12 @@ func TestDebRules(t *testing.T) {
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	require.Equal(t, string(bts), w.String())
 }
 
 func TestMultilineFields(t *testing.T) {
 	var w bytes.Buffer
-	assert.NoError(t, writeControl(&w, controlData{
+	require.NoError(t, writeControl(&w, controlData{
 		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "multiline",
 			Arch:        "riscv64",
@@ -454,7 +453,7 @@ func TestMultilineFields(t *testing.T) {
 	}
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
-	assert.Equal(t, string(bts), w.String())
+	require.Equal(t, string(bts), w.String())
 }
 
 func TestDEBConventionalFileName(t *testing.T) {
@@ -498,7 +497,7 @@ func TestDEBConventionalFileName(t *testing.T) {
 		info.Prerelease = testCase.Prerelease
 		info.VersionMetadata = testCase.Metadata
 
-		assert.Equal(t, testCase.Expected, Default.ConventionalFileName(info))
+		require.Equal(t, testCase.Expected, Default.ConventionalFileName(info))
 	}
 }
 
@@ -520,7 +519,7 @@ func TestDebChangelogControl(t *testing.T) {
 
 	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
 
-	assert.Equal(t, goldenChangelog, string(controlChangelog))
+	require.Equal(t, goldenChangelog, string(controlChangelog))
 }
 
 func TestDebNoChangelogControlWithoutChangelogConfigured(t *testing.T) {
@@ -536,7 +535,7 @@ func TestDebNoChangelogControlWithoutChangelogConfigured(t *testing.T) {
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
 
-	assert.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "changelog"))
+	require.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "changelog"))
 }
 
 func TestDebChangelogData(t *testing.T) {
@@ -560,7 +559,7 @@ func TestDebChangelogData(t *testing.T) {
 	dataChangelog := inflate(t, "gz", dataChangelogGz)
 	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
 
-	assert.Equal(t, goldenChangelog, string(dataChangelog))
+	require.Equal(t, goldenChangelog, string(dataChangelog))
 }
 
 func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
@@ -578,7 +577,7 @@ func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
 
 	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
 
-	assert.False(t, tarContains(t, inflate(t, dataTarballName, dataTarball), changelogName))
+	require.False(t, tarContains(t, inflate(t, dataTarballName, dataTarball), changelogName))
 }
 
 func TestDebTriggers(t *testing.T) {
@@ -610,25 +609,25 @@ func TestDebTriggers(t *testing.T) {
 
 	goldenTriggers := createTriggers(info)
 
-	assert.Equal(t, string(goldenTriggers), string(controlTriggers))
+	require.Equal(t, string(goldenTriggers), string(controlTriggers))
 
 	// check if specified triggers are included and also that
 	// no remnants of triggers that were not specified are included
-	assert.True(t, bytes.Contains(controlTriggers,
+	require.True(t, bytes.Contains(controlTriggers,
 		[]byte("interest trigger1\n")))
-	assert.True(t, bytes.Contains(controlTriggers,
+	require.True(t, bytes.Contains(controlTriggers,
 		[]byte("interest trigger2\n")))
-	assert.True(t, bytes.Contains(controlTriggers,
+	require.True(t, bytes.Contains(controlTriggers,
 		[]byte("interest-await trigger3\n")))
-	assert.False(t, bytes.Contains(controlTriggers,
+	require.False(t, bytes.Contains(controlTriggers,
 		[]byte("interest-noawait ")))
-	assert.False(t, bytes.Contains(controlTriggers,
+	require.False(t, bytes.Contains(controlTriggers,
 		[]byte("activate ")))
-	assert.True(t, bytes.Contains(controlTriggers,
+	require.True(t, bytes.Contains(controlTriggers,
 		[]byte("activate-await trigger4\n")))
-	assert.True(t, bytes.Contains(controlTriggers,
+	require.True(t, bytes.Contains(controlTriggers,
 		[]byte("activate-noawait trigger5\n")))
-	assert.True(t, bytes.Contains(controlTriggers,
+	require.True(t, bytes.Contains(controlTriggers,
 		[]byte("activate-noawait trigger6\n")))
 }
 
@@ -645,7 +644,7 @@ func TestDebNoTriggersInControlIfNoneProvided(t *testing.T) {
 	controlTarGz, err := createControl(0, []byte{}, info)
 	require.NoError(t, err)
 
-	assert.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "triggers"))
+	require.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "triggers"))
 }
 
 func TestSymlinkInFiles(t *testing.T) {
@@ -680,7 +679,7 @@ func TestSymlinkInFiles(t *testing.T) {
 	packagedSymlinkTarget := extractFileFromTar(t,
 		inflate(t, dataTarballName, dataTarball), packagedTarget)
 
-	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
+	require.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
 }
 
 func TestSymlink(t *testing.T) {
@@ -718,9 +717,9 @@ func TestSymlink(t *testing.T) {
 	packagedSymlinkHeader := extractFileHeaderFromTar(t,
 		inflate(t, dataTarballName, dataTarball), symlink)
 
-	assert.Equal(t, symlink, path.Join("/", packagedSymlinkHeader.Name)) // nolint:gosec
-	assert.Equal(t, uint8(tar.TypeSymlink), packagedSymlinkHeader.Typeflag)
-	assert.Equal(t, symlinkTarget, packagedSymlinkHeader.Linkname)
+	require.Equal(t, symlink, path.Join("/", packagedSymlinkHeader.Name)) // nolint:gosec
+	require.Equal(t, uint8(tar.TypeSymlink), packagedSymlinkHeader.Typeflag)
+	require.Equal(t, symlinkTarget, packagedSymlinkHeader.Linkname)
 }
 
 func TestEnsureRelativePrefixInTarballs(t *testing.T) {
@@ -780,7 +779,7 @@ func TestMD5Sums(t *testing.T) {
 		digest := md5.New() // nolint:gosec
 		_, err = digest.Write(extractFileFromTar(t, dataTar, fileName))
 		require.NoError(t, err)
-		assert.Equal(t, md5sum, hex.EncodeToString(digest.Sum(nil)))
+		require.Equal(t, md5sum, hex.EncodeToString(digest.Sum(nil)))
 	}
 }
 
@@ -889,7 +888,7 @@ func testRelativePathPrefixInTar(tb testing.TB, tarFile []byte) {
 		}
 		require.NoError(tb, err)
 
-		assert.True(tb, strings.HasPrefix(hdr.Name, "./"), "%s does not start with './'", hdr.Name)
+		require.True(tb, strings.HasPrefix(hdr.Name, "./"), "%s does not start with './'", hdr.Name)
 	}
 }
 
@@ -945,7 +944,7 @@ func TestDisableGlobbing(t *testing.T) {
 
 	actualContent := extractFileFromTar(t, inflate(t, tarballName, dataTarball), "/test/{file}[")
 
-	assert.Equal(t, expectedContent, actualContent)
+	require.Equal(t, expectedContent, actualContent)
 }
 
 func TestCompressionAlgorithms(t *testing.T) {
@@ -972,7 +971,7 @@ func TestCompressionAlgorithms(t *testing.T) {
 			require.NoError(t, err)
 
 			dataTarballName := findDataTarball(t, deb.Bytes())
-			assert.Equal(t, dataTarballName, testCase.dataTarballName)
+			require.Equal(t, dataTarballName, testCase.dataTarballName)
 
 			dataTarball := extractFileFromAr(t, deb.Bytes(), dataTarballName)
 			dataTar := inflate(t, dataTarballName, dataTarball)
