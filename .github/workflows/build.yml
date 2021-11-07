@@ -27,9 +27,6 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       -
-        name: Setup Sigstore
-        uses: sigstore/cosign-installer@v1.3.0
-      -
         name: Set up Task
         uses: arduino/setup-task@v1
         with:
@@ -143,6 +140,9 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      -
+        name: Setup Sigstore
+        uses: sigstore/cosign-installer@v1.3.0
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
