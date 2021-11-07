@@ -408,10 +408,9 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 }
 
 func TestArches(t *testing.T) {
-	info := exampleInfo()
-
 	for k := range archToRPM {
 		t.Run(k, func(t *testing.T) {
+			info := exampleInfo()
 			info.Arch = k
 			info = ensureValidArch(info)
 			require.Equal(t, archToRPM[k], info.Arch)
@@ -419,6 +418,7 @@ func TestArches(t *testing.T) {
 	}
 
 	t.Run("override", func(t *testing.T) {
+		info := exampleInfo()
 		info.RPM.Arch = "foo64"
 		info = ensureValidArch(info)
 		require.Equal(t, "foo64", info.Arch)

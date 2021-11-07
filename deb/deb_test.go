@@ -1086,10 +1086,9 @@ func TestEmptyButRequiredDebFields(t *testing.T) {
 }
 
 func TestArches(t *testing.T) {
-	info := exampleInfo()
-
 	for k := range archToDebian {
 		t.Run(k, func(t *testing.T) {
+			info := exampleInfo()
 			info.Arch = k
 			info = ensureValidArch(info)
 			require.Equal(t, archToDebian[k], info.Arch)
@@ -1097,6 +1096,7 @@ func TestArches(t *testing.T) {
 	}
 
 	t.Run("override", func(t *testing.T) {
+		info := exampleInfo()
 		info.Deb.Arch = "foo64"
 		info = ensureValidArch(info)
 		require.Equal(t, "foo64", info.Arch)

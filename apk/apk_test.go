@@ -463,10 +463,9 @@ func TestPackageSymlinks(t *testing.T) {
 }
 
 func TestArches(t *testing.T) {
-	info := exampleInfo()
-
 	for k := range archToAlpine {
 		t.Run(k, func(t *testing.T) {
+			info := exampleInfo()
 			info.Arch = k
 			info = ensureValidArch(info)
 			require.Equal(t, archToAlpine[k], info.Arch)
@@ -474,6 +473,7 @@ func TestArches(t *testing.T) {
 	}
 
 	t.Run("override", func(t *testing.T) {
+		info := exampleInfo()
 		info.APK.Arch = "foo64"
 		info = ensureValidArch(info)
 		require.Equal(t, "foo64", info.Arch)
