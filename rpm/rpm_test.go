@@ -19,7 +19,6 @@ import (
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/sassoftware/go-rpmutils/cpio"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -96,37 +95,37 @@ func TestRPM(t *testing.T) {
 		f.Close()
 		file.Close()
 		err = os.Remove(file.Name())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 	rpm, err := rpmutils.ReadRpm(file)
 	require.NoError(t, err)
 
 	version, err := rpm.Header.GetString(rpmutils.VERSION)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0", version)
+	require.Equal(t, "1.0.0", version)
 
 	release, err := rpm.Header.GetString(rpmutils.RELEASE)
 	require.NoError(t, err)
-	assert.Equal(t, "1", release)
+	require.Equal(t, "1", release)
 
 	epoch, err := rpm.Header.Get(rpmutils.EPOCH)
 	require.NoError(t, err)
 	epochUint32, ok := epoch.([]uint32)
 	require.True(t, ok)
-	assert.Len(t, epochUint32, 1)
-	assert.Equal(t, uint32(0), epochUint32[0])
+	require.Len(t, epochUint32, 1)
+	require.Equal(t, uint32(0), epochUint32[0])
 
 	group, err := rpm.Header.GetString(rpmutils.GROUP)
 	require.NoError(t, err)
-	assert.Equal(t, "", group)
+	require.Equal(t, "", group)
 
 	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
 	require.NoError(t, err)
-	assert.Equal(t, "Foo does things", summary)
+	require.Equal(t, "Foo does things", summary)
 
 	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
 	require.NoError(t, err)
-	assert.Equal(t, "Foo does things", description)
+	require.Equal(t, "Foo does things", description)
 }
 
 func TestRPMGroup(t *testing.T) {
@@ -142,7 +141,7 @@ func TestRPMGroup(t *testing.T) {
 		f.Close()
 		file.Close()
 		err = os.Remove(file.Name())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 
 	rpm, err := rpmutils.ReadRpm(file)
@@ -150,7 +149,7 @@ func TestRPMGroup(t *testing.T) {
 
 	group, err := rpm.Header.GetString(rpmutils.GROUP)
 	require.NoError(t, err)
-	assert.Equal(t, "Unspecified", group)
+	require.Equal(t, "Unspecified", group)
 }
 
 func TestRPMSummary(t *testing.T) {
@@ -170,14 +169,14 @@ func TestRPMSummary(t *testing.T) {
 		f.Close()
 		file.Close()
 		err = os.Remove(file.Name())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 	rpm, err := rpmutils.ReadRpm(file)
 	require.NoError(t, err)
 
 	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
 	require.NoError(t, err)
-	assert.Equal(t, customSummary, summary)
+	require.Equal(t, customSummary, summary)
 }
 
 func TestWithRPMTags(t *testing.T) {
@@ -199,7 +198,7 @@ func TestWithRPMTags(t *testing.T) {
 		f.Close()
 		file.Close()
 		err = os.Remove(file.Name())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 
 	rpm, err := rpmutils.ReadRpm(file)
@@ -207,30 +206,30 @@ func TestWithRPMTags(t *testing.T) {
 
 	version, err := rpm.Header.GetString(rpmutils.VERSION)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0", version)
+	require.Equal(t, "1.0.0", version)
 
 	release, err := rpm.Header.GetString(rpmutils.RELEASE)
 	require.NoError(t, err)
-	assert.Equal(t, "3", release)
+	require.Equal(t, "3", release)
 
 	epoch, err := rpm.Header.Get(rpmutils.EPOCH)
 	require.NoError(t, err)
 	epochUint32, ok := epoch.([]uint32)
-	assert.Len(t, epochUint32, 1)
-	assert.True(t, ok)
-	assert.Equal(t, uint32(42), epochUint32[0])
+	require.Len(t, epochUint32, 1)
+	require.True(t, ok)
+	require.Equal(t, uint32(42), epochUint32[0])
 
 	group, err := rpm.Header.GetString(rpmutils.GROUP)
 	require.NoError(t, err)
-	assert.Equal(t, "default", group)
+	require.Equal(t, "default", group)
 
 	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
 	require.NoError(t, err)
-	assert.Equal(t, "first line", summary)
+	require.Equal(t, "first line", summary)
 
 	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
 	require.NoError(t, err)
-	assert.Equal(t, info.Description, description)
+	require.Equal(t, info.Description, description)
 }
 
 func TestRPMVersion(t *testing.T) {
@@ -238,8 +237,8 @@ func TestRPMVersion(t *testing.T) {
 	info.Version = "1.0.0" //nolint:golint,goconst
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0", meta.Version)
-	assert.Equal(t, "1", meta.Release)
+	require.Equal(t, "1.0.0", meta.Version)
+	require.Equal(t, "1", meta.Release)
 }
 
 func TestRPMVersionWithRelease(t *testing.T) {
@@ -248,8 +247,8 @@ func TestRPMVersionWithRelease(t *testing.T) {
 	info.Release = "2"
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0", meta.Version)
-	assert.Equal(t, "2", meta.Release)
+	require.Equal(t, "1.0.0", meta.Version)
+	require.Equal(t, "2", meta.Release)
 }
 
 func TestRPMVersionWithPrerelease(t *testing.T) {
@@ -260,15 +259,15 @@ func TestRPMVersionWithPrerelease(t *testing.T) {
 	info.Prerelease = "rc1" // nolint:goconst
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0~rc1", meta.Version)
-	assert.Equal(t, "1", meta.Release)
+	require.Equal(t, "1.0.0~rc1", meta.Version)
+	require.Equal(t, "1", meta.Release)
 
 	info.Version = "1.0.0~rc1"
 	info.Prerelease = ""
 	meta, err = buildRPMMeta(info)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0~rc1", meta.Version)
-	assert.Equal(t, "1", meta.Release)
+	require.Equal(t, "1.0.0~rc1", meta.Version)
+	require.Equal(t, "1", meta.Release)
 }
 
 func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
@@ -280,16 +279,16 @@ func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	info.Prerelease = "rc1"
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0~rc1", meta.Version)
-	assert.Equal(t, "0.2", meta.Release)
+	require.Equal(t, "1.0.0~rc1", meta.Version)
+	require.Equal(t, "0.2", meta.Release)
 
 	info.Version = "1.0.0~rc1"
 	info.Release = "0.2"
 	info.Prerelease = ""
 	meta, err = buildRPMMeta(info)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0~rc1", meta.Version)
-	assert.Equal(t, "0.2", meta.Release)
+	require.Equal(t, "1.0.0~rc1", meta.Version)
+	require.Equal(t, "0.2", meta.Release)
 }
 
 func TestRPMVersionWithVersionMetadata(t *testing.T) {
@@ -300,13 +299,13 @@ func TestRPMVersionWithVersionMetadata(t *testing.T) {
 	info.VersionMetadata = ""
 	meta, err := buildRPMMeta(nfpm.WithDefaults(info))
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0+meta", meta.Version)
+	require.Equal(t, "1.0.0+meta", meta.Version)
 
 	info.Version = "1.0.0"
 	info.VersionMetadata = "meta"
 	meta, err = buildRPMMeta(nfpm.WithDefaults(info))
 	require.NoError(t, err)
-	assert.Equal(t, "1.0.0+meta", meta.Version)
+	require.Equal(t, "1.0.0+meta", meta.Version)
 }
 
 func TestWithInvalidEpoch(t *testing.T) {
@@ -314,7 +313,7 @@ func TestWithInvalidEpoch(t *testing.T) {
 	defer func() {
 		_ = f.Close()
 		err = os.Remove(f.Name())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 
 	info := exampleInfo()
@@ -324,7 +323,7 @@ func TestWithInvalidEpoch(t *testing.T) {
 		Group: "default",
 	}
 	info.Description = "first line\nsecond line\nthird line"
-	assert.Error(t, Default.Package(info, f))
+	require.Error(t, Default.Package(info, f))
 }
 
 func TestRPMScripts(t *testing.T) {
@@ -339,35 +338,35 @@ func TestRPMScripts(t *testing.T) {
 		f.Close()
 		file.Close()
 		err = os.Remove(file.Name())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 	rpm, err := rpmutils.ReadRpm(file)
 	require.NoError(t, err)
 
 	data, err := rpm.Header.GetString(rpmutils.PREIN)
 	require.NoError(t, err)
-	assert.Equal(t, `#!/bin/bash
+	require.Equal(t, `#!/bin/bash
 
 echo "Preinstall" > /dev/null
 `, data, "Preinstall script does not match")
 
 	data, err = rpm.Header.GetString(rpmutils.PREUN)
 	require.NoError(t, err)
-	assert.Equal(t, `#!/bin/bash
+	require.Equal(t, `#!/bin/bash
 
 echo "Preremove" > /dev/null
 `, data, "Preremove script does not match")
 
 	data, err = rpm.Header.GetString(rpmutils.POSTIN)
 	require.NoError(t, err)
-	assert.Equal(t, `#!/bin/bash
+	require.Equal(t, `#!/bin/bash
 
 echo "Postinstall" > /dev/null
 `, data, "Postinstall script does not match")
 
 	data, err = rpm.Header.GetString(rpmutils.POSTUN)
 	require.NoError(t, err)
-	assert.Equal(t, `#!/bin/bash
+	require.Equal(t, `#!/bin/bash
 
 echo "Postremove" > /dev/null
 `, data, "Postremove script does not match")
@@ -375,7 +374,7 @@ echo "Postremove" > /dev/null
 	rpmPreTransTag := 1151
 	data, err = rpm.Header.GetString(rpmPreTransTag)
 	require.NoError(t, err)
-	assert.Equal(t, `#!/bin/bash
+	require.Equal(t, `#!/bin/bash
 
 echo "Pretrans" > /dev/null
 `, data, "Pretrans script does not match")
@@ -383,7 +382,7 @@ echo "Pretrans" > /dev/null
 	rpmPostTransTag := 1152
 	data, err = rpm.Header.GetString(rpmPostTransTag)
 	require.NoError(t, err)
-	assert.Equal(t, `#!/bin/bash
+	require.Equal(t, `#!/bin/bash
 
 echo "Posttrans" > /dev/null
 `, data, "Posttrans script does not match")
@@ -405,7 +404,7 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 	abs, err := filepath.Abs("../testdata/whatever.confzzz")
 	require.NoError(t, err)
 	err = Default.Package(info, ioutil.Discard)
-	assert.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
+	require.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
 func TestRPMMultiArch(t *testing.T) {
@@ -414,7 +413,7 @@ func TestRPMMultiArch(t *testing.T) {
 	for k := range archToRPM {
 		info.Arch = k
 		info = ensureValidArch(info)
-		assert.Equal(t, archToRPM[k], info.Arch)
+		require.Equal(t, archToRPM[k], info.Arch)
 	}
 }
 
@@ -442,15 +441,15 @@ func TestConfigNoReplace(t *testing.T) {
 
 	var rpmFileBuffer bytes.Buffer
 	err := Default.Package(info, &rpmFileBuffer)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expectedConfigContent, err := ioutil.ReadFile(buildConfigFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	packageConfigContent, err := extractFileFromRpm(rpmFileBuffer.Bytes(), packageConfigFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, expectedConfigContent, packageConfigContent)
+	require.Equal(t, expectedConfigContent, packageConfigContent)
 }
 
 func TestRPMConventionalFileName(t *testing.T) {
@@ -494,7 +493,7 @@ func TestRPMConventionalFileName(t *testing.T) {
 		info.Prerelease = testCase.Prerelease
 		info.VersionMetadata = testCase.Metadata
 
-		assert.Equal(t, testCase.Expected, Default.ConventionalFileName(info))
+		require.Equal(t, testCase.Expected, Default.ConventionalFileName(info))
 	}
 }
 
@@ -516,32 +515,32 @@ func TestRPMChangelog(t *testing.T) {
 	require.NoError(t, err)
 	times, ok := _times.([]uint32)
 	require.True(t, ok)
-	assert.Equal(t, len(changelog), len(times))
+	require.Equal(t, len(changelog), len(times))
 
 	_titles, err := rpm.Header.Get(tagChangelogName)
 	require.NoError(t, err)
 	titles, ok := _titles.([]string)
 	require.True(t, ok)
-	assert.Equal(t, len(changelog), len(titles))
+	require.Equal(t, len(changelog), len(titles))
 
 	_notes, err := rpm.Header.Get(tagChangelogText)
 	require.NoError(t, err)
 	allNotes, ok := _notes.([]string)
 	require.True(t, ok)
-	assert.Equal(t, len(changelog), len(allNotes))
+	require.Equal(t, len(changelog), len(allNotes))
 
 	for i, entry := range changelog {
 		timestamp := time.Unix(int64(times[i]), 0).UTC()
 		title := titles[i]
 		notes := strings.Split(allNotes[i], "\n")
 
-		assert.Equal(t, entry.Date, timestamp)
-		assert.True(t, strings.Contains(title, entry.Packager))
-		assert.True(t, strings.Contains(title, entry.Semver))
-		assert.Equal(t, len(entry.Changes), len(notes))
+		require.Equal(t, entry.Date, timestamp)
+		require.True(t, strings.Contains(title, entry.Packager))
+		require.True(t, strings.Contains(title, entry.Semver))
+		require.Equal(t, len(entry.Changes), len(notes))
 
 		for j, change := range entry.Changes {
-			assert.True(t, strings.Contains(notes[j], change.Note))
+			require.True(t, strings.Contains(notes[j], change.Note))
 		}
 	}
 }
@@ -557,13 +556,13 @@ func TestRPMNoChangelogTagsWithoutChangelogConfigured(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = rpm.Header.Get(tagChangelogTime)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	_, err = rpm.Header.Get(tagChangelogName)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	_, err = rpm.Header.Get(tagChangelogText)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestSymlinkInFiles(t *testing.T) {
@@ -597,7 +596,7 @@ func TestSymlinkInFiles(t *testing.T) {
 	packagedSymlinkTarget, err := extractFileFromRpm(rpmFileBuffer.Bytes(), packagedTarget)
 	require.NoError(t, err)
 
-	assert.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
+	require.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
 }
 
 func TestSymlink(t *testing.T) {
@@ -637,9 +636,9 @@ func TestSymlink(t *testing.T) {
 	packagedSymlink, err := extractFileFromRpm(rpmFileBuffer.Bytes(), symlink)
 	require.NoError(t, err)
 
-	assert.Equal(t, symlink, packagedSymlinkHeader.Filename())
-	assert.Equal(t, cpio.S_ISLNK, packagedSymlinkHeader.Mode())
-	assert.Equal(t, symlinkTarget, string(packagedSymlink))
+	require.Equal(t, symlink, packagedSymlinkHeader.Filename())
+	require.Equal(t, cpio.S_ISLNK, packagedSymlinkHeader.Mode())
+	require.Equal(t, symlinkTarget, string(packagedSymlink))
 }
 
 func TestRPMSignature(t *testing.T) {
@@ -713,7 +712,7 @@ func TestRPMGhostFiles(t *testing.T) {
 	for _, fileInfo := range headerFiles {
 		actual = append(actual, headerFileInfo{fileInfo.Name(), fileInfo.Size(), fileInfo.Mode()})
 	}
-	assert.Equal(t, expected, actual)
+	require.Equal(t, expected, actual)
 
 	_, err = extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), filename)
 	require.Error(t, err)
@@ -742,7 +741,7 @@ func TestDisableGlobbing(t *testing.T) {
 	actualContent, err := extractFileFromRpm(rpmFileBuffer.Bytes(), "/test/{file}[")
 	require.NoError(t, err)
 
-	assert.Equal(t, expectedContent, actualContent)
+	require.Equal(t, expectedContent, actualContent)
 }
 
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
@@ -821,11 +820,11 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 func symlinkTo(tb testing.TB, fileName string) string {
 	tb.Helper()
 	target, err := filepath.Abs(fileName)
-	assert.NoError(tb, err)
+	require.NoError(tb, err)
 
 	symlinkName := path.Join(tb.TempDir(), "symlink")
 	err = os.Symlink(target, symlinkName)
-	assert.NoError(tb, err)
+	require.NoError(tb, err)
 
 	return files.ToNixPath(symlinkName)
 }
