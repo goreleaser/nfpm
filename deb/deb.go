@@ -34,23 +34,21 @@ func init() {
 
 // nolint: gochecknoglobals
 var archToDebian = map[string]string{
-	"386":     "i386",
-	"arm":     "armhf",
-	"arm5":    "armel",
-	"arm6":    "armhf",
-	"arm7":    "armhf",
-	"mipsle":  "mipsel",
-	"ppc64le": "ppc64el",
+	"386":      "i386",
+	"arm":      "armhf",
+	"arm5":     "armel",
+	"arm6":     "armhf",
+	"arm7":     "armhf",
+	"mipsle":   "mipsel",
+	"mips64le": "mips64el",
+	"ppc64le":  "ppc64el",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	if info.Deb.Arch != "" {
 		info.Arch = info.Deb.Arch
-	} else {
-		arch, ok := archToDebian[info.Arch]
-		if ok {
-			info.Arch = arch
-		}
+	} else if arch, ok := archToDebian[info.Arch]; ok {
+		info.Arch = arch
 	}
 
 	return info
