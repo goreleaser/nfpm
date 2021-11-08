@@ -518,7 +518,7 @@ func TestDirectories(t *testing.T) {
 	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
 	require.NoError(t, err)
 
-	// for debs all implicit or explicit directories are created in the tarball
+	// for apks all implicit or explicit directories are created in the tarball
 	h := extractFileHeaderFromTar(t, buf.Bytes(), "/etc")
 	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
