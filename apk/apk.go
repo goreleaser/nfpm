@@ -449,11 +449,6 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			continue
 		case "symlink":
 			err = createSymlinkInsideTarGz(file, tw)
-		case "doc", "licence", "license", "readme", "config", "config|noreplace":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only
-			// fallthrough to default case`
-			fallthrough
 		default:
 			err = copyToTarAndDigest(file, tw, sizep)
 		}

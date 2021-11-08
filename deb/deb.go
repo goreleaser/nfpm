@@ -316,11 +316,6 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 			continue
 		case "symlink":
 			err = createSymlinkInsideTar(file, tw)
-		case "doc", "licence", "license", "readme", "config", "config|noreplace":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only
-			// fallthrough to default case`
-			fallthrough
 		default:
 			size, err = copyToTarAndDigest(file, tw, &md5buf)
 		}
