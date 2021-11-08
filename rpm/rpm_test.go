@@ -407,14 +407,22 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 	require.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
-func TestRPMMultiArch(t *testing.T) {
-	info := exampleInfo()
-
+func TestArches(t *testing.T) {
 	for k := range archToRPM {
-		info.Arch = k
-		info = ensureValidArch(info)
-		require.Equal(t, archToRPM[k], info.Arch)
+		t.Run(k, func(t *testing.T) {
+			info := exampleInfo()
+			info.Arch = k
+			info = ensureValidArch(info)
+			require.Equal(t, archToRPM[k], info.Arch)
+		})
 	}
+
+	t.Run("override", func(t *testing.T) {
+		info := exampleInfo()
+		info.RPM.Arch = "foo64"
+		info = ensureValidArch(info)
+		require.Equal(t, "foo64", info.Arch)
+	})
 }
 
 func TestConfigNoReplace(t *testing.T) {
