@@ -153,7 +153,8 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 
 		switch f.Type {
 		case "ghost", "symlink", "dir":
-			// Ghost and symlink files need to be in the list, but dont glob them because they do not really exist
+			// Ghost, symlinks and dirs need to be in the list, but dont glob
+			// them because they do not really exist
 			files = append(files, f.WithFileInfoDefaults())
 		default:
 			globbed, err = glob.Glob(f.Source, f.Destination, options...)

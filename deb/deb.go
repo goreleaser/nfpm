@@ -269,7 +269,7 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 	created map[string]bool) (md5buf bytes.Buffer, instSize int64, err error) {
 	// create explicit directories first
 	for _, file := range info.Contents {
-		// at this point, we don't are about other types yet
+		// at this point, we don't care about other types yet
 		if file.Type != "dir" {
 			continue
 		}
