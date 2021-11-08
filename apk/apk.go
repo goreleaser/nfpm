@@ -403,7 +403,7 @@ func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error
 func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool, sizep *int64) (err error) {
 	// create explicit directories first
 	for _, file := range info.Contents {
-		// at this point, we don't are about other types yet
+		// at this point, we don't care about other types yet
 		if file.Type != "dir" {
 			continue
 		}
