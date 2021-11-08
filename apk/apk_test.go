@@ -88,25 +88,6 @@ func exampleInfo() *nfpm.Info {
 	})
 }
 
-func TestArchToAlpine(t *testing.T) {
-	verifyArch(t, "abc", "abc")
-	verifyArch(t, "386", "x86")
-	verifyArch(t, "amd64", "x86_64")
-	verifyArch(t, "arm", "armhf")
-	verifyArch(t, "arm6", "armhf")
-	verifyArch(t, "arm7", "armhf")
-	verifyArch(t, "arm64", "aarch64")
-}
-
-func verifyArch(t *testing.T, nfpmArch, expectedArch string) {
-	t.Helper()
-	info := exampleInfo()
-	info.Arch = nfpmArch
-
-	require.NoError(t, Default.Package(info, ioutil.Discard))
-	require.Equal(t, expectedArch, info.Arch)
-}
-
 func TestCreateBuilderData(t *testing.T) {
 	info := exampleInfo()
 	err := info.Validate()
@@ -607,4 +588,22 @@ func extractFileHeaderFromTar(tb testing.TB, tarFile []byte, filename string) *t
 	tb.Fatalf("file %q does not exist in tar", filename)
 
 	return nil
+}
+
+func TestArches(t *testing.T) {
+	for k := range archToAlpine {
+		t.Run(k, func(t *testing.T) {
+			info := exampleInfo()
+			info.Arch = k
+			info = ensureValidArch(info)
+			require.Equal(t, archToAlpine[k], info.Arch)
+		})
+	}
+
+	t.Run("override", func(t *testing.T) {
+		info := exampleInfo()
+		info.APK.Arch = "foo64"
+		info = ensureValidArch(info)
+		require.Equal(t, "foo64", info.Arch)
+	})
 }

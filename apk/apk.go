@@ -58,15 +58,16 @@ func init() {
 	nfpm.RegisterPackager(packagerName, Default)
 }
 
+// https://wiki.alpinelinux.org/wiki/Architecture
 // nolint: gochecknoglobals
 var archToAlpine = map[string]string{
-	"386":   "x86",
-	"amd64": "x86_64",
-	"arm":   "armhf",
-	"arm6":  "armhf",
-	"arm7":  "armhf",
-	"arm64": "aarch64",
-	// TODO: other arches
+	"386":     "x86",
+	"amd64":   "x86_64",
+	"arm":     "armhf",
+	"arm6":    "armhf",
+	"arm7":    "armv7",
+	"arm64":   "aarch64",
+	"ppc64le": "ppc64le",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
