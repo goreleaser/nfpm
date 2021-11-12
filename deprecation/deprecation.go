@@ -20,6 +20,11 @@ func Print(s string) {
 	fmt.Fprint(Noticer, s)
 }
 
+// Println printslns the given string to the Noticer.
+func Println(s string) {
+	fmt.Fprintln(Noticer, s)
+}
+
 // Printf printfs the given string to the Noticer.
 func Printf(format string, a ...interface{}) {
 	fmt.Fprintf(Noticer, format, a...)
