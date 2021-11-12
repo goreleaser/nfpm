@@ -9,11 +9,11 @@ require (
 	github.com/ProtonMail/gopenpgp/v2 v2.2.2
 	github.com/alecthomas/jsonschema v0.0.0-20210920000243-787cd8204a0d
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
+	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
 	github.com/google/rpmpack v0.0.0-20210518075352-dc539ef4f2ea
 	github.com/goreleaser/chglog v0.1.2
 	github.com/goreleaser/fileglob v1.2.0
 	github.com/imdario/mergo v0.3.12
-	github.com/sassoftware/go-rpmutils v0.2.0
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/ulikunitz/xz v0.5.10
@@ -61,5 +61,3 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-replace github.com/sassoftware/go-rpmutils => github.com/caarlos0/go-rpmutils v0.2.1-0.20211012234905-ebb3fe8a5fce

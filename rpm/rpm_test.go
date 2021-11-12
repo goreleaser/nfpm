@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/caarlos0/go-rpmutils"
+	"github.com/caarlos0/go-rpmutils/cpio"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
-	"github.com/sassoftware/go-rpmutils"
-	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/require"
 )
 
