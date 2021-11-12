@@ -1,6 +1,6 @@
 # Contributing
 
-By participating to this project, you agree to abide our [code of conduct](https://github.com/goreleaser/nfpm/blob/master/CODE_OF_CONDUCT.md).
+By participating to this project, you agree to abide our [code of conduct](https://github.com/goreleaser/nfpm/blob/main/CODE_OF_CONDUCT.md).
 
 ## Setup your machine
 
@@ -80,8 +80,7 @@ See #284
 
 ## Submit a pull request
 
-Push your branch to your `nfpm` fork and open a pull request against the
-master branch.
+Push your branch to your `nfpm` fork and open a pull request against the main branch.
 
 ## Financial contributions
 

@@ -3,7 +3,7 @@ name: generate
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
     paths:
       - '.github/workflows/generate.yml'
       - 'www/*'
@@ -33,4 +33,4 @@ jobs:
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "docs: update cmd docs"
-          branch: master
+          branch: main
