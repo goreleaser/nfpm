@@ -7,32 +7,20 @@ import (
 	"os"
 )
 
-var deprecationNoticer DeprecationNoticer
+type prefixed struct{ io.Writer }
 
-// DeprecationNoticer is the interface for deprecation noticer.
-type DeprecationNoticer interface {
-	Notice(s string)
+func (p prefixed) Write(b []byte) (int, error) {
+	return p.Writer.Write(append([]byte("DEPRECATION WARNING: "), b...))
 }
 
-// Notice will notice a deprecation with the previously set noticer.
-func Notice(s string) {
-	if deprecationNoticer == nil {
-		Set(&defaultNoticer{
-			w: os.Stderr,
-		})
-	}
-	deprecationNoticer.Notice(s)
+var Noticer io.Writer = prefixed{os.Stderr}
+
+// Print prints the given string to the Noticer.
+func Print(s string) {
+	fmt.Fprint(Noticer, s)
 }
 
-// Set the noticer implementation to use.
-func Set(n DeprecationNoticer) {
-	deprecationNoticer = n
-}
-
-type defaultNoticer struct {
-	w io.Writer
-}
-
-func (d *defaultNoticer) Notice(s string) {
-	fmt.Fprintln(d.w, "DEPRECATION WARNING: "+s)
+// Printf printfs the given string to the Noticer.
+func Printf(format string, a ...interface{}) {
+	fmt.Fprintf(Noticer, format, a...)
 }

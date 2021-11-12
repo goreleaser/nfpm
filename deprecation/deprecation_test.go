@@ -8,10 +8,10 @@ import (
 )
 
 func TestNotice(t *testing.T) {
-	Notice("blah")
+	Print("blah")
 
 	var b bytes.Buffer
-	Set(&defaultNoticer{w: &b})
-	Notice("blah")
-	require.Equal(t, b.String(), "DEPRECATION WARNING: blah\n")
+	Noticer = prefixed{&b}
+	Printf("blah: %v\n", true)
+	require.Equal(t, b.String(), "DEPRECATION WARNING: blah: true\n")
 }
