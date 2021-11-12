@@ -19,6 +19,7 @@ import (
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/ulikunitz/xz"
@@ -170,7 +171,7 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 	// if in the long run we should be more strict about this and error when
 	// not set?
 	if info.Maintainer == "" {
-		fmt.Fprintf(os.Stderr, "DEPRECATION WARNING: Leaving the 'maintainer' field unset will not be allowed in a future version")
+		deprecation.Notice("Leaving the 'maintainer' field unset will not be allowed in a future version")
 		info.Maintainer = "Unset Maintainer <unset@localhost>"
 	}
 }
