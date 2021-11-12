@@ -74,10 +74,14 @@ func exampleInfo() *nfpm.Info {
 					Destination: "/etc/fake/fake.conf",
 					Type:        "config",
 				},
-			},
-			EmptyFolders: []string{
-				"/var/log/whatever",
-				"/usr/share/whatever",
+				{
+					Destination: "/var/log/whatever",
+					Type:        "dir",
+				},
+				{
+					Destination: "/usr/share/whatever",
+					Type:        "dir",
+				},
 			},
 		},
 	})
@@ -748,7 +752,7 @@ func TestMD5Sums(t *testing.T) {
 
 	nFiles := 1
 	for _, f := range info.Contents {
-		if f.Packager == "" || f.Packager == "deb" {
+		if (f.Packager == "" || f.Packager == "deb") && f.Type != "dir" {
 			nFiles++
 		}
 	}
@@ -776,6 +780,100 @@ func TestMD5Sums(t *testing.T) {
 		_, err = digest.Write(extractFileFromTar(t, dataTar, fileName))
 		require.NoError(t, err)
 		require.Equal(t, md5sum, hex.EncodeToString(digest.Sum(nil)))
+	}
+}
+
+func TestDirectories(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/file",
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/bar/file",
+		},
+		{
+			Destination: "/etc/bar",
+			Type:        "dir",
+			FileInfo: &files.ContentFileInfo{
+				Owner: "test",
+				Mode:  0o700,
+			},
+		},
+		{
+			Destination: "/etc/baz",
+			Type:        "dir",
+		},
+	}
+
+	require.NoError(t, info.Validate())
+
+	deflatedDataTarball, _, _, dataTarballName, err := createDataTarball(info)
+	require.NoError(t, err)
+	dataTarball := inflate(t, dataTarballName, deflatedDataTarball)
+
+	// for debs all implicit or explicit directories are created in the tarball
+	h := extractFileHeaderFromTar(t, dataTarball, "/etc")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, dataTarball, "/etc/foo")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, dataTarball, "/etc/bar")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	require.Equal(t, h.Mode, int64(0o700))
+	require.Equal(t, h.Uname, "test")
+	h = extractFileHeaderFromTar(t, dataTarball, "/etc/baz")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+}
+
+func TestNoDuplicateContents(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/file",
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/file2",
+		},
+		{
+			Destination: "/etc/foo",
+			Type:        "dir",
+		},
+		{
+			Destination: "/etc/baz",
+			Type:        "dir",
+		},
+	}
+
+	require.NoError(t, info.Validate())
+
+	deflatedDataTarball, _, _, dataTarballName, err := createDataTarball(info)
+	require.NoError(t, err)
+	dataTarball := inflate(t, dataTarballName, deflatedDataTarball)
+
+	exists := map[string]bool{}
+
+	tr := tar.NewReader(bytes.NewReader(dataTarball))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(t, err)
+
+		_, ok := exists[hdr.Name]
+		if ok {
+			t.Fatalf("%s exists more than once in tarball", hdr.Name)
+		}
+
+		exists[hdr.Name] = true
 	}
 }
 

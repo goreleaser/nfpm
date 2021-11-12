@@ -197,3 +197,19 @@ RUN echo wat >> /etc/foo/whatever.conf
 RUN rpm -e foo
 RUN test -f /etc/foo/whatever.conf.rpmsave
 RUN test ! -f /usr/local/bin/fake
+
+# ---- directories test ----
+FROM test_base AS directories
+RUN groupadd test
+RUN rpm -ivh /tmp/foo.rpm
+RUN test -f /etc/foo/file
+RUN test -f /etc/bar/file
+RUN test -d /etc/bar
+RUN test -d /etc/baz
+RUN stat -L -c "%a %U %G" /etc/baz | grep "700 root test"
+RUN rpm -e foo
+RUN test ! -f /etc/foo/file
+RUN test ! -f /etc/bar/file
+RUN test -d /etc/foo
+RUN test ! -d /etc/bar
+RUN test ! -d /etc/baz

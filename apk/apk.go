@@ -397,54 +397,65 @@ func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error
 	created := map[string]bool{}
 
 	return func(tw *tar.Writer) error {
-		// handle empty folders
-		if err := createEmptyFoldersInsideTarGz(info, tw, created); err != nil {
-			return err
-		}
-
-		// handle Files
 		return createFilesInsideTarGz(info, tw, created, sizep)
 	}
 }
 
 func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool, sizep *int64) (err error) {
+	// create explicit directories first
 	for _, file := range info.Contents {
+		// at this point, we don't care about other types yet
+		if file.Type != "dir" {
+			continue
+		}
+
+		// only consider contents for this packager
 		if file.Packager != "" && file.Packager != packagerName {
 			continue
 		}
+
+		err = tw.WriteHeader(&tar.Header{
+			Name:     files.ToNixPath(strings.Trim(file.Destination, "/") + "/"),
+			Mode:     int64(file.FileInfo.Mode),
+			Typeflag: tar.TypeDir,
+			Format:   tar.FormatGNU,
+			Uname:    file.FileInfo.Owner,
+			Gname:    file.FileInfo.Group,
+			ModTime:  file.FileInfo.MTime,
+		})
+		if err != nil {
+			return err
+		}
+
+		created[strings.TrimPrefix(file.Destination, "/")] = true
+	}
+
+	for _, file := range info.Contents {
+		// only consider contents for this packager
+		if file.Packager != "" && file.Packager != packagerName {
+			continue
+		}
+
+		// create implicit directory structure below the current content
 		if err = createTree(tw, file.Destination, created); err != nil {
 			return err
 		}
+
 		switch file.Type {
 		case "ghost":
 			// skip ghost files in apk
 			continue
+		case "dir":
+			// already handled above
+			continue
 		case "symlink":
 			err = createSymlinkInsideTarGz(file, tw)
-		case "doc":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
-		case "licence", "license":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
-		case "readme":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
-		case "config", "config|noreplace":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
 		default:
 			err = copyToTarAndDigest(file, tw, sizep)
 		}
 		if err != nil {
 			return err
 		}
-		created[file.Source] = true
-		created[file.Destination[1:]] = true
 	}
 
 	return nil
@@ -483,18 +494,6 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	return nil
 }
 
-func createEmptyFoldersInsideTarGz(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
-	for _, folder := range info.EmptyFolders {
-		// this .nope is actually not created, because createTree ignore the
-		// last part of the path, assuming it is a file.
-		// TODO: should probably refactor this
-		if err := createTree(out, files.ToNixPath(filepath.Join(folder, ".nope")), created); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // this is needed because the data.tar.gz file should have the empty folders
 // as well, so we walk through the dst and create all subfolders.
 func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
@@ -518,8 +517,8 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 }
 
 func pathsToCreate(dst string) []string {
-	var paths []string
-	base := dst[1:]
+	paths := []string{}
+	base := strings.Trim(dst, "/")
 	for {
 		base = filepath.Dir(base)
 		if base == "." {
@@ -529,7 +528,7 @@ func pathsToCreate(dst string) []string {
 	}
 	// we don't really need to create those things in order apparently, but,
 	// it looks really weird if we don't.
-	var result []string
+	result := []string{}
 	for i := len(paths) - 1; i >= 0; i-- {
 		result = append(result, paths[i])
 	}

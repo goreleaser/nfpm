@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -171,7 +170,7 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 	// if in the long run we should be more strict about this and error when
 	// not set?
 	if info.Maintainer == "" {
-		log.Println("DEPRECATION WARNING: Leaving the 'maintainer' field unset will not be allowed in a future version")
+		fmt.Fprintf(os.Stderr, "DEPRECATION WARNING: Leaving the 'maintainer' field unset will not be allowed in a future version")
 		info.Maintainer = "Unset Maintainer <unset@localhost>"
 	}
 }
@@ -243,9 +242,6 @@ func fillDataTar(info *nfpm.Info, w io.Writer) (md5sums []byte, instSize int64, 
 	defer out.Close() // nolint: errcheck
 
 	created := map[string]bool{}
-	if err = createEmptyFoldersInsideDataTar(info, out, created); err != nil {
-		return nil, 0, err
-	}
 
 	md5buf, instSize, err := createFilesInsideDataTar(info, out, created)
 	if err != nil {
@@ -271,10 +267,41 @@ func createSymlinkInsideTar(file *files.Content, out *tar.Writer) error {
 
 func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 	created map[string]bool) (md5buf bytes.Buffer, instSize int64, err error) {
+	// create explicit directories first
 	for _, file := range info.Contents {
+		// at this point, we don't care about other types yet
+		if file.Type != "dir" {
+			continue
+		}
+
+		// only consider contents for this packager
 		if file.Packager != "" && file.Packager != packagerName {
 			continue
 		}
+
+		err = tw.WriteHeader(&tar.Header{
+			Name:     files.ToNixPath(strings.Trim(file.Destination, "/") + "/"),
+			Mode:     int64(file.FileInfo.Mode),
+			Typeflag: tar.TypeDir,
+			Format:   tar.FormatGNU,
+			Uname:    file.FileInfo.Owner,
+			Gname:    file.FileInfo.Group,
+			ModTime:  file.FileInfo.MTime,
+		})
+		if err != nil {
+			return md5buf, 0, err
+		}
+
+		created[strings.TrimPrefix(file.Destination, "/")] = true
+	}
+
+	// create files and implicit directories
+	for _, file := range info.Contents {
+		// only consider contents for this packager
+		if file.Packager != "" && file.Packager != packagerName {
+			continue
+		}
+		// create implicit directory structure below the current content
 		if err = createTree(tw, file.Destination, created); err != nil {
 			return md5buf, 0, err
 		}
@@ -284,24 +311,11 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 		case "ghost":
 			// skip ghost files in apk
 			continue
+		case "dir":
+			// already handled above
+			continue
 		case "symlink":
 			err = createSymlinkInsideTar(file, tw)
-		case "doc":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
-		case "licence", "license":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
-		case "readme":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
-		case "config", "config|noreplace":
-			// nolint:gocritic
-			// ignoring `emptyFallthrough: remove empty case containing only fallthrough to default case`
-			fallthrough
 		default:
 			size, err = copyToTarAndDigest(file, tw, &md5buf)
 		}
@@ -323,18 +337,6 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 	return md5buf, instSize, nil
 }
 
-func createEmptyFoldersInsideDataTar(info *nfpm.Info, out *tar.Writer, created map[string]bool) error {
-	for _, folder := range info.EmptyFolders {
-		// this .nope is actually not created, because createTree ignore the
-		// last part of the path, assuming it is a file.
-		// TODO: should probably refactor this
-		if err := createTree(out, files.ToNixPath(filepath.Join(folder, ".nope")), created); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (int64, error) {
 	tarFile, err := os.OpenFile(file.Source, os.O_RDONLY, 0o600) //nolint:gosec
 	if err != nil {
@@ -345,7 +347,6 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 
 	header, err := tar.FileInfoHeader(file, file.Source)
 	if err != nil {
-		log.Print(err)
 		return 0, err
 	}
 
@@ -602,7 +603,7 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 
 func pathsToCreate(dst string) []string {
 	paths := []string{}
-	base := strings.TrimPrefix(dst, "/")
+	base := strings.Trim(dst, "/")
 	for {
 		base = filepath.Dir(base)
 		if base == "." {

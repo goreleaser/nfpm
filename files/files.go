@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/goreleaser/fileglob"
@@ -42,13 +43,26 @@ func (c Contents) Swap(i, j int) {
 
 func (c Contents) Less(i, j int) bool {
 	a, b := c[i], c[j]
+
+	if a.Destination != b.Destination {
+		return a.Destination < b.Destination
+	}
+
 	if a.Type != b.Type {
-		return len(a.Type) < len(b.Type)
+		return a.Type < b.Type
 	}
-	if a.Source != b.Source {
-		return a.Source < b.Source
+
+	return a.Packager < b.Packager
+}
+
+func (c Contents) ContainsDestination(dst string) bool {
+	for _, content := range c {
+		if strings.TrimRight(content.Destination, "/") == strings.TrimRight(dst, "/") {
+			return true
+		}
 	}
-	return a.Destination < b.Destination
+
+	return false
 }
 
 func (c *Content) WithFileInfoDefaults() *Content {
@@ -68,16 +82,29 @@ func (c *Content) WithFileInfoDefaults() *Content {
 	if cc.FileInfo.Group == "" {
 		cc.FileInfo.Group = "root"
 	}
-	info, err := os.Stat(cc.Source)
-	if err == nil {
-		if cc.FileInfo.MTime.IsZero() {
-			cc.FileInfo.MTime = info.ModTime()
-		}
-		if cc.FileInfo.Mode == 0 {
-			cc.FileInfo.Mode = info.Mode()
-		}
-		cc.FileInfo.Size = info.Size()
+	if cc.Type == "dir" && cc.FileInfo.Mode == 0 {
+		cc.FileInfo.Mode = 0o755
 	}
+
+	// determine if we still need info
+	fileInfoAlreadyComplete := (!cc.FileInfo.MTime.IsZero() &&
+		cc.FileInfo.Mode != 0 &&
+		(cc.FileInfo.Size != 0 || cc.Type == "dir"))
+
+	// only stat source when we actually need more information
+	if cc.Source != "" && !fileInfoAlreadyComplete {
+		info, err := os.Stat(cc.Source)
+		if err == nil {
+			if cc.FileInfo.MTime.IsZero() {
+				cc.FileInfo.MTime = info.ModTime()
+			}
+			if cc.FileInfo.Mode == 0 {
+				cc.FileInfo.Mode = info.Mode()
+			}
+			cc.FileInfo.Size = info.Size()
+		}
+	}
+
 	if cc.FileInfo.MTime.IsZero() {
 		cc.FileInfo.MTime = time.Now().UTC()
 	}
@@ -125,8 +152,9 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 		var globbed map[string]string
 
 		switch f.Type {
-		case "ghost", "symlink":
-			// Ghost and symlink files need to be in the list, but dont glob them because they do not really exist
+		case "ghost", "symlink", "dir":
+			// Ghost, symlinks and dirs need to be in the list, but dont glob
+			// them because they do not really exist
 			files = append(files, f.WithFileInfoDefaults())
 		default:
 			globbed, err = glob.Glob(f.Source, f.Destination, options...)

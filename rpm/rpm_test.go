@@ -63,10 +63,14 @@ func exampleInfo() *nfpm.Info {
 					Destination: "/etc/fake/fake.conf",
 					Type:        "config",
 				},
-			},
-			EmptyFolders: []string{
-				"/var/log/whatever",
-				"/usr/share/whatever",
+				{
+					Destination: "/var/log/whatever",
+					Type:        "dir",
+				},
+				{
+					Destination: "/usr/share/whatever",
+					Type:        "dir",
+				},
 			},
 			Scripts: nfpm.Scripts{
 				PreInstall:  "../testdata/scripts/preinstall.sh",
@@ -750,6 +754,51 @@ func TestDisableGlobbing(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, expectedContent, actualContent)
+}
+
+func TestDirectories(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/file",
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/bar/file",
+		},
+		{
+			Destination: "/etc/bar",
+			Type:        "dir",
+		},
+		{
+			Destination: "/etc/baz",
+			Type:        "dir",
+			FileInfo: &files.ContentFileInfo{
+				Owner: "test",
+				Mode:  0o700,
+			},
+		},
+	}
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	require.NoError(t, err)
+
+	// the directory /etc/foo should not be implicitly created as that
+	// implies ownership of /etc/foo which should always be implicit
+	_, err = extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), "/etc/foo")
+	require.Equal(t, err, os.ErrNotExist)
+
+	// claiming explicit ownership of /etc/bar which already contains a file
+	h, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), "/etc/bar")
+	require.NoError(t, err)
+	require.NotEqual(t, h.Mode()&int(tagDirectory), 0)
+
+	// creating an empty folder (which also implies ownership)
+	h, err = extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), "/etc/baz")
+	require.NoError(t, err)
+	require.Equal(t, h.Mode(), int(tagDirectory|0o700))
 }
 
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {

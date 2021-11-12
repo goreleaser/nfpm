@@ -56,8 +56,7 @@ priority: extra
 
 # Maintainer.
 # Defaults to empty on rpm and apk
-# Leaving this field empty on 'deb' packages is deprecated, and will be removed
-# in a future release
+# Leaving the 'maintainer' field unset will not be allowed in a future version
 maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 
 # Description.
@@ -165,7 +164,9 @@ contents:
     packager: apk
 
   # Sometimes it is important to be able to set the mtime, mode, owner, or group for a file
-  # that differs from what is on the local build system at build time.
+  # that differs from what is on the local build system at build time. The owner (if different
+  # than 'root') has to be always specified manually in 'file_info' as it will not be copied
+  # from the 'src' file.
   - src: path/to/foo
     dst: /usr/local/foo
     file_info:
@@ -174,6 +175,18 @@ contents:
       mtime: 2008-01-02T15:04:05Z
       owner: notRoot
       group: notRoot
+
+  # Using the type 'dir', empty directories can be created. When building RPMs, however, this
+  # type has another important purpose: Claiming ownership of that folder. This is important
+  # because when upgrading or removing an RPM package, only the directories for which it has
+  # claimed ownership are removed. However, you should not claim ownership of a folder that
+  # is created by the distro or a dependency of your package.
+  # A directory in the build environment can optionally be provided in the 'src' field in
+  # order copy mtime and mode from that directory without having to specifiy it manually.
+  - dst: /some/dir
+    type: dir
+    file_info:
+      mode: 0700
 
 # Empty folders your package may need created. (overridable)
 empty_folders:

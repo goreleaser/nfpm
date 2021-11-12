@@ -374,7 +374,29 @@ func Validate(info *Info) (err error) {
 		return err
 	}
 
+	if len(info.EmptyFolders) > 0 {
+		fmt.Fprintf(os.Stderr, "DEPRECATION WARNING: 'empty_folders' is deprecated and "+
+			"will be removed in a future version, create content with type 'dir' and "+
+			"directoy name as 'dst' instead")
+
+		for _, emptyFolder := range info.EmptyFolders {
+			if contents.ContainsDestination(emptyFolder) {
+				return fmt.Errorf("empty folder already exists in contents: %s", emptyFolder)
+			}
+
+			contents = append(contents, &files.Content{
+				Destination: emptyFolder,
+				Type:        "dir",
+			})
+		}
+	}
+
+	// The deprecated EmptyFolders are already converted to contents, so we
+	// remove it such that Validate can be called more than once.
+	info.EmptyFolders = nil
+
 	info.Contents = contents
+
 	return nil
 }
 

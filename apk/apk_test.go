@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -74,10 +75,14 @@ func exampleInfo() *nfpm.Info {
 					Destination: "/etc/fake/fake.conf",
 					Type:        "config",
 				},
-			},
-			EmptyFolders: []string{
-				"/var/log/whatever",
-				"/usr/share/whatever",
+				{
+					Destination: "/var/log/whatever",
+					Type:        "dir",
+				},
+				{
+					Destination: "/usr/share/whatever",
+					Type:        "dir",
+				},
 			},
 		},
 	})
@@ -95,7 +100,7 @@ func TestCreateBuilderData(t *testing.T) {
 
 	require.NoError(t, builderData(tw))
 
-	require.Equal(t, 11784, buf.Len())
+	require.Equal(t, 12288, buf.Len())
 }
 
 func TestCombineToApk(t *testing.T) {
@@ -115,7 +120,7 @@ func TestPathsToCreate(t *testing.T) {
 	for pathToTest, parts := range map[string][]string{
 		"/usr/share/doc/whatever/foo.md": {"usr", "usr/share", "usr/share/doc", "usr/share/doc/whatever"},
 		"/var/moises":                    {"var"},
-		"/":                              []string(nil),
+		"/":                              {},
 	} {
 		parts := parts
 		pathToTest := pathToTest
@@ -460,6 +465,129 @@ func TestPackageSymlinks(t *testing.T) {
 		},
 	}
 	require.NoError(t, Default.Package(info, ioutil.Discard))
+}
+
+func TestDirectories(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/file",
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/bar/file",
+		},
+		{
+			Destination: "/etc/bar",
+			Type:        "dir",
+			FileInfo: &files.ContentFileInfo{
+				Owner: "test",
+				Mode:  0o700,
+			},
+		},
+		{
+			Destination: "/etc/baz",
+			Type:        "dir",
+		},
+	}
+
+	require.NoError(t, info.Validate())
+
+	var buf bytes.Buffer
+	size := int64(0)
+	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
+	require.NoError(t, err)
+
+	// for apks all implicit or explicit directories are created in the tarball
+	h := extractFileHeaderFromTar(t, buf.Bytes(), "/etc")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/foo")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/bar")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	require.Equal(t, h.Mode, int64(0o700))
+	require.Equal(t, h.Uname, "test")
+	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/baz")
+	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+}
+
+func TestNoDuplicateContents(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/file",
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/bar/file",
+		},
+		{
+			Destination: "/etc/bar",
+			Type:        "dir",
+			FileInfo: &files.ContentFileInfo{
+				Owner: "test",
+				Mode:  0o700,
+			},
+		},
+		{
+			Destination: "/etc/baz",
+			Type:        "dir",
+		},
+	}
+
+	require.NoError(t, info.Validate())
+
+	var buf bytes.Buffer
+	size := int64(0)
+	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
+	require.NoError(t, err)
+
+	exists := map[string]bool{}
+
+	tr := tar.NewReader(bytes.NewReader(buf.Bytes()))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(t, err)
+
+		_, ok := exists[hdr.Name]
+		if ok {
+			t.Fatalf("%s exists more than once in tarball", hdr.Name)
+		}
+
+		exists[hdr.Name] = true
+	}
+}
+
+func extractFileHeaderFromTar(tb testing.TB, tarFile []byte, filename string) *tar.Header {
+	tb.Helper()
+
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		if path.Join("/", hdr.Name) != path.Join("/", filename) { // nolint:gosec
+			continue
+		}
+
+		return hdr
+	}
+
+	tb.Fatalf("file %q does not exist in tar", filename)
+
+	return nil
 }
 
 func TestArches(t *testing.T) {

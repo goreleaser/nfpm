@@ -29,6 +29,8 @@ const (
 
 	// Symbolic link
 	tagLink = 0o120000
+	// Directory
+	tagDirectory = 0o40000
 
 	changelogNotesTemplate = `
 {{- range .Changes }}{{$note := splitList "\n" .Note}}
@@ -113,7 +115,6 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 		rpm.SetPGPSigner(sign.PGPSignerWithKeyID(info.RPM.Signature.KeyFile, info.RPM.Signature.KeyPassphrase, info.RPM.Signature.KeyID))
 	}
 
-	addEmptyDirsRPM(info, rpm)
 	if err = createFilesInsideRPM(info, rpm); err != nil {
 		return err
 	}
@@ -323,89 +324,83 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	return nil
 }
 
-func addEmptyDirsRPM(info *nfpm.Info, rpm *rpmpack.RPM) {
-	for _, dir := range info.EmptyFolders {
-		rpm.AddFile(
-			rpmpack.RPMFile{
-				Name:  dir,
-				Mode:  uint(0o40755),
-				MTime: uint32(time.Now().Unix()),
-				Owner: "root",
-				Group: "root",
-			},
-		)
-	}
-}
-
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
-	var symlinks files.Contents
-	for _, file := range info.Contents {
-		if file.Packager != "" && file.Packager != packagerName {
+	for _, content := range info.Contents {
+		if content.Packager != "" && content.Packager != packagerName {
 			continue
 		}
 
-		var rpmFileType rpmpack.FileType
-		switch file.Type {
+		var file *rpmpack.RPMFile
+
+		switch content.Type {
 		case "config":
-			rpmFileType = rpmpack.ConfigFile
+			file, err = asRPMFile(content, rpmpack.ConfigFile)
 		case "config|noreplace":
-			rpmFileType = rpmpack.ConfigFile | rpmpack.NoReplaceFile
+			file, err = asRPMFile(content, rpmpack.ConfigFile|rpmpack.NoReplaceFile)
 		case "ghost":
-			rpmFileType = rpmpack.GhostFile
-			if file.FileInfo.Mode == 0 {
-				file.FileInfo.Mode = os.FileMode(0o644)
+			if content.FileInfo.Mode == 0 {
+				content.FileInfo.Mode = os.FileMode(0o644)
 			}
+
+			file, err = asRPMFile(content, rpmpack.GhostFile)
 		case "doc":
-			rpmFileType = rpmpack.DocFile
+			file, err = asRPMFile(content, rpmpack.DocFile)
 		case "licence", "license":
-			rpmFileType = rpmpack.LicenceFile
+			file, err = asRPMFile(content, rpmpack.LicenceFile)
 		case "readme":
-			rpmFileType = rpmpack.ReadmeFile
+			file, err = asRPMFile(content, rpmpack.ReadmeFile)
 		case "symlink":
-			symlinks = append(symlinks, file)
-			continue
+			file = asRPMSymlink(content)
+		case "dir":
+			file, err = asRPMDirectory(content)
 		default:
-			rpmFileType = rpmpack.GenericFile
+			file, err = asRPMFile(content, rpmpack.GenericFile)
 		}
 
-		if err = copyToRPM(rpm, file, rpmFileType); err != nil {
+		if err != nil {
 			return err
 		}
-	}
 
-	addSymlinksInsideRPM(symlinks, rpm)
+		rpm.AddFile(*file)
+	}
 
 	return nil
 }
 
-func addSymlinksInsideRPM(symlinks files.Contents, rpm *rpmpack.RPM) {
-	for _, file := range symlinks {
-		rpm.AddFile(rpmpack.RPMFile{
-			Name:  file.Destination,
-			Body:  []byte(file.Source),
-			Mode:  uint(tagLink),
-			MTime: uint32(file.FileInfo.MTime.Unix()),
-			Owner: file.FileInfo.Owner,
-			Group: file.FileInfo.Group,
-		})
+func asRPMDirectory(content *files.Content) (*rpmpack.RPMFile, error) {
+	return &rpmpack.RPMFile{
+		Name:  content.Destination,
+		Mode:  uint(content.Mode()) | tagDirectory,
+		MTime: uint32(time.Now().Unix()),
+		Owner: content.FileInfo.Owner,
+		Group: content.FileInfo.Group,
+	}, nil
+}
+
+func asRPMSymlink(content *files.Content) *rpmpack.RPMFile {
+	return &rpmpack.RPMFile{
+		Name:  content.Destination,
+		Body:  []byte(content.Source),
+		Mode:  uint(tagLink),
+		MTime: uint32(content.FileInfo.MTime.Unix()),
+		Owner: content.FileInfo.Owner,
+		Group: content.FileInfo.Group,
 	}
 }
 
-func copyToRPM(rpm *rpmpack.RPM, file *files.Content, fileType rpmpack.FileType) (err error) {
-	data, err := ioutil.ReadFile(file.Source)
-	if err != nil && file.Type != "ghost" {
-		return err
+func asRPMFile(content *files.Content, fileType rpmpack.FileType) (*rpmpack.RPMFile, error) {
+	data, err := ioutil.ReadFile(content.Source)
+	if err != nil && content.Type != "ghost" {
+		return nil, err
 	}
 
-	rpm.AddFile(rpmpack.RPMFile{
-		Name:  file.Destination,
+	return &rpmpack.RPMFile{
+		Name:  content.Destination,
 		Body:  data,
-		Mode:  uint(file.FileInfo.Mode),
-		MTime: uint32(file.FileInfo.MTime.Unix()),
-		Owner: file.FileInfo.Owner,
-		Group: file.FileInfo.Group,
+		Mode:  uint(content.FileInfo.Mode),
+		MTime: uint32(content.FileInfo.MTime.Unix()),
+		Owner: content.FileInfo.Owner,
+		Group: content.FileInfo.Group,
 		Type:  fileType,
-	})
-
-	return nil
+	}, nil
 }
