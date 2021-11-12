@@ -7,7 +7,7 @@
   on Slack (join via [this link](https://invite.slack.golangbridge.org)) or on
   [StackOverflow](https://stackoverflow.com/tags/goreleaser) first;
 * make sure to read our
-  [Code of Conduct](https://github.com/goreleaser/goreleaser/blob/master/CODE_OF_CONDUCT.md).
+  [Code of Conduct](https://github.com/goreleaser/goreleaser/blob/main/CODE_OF_CONDUCT.md).
 
 ---
 

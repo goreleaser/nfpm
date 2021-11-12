@@ -4,7 +4,7 @@ site_description: nFPM is not FPM - a simple deb, rpm and apk packager written i
 copyright: Made with ❤️ by GoReleaser contributors.
 repo_name: goreleaser/nfpm
 repo_url: https://github.com/goreleaser/nfpm
-edit_uri: edit/master/www/docs/
+edit_uri: edit/main/www/docs/
 
 theme:
   name: material
