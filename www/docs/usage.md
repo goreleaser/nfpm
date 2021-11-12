@@ -23,4 +23,4 @@ You can learn about it in more detail in the [command line reference section](/c
 
 Check out the [GoDocs page](https://pkg.go.dev/github.com/goreleaser/nfpm/v2?tab=doc),
 the [nFPM command line implementation](https://github.com/goreleaser/nfpm/blob/main/cmd/nfpm/main.go)
-and [GoReleaser's usage](https://github.com/goreleaser/goreleaser/blob/master/internal/pipe/nfpm/nfpm.go).
+and [GoReleaser's usage](https://github.com/goreleaser/goreleaser/blob/main/internal/pipe/nfpm/nfpm.go).
