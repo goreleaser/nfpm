@@ -5,7 +5,7 @@ on:
     tags:
       - v*
     branches:
-      - master
+      - main
   pull_request:
 
 jobs:
@@ -142,7 +142,7 @@ jobs:
             ${{ runner.os }}-go-
       -
         name: Setup Sigstore
-        uses: sigstore/cosign-installer@v1.3.0
+        uses: sigstore/cosign-installer@v1.3.1
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
