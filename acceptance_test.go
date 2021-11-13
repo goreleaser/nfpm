@@ -316,7 +316,7 @@ func accept(t *testing.T, params acceptParms) {
 	}
 	cmdArgs = append(cmdArgs, ".")
 
-	f, err := os.Create(target)
+	f, err := os.OpenFile(target, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o764)
 	require.NoError(t, err)
 	info.Target = target
 	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
