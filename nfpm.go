@@ -11,6 +11,7 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/Masterminds/semver/v3"
 	"github.com/goreleaser/chglog"
+	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/imdario/mergo"
 	"gopkg.in/yaml.v3"
@@ -375,8 +376,8 @@ func Validate(info *Info) (err error) {
 	}
 
 	if len(info.EmptyFolders) > 0 {
-		fmt.Fprintf(os.Stderr, "DEPRECATION WARNING: 'empty_folders' is deprecated and "+
-			"will be removed in a future version, create content with type 'dir' and "+
+		deprecation.Println("'empty_folders' is deprecated and " +
+			"will be removed in a future version, create content with type 'dir' and " +
 			"directoy name as 'dst' instead")
 
 		for _, emptyFolder := range info.EmptyFolders {
