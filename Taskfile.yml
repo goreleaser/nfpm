@@ -40,8 +40,6 @@ tasks:
 
   acceptance:
     desc: Run acceptance tests
-    deps:
-      - acceptance:pull
     env:
       LC_ALL: C
     vars:
