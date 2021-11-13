@@ -45,9 +45,10 @@ tasks:
     env:
       LC_ALL: C
     vars:
+      TEST_OPTIONS: '{{default "" .TEST_OPTIONS}}'
       TEST_PATTERN: '{{default "." .TEST_PATTERN}}'
     cmds:
-      - go test -tags=acceptance -p 4 -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt acceptance_test.go -run {{.TEST_PATTERN}} -timeout=1h
+      - go test {{.TEST_OPTIONS}} -tags=acceptance -p 4 -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt acceptance_test.go -run {{.TEST_PATTERN}} -timeout=1h
 
   test:
     desc: Run unit tests

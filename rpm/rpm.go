@@ -61,8 +61,8 @@ var archToRPM = map[string]string{
 	"amd64":  "x86_64",
 	"386":    "i386",
 	"arm64":  "aarch64",
-	"arm6":   "arm6l",
-	"arm7":   "arm7l",
+	"arm6":   "armv6hl",
+	"arm7":   "armv7hl",
 	"mips":   "mips",
 	"mipsle": "mipsel",
 	// TODO: other arches

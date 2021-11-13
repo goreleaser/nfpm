@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/goreleaser/nfpm/v2"
@@ -19,9 +20,9 @@ import (
 
 // nolint: gochecknoglobals
 var formatArchs = map[string][]string{
-	"apk": {"amd64", "arm64", "386", "ppc64le"},
-	"deb": {"amd64", "arm64", "ppc64le"},
-	"rpm": {"amd64", "arm64", "ppc64le"},
+	"apk": {"amd64", "arm64", "386", "ppc64le", "armv6", "armv7"},
+	"deb": {"amd64", "arm64", "ppc64le", "armv6", "armv7"},
+	"rpm": {"amd64", "arm64", "ppc64le", "armv6", "armv7"},
 }
 
 func TestCore(t *testing.T) {
@@ -272,6 +273,8 @@ func (t testWriter) Write(p []byte) (n int, err error) {
 
 func accept(t *testing.T, params acceptParms) {
 	t.Helper()
+
+	arch := strings.Replace(params.Docker.Arch, "armv", "arm/", 1)
 	configFile := filepath.Join("./testdata/acceptance/", params.Conf)
 	tmp, err := filepath.Abs("./testdata/acceptance/tmp")
 	require.NoError(t, err)
@@ -284,7 +287,7 @@ func accept(t *testing.T, params acceptParms) {
 	envFunc := func(s string) string {
 		switch s {
 		case "BUILD_ARCH":
-			return params.Docker.Arch
+			return strings.Replace(arch, "/", "", 1)
 		case "SEMVER":
 			return "v1.0.0-0.1.b1+git.abcdefgh"
 		default:
@@ -303,7 +306,7 @@ func accept(t *testing.T, params acceptParms) {
 
 	cmdArgs := []string{
 		"build", "--rm", "--force-rm",
-		"--platform", fmt.Sprintf("linux/%s", params.Docker.Arch),
+		"--platform", fmt.Sprintf("linux/%s", arch),
 		"-f", params.Docker.File,
 		"--target", params.Docker.Target,
 		"--build-arg", "package=" + filepath.Join("tmp", packageName),
