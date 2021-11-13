@@ -79,6 +79,8 @@ func TestUpgrade(t *testing.T) {
 						if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
 							ttt.Skip("ppc64le arch not supported in pipeline")
 						}
+
+						arch := strings.ReplaceAll(testArch, "armv", "arm/")
 						oldpkg := fmt.Sprintf("tmp/%s_%s.v1.%s", testName, testArch, testFormat)
 						target := fmt.Sprintf("./testdata/acceptance/%s", oldpkg)
 						require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0o700))
@@ -87,7 +89,7 @@ func TestUpgrade(t *testing.T) {
 							func(s string) string {
 								switch s {
 								case "BUILD_ARCH":
-									return testArch
+									return strings.ReplaceAll(arch, "/", "")
 								case "SEMVER":
 									return "v1.0.0-0.1.b1+git.abcdefgh"
 								default:
@@ -274,7 +276,7 @@ func (t testWriter) Write(p []byte) (n int, err error) {
 func accept(t *testing.T, params acceptParms) {
 	t.Helper()
 
-	arch := strings.Replace(params.Docker.Arch, "armv", "arm/", 1)
+	arch := strings.ReplaceAll(params.Docker.Arch, "armv", "arm/")
 	configFile := filepath.Join("./testdata/acceptance/", params.Conf)
 	tmp, err := filepath.Abs("./testdata/acceptance/tmp")
 	require.NoError(t, err)
@@ -287,7 +289,7 @@ func accept(t *testing.T, params acceptParms) {
 	envFunc := func(s string) string {
 		switch s {
 		case "BUILD_ARCH":
-			return strings.Replace(arch, "/", "", 1)
+			return strings.ReplaceAll(arch, "/", "")
 		case "SEMVER":
 			return "v1.0.0-0.1.b1+git.abcdefgh"
 		default:
