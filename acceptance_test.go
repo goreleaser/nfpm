@@ -22,7 +22,7 @@ import (
 var formatArchs = map[string][]string{
 	"apk": {"amd64", "arm64", "386", "ppc64le", "armv6", "armv7"},
 	"deb": {"amd64", "arm64", "ppc64le", "armv6", "armv7"},
-	"rpm": {"amd64", "arm64", "ppc64le", "armv6", "armv7"},
+	"rpm": {"amd64", "arm64", "ppc64le", "armv7"},
 }
 
 func TestCore(t *testing.T) {
