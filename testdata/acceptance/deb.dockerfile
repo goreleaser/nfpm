@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS test_base
+FROM debian AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.deb
@@ -107,8 +107,8 @@ FROM min AS env-var-version
 ENV EXPECTVER=" Version: 1.0.0~0.1.b1+git.abcdefgh"
 RUN dpkg --info /tmp/foo.deb | grep "Version" > found
 RUN export FOUND_VER="$(cat found)" && \
-    echo "Expected: '${EXPECTVER}' :: Found: '${FOUND_VER}'" && \
-    test "${FOUND_VER}" = "${EXPECTVER}"
+	echo "Expected: '${EXPECTVER}' :: Found: '${FOUND_VER}'" && \
+	test "${FOUND_VER}" = "${EXPECTVER}"
 
 
 # ---- changelog test ----
