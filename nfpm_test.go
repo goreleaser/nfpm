@@ -105,33 +105,49 @@ func TestDefaults(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	require.NoError(t, nfpm.Validate(&nfpm.Info{
-		Name:    "as",
-		Arch:    "asd",
-		Version: "1.2.3",
-		Overridables: nfpm.Overridables{
-			Contents: []*files.Content{
-				{
-					Source:      "./testdata/contents.yaml",
-					Destination: "asd",
+	t.Run("dirs", func(t *testing.T) {
+		info := nfpm.Info{
+			Name:    "as",
+			Arch:    "asd",
+			Version: "1.2.3",
+			Overridables: nfpm.Overridables{
+				EmptyFolders: []string{"/usr/share/test"},
+				Contents: []*files.Content{
+					{
+						Source:      "./testdata/contents.yaml",
+						Destination: "asd",
+					},
 				},
 			},
-		},
-	}))
-	require.NoError(t, nfpm.Validate(&nfpm.Info{
-		Name:    "as",
-		Arch:    "asd",
-		Version: "1.2.3",
-		Overridables: nfpm.Overridables{
-			Contents: []*files.Content{
-				{
-					Source:      "./testdata/contents.yaml",
-					Destination: "asd",
-					Type:        "config",
+		}
+		require.NoError(t, nfpm.Validate(&info))
+		require.Empty(t, info.Overridables.EmptyFolders)
+		require.Len(t, info.Overridables.Contents, 2)
+		require.Equal(t, &files.Content{
+			Destination: "/usr/share/test",
+			Type:        "dir",
+			FileInfo: &files.ContentFileInfo{
+				Mode: 0o755,
+			},
+		}, info.Overridables.Contents[1])
+	})
+
+	t.Run("config", func(t *testing.T) {
+		require.NoError(t, nfpm.Validate(&nfpm.Info{
+			Name:    "as",
+			Arch:    "asd",
+			Version: "1.2.3",
+			Overridables: nfpm.Overridables{
+				Contents: []*files.Content{
+					{
+						Source:      "./testdata/contents.yaml",
+						Destination: "asd",
+						Type:        "config",
+					},
 				},
 			},
-		},
-	}))
+		}))
+	})
 }
 
 func TestValidateError(t *testing.T) {

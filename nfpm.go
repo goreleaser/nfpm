@@ -388,6 +388,9 @@ func Validate(info *Info) (err error) {
 			contents = append(contents, &files.Content{
 				Destination: emptyFolder,
 				Type:        "dir",
+				FileInfo: &files.ContentFileInfo{
+					Mode: 0o755,
+				},
 			})
 		}
 	}
