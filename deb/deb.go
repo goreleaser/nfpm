@@ -281,7 +281,7 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 		}
 
 		err = tw.WriteHeader(&tar.Header{
-			Name:     files.ToNixPath(strings.Trim(file.Destination, "/") + "/"),
+			Name:     normalizePath(strings.Trim(file.Destination, "/") + "/"),
 			Mode:     int64(file.FileInfo.Mode),
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
