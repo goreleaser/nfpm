@@ -99,7 +99,6 @@ RUN test ! -f /tmp/postremove-proof
 FROM test_base AS meta
 RUN apt update && apt install -y /tmp/foo.deb
 RUN command -v zsh
-RUN command -v fish
 
 
 # ---- env-var-version test ----
