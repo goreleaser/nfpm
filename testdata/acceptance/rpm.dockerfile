@@ -1,4 +1,4 @@
-FROM centos AS test_base
+FROM fedora AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.rpm
