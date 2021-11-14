@@ -182,7 +182,7 @@ contents:
   # claimed ownership are removed. However, you should not claim ownership of a folder that
   # is created by the distro or a dependency of your package.
   # A directory in the build environment can optionally be provided in the 'src' field in
-  # order copy mtime and mode from that directory without having to specifiy it manually.
+  # order copy mtime and mode from that directory without having to specify it manually.
   - dst: /some/dir
     type: dir
     file_info:
