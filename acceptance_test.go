@@ -20,8 +20,8 @@ import (
 
 // nolint: gochecknoglobals
 var formatArchs = map[string][]string{
-	"apk": {"amd64", "arm64", "386", "ppc64le", "armv6", "armv7"},
-	"deb": {"amd64", "arm64", "ppc64le", "armv6", "armv7"},
+	"apk": {"amd64", "arm64", "386", "ppc64le", "armv6", "armv7", "s390x"},
+	"deb": {"amd64", "arm64", "ppc64le", "armv6", "armv7", "s390x"},
 	"rpm": {"amd64", "arm64", "ppc64le", "armv7"},
 }
 
@@ -42,13 +42,13 @@ func TestCore(t *testing.T) {
 	for _, name := range testNames {
 		for format, architecture := range formatArchs {
 			for _, arch := range architecture {
-				func(tt *testing.T, testName, testFormat, testArch string) {
-					tt.Run(fmt.Sprintf("%s/%s/%s", testFormat, testArch, testName), func(ttt *testing.T) {
-						ttt.Parallel()
+				func(t *testing.T, testName, testFormat, testArch string) {
+					t.Run(fmt.Sprintf("%s/%s/%s", testFormat, testArch, testName), func(t *testing.T) {
+						t.Parallel()
 						if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
-							ttt.Skip("ppc64le arch not supported in pipeline")
+							t.Skip("ppc64le arch not supported in pipeline")
 						}
-						accept(ttt, acceptParms{
+						accept(t, acceptParms{
 							Name:   fmt.Sprintf("%s_%s", testName, testArch),
 							Conf:   fmt.Sprintf("core.%s.yaml", testName),
 							Format: testFormat,
@@ -73,11 +73,11 @@ func TestUpgrade(t *testing.T) {
 	for _, name := range testNames {
 		for format, architecture := range formatArchs {
 			for _, arch := range architecture {
-				func(tt *testing.T, testName, testFormat, testArch string) {
-					tt.Run(fmt.Sprintf("%s/%s/%s", testFormat, testArch, testName), func(ttt *testing.T) {
-						ttt.Parallel()
+				func(t *testing.T, testName, testFormat, testArch string) {
+					t.Run(fmt.Sprintf("%s/%s/%s", testFormat, testArch, testName), func(t *testing.T) {
+						t.Parallel()
 						if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
-							ttt.Skip("ppc64le arch not supported in pipeline")
+							t.Skip("ppc64le arch not supported in pipeline")
 						}
 
 						arch := strings.ReplaceAll(testArch, "armv", "arm/")
@@ -112,7 +112,7 @@ func TestUpgrade(t *testing.T) {
 						info.Target = target
 						require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
 
-						accept(ttt, acceptParms{
+						accept(t, acceptParms{
 							Name:   fmt.Sprintf("%s_%s.v2", testName, testArch),
 							Conf:   fmt.Sprintf("%s.v2.yaml", testName),
 							Format: testFormat,
@@ -136,13 +136,13 @@ func TestRPMCompression(t *testing.T) {
 	compressFormats := []string{"gzip", "xz", "lzma"}
 	for _, arch := range formatArchs[format] {
 		for _, compFormat := range compressFormats {
-			func(tt *testing.T, testCompFormat, testArch string) {
-				tt.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testCompFormat), func(ttt *testing.T) {
-					ttt.Parallel()
+			func(t *testing.T, testCompFormat, testArch string) {
+				t.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testCompFormat), func(t *testing.T) {
+					t.Parallel()
 					if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
-						ttt.Skip("ppc64le arch not supported in pipeline")
+						t.Skip("ppc64le arch not supported in pipeline")
 					}
-					accept(ttt, acceptParms{
+					accept(t, acceptParms{
 						Name:   fmt.Sprintf("%s_compression_%s", testCompFormat, testArch),
 						Conf:   fmt.Sprintf("rpm.%s.compression.yaml", testCompFormat),
 						Format: format,
@@ -165,13 +165,13 @@ func TestDebCompression(t *testing.T) {
 	compressFormats := []string{"gzip", "xz", "none"}
 	for _, arch := range formatArchs[format] {
 		for _, compFormat := range compressFormats {
-			func(tt *testing.T, testCompFormat, testArch string) {
-				tt.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testCompFormat), func(ttt *testing.T) {
-					ttt.Parallel()
+			func(t *testing.T, testCompFormat, testArch string) {
+				t.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testCompFormat), func(t *testing.T) {
+					t.Parallel()
 					if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
-						ttt.Skip("ppc64le arch not supported in pipeline")
+						t.Skip("ppc64le arch not supported in pipeline")
 					}
-					accept(ttt, acceptParms{
+					accept(t, acceptParms{
 						Name:   fmt.Sprintf("%s_compression_%s", testCompFormat, testArch),
 						Conf:   fmt.Sprintf("deb.%s.compression.yaml", testCompFormat),
 						Format: format,
@@ -196,13 +196,13 @@ func TestRPMSpecific(t *testing.T) {
 	}
 	for _, name := range testNames {
 		for _, arch := range formatArchs[format] {
-			func(tt *testing.T, testName, testArch string) {
-				tt.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testName), func(ttt *testing.T) {
-					ttt.Parallel()
+			func(t *testing.T, testName, testArch string) {
+				t.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testName), func(t *testing.T) {
+					t.Parallel()
 					if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
-						ttt.Skip("ppc64le arch not supported in pipeline")
+						t.Skip("ppc64le arch not supported in pipeline")
 					}
-					accept(ttt, acceptParms{
+					accept(t, acceptParms{
 						Name:   fmt.Sprintf("%s_%s", testName, testArch),
 						Conf:   fmt.Sprintf("%s.%s.yaml", format, testName),
 						Format: format,
@@ -228,13 +228,13 @@ func TestDebSpecific(t *testing.T) {
 	}
 	for _, name := range testNames {
 		for _, arch := range formatArchs[format] {
-			func(tt *testing.T, testName, testArch string) {
-				tt.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testName), func(ttt *testing.T) {
-					ttt.Parallel()
+			func(t *testing.T, testName, testArch string) {
+				t.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testName), func(t *testing.T) {
+					t.Parallel()
 					if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
-						ttt.Skip("ppc64le arch not supported in pipeline")
+						t.Skip("ppc64le arch not supported in pipeline")
 					}
-					accept(ttt, acceptParms{
+					accept(t, acceptParms{
 						Name:   fmt.Sprintf("%s_%s", testName, testArch),
 						Conf:   fmt.Sprintf("%s.%s.yaml", format, testName),
 						Format: format,

@@ -62,7 +62,7 @@ jobs:
       matrix:
         go-version: [ 1.17 ]
         pkgFormat: [ deb, rpm, apk ]
-        pkgPlatform: [ amd64, arm64, 386, ppc64le, armv6, armv7 ]
+        pkgPlatform: [ amd64, arm64, 386, ppc64le, armv6, armv7, s390x ]
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: "enabled"

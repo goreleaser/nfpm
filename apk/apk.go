@@ -67,6 +67,7 @@ var archToAlpine = map[string]string{
 	"arm7":    "armv7",
 	"arm64":   "aarch64",
 	"ppc64le": "ppc64le",
+	"s390":    "s390x",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
