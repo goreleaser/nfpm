@@ -188,10 +188,6 @@ contents:
     file_info:
       mode: 0700
 
-# Empty folders your package may need created. (overridable)
-empty_folders:
-  - /var/log/foo
-
 # Scripts to run at specific stages. (overridable)
 scripts:
   preinstall: ./scripts/preinstall.sh

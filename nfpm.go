@@ -255,7 +255,7 @@ type Overridables struct {
 	Suggests     []string       `yaml:"suggests,omitempty" jsonschema:"title=suggests directive,example=nfpm"`
 	Conflicts    []string       `yaml:"conflicts,omitempty" jsonschema:"title=conflicts directive,example=nfpm"`
 	Contents     files.Contents `yaml:"contents,omitempty" jsonschema:"title=files to add to the package"`
-	EmptyFolders []string       `yaml:"empty_folders,omitempty" jsonschema:"title=empty folders to be created when installing the package,example=/var/log/nfpm"`
+	EmptyFolders []string       `yaml:"empty_folders,omitempty" jsonschema:"title=empty folders to be created when installing the package,example=/var/log/nfpm"` // deprecated
 	Scripts      Scripts        `yaml:"scripts,omitempty" jsonschema:"title=scripts to execute"`
 	RPM          RPM            `yaml:"rpm,omitempty" jsonschema:"title=rpm-specific settings"`
 	Deb          Deb            `yaml:"deb,omitempty" jsonschema:"title=deb-specific settings"`
