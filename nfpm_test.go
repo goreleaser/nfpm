@@ -123,13 +123,12 @@ func TestValidate(t *testing.T) {
 		require.NoError(t, nfpm.Validate(&info))
 		require.Empty(t, info.Overridables.EmptyFolders)
 		require.Len(t, info.Overridables.Contents, 2)
-		require.Equal(t, &files.Content{
-			Destination: "/usr/share/test",
-			Type:        "dir",
-			FileInfo: &files.ContentFileInfo{
-				Mode: 0o755,
-			},
-		}, info.Overridables.Contents[1])
+		dir := info.Overridables.Contents[1]
+		require.Equal(t, "/usr/share/test", dir.Destination)
+		require.Equal(t, "dir", dir.Type)
+		require.Equal(t, "-rwxr-xr-x", dir.FileInfo.Mode.String())
+		require.Equal(t, "root", dir.FileInfo.Owner)
+		require.Equal(t, "root", dir.FileInfo.Group)
 	})
 
 	t.Run("config", func(t *testing.T) {

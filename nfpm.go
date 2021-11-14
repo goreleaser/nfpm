@@ -385,13 +385,11 @@ func Validate(info *Info) (err error) {
 				return fmt.Errorf("empty folder already exists in contents: %s", emptyFolder)
 			}
 
-			contents = append(contents, &files.Content{
+			f := &files.Content{
 				Destination: emptyFolder,
 				Type:        "dir",
-				FileInfo: &files.ContentFileInfo{
-					Mode: 0o755,
-				},
-			})
+			}
+			contents = append(contents, f.WithFileInfoDefaults())
 		}
 	}
 
