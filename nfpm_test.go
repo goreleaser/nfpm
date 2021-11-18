@@ -243,7 +243,26 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		apkPass    = "foobar"
 		release    = "3"
 		version    = "1.0.0"
+		fileSuffix = "suffix"
+		pkgName    = "package-name"
 	)
+
+	t.Run("package name", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("NAME", pkgName)
+		info, err := nfpm.Parse(strings.NewReader("name: $NAME"))
+		require.NoError(t, err)
+		require.Equal(t, pkgName, info.Name)
+	})
+
+	t.Run("contents", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("SUFFIX", fileSuffix)
+		info, err := nfpm.Parse(strings.NewReader("name: foo\ncontents:\n- src: a-$SUFFIX\n  dst: b-$SUFFIX"))
+		require.NoError(t, err)
+		require.Equal(t, "a-"+fileSuffix, info.Contents[0].Source)
+		require.Equal(t, "b-"+fileSuffix, info.Contents[0].Destination)
+	})
 
 	t.Run("version", func(t *testing.T) {
 		os.Clearenv()

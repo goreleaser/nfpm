@@ -41,6 +41,30 @@ contents:
 	}
 }
 
+func TestExpandEnv(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+- src: a-$SUFFIX
+  dst: b-$SUFFIX
+`))
+	dec.KnownFields(true)
+	err := dec.Decode(&config)
+	config.Contents.ExpandEnvVars(func(name string) string {
+		if name == "SUFFIX" {
+			return "suffix"
+		}
+		return ""
+	})
+	require.NoError(t, err)
+	require.Len(t, config.Contents, 1)
+	for _, f := range config.Contents {
+		t.Logf("%+#v\n", f)
+		require.Equal(t, f.Source, "a-suffix")
+		require.Equal(t, f.Destination, "b-suffix")
+	}
+}
+
 func TestDeepPathsWithGlob(t *testing.T) {
 	var config testStruct
 	dec := yaml.NewDecoder(strings.NewReader(`---

@@ -65,6 +65,13 @@ func (c Contents) ContainsDestination(dst string) bool {
 	return false
 }
 
+func (c Contents) ExpandEnvVars(envMappingFunc func(string) string) {
+	for _, content := range c {
+		content.Source = os.Expand(content.Source, envMappingFunc)
+		content.Destination = os.Expand(content.Destination, envMappingFunc)
+	}
+}
+
 func (c *Content) WithFileInfoDefaults() *Content {
 	cc := &Content{
 		Source:      c.Source,

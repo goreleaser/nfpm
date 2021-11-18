@@ -148,6 +148,10 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) expandEnvVars() {
+	// General fields
+	c.Info.Name = os.Expand(c.Info.Name, c.envMappingFunc)
+	c.Info.Contents.ExpandEnvVars(c.envMappingFunc)
+
 	// Version related fields
 	c.Info.Release = os.Expand(c.Info.Release, c.envMappingFunc)
 	c.Info.Version = os.Expand(c.Info.Version, c.envMappingFunc)
