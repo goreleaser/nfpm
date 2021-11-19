@@ -64,6 +64,7 @@ maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 description: Sample package
 
 # Vendor.
+# This will expand any env var you set in the field, eg vendor: ${VENDOR}
 vendor: GoReleaser
 
 # Package's homepage.

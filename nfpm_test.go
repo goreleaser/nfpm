@@ -243,6 +243,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		apkPass    = "foobar"
 		release    = "3"
 		version    = "1.0.0"
+		vendor     = "GoReleaser"
 	)
 
 	t.Run("version", func(t *testing.T) {
@@ -259,6 +260,14 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nrelease: $RELEASE"))
 		require.NoError(t, err)
 		require.Equal(t, release, info.Release)
+	})
+
+	t.Run("vendor", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("VENDOR", vendor)
+		info, err := nfpm.Parse(strings.NewReader("name: foo\nvendor: $VENDOR"))
+		require.NoError(t, err)
+		require.Equal(t, vendor, info.Vendor)
 	})
 
 	t.Run("global passphrase", func(t *testing.T) {
