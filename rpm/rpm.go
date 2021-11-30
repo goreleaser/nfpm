@@ -228,7 +228,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Licence:     info.License,
 		URL:         info.Homepage,
 		Vendor:      info.Vendor,
-		Packager:    info.Maintainer,
+		Packager:    defaultTo(info.RPM.Packager, info.Maintainer),
 		Group:       info.RPM.Group,
 		Provides:    provides,
 		Recommends:  recommends,
