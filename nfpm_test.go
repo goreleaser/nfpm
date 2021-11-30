@@ -244,6 +244,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		release    = "3"
 		version    = "1.0.0"
 		vendor     = "GoReleaser"
+		packager   = "nope"
 	)
 
 	t.Run("version", func(t *testing.T) {
@@ -291,6 +292,14 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		require.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+	})
+
+	t.Run("packager", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("PACKAGER", packager)
+		info, err := nfpm.Parse(strings.NewReader("name: foo\nrpm:\n  packager: $PACKAGER"))
+		require.NoError(t, err)
+		require.Equal(t, packager, info.RPM.Packager)
 	})
 }
 

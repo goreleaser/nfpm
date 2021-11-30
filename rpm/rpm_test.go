@@ -183,6 +183,33 @@ func TestRPMSummary(t *testing.T) {
 	require.Equal(t, customSummary, summary)
 }
 
+func TestRPMPackager(t *testing.T) {
+	f, err := ioutil.TempFile("", "test.rpm")
+	require.NoError(t, err)
+
+	customPackager := "GoReleaser <staff@goreleaser.com>"
+	info := exampleInfo()
+	info.RPM.Group = "Unspecified"
+	info.RPM.Packager = customPackager
+
+	require.NoError(t, Default.Package(info, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
+	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		require.NoError(t, err)
+	}()
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	packager, err := rpm.Header.GetString(rpmutils.PACKAGER)
+	require.NoError(t, err)
+	require.Equal(t, customPackager, packager)
+}
+
 func TestWithRPMTags(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
 	require.NoError(t, err)

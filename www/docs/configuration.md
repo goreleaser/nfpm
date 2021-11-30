@@ -233,6 +233,12 @@ rpm:
   # description, but can be explicitly provided here.
   summary: Explicit Summary for Sample Package
 
+  # The packager is used to identify the organization that actually packaged
+  # the software, as opposed to the author of the software.
+  # `maintainer` will be used as fallback if not specified.
+  # This will expand any env var you set in the field, eg packager: ${PACKAGER}
+  packager: GoReleaser <staff@goreleaser.com>
+
   # Compression algorithm (gzip (default), lzma or xz).
   compression: lzma
 
