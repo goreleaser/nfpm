@@ -205,8 +205,13 @@ func checkNoCollisions(contents Contents) error {
 	for _, elem := range contents {
 		present, ok := alreadyPresent[elem.Destination]
 		if ok && (present.Packager == "" || elem.Packager == "" || present.Packager == elem.Packager) {
+			if elem.Type == "dir" {
+				return fmt.Errorf("cannot add directory %q because it is already present: %w",
+					elem.Destination, ErrContentCollision)
+			}
+
 			return fmt.Errorf(
-				"cannot add %s because %s is already present at the same destination (%s): %w",
+				"cannot add %q because %q is already present at the same destination (%s): %w",
 				elem.Source, present.Source, present.Destination, ErrContentCollision)
 		}
 

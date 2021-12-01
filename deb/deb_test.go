@@ -947,6 +947,62 @@ func TestDisableGlobbing(t *testing.T) {
 	require.Equal(t, expectedContent, actualContent)
 }
 
+func TestNoDuplicateAutocreatedDirectories(t *testing.T) {
+	info := exampleInfo()
+	info.DisableGlobbing = true
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/fake",
+			Destination: "/etc/foo/bar",
+		},
+		{
+			Type:        "dir",
+			Destination: "/etc/foo",
+		},
+	}
+	require.NoError(t, info.Validate())
+
+	expected := map[string]bool{
+		"./etc/":        true,
+		"./etc/foo/":    true,
+		"./etc/foo/bar": true,
+	}
+
+	dataTarball, _, _, tarballName, err := createDataTarball(info)
+	require.NoError(t, err)
+
+	contents := tarContents(t, inflate(t, tarballName, dataTarball))
+
+	if len(expected) != len(contents) {
+		t.Fatalf("contents has %d entries instead of %d: %#v", len(contents), len(expected), contents)
+	}
+
+	for _, entry := range contents {
+		if !expected[entry] {
+			t.Fatalf("unexpected content: %q", entry)
+		}
+	}
+}
+
+func TestNoDuplicateDirectories(t *testing.T) {
+	info := exampleInfo()
+	info.DisableGlobbing = true
+	info.Contents = []*files.Content{
+		{
+			Type:        "dir",
+			Destination: "/etc/foo",
+		},
+		{
+			Type:        "dir",
+			Destination: "/etc/foo/",
+		},
+	}
+	require.NoError(t, info.Validate())
+
+	_, _, _, _, err := createDataTarball(info)
+	require.Error(t, err)
+}
+
 func TestCompressionAlgorithms(t *testing.T) {
 	testCases := []struct {
 		algorithm       string
@@ -1026,6 +1082,25 @@ func tarContains(tb testing.TB, tarFile []byte, filename string) bool {
 	}
 
 	return false
+}
+
+func tarContents(tb testing.TB, tarFile []byte) []string {
+	tb.Helper()
+
+	contents := []string{}
+
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		contents = append(contents, hdr.Name)
+	}
+
+	return contents
 }
 
 func extractFileHeaderFromTar(tb testing.TB, tarFile []byte, filename string) *tar.Header {

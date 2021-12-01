@@ -414,8 +414,14 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			continue
 		}
 
+		normalizedName := normalizePath(strings.Trim(file.Destination, "/")) + "/"
+
+		if created[normalizedName] {
+			return fmt.Errorf("duplicate directory: %q", normalizedName)
+		}
+
 		err = tw.WriteHeader(&tar.Header{
-			Name:     files.ToNixPath(strings.Trim(file.Destination, "/") + "/"),
+			Name:     normalizedName,
 			Mode:     int64(file.FileInfo.Mode),
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
@@ -427,7 +433,7 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			return err
 		}
 
-		created[strings.TrimPrefix(file.Destination, "/")] = true
+		created[normalizedName] = true
 	}
 
 	for _, file := range info.Contents {
@@ -483,7 +489,7 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	// tar.FileInfoHeader only uses file.Mode().Perm() which masks the mode with
 	// 0o777 which we don't want because we want to be able to set the suid bit.
 	header.Mode = int64(file.Mode())
-	header.Name = files.ToNixPath(file.Destination[1:])
+	header.Name = normalizePath(file.Destination)
 	header.Uname = file.FileInfo.Owner
 	header.Gname = file.FileInfo.Group
 	if err = newItemInsideTarGz(tw, contents, header); err != nil {
@@ -494,20 +500,30 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	return nil
 }
 
+// normalizePath returns a path separated by slashes without a leading slash.
+func normalizePath(src string) string {
+	return files.ToNixPath(strings.TrimLeft(src, "/"))
+}
+
 // this is needed because the data.tar.gz file should have the empty folders
 // as well, so we walk through the dst and create all subfolders.
 func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 	for _, path := range pathsToCreate(dst) {
+		path = normalizePath(path) + "/"
+
 		if created[path] {
 			// skipping dir that was previously created inside the archive
 			// (eg: usr/)
 			continue
 		}
+
 		if err := tarw.WriteHeader(&tar.Header{
-			Name:     files.ToNixPath(path + "/"),
+			Name:     path,
 			Mode:     0o755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
+			Uname:    "root",
+			Gname:    "root",
 		}); err != nil {
 			return fmt.Errorf("failed to create folder %s: %w", path, err)
 		}
