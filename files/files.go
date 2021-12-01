@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goreleaser/fileglob"
 	"github.com/goreleaser/nfpm/v2/internal/glob"
 )
 
@@ -143,11 +142,6 @@ func (c *Content) Sys() interface{} {
 
 // ExpandContentGlobs gathers all of the real files to be copied into the package.
 func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents, err error) {
-	options := []fileglob.OptFunc{fileglob.MatchDirectoryIncludesContents}
-	if disableGlobbing {
-		options = append(options, fileglob.QuoteMeta)
-	}
-
 	for _, f := range contents {
 		var globbed map[string]string
 
@@ -157,7 +151,7 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 			// them because they do not really exist
 			files = append(files, f.WithFileInfoDefaults())
 		default:
-			globbed, err = glob.Glob(f.Source, f.Destination, options...)
+			globbed, err = glob.Glob(f.Source, f.Destination, disableGlobbing)
 			if err != nil {
 				return nil, err
 			}
