@@ -207,8 +207,8 @@ func TestDisableGlobbing(t *testing.T) {
 			Destination: "/etc/{test}/bar",
 		},
 		{
-			Source:      "testdata/{test}/*foo",
-			Destination: "testdata/{test}/*foo",
+			Source:      "testdata/{test}/[f]oo",
+			Destination: "testdata/{test}/[f]oo",
 		},
 		{
 			Source:      "testdata/globtest/a.txt",
