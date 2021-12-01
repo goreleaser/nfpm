@@ -2,6 +2,7 @@ package files_test
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -197,4 +198,53 @@ func TestCollision(t *testing.T) {
 		_, err := files.ExpandContentGlobs(configuredFiles, true)
 		require.ErrorIs(t, err, files.ErrContentCollision)
 	})
+}
+
+func TestDisableGlobbing(t *testing.T) {
+	testCases := []files.Content{
+		{
+			Source:      "testdata/{test}/bar",
+			Destination: "/etc/{test}/bar",
+		},
+		{
+			Source:      "testdata/{test}/[f]oo",
+			Destination: "testdata/{test}/[f]oo",
+		},
+		{
+			Source:      "testdata/globtest/a.txt",
+			Destination: "testdata/globtest/a.txt",
+		},
+		{
+			Source:      "testdata/globtest/a.txt",
+			Destination: "/etc/a.txt",
+		},
+	}
+
+	disableGlobbing := true
+
+	for i, testCase := range testCases {
+		content := testCase
+
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			result, err := files.ExpandContentGlobs(files.Contents{&content}, disableGlobbing)
+			if err != nil {
+				t.Fatalf("expand content globs: %v", err)
+			}
+
+			if len(result) != 1 {
+				t.Fatalf("unexpected result length: %d, expected one", len(result))
+			}
+
+			actualContent := result[0]
+
+			// we expect the result content to be identical to the input content
+			if actualContent.Source != content.Source {
+				t.Fatalf("unexpected content source: %q, expected %q", actualContent.Source, content.Source)
+			}
+
+			if actualContent.Destination != content.Destination {
+				t.Fatalf("unexpected content destination: %q, expected %q", actualContent.Destination, content.Destination)
+			}
+		})
+	}
 }

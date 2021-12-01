@@ -51,7 +51,12 @@ func (e ErrGlobNoMatch) Error() string {
 // Glob returns a map with source file path as keys and destination as values.
 // First the longest common prefix (lcp) of all globbed files is found. The destination
 // for each globbed file is then dst joined with src with the lcp trimmed off.
-func Glob(pattern, dst string, options ...fileglob.OptFunc) (map[string]string, error) {
+func Glob(pattern, dst string, ignoreMatchers bool) (map[string]string, error) {
+	options := []fileglob.OptFunc{fileglob.MatchDirectoryIncludesContents}
+	if ignoreMatchers {
+		options = append(options, fileglob.QuoteMeta)
+	}
+
 	if strings.HasPrefix(pattern, "../") {
 		p, err := filepath.Abs(pattern)
 		if err != nil {
@@ -59,21 +64,24 @@ func Glob(pattern, dst string, options ...fileglob.OptFunc) (map[string]string, 
 		}
 		pattern = filepath.ToSlash(p)
 	}
+
 	matches, err := fileglob.Glob(pattern, append(options, fileglob.MaybeRootFS)...)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, err
-	}
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+
 		return nil, fmt.Errorf("glob failed: %s: %w", pattern, err)
 	}
 
 	if len(matches) == 0 {
 		return nil, ErrGlobNoMatch{pattern}
 	}
+
 	files := make(map[string]string)
 	prefix := pattern
 	// the prefix may not be a complete path or may use glob patterns, in that case use the parent directory
-	if _, err := os.Stat(prefix); os.IsNotExist(err) || fileglob.ContainsMatchers(pattern) {
+	if _, err := os.Stat(prefix); os.IsNotExist(err) || (fileglob.ContainsMatchers(pattern) && !ignoreMatchers) {
 		prefix = filepath.Dir(longestCommonPrefix(matches))
 	}
 
@@ -82,13 +90,16 @@ func Glob(pattern, dst string, options ...fileglob.OptFunc) (map[string]string, 
 		if f, err := os.Stat(src); err == nil && f.Mode().IsDir() {
 			continue
 		}
+
 		relpath, err := filepath.Rel(prefix, src)
 		if err != nil {
 			// since prefix is a prefix of src a relative path should always be found
-			panic(err)
+			return nil, err
 		}
+
 		globdst := filepath.ToSlash(filepath.Join(dst, relpath))
 		files[src] = globdst
 	}
+
 	return files, nil
 }
