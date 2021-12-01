@@ -132,9 +132,9 @@ func TestPathsToCreate(t *testing.T) {
 
 func TestDefaultWithArch(t *testing.T) {
 	expectedChecksums := map[string]string{
-		"usr/share/doc/fake/fake.txt": "96c335dc28122b5f09a4cef74b156cd24c23784c",
-		"usr/local/bin/fake":          "f46cece3eeb7d9ed5cb244d902775427be71492d",
-		"etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
+		"./usr/share/doc/fake/fake.txt": "96c335dc28122b5f09a4cef74b156cd24c23784c",
+		"./usr/local/bin/fake":          "f46cece3eeb7d9ed5cb244d902775427be71492d",
+		"./etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
 	}
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
@@ -379,7 +379,7 @@ func TestDisableGlobbing(t *testing.T) {
 	dataTar, err := ioutil.ReadAll(gzr)
 	require.NoError(t, err)
 
-	extractedContent := extractFromTar(t, dataTar, "test/{file}[")
+	extractedContent := extractFromTar(t, dataTar, "./test/{file}[")
 	actualContent, err := ioutil.ReadFile("../testdata/{file}[")
 	require.NoError(t, err)
 	require.Equal(t, actualContent, extractedContent)
@@ -408,6 +408,25 @@ func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
 
 	t.Fatalf("file %q not found in tar file", fileName)
 	return nil
+}
+
+func tarContents(tb testing.TB, tarFile []byte) []string {
+	tb.Helper()
+
+	contents := []string{}
+
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		contents = append(contents, hdr.Name)
+	}
+
+	return contents
 }
 
 func TestAPKConventionalFileName(t *testing.T) {
@@ -514,6 +533,66 @@ func TestDirectories(t *testing.T) {
 	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/baz")
 	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+}
+
+func TestNoDuplicateAutocreatedDirectories(t *testing.T) {
+	info := exampleInfo()
+	info.DisableGlobbing = true
+	info.Contents = []*files.Content{
+		{
+			Source:      "../testdata/fake",
+			Destination: "/etc/foo/bar",
+		},
+		{
+			Type:        "dir",
+			Destination: "/etc/foo",
+		},
+	}
+	require.NoError(t, info.Validate())
+
+	expected := map[string]bool{
+		"./etc/":        true,
+		"./etc/foo/":    true,
+		"./etc/foo/bar": true,
+	}
+
+	var buf bytes.Buffer
+	size := int64(0)
+	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
+	require.NoError(t, err)
+
+	contents := tarContents(t, buf.Bytes())
+
+	if len(expected) != len(contents) {
+		t.Fatalf("contents has %d entries instead of %d: %#v", len(contents), len(expected), contents)
+	}
+
+	for _, entry := range contents {
+		if !expected[entry] {
+			t.Fatalf("unexpected content: %q", entry)
+		}
+	}
+}
+
+func TestNoDuplicateDirectories(t *testing.T) {
+	info := exampleInfo()
+	info.DisableGlobbing = true
+	info.Contents = []*files.Content{
+		{
+			Type:        "dir",
+			Destination: "/etc/foo",
+		},
+		{
+			Type:        "dir",
+			Destination: "/etc/foo/",
+		},
+	}
+	require.NoError(t, info.Validate())
+
+	var buf bytes.Buffer
+	size := int64(0)
+	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
+	require.Error(t, err)
 }
 
 func TestNoDuplicateContents(t *testing.T) {
