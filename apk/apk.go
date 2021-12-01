@@ -489,7 +489,7 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	// tar.FileInfoHeader only uses file.Mode().Perm() which masks the mode with
 	// 0o777 which we don't want because we want to be able to set the suid bit.
 	header.Mode = int64(file.Mode())
-	header.Name = normalizePath(file.Destination[1:])
+	header.Name = normalizePath(file.Destination)
 	header.Uname = file.FileInfo.Owner
 	header.Gname = file.FileInfo.Group
 	if err = newItemInsideTarGz(tw, contents, header); err != nil {
@@ -500,10 +500,9 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	return nil
 }
 
-// normalizePath returns a path separated by slashes, all relative path items
-// resolved and relative to the current directory (so it starts with "./").
+// normalizePath returns a path separated by slashes without a leading slash.
 func normalizePath(src string) string {
-	return "." + files.ToNixPath(filepath.Join("/", src))
+	return files.ToNixPath(strings.TrimLeft(src, "/"))
 }
 
 // this is needed because the data.tar.gz file should have the empty folders

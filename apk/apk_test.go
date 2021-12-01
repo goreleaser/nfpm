@@ -132,9 +132,9 @@ func TestPathsToCreate(t *testing.T) {
 
 func TestDefaultWithArch(t *testing.T) {
 	expectedChecksums := map[string]string{
-		"./usr/share/doc/fake/fake.txt": "96c335dc28122b5f09a4cef74b156cd24c23784c",
-		"./usr/local/bin/fake":          "f46cece3eeb7d9ed5cb244d902775427be71492d",
-		"./etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
+		"usr/share/doc/fake/fake.txt": "96c335dc28122b5f09a4cef74b156cd24c23784c",
+		"usr/local/bin/fake":          "f46cece3eeb7d9ed5cb244d902775427be71492d",
+		"etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
 	}
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
@@ -379,7 +379,7 @@ func TestDisableGlobbing(t *testing.T) {
 	dataTar, err := ioutil.ReadAll(gzr)
 	require.NoError(t, err)
 
-	extractedContent := extractFromTar(t, dataTar, "./test/{file}[")
+	extractedContent := extractFromTar(t, dataTar, "test/{file}[")
 	actualContent, err := ioutil.ReadFile("../testdata/{file}[")
 	require.NoError(t, err)
 	require.Equal(t, actualContent, extractedContent)
@@ -551,9 +551,9 @@ func TestNoDuplicateAutocreatedDirectories(t *testing.T) {
 	require.NoError(t, info.Validate())
 
 	expected := map[string]bool{
-		"./etc/":        true,
-		"./etc/foo/":    true,
-		"./etc/foo/bar": true,
+		"etc/":        true,
+		"etc/foo/":    true,
+		"etc/foo/bar": true,
 	}
 
 	var buf bytes.Buffer
