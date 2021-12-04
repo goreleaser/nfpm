@@ -96,6 +96,8 @@ All artifacts are checksummed and the checksum is signed with [cosign][].
 
 Our Docker images are signed with [cosign][].
 
+Verify the signature:
+
 ```sh
 COSIGN_EXPERIMENTAL=1 cosign verify	goreleaser/nfpm
 COSIGN_EXPERIMENTAL=1 cosign verify ghcr.io/goreleaser/nfpm
