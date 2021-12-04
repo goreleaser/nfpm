@@ -146,14 +146,23 @@ furies:
 
 signs:
 - cmd: cosign
-  stdin: '{{ .Env.COSIGN_PWD }}'
-  args: ["sign-blob", "-key=/tmp/goreleaser_cosign.key", "-output=${signature}", "${artifact}"]
-  artifacts: checksum
+  env:
+  - COSIGN_EXPERIMENTAL=1
+  args:
+    - sign-blob
+    - '--oidc-issuer=https://token.actions.githubusercontent.com'
+    - '--output=${signature}'
+    - '${artifact}'
 
 docker_signs:
-- artifacts: manifests
-  stdin: '{{ .Env.COSIGN_PWD }}'
-  args: ["sign", "-key=/tmp/goreleaser_cosign.key", "${artifact}"]
+- cmd: cosign
+  env:
+  - COSIGN_EXPERIMENTAL=1
+  artifacts: manifests
+  args:
+  - 'sign'
+  - '--oidc-issuer=https://token.actions.githubusercontent.com'
+  - '${artifact}'
 
 changelog:
   sort: asc
@@ -181,8 +190,6 @@ checksum:
   name_template: 'checksums.txt'
 
 release:
-  extra_files:
-    - glob: cosign.pub
   footer: |
     **Full Changelog**: https://github.com/goreleaser/nfpm/compare/{{ .PreviousTag }}...{{ .Tag }}
 

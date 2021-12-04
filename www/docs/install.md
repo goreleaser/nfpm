@@ -75,12 +75,16 @@ All artifacts are checksummed and the checksum file is signed with [cosign][].
 
 You can verify it using [our public key](https://goreleaser.com/static/goreleaser.pub).
 
-1. Download the files you want, the `checksums.txt` and `checksums.txt.sig` files from the [releases][releases] page.
+1. Download the files you want, the `checksums.txt` and `checksums.txt.sig` files from the [releases][releases] page:
+	```sh
+	wget https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt
+	wget https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sig
+	```
+
 1. Verify the signature:
 	```sh
-	cosign verify-blob \
-		-key https://goreleaser.com/static/goreleaser.pub \
-		-signature checksums.txt.sig \
+	COSIGN_EXPERIMENTAL=1 cosign verify-blob \
+		--signature checksums.txt.sig \
 		checksums.txt
 	```
 1. If the signature is valid, you can then verify the SHA256 sums match with the downloaded binary:
@@ -95,12 +99,8 @@ Our Docker image is signed with [cosign][].
 You can verify it using [our public key](https://goreleaser.com/static/goreleaser.pub):
 
 ```sh
-cosign verify \
-	-key https://goreleaser.com/static/goreleaser.pub \
-	goreleaser/nfpm
-cosign verify \
-	-key https://goreleaser.com/static/goreleaser.pub \
-	ghcr.io/goreleaser/nfpm
+COSIGN_EXPERIMENTAL=1 cosign verify	goreleaser/nfpm
+COSIGN_EXPERIMENTAL=1 cosign verify ghcr.io/goreleaser/nfpm
 ```
 
 ## Running with Docker
