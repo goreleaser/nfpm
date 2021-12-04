@@ -148,10 +148,12 @@ signs:
 - cmd: cosign
   env:
   - COSIGN_EXPERIMENTAL=1
+  certificate: '{{ trimsuffix .Env.artifact ".txt" }}.pem'
   args:
     - sign-blob
     - '--oidc-issuer=https://token.actions.githubusercontent.com'
-    - '--output=${signature}'
+    - '--output-certificate=${certificate}'
+    - '--output-signature=${signature}'
     - '${artifact}'
 
 docker_signs:
