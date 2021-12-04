@@ -69,11 +69,11 @@ go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 
 Download the pre-compiled binaries from the [releases page][releases] and copy them to the desired location.
 
-## Verifying the binaries
+## Veryifing the artifacts
 
-All artifacts are checksummed and the checksum file is signed with [cosign][].
+### binaries
 
-You can verify it using [our public key](https://goreleaser.com/static/goreleaser.pub).
+All artifacts are checksummed and the checksum is signed with [cosign][].
 
 1. Download the files you want, the `checksums.txt` and `checksums.txt.sig` files from the [releases][releases] page:
 	```sh
@@ -92,11 +92,9 @@ You can verify it using [our public key](https://goreleaser.com/static/gorelease
 	sha256sum --ignore-missing -c checksums.txt
 	```
 
-## Verifying docker images
+### docker images
 
 Our Docker image is signed with [cosign][].
-
-You can verify it using [our public key](https://goreleaser.com/static/goreleaser.pub):
 
 ```sh
 COSIGN_EXPERIMENTAL=1 cosign verify	goreleaser/nfpm
