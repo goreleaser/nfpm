@@ -67,7 +67,7 @@ tasks:
   fmt:
     desc: gofumpt all code
     cmds:
-      - gofumpt -w -l -s .
+      - gofumpt -w -l .
 
   ci:
     desc: Run all CI steps
