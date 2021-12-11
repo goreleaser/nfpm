@@ -9,8 +9,6 @@ homepage: "https://foobar.org"
 license: "MIT"
 release: "symlink"
 contents:
-  - src: ./testdata/whatever.conf
-    dst: /etc/foo/whatever.conf
   - src: /etc/foo/whatever.conf
     dst: /path/to/symlink
     type: symlink

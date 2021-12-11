@@ -1,0 +1,10 @@
+---
+name: foo
+arch: "${BUILD_ARCH}"
+version: 1.2.3
+epoch: 2
+license: MIT
+maintainer: "Foo Bar"
+contents:
+  - src: ./testdata/fake
+    dst: /usr/local/bin/fake

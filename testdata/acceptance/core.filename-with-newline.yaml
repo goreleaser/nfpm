@@ -1,0 +1,9 @@
+---
+name: foo
+arch: "${BUILD_ARCH}"
+version: 1.2.3
+license: MIT
+maintainer: "Foo Bar"
+contents:
+  - src: ./testdata/fake
+    dst: "/usr/file\nname"

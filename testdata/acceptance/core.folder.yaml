@@ -7,10 +7,7 @@ maintainer: "Foo Bar"
 vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
-release: "symlink"
+release: "folder"
 contents:
-  - src: ./testdata/whatever.conf
-    dst: /etc/foo/whatever.conf
-  - src: /etc/foo/whatever.conf
-    dst: /path/to/symlink
-    type: symlink
+  - dst: /path/to/folder
+    type: dir
