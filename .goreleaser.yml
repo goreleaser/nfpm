@@ -148,7 +148,7 @@ signs:
 - cmd: cosign
   env:
   - COSIGN_EXPERIMENTAL=1
-  certificate: '{{ trimsuffix .Env.artifact ".txt" }}.pem'
+  certificate: '${artifact}.pem'
   args:
     - sign-blob
     - '--oidc-issuer=https://token.actions.githubusercontent.com'
