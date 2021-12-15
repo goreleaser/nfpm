@@ -43,7 +43,4 @@ easy and will surely help the developers at least buy some ☕️ or 🍺!
 
 ---
 
-Would you like to fix something in the documentation? Feel free to open an [issue](https://github.com/goreleaser/nfpm/issues).
-
-[goreleaser]: https://goreleaser.com/#linux_packages.nfpm
 [fpm]: https://github.com/jordansissel/fpm
