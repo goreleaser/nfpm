@@ -88,6 +88,7 @@ tasks:
       - ./scripts/cmd_docs.sh
     sources:
       - cmd/*.go
+      - nfpm.go
       - ./scripts/cmd_docs.sh
       - CONTRIBUTING.md
     generates:
