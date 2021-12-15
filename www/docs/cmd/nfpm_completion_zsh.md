@@ -1,9 +1,8 @@
 # nfpm completion zsh
 
-generate the autocompletion script for zsh
+Generate the autocompletion script for zsh
 
 ## Synopsis
-
 
 Generate the autocompletion script for the zsh shell.
 
@@ -38,5 +37,5 @@ nfpm completion zsh [flags]
 
 ## See also
 
-* [nfpm completion](/cmd/nfpm_completion/)	 - generate the autocompletion script for the specified shell
+* [nfpm completion](/cmd/nfpm_completion/)	 - Generate the autocompletion script for the specified shell
 

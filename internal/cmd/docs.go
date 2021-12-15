@@ -15,7 +15,7 @@ func newDocsCmd() *docsCmd {
 	root := &docsCmd{}
 	cmd := &cobra.Command{
 		Use:                   "docs",
-		Short:                 "generates nFPM's command line docs",
+		Short:                 "Generates nFPM's command line docs",
 		SilenceUsage:          true,
 		DisableFlagsInUseLine: true,
 		Hidden:                true,

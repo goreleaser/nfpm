@@ -1,9 +1,8 @@
 # nfpm completion fish
 
-generate the autocompletion script for fish
+Generate the autocompletion script for fish
 
 ## Synopsis
-
 
 Generate the autocompletion script for the fish shell.
 
@@ -31,5 +30,5 @@ nfpm completion fish [flags]
 
 ## See also
 
-* [nfpm completion](/cmd/nfpm_completion/)	 - generate the autocompletion script for the specified shell
+* [nfpm completion](/cmd/nfpm_completion/)	 - Generate the autocompletion script for the specified shell
 
