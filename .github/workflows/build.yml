@@ -114,6 +114,9 @@ jobs:
     needs:
       - unit-tests
       - Acceptance-Tests
+    permissions:
+      contents: write
+      id-token: write
     steps:
       -
         name: Checkout
@@ -188,4 +191,3 @@ jobs:
           DISCORD_WEBHOOK_ID: ${{ secrets.DISCORD_WEBHOOK_ID }}
           DISCORD_WEBHOOK_TOKEN: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
-          COSIGN_PWD: ${{ secrets.COSIGN_PWD }}

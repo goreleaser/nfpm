@@ -69,18 +69,22 @@ go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 
 Download the pre-compiled binaries from the [releases page][releases] and copy them to the desired location.
 
-## Verifying the binaries
+## Veryifing the artifacts
 
-All artifacts are checksummed and the checksum file is signed with [cosign][].
+### binaries
 
-You can verify it using [our public key](https://goreleaser.com/static/goreleaser.pub).
+All artifacts are checksummed and the checksum is signed with [cosign][].
 
-1. Download the files you want, the `checksums.txt` and `checksums.txt.sig` files from the [releases][releases] page.
+1. Download the files you want, the `checksums.txt` and `checksums.txt.sig` files from the [releases][releases] page:
+	```sh
+	wget https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt
+	wget https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sig
+	```
+
 1. Verify the signature:
 	```sh
-	cosign verify-blob \
-		-key https://goreleaser.com/static/goreleaser.pub \
-		-signature checksums.txt.sig \
+	COSIGN_EXPERIMENTAL=1 cosign verify-blob \
+		--signature checksums.txt.sig \
 		checksums.txt
 	```
 1. If the signature is valid, you can then verify the SHA256 sums match with the downloaded binary:
@@ -88,19 +92,15 @@ You can verify it using [our public key](https://goreleaser.com/static/gorelease
 	sha256sum --ignore-missing -c checksums.txt
 	```
 
-## Verifying docker images
+### docker images
 
-Our Docker image is signed with [cosign][].
+Our Docker images are signed with [cosign][].
 
-You can verify it using [our public key](https://goreleaser.com/static/goreleaser.pub):
+Verify the signature:
 
 ```sh
-cosign verify \
-	-key https://goreleaser.com/static/goreleaser.pub \
-	goreleaser/nfpm
-cosign verify \
-	-key https://goreleaser.com/static/goreleaser.pub \
-	ghcr.io/goreleaser/nfpm
+COSIGN_EXPERIMENTAL=1 cosign verify	goreleaser/nfpm
+COSIGN_EXPERIMENTAL=1 cosign verify ghcr.io/goreleaser/nfpm
 ```
 
 ## Running with Docker
