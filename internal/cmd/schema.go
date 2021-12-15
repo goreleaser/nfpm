@@ -21,7 +21,7 @@ func newSchemaCmd() *schemaCmd {
 	cmd := &cobra.Command{
 		Use:           "jsonschema",
 		Aliases:       []string{"schema"},
-		Short:         "outputs nFPM's JSON schema",
+		Short:         "Outputs nFPM's JSON schema",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,

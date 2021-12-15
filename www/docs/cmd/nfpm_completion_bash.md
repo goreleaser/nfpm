@@ -1,9 +1,8 @@
 # nfpm completion bash
 
-generate the autocompletion script for bash
+Generate the autocompletion script for bash
 
 ## Synopsis
-
 
 Generate the autocompletion script for the bash shell.
 
@@ -25,7 +24,7 @@ To load completions for every new session, execute once:
 	nfpm completion bash > /usr/local/etc/bash_completion.d/nfpm
 
 You will need to start a new shell for this setup to take effect.
-  
+
 
 ```
 nfpm completion bash
@@ -40,5 +39,5 @@ nfpm completion bash
 
 ## See also
 
-* [nfpm completion](/cmd/nfpm_completion/)	 - generate the autocompletion script for the specified shell
+* [nfpm completion](/cmd/nfpm_completion/)	 - Generate the autocompletion script for the specified shell
 

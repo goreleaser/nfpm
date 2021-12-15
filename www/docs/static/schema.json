@@ -5,6 +5,10 @@
 		"definitions": {
 			"APK": {
 				"properties": {
+					"arch": {
+						"type": "string",
+						"title": "architecture in apk nomenclature"
+					},
 					"signature": {
 						"$schema": "http://json-schema.org/draft-04/schema#",
 						"$ref": "#/definitions/APKSignature",
@@ -327,6 +331,10 @@
 			},
 			"Deb": {
 				"properties": {
+					"arch": {
+						"type": "string",
+						"title": "architecture in deb nomenclature"
+					},
 					"scripts": {
 						"$schema": "http://json-schema.org/draft-04/schema#",
 						"$ref": "#/definitions/DebScripts",
@@ -539,6 +547,10 @@
 			},
 			"RPM": {
 				"properties": {
+					"arch": {
+						"type": "string",
+						"title": "architecture in rpm nomenclature"
+					},
 					"scripts": {
 						"$schema": "http://json-schema.org/draft-04/schema#",
 						"$ref": "#/definitions/RPMScripts",
@@ -569,6 +581,10 @@
 						"$schema": "http://json-schema.org/draft-04/schema#",
 						"$ref": "#/definitions/RPMSignature",
 						"title": "rpm signature"
+					},
+					"packager": {
+						"type": "string",
+						"title": "organization that actually packaged the software"
 					}
 				},
 				"additionalProperties": false,
