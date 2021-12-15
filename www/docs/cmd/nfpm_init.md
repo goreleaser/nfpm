@@ -1,6 +1,6 @@
 # nfpm init
 
-creates a sample nfpm.yaml config file
+Creates a sample nfpm.yaml config file
 
 ```
 nfpm init [flags]
@@ -15,5 +15,5 @@ nfpm init [flags]
 
 ## See also
 
-* [nfpm](/cmd/nfpm/)	 - packages apps on RPM, Deb and APK formats based on a YAML configuration file
+* [nfpm](/cmd/nfpm/)	 - Packages apps on RPM, Deb and APK formats based on a YAML configuration file
 

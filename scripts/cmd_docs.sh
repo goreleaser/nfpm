@@ -6,10 +6,8 @@ if which gsed >/dev/null 2>&1; then
 	SED="gsed"
 fi
 
+mkdir -p www/docs/cmd
 rm -rf www/docs/cmd/*.md
-
-git checkout -- go.*
-go mod tidy
 go run ./cmd/nfpm docs
 go run ./cmd/nfpm schema -o ./www/docs/static/schema.json
 
