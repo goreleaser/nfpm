@@ -117,6 +117,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      packages: write
     steps:
       -
         name: Checkout
