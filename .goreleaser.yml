@@ -5,8 +5,6 @@ before:
   hooks:
     - go mod tidy
     - ./scripts/completions.sh
-    - wget -c https://raw.githubusercontent.com/goreleaser/goreleaser/master/cosign.key -O /tmp/goreleaser_cosign.key
-    - wget -c https://raw.githubusercontent.com/goreleaser/goreleaser/master/cosign.pub -O /tmp/goreleaser_cosign.pub
 
 gomod:
   proxy: true
@@ -149,21 +147,23 @@ signs:
   env:
   - COSIGN_EXPERIMENTAL=1
   certificate: '${artifact}.pem'
+  output: true
+  artifacts: checksum
   args:
     - sign-blob
-    - '--oidc-issuer=https://token.actions.githubusercontent.com'
+    - '--oidc-issuer={{if index .Env "CI"}}https://token.actions.githubusercontent.com{{else}}https://oauth2.sigstore.dev/auth{{end}}'
     - '--output-certificate=${certificate}'
     - '--output-signature=${signature}'
     - '${artifact}'
-
 docker_signs:
 - cmd: cosign
   env:
   - COSIGN_EXPERIMENTAL=1
   artifacts: manifests
+  output: true
   args:
   - 'sign'
-  - '--oidc-issuer=https://token.actions.githubusercontent.com'
+  - '--oidc-issuer={{if index .Env "CI"}}https://token.actions.githubusercontent.com{{else}}https://oauth2.sigstore.dev/auth{{end}}'
   - '${artifact}'
 
 changelog:
