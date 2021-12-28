@@ -31,6 +31,8 @@ contents:
   dst: /usr/sbin/fake
   file_info:
     mode: 04755
+- dst: /usr/foo/bar/something
+  type: dir
 empty_folders:
 - /var/log/whatever
 - /usr/share/foo

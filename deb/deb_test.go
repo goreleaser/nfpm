@@ -806,6 +806,10 @@ func TestDirectories(t *testing.T) {
 			Destination: "/etc/baz",
 			Type:        "dir",
 		},
+		{
+			Destination: "/usr/lib/something/somethingelse",
+			Type:        "dir",
+		},
 	}
 
 	require.NoError(t, info.Validate())
@@ -814,20 +818,38 @@ func TestDirectories(t *testing.T) {
 	require.NoError(t, err)
 	dataTarball := inflate(t, dataTarballName, deflatedDataTarball)
 
+	require.Equal(t, []string{
+		"./etc/",
+		"./etc/bar/",
+		"./etc/baz/",
+		"./usr/",
+		"./usr/lib/",
+		"./usr/lib/something/",
+		"./usr/lib/something/somethingelse/",
+		"./etc/bar/file",
+		"./etc/foo/",
+		"./etc/foo/file",
+	}, getTree(t, dataTarball))
+
 	// for debs all implicit or explicit directories are created in the tarball
 	h := extractFileHeaderFromTar(t, dataTarball, "/etc")
-	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 	h = extractFileHeaderFromTar(t, dataTarball, "/etc/foo")
-	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 	h = extractFileHeaderFromTar(t, dataTarball, "/etc/bar")
-	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 	require.Equal(t, h.Mode, int64(0o700))
 	require.Equal(t, h.Uname, "test")
 	h = extractFileHeaderFromTar(t, dataTarball, "/etc/baz")
-	require.NoError(t, err)
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+
+	h = extractFileHeaderFromTar(t, dataTarball, "/usr")
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, dataTarball, "/usr/lib")
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, dataTarball, "/usr/lib/something")
+	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+	h = extractFileHeaderFromTar(t, dataTarball, "/usr/lib/something/somethingelse")
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 }
 
@@ -1101,6 +1123,24 @@ func tarContents(tb testing.TB, tarFile []byte) []string {
 	}
 
 	return contents
+}
+
+func getTree(tb testing.TB, tarFile []byte) []string {
+	tb.Helper()
+
+	var result []string
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		result = append(result, hdr.Name)
+	}
+
+	return result
 }
 
 func extractFileHeaderFromTar(tb testing.TB, tarFile []byte, filename string) *tar.Header {

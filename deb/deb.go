@@ -280,6 +280,10 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 			continue
 		}
 
+		if err := createTree(tw, file.Destination, created); err != nil {
+			return md5buf, 0, err
+		}
+
 		normalizedName := normalizePath(strings.Trim(file.Destination, "/")) + "/"
 
 		if created[normalizedName] {
@@ -316,7 +320,7 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 		var size int64 // declare early to avoid shadowing err
 		switch file.Type {
 		case "ghost":
-			// skip ghost files in apk
+			// skip ghost files in deb
 			continue
 		case "dir":
 			// already handled above
