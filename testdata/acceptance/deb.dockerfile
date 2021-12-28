@@ -50,6 +50,7 @@ RUN test -f /usr/share/whatever/folder/folder2/file1
 RUN test -f /usr/share/whatever/folder/folder2/file2
 RUN test -d /var/log/whatever
 RUN test -d /usr/share/foo
+RUN test -d /usr/foo/bar/something
 RUN test $(stat -c %a /usr/sbin/fake) -eq 4755
 RUN test -f /tmp/preinstall-proof
 RUN test -f /tmp/postinstall-proof
@@ -64,6 +65,7 @@ RUN test -f /tmp/preremove-proof
 RUN test -f /tmp/postremove-proof
 RUN test ! -d /var/log/whatever
 RUN test ! -d /usr/share/foo
+RUN test ! -d /usr/foo/bar/something
 
 # ---- signed test ----
 FROM test_base AS signed

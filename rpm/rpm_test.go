@@ -806,11 +806,28 @@ func TestDirectories(t *testing.T) {
 				Mode:  0o700,
 			},
 		},
+		{
+			Destination: "/usr/lib/something/somethingelse",
+			Type:        "dir",
+		},
 	}
 
 	var rpmFileBuffer bytes.Buffer
 	err := Default.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
+
+	require.Equal(t, []string{
+		"etc/",
+		"etc/bar/",
+		"etc/baz/",
+		"usr/",
+		"usr/lib/",
+		"usr/lib/something/",
+		"usr/lib/something/somethingelse/",
+		"etc/bar/file",
+		"etc/foo/",
+		"etc/foo/file",
+	}, getTree(t, rpmFileBuffer.Bytes()))
 
 	// the directory /etc/foo should not be implicitly created as that
 	// implies ownership of /etc/foo which should always be implicit
@@ -869,6 +886,27 @@ func extraFileInfoSliceFromRpm(rpm []byte) ([]rpmutils.FileInfo, error) {
 		return nil, err
 	}
 	return rpmFile.Header.GetFiles()
+}
+
+func getTree(tb testing.TB, rpm []byte) []string {
+	tb.Helper()
+
+	rpmFile, err := rpmutils.ReadRpm(bytes.NewReader(rpm))
+	require.NoError(tb, err)
+	pr, err := rpmFile.PayloadReader()
+	require.NoError(tb, err)
+
+	var tree []string
+	for {
+		hdr, err := pr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+		tree = append(tree, hdr.Filename())
+	}
+
+	return tree
 }
 
 func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_header, error) {
