@@ -509,6 +509,10 @@ func TestDirectories(t *testing.T) {
 			Destination: "/etc/baz",
 			Type:        "dir",
 		},
+		{
+			Destination: "/usr/lib/something/somethingelse",
+			Type:        "dir",
+		},
 	}
 
 	require.NoError(t, info.Validate())
@@ -518,20 +522,29 @@ func TestDirectories(t *testing.T) {
 	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
 	require.NoError(t, err)
 
+	require.Equal(t, []string{
+		"etc/",
+		"etc/bar/",
+		"etc/baz/",
+		"usr/",
+		"usr/lib/",
+		"usr/lib/something/",
+		"usr/lib/something/somethingelse/",
+		"etc/bar/file",
+		"etc/foo/",
+		"etc/foo/file",
+	}, getTree(t, buf.Bytes()))
+
 	// for apks all implicit or explicit directories are created in the tarball
 	h := extractFileHeaderFromTar(t, buf.Bytes(), "/etc")
-	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/foo")
-	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/bar")
-	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 	require.Equal(t, h.Mode, int64(0o700))
 	require.Equal(t, h.Uname, "test")
 	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/baz")
-	require.NoError(t, err)
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 }
 
@@ -667,6 +680,24 @@ func extractFileHeaderFromTar(tb testing.TB, tarFile []byte, filename string) *t
 	tb.Fatalf("file %q does not exist in tar", filename)
 
 	return nil
+}
+
+func getTree(tb testing.TB, tarFile []byte) []string {
+	tb.Helper()
+
+	var result []string
+	tr := tar.NewReader(bytes.NewReader(tarFile))
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		result = append(result, hdr.Name)
+	}
+
+	return result
 }
 
 func TestArches(t *testing.T) {

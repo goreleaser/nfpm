@@ -414,6 +414,10 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			continue
 		}
 
+		if err := createTree(tw, file.Destination, created); err != nil {
+			return err
+		}
+
 		normalizedName := normalizePath(strings.Trim(file.Destination, "/")) + "/"
 
 		if created[normalizedName] {
