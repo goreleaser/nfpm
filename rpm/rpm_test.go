@@ -817,16 +817,11 @@ func TestDirectories(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, []string{
-		"etc/",
-		"etc/bar/",
-		"etc/baz/",
-		"usr/",
-		"usr/lib/",
-		"usr/lib/something/",
-		"usr/lib/something/somethingelse/",
-		"etc/bar/file",
-		"etc/foo/",
-		"etc/foo/file",
+		"/etc/bar",
+		"/etc/bar/file",
+		"/etc/baz",
+		"/etc/foo/file",
+		"/usr/lib/something/somethingelse",
 	}, getTree(t, rpmFileBuffer.Bytes()))
 
 	// the directory /etc/foo should not be implicitly created as that

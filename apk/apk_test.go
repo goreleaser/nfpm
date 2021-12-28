@@ -100,7 +100,7 @@ func TestCreateBuilderData(t *testing.T) {
 
 	require.NoError(t, builderData(tw))
 
-	require.Equal(t, 12288, buf.Len())
+	require.Equal(t, 11784, buf.Len())
 }
 
 func TestCombineToApk(t *testing.T) {
