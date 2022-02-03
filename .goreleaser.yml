@@ -183,7 +183,6 @@ aurs:
       install -Dm644 "./completions/nfpm.fish" "${pkgdir}/usr/share/fish/vendor_completions.d/nfpm.fish"
       # man pages
       install -Dm644 "./manpages/nfpm.1.gz" "${pkgdir}/usr/share/man/man1/nfpm.1.gz"
-      dst: /usr/share/zsh/vendor-completions/_nfpm
 
 furies:
   - account: goreleaser
