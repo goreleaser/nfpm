@@ -159,6 +159,11 @@ nfpms:
       dst: /usr/share/doc/nfpm/copyright
       file_info:
         mode: 0644
+    - src: .lintian-overrides
+      dst: ./usr/share/lintian/overrides/nfpm
+      packager: deb
+      file_info:
+        mode: 0644
 
 aurs:
   - homepage:  https://nfpm.goreleaser.com

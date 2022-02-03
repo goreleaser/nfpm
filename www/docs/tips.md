@@ -164,3 +164,15 @@ esac
 Its recommended to run [lintian](https://lintian.debian.org) against your
 deb packages to see if there are any problems.
 
+You can also add a `lintian-overrides` file:
+
+```yaml
+contents:
+- src: .lintian-overrides
+  dst: ./usr/share/lintian/overrides/nfpm
+  packager: deb
+  file_info:
+	mode: 0644
+```
+
+You can read more in [lintian's documentation](https://lintian.debian.org/manual/index.html).
