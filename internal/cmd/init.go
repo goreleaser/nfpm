@@ -4,24 +4,24 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
+	"github.com/muesli/coral"
 )
 
 type initCmd struct {
-	cmd    *cobra.Command
+	cmd    *coral.Command
 	config string
 }
 
 func newInitCmd() *initCmd {
 	root := &initCmd{}
-	cmd := &cobra.Command{
+	cmd := &coral.Command{
 		Use:           "init",
 		Aliases:       []string{"i"},
 		Short:         "Creates a sample nfpm.yaml config file",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Args:          cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args:          coral.NoArgs,
+		RunE: func(cmd *coral.Command, args []string) error {
 			if err := os.WriteFile(root.config, []byte(example), 0o666); err != nil {
 				return fmt.Errorf("failed to create example file: %w", err)
 			}
