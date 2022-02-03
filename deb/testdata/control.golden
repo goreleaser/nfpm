@@ -4,7 +4,6 @@ Section: default
 Priority: extra
 Architecture: amd64
 Maintainer: Carlos A Becker <pkg@carlosbecker.com>
-Vendor: nope
 Installed-Size: 10
 Replaces: svn
 Provides: bzr
