@@ -144,6 +144,30 @@ nfpms:
     - src: ./manpages/nfpm.1.gz
       dst: /usr/share/man/man1/nfpm.1.gz
 
+aurs:
+  - homepage:  https://nfpm.goreleaser.com
+    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+    maintainers:
+      - 'Fernandez Ludovic <lfernandez dot dev at gmail dot com>'
+      - 'Carlos Alexandro Becker <carlos at becker dot software>'
+    license: MIT
+    private_key: '{{ .Env.AUR_KEY }}'
+    git_url: 'ssh://aur@aur.archlinux.org/nfpm-bin.git'
+    package: |-
+      # bin
+      install -Dm755 "./nfpm" "${pkgdir}/usr/bin/nfpm"
+      # license
+      install -Dm644 "./LICENSE.md" "${pkgdir}/usr/share/licenses/nfpm/LICENSE"
+      # completions
+      mkdir -p "${pkgdir}/usr/share/bash-completion/completions/"
+      mkdir -p "${pkgdir}/usr/share/zsh/site-functions/"
+      mkdir -p "${pkgdir}/usr/share/fish/vendor_completions.d/"
+      install -Dm644 "./completions/nfpm.bash" "${pkgdir}/usr/share/bash-completion/completions/nfpm"
+      install -Dm644 "./completions/nfpm.zsh" "${pkgdir}/usr/share/zsh/site-functions/_nfpm"
+      install -Dm644 "./completions/nfpm.fish" "${pkgdir}/usr/share/fish/vendor_completions.d/nfpm.fish"
+      # man pages
+      install -Dm644 "./manpages/nfpm.1.gz" "${pkgdir}/usr/share/man/man1/nfpm.1.gz"
+
 furies:
   - account: goreleaser
 
