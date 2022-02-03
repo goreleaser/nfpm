@@ -1,8 +1,8 @@
 # Tips, Hints, and useful information
 
 ## General maintainability of your packages
-* Try hard to make all files work on all platforms you support. 
-    * Maintaining separate scripts, config, service files, etc for each platform quickly becomes difficult 
+* Try hard to make all files work on all platforms you support.
+    * Maintaining separate scripts, config, service files, etc for each platform quickly becomes difficult
 * Put as much conditional logic in the pre/post install scripts as possible instead of trying to build it into the nfpm.yaml
 * *if* you need to know the packaging system I have found it useful to add a `/etc/path-to-cfg/package.env` that contains `_INSTALLED_FROM=apk|deb|rpm` which can be sourced into the pre/post install/remove scripts
 * *if/when* you need to ask questions during the installation process, create an `install.sh` || `setup.sh` script that asks those questions and stores the answers as env vars in `/etc/path-to-cfg/package.env` for use by the pre/post install/remove scripts
@@ -43,7 +43,7 @@ cleanInstall() {
         if command -V chkconfig >/dev/null 2>&1; then
           chkconfig --add <SERVICE NAME>
         fi
-        
+
         service <SERVICE NAME> restart ||:
     else
     	# rhel/centos7 cannot use ExecStartPre=+ to specify the pre start should be run as root
@@ -89,13 +89,13 @@ case "$action" in
     upgrade
     ;;
   *)
-    # $1 == version being installed  
+    # $1 == version being installed
     printf "\033[32m Alpine\033[0m"
     cleanInstall
     ;;
 esac
 
-# Step 4, clean up unused files, yes you get a warning when you remove the package, but that is ok. 
+# Step 4, clean up unused files, yes you get a warning when you remove the package, but that is ok.
 cleanup
 ```
 ### Example Multi platform (RPM & Deb) post-remove script
@@ -129,7 +129,7 @@ case "$action" in
     upgrade
     ;;
   *)
-    # $1 == version being installed  
+    # $1 == version being installed
     printf "\033[32m Alpine\033[0m"
     cleanInstall
     ;;
@@ -157,4 +157,10 @@ esac
 * You should always use [Table 2. Automatic directory creation and environment variables](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#id-1.14.4.3.6.2)
   * With the note that only `RuntimeDirectory` is used in systemd < 231
 * `/bin/bash -c "$(which ...) ...` is a great way to make your single service file work on all platforms since rhel and debian based systems have standard executables in differing locations and complain about `executable path is not absolute`
-  * eg `/bin/bash -c '$(which mkdir) -p /var/log/your-service'` 
+  * eg `/bin/bash -c '$(which mkdir) -p /var/log/your-service'`
+
+### Debs and Lintian
+
+Its recommended to run [lintian](https://lintian.debian.org) against your
+deb packages to see if there are any problems.
+
