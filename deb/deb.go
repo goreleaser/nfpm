@@ -688,9 +688,6 @@ Architecture: {{.Info.Arch}}
 {{- if .Info.Maintainer}}
 Maintainer: {{.Info.Maintainer}}
 {{- end }}
-{{- if .Info.Vendor}}
-Vendor: {{.Info.Vendor}}
-{{- end }}
 Installed-Size: {{.InstalledSize}}
 {{- with .Info.Replaces}}
 Replaces: {{join .}}
