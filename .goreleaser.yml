@@ -5,6 +5,7 @@ before:
   hooks:
     - go mod tidy
     - ./scripts/completions.sh
+    - ./scripts/manpages.sh
 
 gomod:
   proxy: true
@@ -87,6 +88,7 @@ archives:
     - README.md
     - LICENSE.md
     - completions/*
+    - manpages/*
 
 brews:
 - tap:
@@ -103,6 +105,7 @@ brews:
     bash_completion.install "completions/nfpm.bash" => "nfpm"
     zsh_completion.install "completions/nfpm.zsh" => "_nfpm"
     fish_completion.install "completions/nfpm.fish"
+    man1.install "manpages/nfpm.1.gz"
 
 rigs:
   - rig:
@@ -138,6 +141,8 @@ nfpms:
       dst: /usr/share/fish/completions/nfpm.fish
     - src: ./completions/nfpm.zsh
       dst: /usr/local/share/zsh/site-functions/_nfpm
+    - src: ./manpages/nfpm.1.gz
+      dst: /usr/share/man/man1/nfpm.1.gz
 
 furies:
   - account: goreleaser

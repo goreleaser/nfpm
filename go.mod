@@ -15,6 +15,8 @@ require (
 	github.com/goreleaser/fileglob v1.2.0
 	github.com/imdario/mergo v0.3.12
 	github.com/muesli/coral v1.0.0
+	github.com/muesli/mango-coral v1.0.0
+	github.com/muesli/roff v0.1.0
 	github.com/stretchr/testify v1.7.0
 	github.com/ulikunitz/xz v0.5.10
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
@@ -48,6 +50,8 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/muesli/mango v0.0.0-20220201014152-f7df5a1c5b4b // indirect
+	github.com/muesli/mango-pflag v0.0.0-20220201014449-d694870c5590 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

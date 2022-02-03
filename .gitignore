@@ -16,3 +16,4 @@ testdata/acceptance/tmp/
 completions/
 .task/
 cosign.*
+manpages
