@@ -127,8 +127,9 @@ nfpms:
 - file_name_template: '{{ .ProjectName }}_{{ .Arch }}'
   homepage: https://nfpm.goreleaser.com
   description: |-
-    A simple, 0-dependencies, deb, rpm and apk packager.
-    nFPM (not FPM) is configurable via YAML and does not need any packaging software installed.
+    Simple, 0-dependencies, deb, rpm and apk packager.
+    nFPM (not FPM) is configurable via YAML and does not need any
+    packaging software installed.
   maintainer: Carlos Alexandro Becker <carlos@becker.software>
   license: MIT
   vendor: GoReleaser
