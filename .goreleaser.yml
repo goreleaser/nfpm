@@ -141,7 +141,7 @@ nfpms:
   section: utils
   contents:
     - src: ./completions/nfpm.bash
-      dst: /usr/share/bash-completion/completions
+      dst: /usr/share/bash-completion/completions/nfpm
       file_info:
         mode: 0644
     - src: ./completions/nfpm.fish
