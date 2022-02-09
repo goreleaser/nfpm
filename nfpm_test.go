@@ -301,6 +301,25 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, packager, info.RPM.Packager)
 	})
+
+	t.Run("depends", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("VERSION", version)
+		info, err := nfpm.Parse(strings.NewReader(`---
+name: foo
+overrides:
+  deb:
+    depends:
+    - package (= ${VERSION})
+  rpm:
+    depends:
+    - package = ${VERSION}`))
+		require.NoError(t, err)
+		require.Len(t, info.Overrides["deb"].Depends, 1)
+		require.Equal(t, "package (= 1.0.0)", info.Overrides["deb"].Depends[0])
+		require.Len(t, info.Overrides["rpm"].Depends, 1)
+		require.Equal(t, "package = 1.0.0", info.Overrides["rpm"].Depends[0])
+	})
 }
 
 func TestOverrides(t *testing.T) {

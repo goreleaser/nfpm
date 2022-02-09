@@ -153,6 +153,11 @@ func (c *Config) expandEnvVars() {
 	c.Info.Version = os.Expand(c.Info.Version, c.envMappingFunc)
 	c.Info.Prerelease = os.Expand(c.Info.Prerelease, c.envMappingFunc)
 	c.Info.Arch = os.Expand(c.Info.Arch, c.envMappingFunc)
+	for _, override := range c.Overrides {
+		for i, dep := range override.Depends {
+			override.Depends[i] = os.Expand(dep, c.envMappingFunc)
+		}
+	}
 
 	// Vendor field
 	c.Info.Vendor = os.Expand(c.Info.Vendor, c.envMappingFunc)
