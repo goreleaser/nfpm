@@ -647,41 +647,6 @@ func TestDebNoTriggersInControlIfNoneProvided(t *testing.T) {
 	require.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "triggers"))
 }
 
-func TestSymlinkInFiles(t *testing.T) {
-	var (
-		symlinkTarget  = "../testdata/whatever.conf"
-		packagedTarget = "/etc/fake/whatever.conf"
-	)
-
-	info := &nfpm.Info{
-		Name:        "symlink-in-files",
-		Arch:        "amd64",
-		Description: "This package's config references a file via symlink.",
-		Version:     "1.0.0",
-		Overridables: nfpm.Overridables{
-			Contents: []*files.Content{
-				{
-					Source:      symlinkTo(t, symlinkTarget),
-					Destination: packagedTarget,
-				},
-			},
-		},
-	}
-	err := info.Validate()
-	require.NoError(t, err)
-
-	realSymlinkTarget, err := ioutil.ReadFile(symlinkTarget)
-	require.NoError(t, err)
-
-	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
-	require.NoError(t, err)
-
-	packagedSymlinkTarget := extractFileFromTar(t,
-		inflate(t, dataTarballName, dataTarball), packagedTarget)
-
-	require.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
-}
-
 func TestSymlink(t *testing.T) {
 	var (
 		configFilePath = "/usr/share/doc/fake/fake.txt"

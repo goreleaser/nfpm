@@ -146,6 +146,68 @@ contents:
 	require.Equal(t, f.FileInfo.MTime, ct)
 }
 
+func TestSymlinksInDirectory(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+- src: testdata/symlinks/subdir
+  dst: /bla
+- src: testdata/symlinks/link-1
+  dst: /
+- src: testdata/symlinks/link-2
+  dst: /
+- src: existent
+  dst: /bla/link-3
+  type: symlink
+`))
+	dec.KnownFields(true)
+	err := dec.Decode(&config)
+	require.NoError(t, err)
+
+	config.Contents, err = files.ExpandContentGlobs(config.Contents, true)
+	require.NoError(t, err)
+	require.Len(t, config.Contents, 6)
+
+	// Nulling FileInfo to check equality between expected and result
+	for _, c := range config.Contents {
+		c.FileInfo = nil
+	}
+
+	expected := files.Contents{
+		{
+			Source:      "testdata/symlinks/subdir/existent",
+			Destination: "/bla/existent",
+			Type:        "",
+		},
+		{
+			Source:      "non-existent",
+			Destination: "/bla/link-1",
+			Type:        "symlink",
+		},
+		{
+			Source:      "existent",
+			Destination: "/bla/link-2",
+			Type:        "symlink",
+		},
+		{
+			Source:      "existent",
+			Destination: "/bla/link-3",
+			Type:        "symlink",
+		},
+		{
+			Source:      "broken",
+			Destination: "/link-1",
+			Type:        "symlink",
+		},
+		{
+			Source:      "./bla",
+			Destination: "/link-2",
+			Type:        "symlink",
+		},
+	}
+	require.Equal(t, expected, config.Contents)
+}
+
 func TestRace(t *testing.T) {
 	var config testStruct
 	dec := yaml.NewDecoder(strings.NewReader(`---

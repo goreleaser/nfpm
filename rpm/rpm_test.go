@@ -604,40 +604,6 @@ func TestRPMNoChangelogTagsWithoutChangelogConfigured(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestSymlinkInFiles(t *testing.T) {
-	var (
-		symlinkTarget  = "../testdata/whatever.conf"
-		packagedTarget = "/etc/fake/whatever.conf"
-	)
-
-	info := &nfpm.Info{
-		Name:        "symlink-in-files",
-		Arch:        "amd64",
-		Description: "This package's config references a file via symlink.",
-		Version:     "1.0.0",
-		Overridables: nfpm.Overridables{
-			Contents: []*files.Content{
-				{
-					Source:      symlinkTo(t, symlinkTarget),
-					Destination: packagedTarget,
-				},
-			},
-		},
-	}
-
-	realSymlinkTarget, err := ioutil.ReadFile(symlinkTarget)
-	require.NoError(t, err)
-
-	var rpmFileBuffer bytes.Buffer
-	err = Default.Package(info, &rpmFileBuffer)
-	require.NoError(t, err)
-
-	packagedSymlinkTarget, err := extractFileFromRpm(rpmFileBuffer.Bytes(), packagedTarget)
-	require.NoError(t, err)
-
-	require.Equal(t, string(realSymlinkTarget), string(packagedSymlinkTarget))
-}
-
 func TestSymlink(t *testing.T) {
 	var (
 		configFilePath = "/usr/share/doc/fake/fake.txt"
