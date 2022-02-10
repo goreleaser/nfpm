@@ -200,7 +200,7 @@ contents:
 			Type:        "symlink",
 		},
 		{
-			Source:      "./bla",
+			Source:      "bla",
 			Destination: "/link-2",
 			Type:        "symlink",
 		},
