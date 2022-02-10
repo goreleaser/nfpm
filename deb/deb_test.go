@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -1187,18 +1186,6 @@ func readAndFormatAsDebChangelog(tb testing.TB, changelogFileName, packageName s
 	require.NoError(tb, err)
 
 	return strings.TrimSpace(debChangelog) + "\n"
-}
-
-func symlinkTo(tb testing.TB, fileName string) string {
-	tb.Helper()
-	target, err := filepath.Abs(fileName)
-	require.NoError(tb, err)
-
-	symlinkName := filepath.Join(tb.TempDir(), "symlink")
-	err = os.Symlink(target, symlinkName)
-	require.NoError(tb, err)
-
-	return files.ToNixPath(symlinkName)
 }
 
 func findDataTarball(tb testing.TB, arFile []byte) string {

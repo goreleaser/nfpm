@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -898,16 +897,4 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 	}
 
 	return nil, os.ErrNotExist
-}
-
-func symlinkTo(tb testing.TB, fileName string) string {
-	tb.Helper()
-	target, err := filepath.Abs(fileName)
-	require.NoError(tb, err)
-
-	symlinkName := path.Join(tb.TempDir(), "symlink")
-	err = os.Symlink(target, symlinkName)
-	require.NoError(tb, err)
-
-	return files.ToNixPath(symlinkName)
 }
