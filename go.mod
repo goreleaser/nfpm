@@ -12,7 +12,7 @@ require (
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
 	github.com/google/rpmpack v0.0.0-20210518075352-dc539ef4f2ea
 	github.com/goreleaser/chglog v0.1.2
-	github.com/goreleaser/fileglob v1.2.0
+	github.com/goreleaser/fileglob v1.3.0
 	github.com/imdario/mergo v0.3.12
 	github.com/muesli/coral v1.0.0
 	github.com/muesli/mango-coral v1.0.1
