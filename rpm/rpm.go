@@ -189,6 +189,9 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		suggests,
 		conflicts rpmpack.Relations
 	)
+	if info.RPM.Compression == "" {
+		info.RPM.Compression = "gzip:-1"
+	}
 	if epoch, err = strconv.ParseUint(defaultTo(info.Epoch, "0"), 10, 32); err != nil {
 		return nil, err
 	}
