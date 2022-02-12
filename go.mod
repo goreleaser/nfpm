@@ -14,6 +14,7 @@ require (
 	github.com/goreleaser/chglog v0.1.2
 	github.com/goreleaser/fileglob v1.3.0
 	github.com/imdario/mergo v0.3.12
+	github.com/klauspost/pgzip v1.2.5
 	github.com/muesli/coral v1.0.0
 	github.com/muesli/mango-coral v1.0.1
 	github.com/muesli/roff v0.1.0

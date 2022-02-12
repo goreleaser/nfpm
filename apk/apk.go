@@ -29,7 +29,6 @@ import (
 	"archive/tar"
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
@@ -49,6 +48,7 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
+	gzip "github.com/klauspost/pgzip"
 )
 
 const packagerName = "apk"
