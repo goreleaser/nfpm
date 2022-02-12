@@ -17,3 +17,5 @@ completions/
 .task/
 cosign.*
 manpages
+key.asc
+carlos@becker.software-62072141.rsa*

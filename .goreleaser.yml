@@ -139,6 +139,15 @@ nfpms:
   - rpm
   bindir: /usr/bin
   section: utils
+  rpm:
+    signature:
+      key_file: ./key.asc
+  deb:
+    signature:
+      key_file: ./key.asc
+  apk:
+    signature:
+      key_file: ./carlos@becker.software-62072141.rsa
   contents:
     - src: ./completions/nfpm.bash
       dst: /usr/share/bash-completion/completions/nfpm
