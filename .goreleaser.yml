@@ -141,10 +141,10 @@ nfpms:
   section: utils
   rpm:
     signature:
-      key_file: ./key.asc
+      key_file: ./key.gpg
   deb:
     signature:
-      key_file: ./key.asc
+      key_file: ./key.gpg
   apk:
     signature:
       key_file: ./carlos@becker.software-62072141.rsa
