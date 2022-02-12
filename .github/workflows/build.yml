@@ -121,6 +121,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - if: success()
+        name: create-keys
+        run: |
+          echo ${{ secrets.APK_SSH_KEY }} > carlos@becker.software-62072141.rsa
+          echo ${{ secrets.GPG_KEY }} > key.asc
       - uses: goreleaser/goreleaser-action@v2
         if: success()
         with:
@@ -138,3 +143,5 @@ jobs:
           DISCORD_WEBHOOK_TOKEN: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
           AUR_KEY: ${{ secrets.AUR_KEY }}
+          NFPM_DEFAULT_DEB_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
+          NFPM_DEFAULT_RPM_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
