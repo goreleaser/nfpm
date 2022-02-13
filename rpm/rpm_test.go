@@ -155,6 +155,46 @@ func TestRPMGroup(t *testing.T) {
 	require.Equal(t, "Unspecified", group)
 }
 
+func TestRPMCompression(t *testing.T) {
+	for _, compressor := range []string{"gzip", "lzma", "xz", "zstd"} {
+		for _, level := range []int{-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9} {
+			compLevel := fmt.Sprintf("%v:%v", compressor, level)
+			if strings.HasPrefix(compLevel, "xz:") {
+				compLevel = "xz"
+			}
+			if strings.HasPrefix(compLevel, "lzma:") {
+				compLevel = "lzma"
+			}
+			t.Run(compLevel, func(t *testing.T) {
+				f, err := ioutil.TempFile("", "test.rpm")
+				require.NoError(t, err)
+
+				info := exampleInfo()
+				info.RPM.Compression = compLevel
+
+				require.NoError(t, Default.Package(info, f))
+				file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
+				require.NoError(t, err)
+				defer func() {
+					f.Close()
+					file.Close()
+					err = os.Remove(file.Name())
+					require.NoError(t, err)
+				}()
+				rpm, err := rpmutils.ReadRpm(file)
+				require.NoError(t, err)
+
+				rpmCompressor, err := rpm.Header.GetString(rpmutils.PAYLOADCOMPRESSOR)
+				require.NoError(t, err)
+				require.Equal(t, compressor, rpmCompressor)
+			})
+			if compLevel == "xz" || compLevel == "lzma" {
+				break
+			}
+		}
+	}
+}
+
 func TestRPMSummary(t *testing.T) {
 	f, err := ioutil.TempFile("", "test.rpm")
 	require.NoError(t, err)
