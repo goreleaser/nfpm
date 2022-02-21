@@ -79,7 +79,7 @@ func PGPArmoredDetachSignWithKeyID(message io.Reader, keyFile, passphrase string
 	return signature.Bytes(), nil
 }
 
-// PGPVerify is exported for use in tests and verifies a ASCII-armored or non-ASCII-armored
+// PGPVerify is exported for use in tests and verifies an ASCII-armored or non-ASCII-armored
 // signature using an ASCII-armored or non-ASCII-armored public key file. The signer
 // identity is not explicitly checked, other that the obvious fact that the signer's key must
 // be in the armoredPubKeyFile.

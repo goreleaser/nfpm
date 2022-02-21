@@ -196,7 +196,7 @@ scripts:
   preremove: ./scripts/preremove.sh
   postremove: ./scripts/postremove.sh
 
-# All fields above marked as `overridable` can be overriden for a given package format in this section.
+# All fields above marked as `overridable` can be overridden for a given package format in this section.
 overrides:
   # The depends override can for example be used to provide version constraints for dependencies where
   # different package formats use different versions or for dependencies that are named differently.
@@ -271,7 +271,7 @@ deb:
 
   # Custom deb triggers
   triggers:
-    # register interrest on a trigger activated by another package
+    # register interest on a trigger activated by another package
     # (also available: interest_await, interest_noawait)
     interest:
       - some-trigger-name

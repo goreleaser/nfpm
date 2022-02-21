@@ -69,7 +69,7 @@ go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 
 Download the pre-compiled binaries from the [releases page][releases] and copy them to the desired location.
 
-## Veryifing the artifacts
+## Verifying the artifacts
 
 ### binaries
 

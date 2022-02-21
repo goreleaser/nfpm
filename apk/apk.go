@@ -84,7 +84,7 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 // nolint: gochecknoglobals
 var Default = &Apk{}
 
-// Apk is a apk packager implementation.
+// Apk is an apk packager implementation.
 type Apk struct{}
 
 func (a *Apk) ConventionalFileName(info *nfpm.Info) string {

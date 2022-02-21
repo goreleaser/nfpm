@@ -7,7 +7,7 @@ nFPM is a simple, 0-dependencies, `deb`, `rpm` and `apk` packager.
 ## Why
 
 While [fpm][] is great, for me, it is a bummer that it depends on `ruby`, `tar`
-and other softwares.
+and other software.
 
 I wanted something that could be used as a binary and/or as a library and that
 was really simple.
