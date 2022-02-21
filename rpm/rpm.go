@@ -162,7 +162,7 @@ func addChangeLog(info *nfpm.Info, rpm *rpmpack.RPM) error {
 
 		err := tpl.Execute(&formattedNotes, entry)
 		if err != nil {
-			return fmt.Errorf("formatting changlog notes: %w", err)
+			return fmt.Errorf("formatting changelog notes: %w", err)
 		}
 
 		changes[idx] = strings.TrimSpace(formattedNotes.String())

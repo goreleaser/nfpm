@@ -72,7 +72,7 @@ An example:
 docs: Add example for --release-notes flag
 
 I added an example to the docs of the `--release-notes` flag to make
-the usage more clear.  The example is an realistic use case and might
+the usage more clear.  The example is a realistic use case and might
 help others to generate their own changelog.
 
 See #284
