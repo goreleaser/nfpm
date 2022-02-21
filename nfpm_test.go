@@ -237,14 +237,15 @@ func TestParseEnhancedNestedNoGlob(t *testing.T) {
 
 func TestOptionsFromEnvironment(t *testing.T) {
 	const (
-		globalPass = "hunter2"
-		debPass    = "password123"
-		rpmPass    = "secret"
-		apkPass    = "foobar"
-		release    = "3"
-		version    = "1.0.0"
-		vendor     = "GoReleaser"
-		packager   = "nope"
+		globalPass      = "hunter2"
+		debPass         = "password123"
+		rpmPass         = "secret"
+		apkPass         = "foobar"
+		release         = "3"
+		version         = "1.0.0"
+		vendor          = "GoReleaser"
+		packager        = "nope"
+		maintainerEmail = "nope@example.com"
 	)
 
 	t.Run("version", func(t *testing.T) {
@@ -261,6 +262,15 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nrelease: $RELEASE"))
 		require.NoError(t, err)
 		require.Equal(t, release, info.Release)
+	})
+
+	t.Run("maintainer", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("GIT_COMMITTER_NAME", packager)
+		os.Setenv("GIT_COMMITTER_EMAIL", maintainerEmail)
+		info, err := nfpm.Parse(strings.NewReader("name: foo\nmaintainer: $GIT_COMMITTER_NAME <$GIT_COMMITTER_EMAIL>"))
+		require.NoError(t, err)
+		require.Equal(t, fmt.Sprintf("%s <%s>", packager, maintainerEmail), info.Maintainer)
 	})
 
 	t.Run("vendor", func(t *testing.T) {

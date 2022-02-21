@@ -159,7 +159,8 @@ func (c *Config) expandEnvVars() {
 		}
 	}
 
-	// Vendor field
+	// Maintainer and vendor fields
+	c.Info.Maintainer = os.Expand(c.Info.Maintainer, c.envMappingFunc)
 	c.Info.Vendor = os.Expand(c.Info.Vendor, c.envMappingFunc)
 
 	// Package signing related fields
