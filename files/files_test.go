@@ -310,3 +310,40 @@ func TestDisableGlobbing(t *testing.T) {
 		})
 	}
 }
+
+func TestGlobbingWhenFilesHaveBrackets(t *testing.T) {
+	result, err := files.ExpandContentGlobs(files.Contents{
+		{
+			Source:      "./testdata/\\{test\\}/",
+			Destination: ".",
+		},
+	}, false)
+	if err != nil {
+		t.Fatalf("expand content globs: %v", err)
+	}
+
+	expected := files.Contents{
+		{
+			Source:      "testdata/{test}/[f]oo",
+			Destination: "[f]oo",
+		},
+		{
+			Source:      "testdata/{test}/bar",
+			Destination: "bar",
+		},
+	}
+
+	if len(result) != 2 {
+		t.Fatalf("unexpected result length: %d, expected one", len(result))
+	}
+
+	for i, r := range result {
+		ex := expected[i]
+		if ex.Source != r.Source {
+			t.Fatalf("unexpected content source: %q, expected %q", r.Source, ex.Source)
+		}
+		if ex.Destination != r.Destination {
+			t.Fatalf("unexpected content destination: %q, expected %q", r.Destination, ex.Destination)
+		}
+	}
+}
