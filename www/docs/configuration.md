@@ -55,6 +55,7 @@ section: default
 priority: extra
 
 # Maintainer.
+# This will expand any env var you set in the field, eg maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
 # Defaults to empty on rpm and apk
 # Leaving the 'maintainer' field unset will not be allowed in a future version
 maintainer: Carlos Alexandro Becker <root@carlosbecker.com>

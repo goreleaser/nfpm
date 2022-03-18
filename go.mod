@@ -10,7 +10,7 @@ require (
 	github.com/alecthomas/jsonschema v0.0.0-20210920000243-787cd8204a0d
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
-	github.com/google/rpmpack v0.0.0-20211125064518-d0ed9b1b61b9
+	github.com/google/rpmpack v0.0.0-20220314092521-38642b5e571e
 	github.com/goreleaser/chglog v0.2.0
 	github.com/goreleaser/fileglob v1.3.0
 	github.com/imdario/mergo v0.3.12
@@ -18,7 +18,7 @@ require (
 	github.com/muesli/mango-cobra v1.0.1-0.20220310171203-3b9e83f70431
 	github.com/muesli/roff v0.1.0
 	github.com/spf13/cobra v1.4.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/ulikunitz/xz v0.5.10
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
