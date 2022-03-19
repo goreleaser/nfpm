@@ -260,4 +260,4 @@ announce:
     message_template: "nFPM {{ .Tag }} was just released! See what's new: https://github.com/goreleaser/nfpm/releases/tag/{{ .Tag }}"
   discord:
     enabled: true
-    message_template: "nFPM {{ .Tag }} is out! See what's new: https://github.com/goreleaser/goreleaser/releases/tag/{{ .Tag }}"
+    message_template: "nFPM {{ .Tag }} is out! See what's new: https://github.com/goreleaser/nfpm/releases/tag/{{ .Tag }}"
