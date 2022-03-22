@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/ProtonMail/go-crypto v0.0.0-20210512092938-c05353c2d58c
-	github.com/ProtonMail/gopenpgp/v2 v2.2.2
+	github.com/ProtonMail/go-crypto v0.0.0-20220113124808-70ae35bab23f
+	github.com/ProtonMail/gopenpgp/v2 v2.4.5
 	github.com/alecthomas/jsonschema v0.0.0-20210920000243-787cd8204a0d
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
