@@ -347,3 +347,26 @@ func TestGlobbingWhenFilesHaveBrackets(t *testing.T) {
 		}
 	}
 }
+
+func TestGlobbingFilesWithDifferentSizesWithFileInfo(t *testing.T) {
+	result, err := files.ExpandContentGlobs(files.Contents{
+		{
+			Source:      "./testdata/globtest/different-sizes/**/*",
+			Destination: ".",
+			FileInfo: &files.ContentFileInfo{
+				Mode: 0o777,
+			},
+		},
+	}, false)
+	if err != nil {
+		t.Fatalf("expand content globs: %v", err)
+	}
+
+	if len(result) != 2 {
+		t.Fatalf("unexpected result length: %d, expected 2", len(result))
+	}
+
+	if result[0].FileInfo.Size == result[1].FileInfo.Size {
+		t.Fatal("test FileInfos have the same size, expected different")
+	}
+}
