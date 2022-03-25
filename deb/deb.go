@@ -197,7 +197,8 @@ type nopCloser struct {
 func (nopCloser) Close() error { return nil }
 
 func createDataTarball(info *nfpm.Info) (dataTarBall, md5sums []byte,
-	instSize int64, name string, err error) {
+	instSize int64, name string, err error,
+) {
 	var (
 		dataTarball            bytes.Buffer
 		dataTarballWriteCloser io.WriteCloser
@@ -267,7 +268,8 @@ func createSymlinkInsideTar(file *files.Content, out *tar.Writer) error {
 }
 
 func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
-	created map[string]bool) (md5buf bytes.Buffer, instSize int64, err error) {
+	created map[string]bool,
+) (md5buf bytes.Buffer, instSize int64, err error) {
 	// create explicit directories first
 	for _, file := range info.Contents {
 		// at this point, we don't care about other types yet
@@ -382,7 +384,8 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 }
 
 func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
-	created map[string]bool, info *nfpm.Info) (int64, error) {
+	created map[string]bool, info *nfpm.Info,
+) (int64, error) {
 	var buf bytes.Buffer
 	out := gzip.NewWriter(&buf)
 	// the writers are properly closed later, this is just in case that we have
