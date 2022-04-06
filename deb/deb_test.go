@@ -1267,3 +1267,34 @@ func TestArches(t *testing.T) {
 		require.Equal(t, "foo64", info.Arch)
 	})
 }
+
+func TestFields(t *testing.T) {
+	var w bytes.Buffer
+	require.NoError(t, writeControl(&w, controlData{
+		Info: nfpm.WithDefaults(&nfpm.Info{
+			Name:        "foo",
+			Description: "Foo does things",
+			Priority:    "extra",
+			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
+			Version:     "v1.0.0",
+			Section:     "default",
+			Homepage:    "http://carlosbecker.com",
+			Overridables: nfpm.Overridables{
+				Deb: nfpm.Deb{
+					Fields: map[string]string{
+						"Bugs":  "https://github.com/goreleaser/nfpm/issues",
+						"Empty": "",
+					},
+				},
+			},
+		}),
+		InstalledSize: 10,
+	}))
+	golden := "testdata/control3.golden"
+	if *update {
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+	}
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	require.NoError(t, err)
+	require.Equal(t, string(bts), w.String())
+}
