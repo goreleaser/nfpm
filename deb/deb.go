@@ -718,6 +718,11 @@ Homepage: {{.Info.Homepage}}
 {{- end }}
 {{- /* Mandatory fields */}}
 Description: {{multiline .Info.Description}}
+{{- range $key, $value := .Info.Deb.Fields }}
+{{- if $value }}
+{{$key}}: {{$value}}
+{{- end }}
+{{- end }}
 `
 
 type controlData struct {
