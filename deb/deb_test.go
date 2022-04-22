@@ -157,7 +157,7 @@ func TestDebVersionWithReleaseAndPrerelease(t *testing.T) {
 	err := writeControl(&buf, controlData{info, 0})
 	require.NoError(t, err)
 	v := extractDebVersion(&buf)
-	require.Equal(t, "1.0.0-2~rc1", v)
+	require.Equal(t, "1.0.0~rc1-2", v)
 }
 
 func TestDebVersionWithVersionMetadata(t *testing.T) {
@@ -252,6 +252,41 @@ func TestNoJoinsControl(t *testing.T) {
 		InstalledSize: 10,
 	}))
 	golden := "testdata/control2.golden"
+	if *update {
+		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+	}
+	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	require.NoError(t, err)
+	require.Equal(t, string(bts), w.String())
+}
+
+func TestVersionControl(t *testing.T) {
+	var w bytes.Buffer
+	require.NoError(t, writeControl(&w, controlData{
+		Info: nfpm.WithDefaults(&nfpm.Info{
+			Name:        "foo",
+			Arch:        "amd64",
+			Description: "Foo does things",
+			Priority:    "extra",
+			Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
+			Version:     "v1.0.0-beta+meta",
+			Release:     "2",
+			Section:     "default",
+			Homepage:    "http://carlosbecker.com",
+			Vendor:      "nope",
+			Overridables: nfpm.Overridables{
+				Depends:    []string{},
+				Recommends: []string{},
+				Suggests:   []string{},
+				Replaces:   []string{},
+				Provides:   []string{},
+				Conflicts:  []string{},
+				Contents:   []*files.Content{},
+			},
+		}),
+		InstalledSize: 10,
+	}))
+	golden := "testdata/control4.golden"
 	if *update {
 		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
 	}

@@ -681,9 +681,9 @@ const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 Package: {{.Info.Name}}
 Version: {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
-         {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
          {{- if .Info.Prerelease}}~{{ .Info.Prerelease }}{{- end }}
          {{- if .Info.VersionMetadata}}+{{ .Info.VersionMetadata }}{{- end }}
+         {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
 Section: {{.Info.Section}}
 Priority: {{.Info.Priority}}
 Architecture: {{.Info.Arch}}
