@@ -321,12 +321,13 @@ type APKScripts struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Arch        string       `yaml:"arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
-	Scripts     DebScripts   `yaml:"scripts,omitempty" jsonschema:"title=scripts"`
-	Triggers    DebTriggers  `yaml:"triggers,omitempty" jsonschema:"title=triggers"`
-	Breaks      []string     `yaml:"breaks,omitempty" jsonschema:"title=breaks"`
-	Signature   DebSignature `yaml:"signature,omitempty" jsonschema:"title=signature"`
-	Compression string       `yaml:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
+	Arch        string            `yaml:"arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
+	Scripts     DebScripts        `yaml:"scripts,omitempty" jsonschema:"title=scripts"`
+	Triggers    DebTriggers       `yaml:"triggers,omitempty" jsonschema:"title=triggers"`
+	Breaks      []string          `yaml:"breaks,omitempty" jsonschema:"title=breaks"`
+	Signature   DebSignature      `yaml:"signature,omitempty" jsonschema:"title=signature"`
+	Compression string            `yaml:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
+	Fields      map[string]string `yaml:"fields,omitempty" jsonschema:"title=fields"`
 }
 
 type DebSignature struct {

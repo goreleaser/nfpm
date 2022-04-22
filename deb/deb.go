@@ -681,9 +681,9 @@ const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 Package: {{.Info.Name}}
 Version: {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
-         {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
          {{- if .Info.Prerelease}}~{{ .Info.Prerelease }}{{- end }}
          {{- if .Info.VersionMetadata}}+{{ .Info.VersionMetadata }}{{- end }}
+         {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
 Section: {{.Info.Section}}
 Priority: {{.Info.Priority}}
 Architecture: {{.Info.Arch}}
@@ -718,6 +718,11 @@ Homepage: {{.Info.Homepage}}
 {{- end }}
 {{- /* Mandatory fields */}}
 Description: {{multiline .Info.Description}}
+{{- range $key, $value := .Info.Deb.Fields }}
+{{- if $value }}
+{{$key}}: {{$value}}
+{{- end }}
+{{- end }}
 `
 
 type controlData struct {

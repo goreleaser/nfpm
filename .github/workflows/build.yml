@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
       - uses: arduino/setup-task@v1
@@ -36,7 +36,7 @@ jobs:
       - run: task setup
       - run: task test
       - run: git diff
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         if: matrix.os == 'ubuntu-latest'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
       - uses: arduino/setup-task@v1
@@ -90,7 +90,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
       - uses: arduino/setup-task@v1
@@ -104,8 +104,8 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - uses: sigstore/cosign-installer@v2.1.0
-      - uses: anchore/sbom-action/download-syft@v0.8.0
+      - uses: sigstore/cosign-installer@v2.2.1
+      - uses: anchore/sbom-action/download-syft@v0.11.0
       - uses: docker/setup-qemu-action@v1
       - uses: docker/setup-buildx-action@v1
       - run: task setup
