@@ -6,7 +6,7 @@ import (
 	_ "github.com/goreleaser/nfpm/v2/apk"
 	_ "github.com/goreleaser/nfpm/v2/deb"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
-	"github.com/muesli/coral"
+	"github.com/spf13/cobra"
 )
 
 func Execute(version string, exit func(int), args []string) {
@@ -14,7 +14,7 @@ func Execute(version string, exit func(int), args []string) {
 }
 
 type rootCmd struct {
-	cmd  *coral.Command
+	cmd  *cobra.Command
 	exit func(int)
 }
 
@@ -31,14 +31,14 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	root := &rootCmd{
 		exit: exit,
 	}
-	cmd := &coral.Command{
+	cmd := &cobra.Command{
 		Use:           "nfpm",
 		Short:         "Packages apps on RPM, Deb and APK formats based on a YAML configuration file",
 		Long:          `nFPM is a simple, 0-dependencies, deb, rpm and apk packager.`,
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Args:          coral.NoArgs,
+		Args:          cobra.NoArgs,
 	}
 
 	cmd.AddCommand(
