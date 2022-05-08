@@ -1,6 +1,7 @@
 package nfpm_test
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/stretchr/testify/require"
 )
@@ -370,12 +372,19 @@ func TestOverrides(t *testing.T) {
 	})
 }
 
+func TestDeprecations(t *testing.T) {
+	var b bytes.Buffer
+	deprecation.Noticer = &b
+	nfpm.ReportDeprecations(&nfpm.Info{
+		Overridables: nfpm.Overridables{
+			EmptyFolders: []string{"foo"},
+		},
+	})
+	require.NotEmpty(t, b.String())
+}
+
 type fakePackager struct{}
 
-func (*fakePackager) ConventionalFileName(info *nfpm.Info) string {
-	return ""
-}
-
-func (*fakePackager) Package(info *nfpm.Info, w io.Writer) error {
-	return nil
-}
+func (*fakePackager) ConventionalFileName(info *nfpm.Info) string { return "" }
+func (*fakePackager) Package(info *nfpm.Info, w io.Writer) error  { return nil }
+func (*fakePackager) ReportDeprecations(_ *nfpm.Info)             {}

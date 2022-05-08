@@ -717,3 +717,7 @@ func TestArches(t *testing.T) {
 		require.Equal(t, "foo64", info.Arch)
 	})
 }
+
+func TestReportDeprecations(t *testing.T) {
+	Default.ReportDeprecations(nil)
+}

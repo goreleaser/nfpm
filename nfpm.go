@@ -99,6 +99,7 @@ func ParseFileWithEnvMapping(path string, mapping func(string) string) (config C
 type Packager interface {
 	Package(info *Info, w io.Writer) error
 	ConventionalFileName(info *Info) string
+	ReportDeprecations(info *Info)
 }
 
 // Config contains the top level configuration for packages.
@@ -372,6 +373,16 @@ func (e ErrFieldEmpty) Error() string {
 	return fmt.Sprintf("package %s must be provided", e.field)
 }
 
+// ReportDeprecations reports deprecations on nfpm shared configs.
+// You can also call Packager.ReportDeprecations() to get reports from specific packagers.
+func ReportDeprecations(info *Info) {
+	if len(info.EmptyFolders) > 0 {
+		deprecation.Println("'empty_folders' is deprecated and " +
+			"will be removed in a future version, create content with type 'dir' and " +
+			"directory name as 'dst' instead")
+	}
+}
+
 // Validate the given Info and returns an error if it is invalid.
 func Validate(info *Info) (err error) {
 	if info.Name == "" {
@@ -390,10 +401,6 @@ func Validate(info *Info) (err error) {
 	}
 
 	if len(info.EmptyFolders) > 0 {
-		deprecation.Println("'empty_folders' is deprecated and " +
-			"will be removed in a future version, create content with type 'dir' and " +
-			"directory name as 'dst' instead")
-
 		for _, emptyFolder := range info.EmptyFolders {
 			if contents.ContainsDestination(emptyFolder) {
 				return fmt.Errorf("empty folder already exists in contents: %s", emptyFolder)

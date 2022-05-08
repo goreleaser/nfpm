@@ -20,6 +20,7 @@ import (
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/stretchr/testify/require"
@@ -1332,4 +1333,11 @@ func TestFields(t *testing.T) {
 	bts, err := ioutil.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
+}
+
+func TestReportDeprecations(t *testing.T) {
+	var b bytes.Buffer
+	deprecation.Noticer = &b
+	Default.ReportDeprecations(&nfpm.Info{})
+	require.NotEmpty(t, b.String())
 }

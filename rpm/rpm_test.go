@@ -938,3 +938,7 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 
 	return nil, os.ErrNotExist
 }
+
+func TestReportDeprecations(t *testing.T) {
+	Default.ReportDeprecations(nil)
+}

@@ -88,6 +88,12 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 // origin, maint or archive.
 var ErrInvalidSignatureType = errors.New("invalid signature type")
 
+func (*Deb) ReportDeprecations(info *nfpm.Info) {
+	if info.Maintainer == "" {
+		deprecation.Println("Leaving the 'maintainer' field unset will not be allowed in a future version")
+	}
+}
+
 // Package writes a new deb package to the given writer using the given info.
 func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: funlen
 	info = ensureValidArch(info)
@@ -171,7 +177,6 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 	// if in the long run we should be more strict about this and error when
 	// not set?
 	if info.Maintainer == "" {
-		deprecation.Println("Leaving the 'maintainer' field unset will not be allowed in a future version")
 		info.Maintainer = "Unset Maintainer <unset@localhost>"
 	}
 }

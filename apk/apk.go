@@ -87,6 +87,8 @@ var Default = &Apk{}
 // Apk is an apk packager implementation.
 type Apk struct{}
 
+func (*Apk) ReportDeprecations(info *nfpm.Info) {}
+
 func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 	info = ensureValidArch(info)
 	version := info.Version

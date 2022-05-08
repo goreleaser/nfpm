@@ -54,6 +54,8 @@ var Default = &RPM{}
 // RPM is a RPM packager implementation.
 type RPM struct{}
 
+func (*RPM) ReportDeprecations(info *nfpm.Info) {}
+
 // https://docs.fedoraproject.org/ro/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch01s03.html
 // nolint: gochecknoglobals
 var archToRPM = map[string]string{
