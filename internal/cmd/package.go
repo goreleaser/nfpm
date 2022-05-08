@@ -70,13 +70,15 @@ func doPackage(configPath, target, packager string) error {
 		return err
 	}
 
-	info = nfpm.WithDefaults(info)
-
 	fmt.Printf("using %s packager...\n", packager)
 	pkg, err := nfpm.Get(packager)
 	if err != nil {
 		return err
 	}
+
+	info = nfpm.WithDefaults(info)
+	nfpm.ReportDeprecations(info)
+	pkg.ReportDeprecations(info)
 
 	if target == "" {
 		// if no target was specified create a package in
