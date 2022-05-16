@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/goreleaser/nfpm/v2"
 )
@@ -79,6 +80,48 @@ func PGPArmoredDetachSignWithKeyID(message io.Reader, keyFile, passphrase string
 	return signature.Bytes(), nil
 }
 
+func PGPClearSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKeyId *string) ([]byte, error) {
+	keyId, err := parseKeyID(hexKeyId)
+	if err != nil {
+		return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyId, err)
+	}
+
+	key, err := readSigningKey(keyFile, passphrase)
+	if err != nil {
+		return nil, fmt.Errorf("clear sign: %w", err)
+	}
+
+	var signature bytes.Buffer
+
+	writeCloser, err := clearsign.Encode(&signature, key.PrivateKey, &packet.Config{
+		SigningKeyId: keyId,
+		DefaultHash:  crypto.SHA256,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("clear sign: %w", err)
+	}
+
+	messageBytes, err := io.ReadAll(message)
+	if err != nil {
+		return nil, fmt.Errorf("clear sign: %w", err)
+	}
+
+	writtenLength, err := writeCloser.Write(messageBytes)
+	if err != nil {
+		return nil, fmt.Errorf("clear sign: %w", err)
+	}
+	if writtenLength != len(messageBytes) {
+		return nil, fmt.Errorf("partial signature written")
+	}
+	writeCloser.Close()
+
+	if err != nil {
+		return nil, fmt.Errorf("armored detach sign: %w", err)
+	}
+
+	return signature.Bytes(), nil
+}
+
 // PGPVerify is exported for use in tests and verifies an ASCII-armored or non-ASCII-armored
 // signature using an ASCII-armored or non-ASCII-armored public key file. The signer
 // identity is not explicitly checked, other that the obvious fact that the signer's key must
@@ -109,6 +152,32 @@ func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) er
 	}
 
 	_, err = openpgp.CheckDetachedSignature(keyring, message, bytes.NewReader(signature), nil)
+	return err
+}
+
+func PGPReadMessage(message []byte, armoredPubKeyFile string) error {
+	keyFileContent, err := ioutil.ReadFile(armoredPubKeyFile)
+	if err != nil {
+		return fmt.Errorf("reading armored public key file: %w", err)
+	}
+
+	var keyring openpgp.EntityList
+
+	if isASCII(keyFileContent) {
+		keyring, err = openpgp.ReadArmoredKeyRing(bytes.NewReader(keyFileContent))
+		if err != nil {
+			return fmt.Errorf("decoding armored public key file: %w", err)
+		}
+	} else {
+		keyring, err = openpgp.ReadKeyRing(bytes.NewReader(keyFileContent))
+		if err != nil {
+			return fmt.Errorf("decoding public key file: %w", err)
+		}
+	}
+
+	block, _ := clearsign.Decode(message)
+	_, err = block.VerifySignature(keyring, nil)
+
 	return err
 }
 

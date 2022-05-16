@@ -946,6 +946,35 @@ func TestDebsigsSignatureError(t *testing.T) {
 	require.True(t, errors.As(err, &expectedError))
 }
 
+func TestDpkgSigSignature(t *testing.T) {
+	info := exampleInfo()
+	info.Deb.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
+	info.Deb.Signature.KeyPassphrase = "hunter2"
+	info.Deb.Signature.Method = "dpkg-sig"
+
+	var deb bytes.Buffer
+	err := Default.Package(info, &deb)
+	require.NoError(t, err)
+
+	signature := extractFileFromAr(t, deb.Bytes(), "_gpgbuilder")
+
+	err = sign.PGPReadMessage(signature, "../internal/sign/testdata/pubkey.asc")
+	require.NoError(t, err)
+}
+
+func TestDpkgSigSignatureError(t *testing.T) {
+	info := exampleInfo()
+	info.Deb.Signature.KeyFile = "/does/not/exist"
+	info.Deb.Signature.Method = "dpkg-sig"
+
+	var deb bytes.Buffer
+	err := Default.Package(info, &deb)
+	require.Error(t, err)
+
+	var expectedError *nfpm.ErrSigningFailure
+	require.True(t, errors.As(err, &expectedError))
+}
+
 func TestDisableGlobbing(t *testing.T) {
 	info := exampleInfo()
 	info.DisableGlobbing = true
