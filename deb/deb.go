@@ -196,7 +196,7 @@ Signer: {{ .Signer }}
 Date: {{ .Date }}
 Role: {{ .Role }}
 Files:
-{{range .Files}}{{ .File.md5sum }} {{ .File.sha1sum }} {{ .File.size }} {{ .File.name }}{{end}}
+{{range .Files}}{{ .md5sum }} {{ .File.sha1sum }} {{ .File.size }} {{ .File.name }}{{end}}
 `
 
 type dpkgSigData struct {
