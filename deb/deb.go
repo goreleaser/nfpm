@@ -219,7 +219,7 @@ func newDpkgSigFileLine(name string, fileContent []byte) dpkgSigFileLine {
 	}
 }
 
-func readDpkgSigData(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) io.Reader {
+func readDpkgSigData(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) (io.Reader, error) {
 	data := dpkgSigData{
 		Files: []dpkgSigFileLine{
 			newDpkgSigFileLine("debian-binary", debianBinary),
@@ -229,8 +229,11 @@ func readDpkgSigData(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []
 	}
 	temp, _ := template.New("dpkg-sig").Parse(dpkgSigTemplate)
 	buf := &bytes.Buffer{}
-	temp.Execute(buf, data)
-	return buf
+	err := temp.Execute(buf, data)
+	if err != nil {
+		return nil, fmt.Errorf("dpkg-sig template error: %w", err)
+	}
+	return buf, nil
 }
 
 func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
