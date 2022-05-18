@@ -335,7 +335,8 @@ type DebSignature struct {
 	// debsign, or dpkg-sig (defaults to debsign)
 	Method string `yaml:"method,omitempty" jsonschema:"title=method role,enum=debsign,enum=dpkg-sig,default=debsign"`
 	// origin, maint or archive (defaults to origin)
-	Type string `yaml:"type,omitempty" jsonschema:"title=signer role,enum=origin,enum=maint,enum=archive,default=origin"`
+	Type   string `yaml:"type,omitempty" jsonschema:"title=signer role,enum=origin,enum=maint,enum=archive,default=origin"`
+	Signer string `yaml:"signer,omitempty" jsonschema:"title=signer"`
 }
 
 // DebTriggers contains triggers only available for deb packages.

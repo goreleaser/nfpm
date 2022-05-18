@@ -159,7 +159,10 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 			}
 
 		} else if method == "dpkg-sig" {
-			data = readDpkgSigData(info, debianBinary, controlTarGz, dataTarball)
+			data, err := readDpkgSigData(info, debianBinary, controlTarGz, dataTarball)
+			if err != nil {
+				return &nfpm.ErrSigningFailure{Err: err}
+			}
 
 			sigType = "builder"
 			if info.Deb.Signature.Type != "" {
@@ -196,12 +199,15 @@ Signer: {{ .Signer }}
 Date: {{ .Date }}
 Role: {{ .Role }}
 Files:
-{{range .Files}}{{ .md5sum }} {{ .sha1sum }} {{ .size }} {{ .name }}{{end}}
+{{range .Files}}{{ .Md5Sum }} {{ .Sha1Sum }} {{ .Size }} {{ .Name }}{{end}}
 `
 
 type dpkgSigData struct {
-	Files []dpkgSigFileLine
-	Info  *nfpm.Info
+	Signer string
+	Date   time.Time
+	Role   string
+	Files  []dpkgSigFileLine
+	Info   *nfpm.Info
 }
 type dpkgSigFileLine struct {
 	Md5Sum  [16]byte
@@ -221,6 +227,9 @@ func newDpkgSigFileLine(name string, fileContent []byte) dpkgSigFileLine {
 
 func readDpkgSigData(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) (io.Reader, error) {
 	data := dpkgSigData{
+		Signer: info.Deb.Signature.Signer,
+		Date:   time.Now(),
+		Role:   info.Deb.Signature.Type,
 		Files: []dpkgSigFileLine{
 			newDpkgSigFileLine("debian-binary", debianBinary),
 			newDpkgSigFileLine("control.tar.gz", controlTarGz),

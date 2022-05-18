@@ -951,6 +951,7 @@ func TestDpkgSigSignature(t *testing.T) {
 	info.Deb.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
 	info.Deb.Signature.KeyPassphrase = "hunter2"
 	info.Deb.Signature.Method = "dpkg-sig"
+	info.Deb.Signature.Signer = "bob McRobert"
 
 	var deb bytes.Buffer
 	err := Default.Package(info, &deb)
