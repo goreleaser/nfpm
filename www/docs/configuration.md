@@ -305,6 +305,10 @@ deb:
     # This will expand any env var you set in the field, eg key_id: ${DEB_SIGNING_KEY_ID}
     key_id: bc8acdd415bd80b3
 
+  # Additional fields for the control file. Empty fields are ignored.
+  fields:
+    Bugs: https://github.com/goreleaser/nfpm/issues
+
 apk:
   # apk specific architecture name that overrides "arch" without performing any replacements.
   apk_arch: armhf
