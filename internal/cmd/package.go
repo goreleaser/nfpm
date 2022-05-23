@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 
 	"github.com/goreleaser/nfpm/v2"
-	"github.com/muesli/coral"
+	"github.com/spf13/cobra"
 )
 
 type packageCmd struct {
-	cmd      *coral.Command
+	cmd      *cobra.Command
 	config   string
 	target   string
 	packager string
@@ -20,14 +20,14 @@ type packageCmd struct {
 
 func newPackageCmd() *packageCmd {
 	root := &packageCmd{}
-	cmd := &coral.Command{
+	cmd := &cobra.Command{
 		Use:           "package",
 		Aliases:       []string{"pkg", "p"},
 		Short:         "Creates a package based on the given the given config file and flags",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Args:          coral.NoArgs,
-		RunE: func(cmd *coral.Command, args []string) error {
+		Args:          cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
 			return doPackage(root.config, root.target, root.packager)
 		},
 	}
