@@ -23,7 +23,7 @@ func newPackageCmd() *packageCmd {
 	cmd := &cobra.Command{
 		Use:           "package",
 		Aliases:       []string{"pkg", "p"},
-		Short:         "Creates a package based on the given the given config file and flags",
+		Short:         "Creates a package based on the given config file and flags",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
