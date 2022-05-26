@@ -95,7 +95,7 @@ RUN command -v zsh
 
 # ---- env-var-version test ----
 FROM min AS env-var-version
-ENV EXPECTVER="foo-1.0.0~0.1.b1+git.abcdefgh description:"
+ENV EXPECTVER="foo-1.0.00.1.b1 description:"
 RUN apk info foo | grep "foo-" | grep " description:" > found
 RUN export FOUND_VER="$(cat found)" && \
 	echo "Expected: '${EXPECTVER}' :: Found: '${FOUND_VER}'" && \
