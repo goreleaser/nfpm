@@ -128,51 +128,15 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 		return fmt.Errorf("cannot add data.tar.gz to deb: %w", err)
 	}
 
-	// TODO: refactor this
 	method := "debsign"
 	if info.Deb.Signature.Method != "" {
 		method = info.Deb.Signature.Method
 	}
 
 	if info.Deb.Signature.KeyFile != "" {
-		var data io.Reader
-		var sigType string
-		var sig []byte
-
-		if method == "debsign" {
-			data = readDebsignData(debianBinary, controlTarGz, dataTarball)
-
-			sigType = "origin"
-			if info.Deb.Signature.Type != "" {
-				sigType = info.Deb.Signature.Type
-			}
-
-			if sigType != "origin" && sigType != "maint" && sigType != "archive" {
-				return &nfpm.ErrSigningFailure{
-					Err: ErrInvalidSignatureType,
-				}
-			}
-
-			sig, err = sign.PGPArmoredDetachSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
-			if err != nil {
-				return &nfpm.ErrSigningFailure{Err: err}
-			}
-
-		} else if method == "dpkg-sig" {
-			data, err := readDpkgSigData(info, debianBinary, controlTarGz, dataTarball)
-			if err != nil {
-				return &nfpm.ErrSigningFailure{Err: err}
-			}
-
-			sigType = "builder"
-			if info.Deb.Signature.Type != "" {
-				sigType = info.Deb.Signature.Type
-			}
-
-			sig, err = sign.PGPClearSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
-			if err != nil {
-				return &nfpm.ErrSigningFailure{Err: err}
-			}
+		sig, sigType, err := doSign(info, method, debianBinary, controlTarGz, dataTarball)
+		if err != nil {
+			return err
 		}
 
 		if err := addArFile(w, "_gpg"+sigType, sig); err != nil {
@@ -183,6 +147,52 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 	}
 
 	return nil
+}
+
+func doSign(info *nfpm.Info, method string, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
+	if method == "debsign" {
+		return debSign(info, debianBinary, controlTarGz, dataTarball)
+	}
+	return dpkgSign(info, debianBinary, controlTarGz, dataTarball)
+}
+
+func dpkgSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
+	sigType := "builder"
+	if info.Deb.Signature.Type != "" {
+		sigType = info.Deb.Signature.Type
+	}
+
+	data, err := readDpkgSigData(info, debianBinary, controlTarGz, dataTarball)
+	if err != nil {
+		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
+	}
+
+	sig, err := sign.PGPClearSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
+	if err != nil {
+		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
+	}
+	return sig, sigType, nil
+}
+
+func debSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
+	data := readDebsignData(debianBinary, controlTarGz, dataTarball)
+
+	sigType := "origin"
+	if info.Deb.Signature.Type != "" {
+		sigType = info.Deb.Signature.Type
+	}
+
+	if sigType != "origin" && sigType != "maint" && sigType != "archive" {
+		return nil, sigType, &nfpm.ErrSigningFailure{
+			Err: ErrInvalidSignatureType,
+		}
+	}
+
+	sig, err := sign.PGPArmoredDetachSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
+	if err != nil {
+		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
+	}
+	return sig, sigType, nil
 }
 
 func readDebsignData(debianBinary, controlTarGz, dataTarball []byte) io.Reader {
