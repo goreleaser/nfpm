@@ -1,6 +1,6 @@
 module github.com/goreleaser/nfpm/v2
 
-go 1.17
+go 1.18
 
 require (
 	github.com/AlekSi/pointer v1.2.0
@@ -13,7 +13,7 @@ require (
 	github.com/google/rpmpack v0.0.0-20220314092521-38642b5e571e
 	github.com/goreleaser/chglog v0.1.2
 	github.com/goreleaser/fileglob v1.3.0
-	github.com/imdario/mergo v0.3.12
+	github.com/imdario/mergo v0.3.13
 	github.com/klauspost/pgzip v1.2.5
 	github.com/muesli/mango-cobra v1.1.0
 	github.com/muesli/roff v0.1.0
@@ -21,7 +21,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/ulikunitz/xz v0.5.10
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.0
 )
 
 require (

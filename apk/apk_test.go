@@ -32,6 +32,7 @@ func exampleInfo() *nfpm.Info {
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
 		Version:     "v1.0.0",
+		Prerelease:  "beta1",
 		Release:     "r1",
 		Section:     "default",
 		Homepage:    "http://carlosbecker.com",
@@ -444,20 +445,20 @@ func TestAPKConventionalFileName(t *testing.T) {
 			Expect: "default_1.2.3_x86_64.apk",
 		},
 		{
-			Arch: "386", Version: "1.2.3", Meta: "git",
-			Expect: "default_1.2.3+git_x86.apk",
+			Arch: "386", Version: "1.2.3", Prerelease: "git",
+			Expect: "default_1.2.3git_x86.apk",
 		},
 		{
-			Arch: "386", Version: "1.2.3", Meta: "git", Release: "1",
-			Expect: "default_1.2.3-1+git_x86.apk",
+			Arch: "386", Version: "1.2.3", Prerelease: "git", Release: "1",
+			Expect: "default_1.2.3git-1_x86.apk",
 		},
 		{
 			Arch: "all", Version: "1.2.3",
 			Expect: "default_1.2.3_all.apk",
 		},
 		{
-			Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "5",
-			Expect: "default_1.2.3-1~5_x86.apk",
+			Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "beta",
+			Expect: "default_1.2.3beta-1_x86.apk",
 		},
 	}
 

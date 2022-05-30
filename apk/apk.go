@@ -90,16 +90,13 @@ type Apk struct{}
 func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 	info = ensureValidArch(info)
 	version := info.Version
-	if info.Release != "" {
-		version += "-" + info.Release
-	}
 
 	if info.Prerelease != "" {
-		version += "~" + info.Prerelease
+		version += "" + info.Prerelease
 	}
 
-	if info.VersionMetadata != "" {
-		version += "+" + info.VersionMetadata
+	if info.Release != "" {
+		version += "-" + info.Release
 	}
 
 	return fmt.Sprintf("%s_%s_%s.apk", info.Name, version, info.Arch)
@@ -559,10 +556,9 @@ func pathsToCreate(dst string) []string {
 const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 pkgname = {{.Info.Name}}
-pkgver = {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
+pkgver = {{.Info.Version}}
+		 {{- if .Info.Prerelease}}{{ .Info.Prerelease }}{{- end }}
          {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
-         {{- if .Info.Prerelease}}~{{ .Info.Prerelease }}{{- end }}
-         {{- if .Info.VersionMetadata}}+{{ .Info.VersionMetadata }}{{- end }}
 arch = {{.Info.Arch}}
 size = {{.InstalledSize}}
 pkgdesc = {{multiline .Info.Description}}
