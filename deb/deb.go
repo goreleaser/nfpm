@@ -128,13 +128,8 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 		return fmt.Errorf("cannot add data.tar.gz to deb: %w", err)
 	}
 
-	method := "debsign"
-	if info.Deb.Signature.Method != "" {
-		method = info.Deb.Signature.Method
-	}
-
 	if info.Deb.Signature.KeyFile != "" {
-		sig, sigType, err := doSign(info, method, debianBinary, controlTarGz, dataTarball)
+		sig, sigType, err := doSign(info, debianBinary, controlTarGz, dataTarball)
 		if err != nil {
 			return err
 		}
@@ -149,11 +144,13 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 	return nil
 }
 
-func doSign(info *nfpm.Info, method string, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
-	if method == "debsign" {
+func doSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
+	switch info.Deb.Signature.Method {
+	case "dpkg-sig":
+		return dpkgSign(info, debianBinary, controlTarGz, dataTarball)
+	default:
 		return debSign(info, debianBinary, controlTarGz, dataTarball)
 	}
-	return dpkgSign(info, debianBinary, controlTarGz, dataTarball)
 }
 
 func dpkgSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
