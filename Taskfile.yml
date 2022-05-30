@@ -46,18 +46,26 @@ tasks:
       TEST_OPTIONS: '{{default "" .TEST_OPTIONS}}'
       TEST_PATTERN: '{{default "." .TEST_PATTERN}}'
     cmds:
-      - go test {{.TEST_OPTIONS}} -tags=acceptance -p 4 -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt acceptance_test.go -run {{.TEST_PATTERN}} -timeout=1h
+      - go test {{.TEST_OPTIONS}} -tags=acceptance -p 4 -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt acceptance_test.go -run {{.TEST_PATTERN}} -timeout=1h | tee output.json | tparse -notests -follow -all
 
   test:
     desc: Run unit tests
     env:
       LC_ALL: C
     vars:
-      TEST_OPTIONS: '{{default "" .TEST_OPTIONS}}'
+      TEST_OPTIONS: '{{default "-json" .TEST_OPTIONS}}'
       SOURCE_FILES: '{{default "./..." .SOURCE_FILES}}'
       TEST_PATTERN: '{{default "." .TEST_PATTERN}}'
     cmds:
-      - go test {{.TEST_OPTIONS}} -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt {{.SOURCE_FILES}} -run {{.TEST_PATTERN}} -timeout=5m
+      - go test {{.TEST_OPTIONS}} -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt {{.SOURCE_FILES}} -run {{.TEST_PATTERN}} -timeout=5m | tee output.json | tparse -notests -follow -all
+
+  report:
+    status:
+      - test -z "$GITHUB_STEP_SUMMARY"
+    env:
+      NO_COLOR: 1
+    cmds:
+      - tparse -format markdown -file output.json -all > $GITHUB_STEP_SUMMARY
 
   cover:
     desc: Open the cover tool
