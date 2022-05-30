@@ -3,7 +3,7 @@ arch: "${BUILD_ARCH}"
 platform: "linux"
 version: "v1.0.0"
 maintainer: "John Doe <john@example.com>"
-description: This package is sigend
+description: This package is signed
 vendor: "FooBarCorp"
 homepage: "http://example.com"
 contents:
