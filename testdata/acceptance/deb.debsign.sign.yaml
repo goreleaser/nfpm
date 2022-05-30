@@ -1,0 +1,15 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.0.0"
+maintainer: "John Doe <john@example.com>"
+description: This package is sigend
+vendor: "FooBarCorp"
+homepage: "http://example.com"
+contents:
+- src: ./testdata/fake
+  dst: /usr/local/bin/fake
+deb:
+  signature:
+    method: debsign
+    key_file: ./internal/sign/testdata/privkey_unprotected.asc
