@@ -101,22 +101,12 @@ func PGPClearSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKey
 		return nil, fmt.Errorf("clear sign: %w", err)
 	}
 
-	messageBytes, err := io.ReadAll(message)
-	if err != nil {
+	if _, err := io.Copy(writeCloser, message); err != nil {
 		return nil, fmt.Errorf("clear sign: %w", err)
 	}
 
-	writtenLength, err := writeCloser.Write(messageBytes)
-	if err != nil {
+	if err := writeCloser.Close(); err != nil {
 		return nil, fmt.Errorf("clear sign: %w", err)
-	}
-	if writtenLength != len(messageBytes) {
-		return nil, fmt.Errorf("partial signature written")
-	}
-	writeCloser.Close()
-
-	if err != nil {
-		return nil, fmt.Errorf("armored detach sign: %w", err)
 	}
 
 	return signature.Bytes(), nil
