@@ -11,11 +11,5 @@ contents:
   dst: /usr/local/bin/fake
 deb:
   signature:
+    method: debsign
     key_file: ./internal/sign/testdata/privkey_unprotected.asc
-rpm:
-  signature:
-    key_file: ./internal/sign/testdata/privkey_unprotected.asc
-    key_id: bc8acdd415bd80b3
-apk:
-  signature:
-    key_file: ./internal/sign/testdata/rsa_unprotected.priv

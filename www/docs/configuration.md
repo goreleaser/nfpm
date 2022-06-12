@@ -292,6 +292,9 @@ deb:
 
   # The package is signed if a key_file is set
   signature:
+    # Signature method, either "dpkg-sig" or "debsign".
+    # Defaults to "debsign"
+    method: dpkg-sig
     # PGP secret key (can also be ASCII-armored). The passphrase is taken
     # from the environment variable $NFPM_DEB_PASSPHRASE with a fallback
     # to $NFPM_PASSPHRASE.
