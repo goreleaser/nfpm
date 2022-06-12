@@ -33,8 +33,16 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: setup-tparse
+        run: go install github.com/mfridman/tparse@latest
       - run: task setup
-      - run: task test
+      - name: test
+        run: |
+          task test | tee output.json | tparse -notests -follow -all
+          tparse -format markdown -file output.json -all > $GITHUB_STEP_SUMMARY
+        env:
+          TEST_OPTIONS: "-json"
+          NO_COLOR: 1
       - run: git diff
       - uses: codecov/codecov-action@v3
         if: matrix.os == 'ubuntu-latest'
@@ -53,8 +61,6 @@ jobs:
       NO_TEST_PPC64LE: "true"
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
@@ -72,7 +78,16 @@ jobs:
       - uses: docker/setup-qemu-action@v2
       - uses: docker/setup-buildx-action@v2
       - run: task setup
-      - run: TEST_PATTERN=/${{ matrix.pkgFormat }}/${{ matrix.pkgPlatform }}/ task acceptance
+      - name: setup-tparse
+        run: go install github.com/mfridman/tparse@latest
+      - name: acceptance
+        run: |
+          task acceptance | tee output.json | tparse -notests -follow -all
+          tparse -format markdown -file output.json -all > $GITHUB_STEP_SUMMARY
+        env:
+          TEST_OPTIONS: "-json"
+          NO_COLOR: 1
+          TEST_PATTERN: "/${{ matrix.pkgFormat }}/${{ matrix.pkgPlatform }}/"
   goreleaser:
     strategy:
       matrix:
