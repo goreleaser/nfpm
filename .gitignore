@@ -17,3 +17,4 @@ completions/
 .task/
 cosign.*
 manpages
+output.json
