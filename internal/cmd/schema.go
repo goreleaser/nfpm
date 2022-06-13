@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/alecthomas/jsonschema"
 	"github.com/goreleaser/nfpm/v2"
+	"github.com/invopop/jsonschema"
 	"github.com/spf13/cobra"
 )
 

@@ -1,8 +1,8 @@
 {
-		"$schema": "http://json-schema.org/draft-04/schema#",
-		"$ref": "#/definitions/Config",
-		"description": "nFPM configuration definition file",
-		"definitions": {
+		"$schema": "http://json-schema.org/draft/2020-12/schema",
+		"$id": "https://github.com/goreleaser/nfpm/v2/config",
+		"$ref": "#/$defs/Config",
+		"$defs": {
 			"APK": {
 				"properties": {
 					"arch": {
@@ -10,13 +10,11 @@
 						"title": "architecture in apk nomenclature"
 					},
 					"signature": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/APKSignature",
+						"$ref": "#/$defs/APKSignature",
 						"title": "apk signature"
 					},
 					"scripts": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/APKScripts",
+						"$ref": "#/$defs/APKScripts",
 						"title": "apk scripts"
 					}
 				},
@@ -66,11 +64,6 @@
 				"type": "object"
 			},
 			"Config": {
-				"required": [
-					"name",
-					"arch",
-					"version"
-				],
 				"properties": {
 					"replaces": {
 						"items": {
@@ -116,8 +109,7 @@
 					},
 					"contents": {
 						"items": {
-							"$schema": "http://json-schema.org/draft-04/schema#",
-							"$ref": "#/definitions/Content"
+							"$ref": "#/$defs/Content"
 						},
 						"type": "array",
 						"title": "files to add to the package"
@@ -130,23 +122,19 @@
 						"title": "empty folders to be created when installing the package"
 					},
 					"scripts": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/Scripts",
+						"$ref": "#/$defs/Scripts",
 						"title": "scripts to execute"
 					},
 					"rpm": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/RPM",
+						"$ref": "#/$defs/RPM",
 						"title": "rpm-specific settings"
 					},
 					"deb": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/Deb",
+						"$ref": "#/$defs/Deb",
 						"title": "deb-specific settings"
 					},
 					"apk": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/APK",
+						"$ref": "#/$defs/APK",
 						"title": "apk-specific settings"
 					},
 					"name": {
@@ -185,11 +173,11 @@
 						]
 					},
 					"version_schema": {
+						"type": "string",
 						"enum": [
 							"semver",
 							"none"
 						],
-						"type": "string",
 						"title": "version schema",
 						"default": "semver"
 					},
@@ -268,13 +256,13 @@
 					},
 					"disable_globbing": {
 						"type": "boolean",
-						"title": "wether to disable file globbing"
+						"title": "wether to disable file globbing",
+						"default": false
 					},
 					"overrides": {
 						"patternProperties": {
 							".*": {
-								"$schema": "http://json-schema.org/draft-04/schema#",
-								"$ref": "#/definitions/Overridables"
+								"$ref": "#/$defs/Overridables"
 							}
 						},
 						"type": "object",
@@ -283,7 +271,12 @@
 					}
 				},
 				"additionalProperties": false,
-				"type": "object"
+				"type": "object",
+				"required": [
+					"name",
+					"arch",
+					"version"
+				]
 			},
 			"Content": {
 				"properties": {
@@ -300,17 +293,13 @@
 						"type": "string"
 					},
 					"file_info": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/ContentFileInfo"
+						"$ref": "#/$defs/ContentFileInfo"
 					}
 				},
 				"additionalProperties": false,
 				"type": "object"
 			},
 			"ContentFileInfo": {
-				"required": [
-					"group"
-				],
 				"properties": {
 					"owner": {
 						"type": "string"
@@ -327,7 +316,10 @@
 					}
 				},
 				"additionalProperties": false,
-				"type": "object"
+				"type": "object",
+				"required": [
+					"group"
+				]
 			},
 			"Deb": {
 				"properties": {
@@ -336,13 +328,11 @@
 						"title": "architecture in deb nomenclature"
 					},
 					"scripts": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/DebScripts",
+						"$ref": "#/$defs/DebScripts",
 						"title": "scripts"
 					},
 					"triggers": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/DebTriggers",
+						"$ref": "#/$defs/DebTriggers",
 						"title": "triggers"
 					},
 					"breaks": {
@@ -353,19 +343,27 @@
 						"title": "breaks"
 					},
 					"signature": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/DebSignature",
+						"$ref": "#/$defs/DebSignature",
 						"title": "signature"
 					},
 					"compression": {
+						"type": "string",
 						"enum": [
 							"gzip",
 							"xz",
 							"none"
 						],
-						"type": "string",
 						"title": "compression algorithm to be used",
 						"default": "gzip"
+					},
+					"fields": {
+						"patternProperties": {
+							".*": {
+								"type": "string"
+							}
+						},
+						"type": "object",
+						"title": "fields"
 					}
 				},
 				"additionalProperties": false,
@@ -405,15 +403,28 @@
 							"bc8acdd415bd80b3"
 						]
 					},
+					"method": {
+						"type": "string",
+						"enum": [
+							"debsign",
+							"dpkg-sig"
+						],
+						"title": "method role",
+						"default": "debsign"
+					},
 					"type": {
+						"type": "string",
 						"enum": [
 							"origin",
 							"maint",
 							"archive"
 						],
-						"type": "string",
 						"title": "signer role",
 						"default": "origin"
+					},
+					"signer": {
+						"type": "string",
+						"title": "signer"
 					}
 				},
 				"additionalProperties": false,
@@ -513,7 +524,7 @@
 					},
 					"contents": {
 						"items": {
-							"$ref": "#/definitions/Content"
+							"$ref": "#/$defs/Content"
 						},
 						"type": "array",
 						"title": "files to add to the package"
@@ -526,19 +537,19 @@
 						"title": "empty folders to be created when installing the package"
 					},
 					"scripts": {
-						"$ref": "#/definitions/Scripts",
+						"$ref": "#/$defs/Scripts",
 						"title": "scripts to execute"
 					},
 					"rpm": {
-						"$ref": "#/definitions/RPM",
+						"$ref": "#/$defs/RPM",
 						"title": "rpm-specific settings"
 					},
 					"deb": {
-						"$ref": "#/definitions/Deb",
+						"$ref": "#/$defs/Deb",
 						"title": "deb-specific settings"
 					},
 					"apk": {
-						"$ref": "#/definitions/APK",
+						"$ref": "#/$defs/APK",
 						"title": "apk-specific settings"
 					}
 				},
@@ -552,8 +563,7 @@
 						"title": "architecture in rpm nomenclature"
 					},
 					"scripts": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/RPMScripts",
+						"$ref": "#/$defs/RPMScripts",
 						"title": "rpm-specific scripts"
 					},
 					"group": {
@@ -568,18 +578,17 @@
 						"title": "package summary"
 					},
 					"compression": {
+						"type": "string",
 						"enum": [
 							"gzip",
 							"lzma",
 							"xz"
 						],
-						"type": "string",
 						"title": "compression algorithm to be used",
-						"default": "gzip"
+						"default": "gzip:-1"
 					},
 					"signature": {
-						"$schema": "http://json-schema.org/draft-04/schema#",
-						"$ref": "#/definitions/RPMSignature",
+						"$ref": "#/$defs/RPMSignature",
 						"title": "rpm signature"
 					},
 					"packager": {
@@ -646,5 +655,6 @@
 				"additionalProperties": false,
 				"type": "object"
 			}
-		}
+		},
+		"description": "nFPM configuration definition file"
 	}
