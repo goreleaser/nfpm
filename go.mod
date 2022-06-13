@@ -7,13 +7,13 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/ProtonMail/go-crypto v0.0.0-20210512092938-c05353c2d58c
 	github.com/ProtonMail/gopenpgp/v2 v2.2.2
-	github.com/alecthomas/jsonschema v0.0.0-20210920000243-787cd8204a0d
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
 	github.com/google/rpmpack v0.0.0-20220314092521-38642b5e571e
 	github.com/goreleaser/chglog v0.1.2
 	github.com/goreleaser/fileglob v1.3.0
 	github.com/imdario/mergo v0.3.13
+	github.com/invopop/jsonschema v0.4.0
 	github.com/klauspost/pgzip v1.2.5
 	github.com/muesli/mango-cobra v1.1.0
 	github.com/muesli/roff v0.1.0

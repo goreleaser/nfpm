@@ -1,6 +1,6 @@
 # nfpm package
 
-Creates a package based on the given the given config file and flags
+Creates a package based on the given config file and flags
 
 ```
 nfpm package [flags]
