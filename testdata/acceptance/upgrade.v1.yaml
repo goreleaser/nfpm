@@ -26,9 +26,10 @@ contents:
   - src: ./testdata/whatever.conf
     dst: /etc/noreplace.conf
     type: config|noreplace
-empty_folders:
-  - /var/log/whatever
-  - /usr/share/foo
+  - dst: /var/log/whatever
+    type: dir
+  - dst: /usr/share/foo
+    type: dir
 scripts:
   preinstall: ./testdata/acceptance/scripts/preinstall.sh
   postinstall: ./testdata/acceptance/scripts/postinstall.sh

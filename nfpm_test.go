@@ -111,8 +111,11 @@ func TestValidate(t *testing.T) {
 			Arch:    "asd",
 			Version: "1.2.3",
 			Overridables: nfpm.Overridables{
-				EmptyFolders: []string{"/usr/share/test"},
 				Contents: []*files.Content{
+					{
+						Destination: "/usr/share/test",
+						Type:        "dir",
+					},
 					{
 						Source:      "./testdata/contents.yaml",
 						Destination: "asd",
@@ -121,9 +124,8 @@ func TestValidate(t *testing.T) {
 			},
 		}
 		require.NoError(t, nfpm.Validate(&info))
-		require.Empty(t, info.Overridables.EmptyFolders)
 		require.Len(t, info.Overridables.Contents, 2)
-		dir := info.Overridables.Contents[1]
+		dir := info.Overridables.Contents[0]
 		require.Equal(t, "/usr/share/test", dir.Destination)
 		require.Equal(t, "dir", dir.Type)
 		require.Equal(t, "-rwxr-xr-x", dir.FileInfo.Mode.String())

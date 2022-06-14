@@ -114,13 +114,6 @@
 						"type": "array",
 						"title": "files to add to the package"
 					},
-					"empty_folders": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "empty folders to be created when installing the package"
-					},
 					"scripts": {
 						"$ref": "#/$defs/Scripts",
 						"title": "scripts to execute"
@@ -528,13 +521,6 @@
 						},
 						"type": "array",
 						"title": "files to add to the package"
-					},
-					"empty_folders": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array",
-						"title": "empty folders to be created when installing the package"
 					},
 					"scripts": {
 						"$ref": "#/$defs/Scripts",
