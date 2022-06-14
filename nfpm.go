@@ -11,7 +11,6 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/Masterminds/semver/v3"
 	"github.com/goreleaser/chglog"
-	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/imdario/mergo"
 	"gopkg.in/yaml.v3"
@@ -260,18 +259,17 @@ func (i *Info) parseSemver() {
 
 // Overridables contain the field which are overridable in a package.
 type Overridables struct {
-	Replaces     []string       `yaml:"replaces,omitempty" jsonschema:"title=replaces directive,example=nfpm"`
-	Provides     []string       `yaml:"provides,omitempty" jsonschema:"title=provides directive,example=nfpm"`
-	Depends      []string       `yaml:"depends,omitempty" jsonschema:"title=depends directive,example=nfpm"`
-	Recommends   []string       `yaml:"recommends,omitempty" jsonschema:"title=recommends directive,example=nfpm"`
-	Suggests     []string       `yaml:"suggests,omitempty" jsonschema:"title=suggests directive,example=nfpm"`
-	Conflicts    []string       `yaml:"conflicts,omitempty" jsonschema:"title=conflicts directive,example=nfpm"`
-	Contents     files.Contents `yaml:"contents,omitempty" jsonschema:"title=files to add to the package"`
-	EmptyFolders []string       `yaml:"empty_folders,omitempty" jsonschema:"title=empty folders to be created when installing the package,example=/var/log/nfpm"` // deprecated
-	Scripts      Scripts        `yaml:"scripts,omitempty" jsonschema:"title=scripts to execute"`
-	RPM          RPM            `yaml:"rpm,omitempty" jsonschema:"title=rpm-specific settings"`
-	Deb          Deb            `yaml:"deb,omitempty" jsonschema:"title=deb-specific settings"`
-	APK          APK            `yaml:"apk,omitempty" jsonschema:"title=apk-specific settings"`
+	Replaces   []string       `yaml:"replaces,omitempty" jsonschema:"title=replaces directive,example=nfpm"`
+	Provides   []string       `yaml:"provides,omitempty" jsonschema:"title=provides directive,example=nfpm"`
+	Depends    []string       `yaml:"depends,omitempty" jsonschema:"title=depends directive,example=nfpm"`
+	Recommends []string       `yaml:"recommends,omitempty" jsonschema:"title=recommends directive,example=nfpm"`
+	Suggests   []string       `yaml:"suggests,omitempty" jsonschema:"title=suggests directive,example=nfpm"`
+	Conflicts  []string       `yaml:"conflicts,omitempty" jsonschema:"title=conflicts directive,example=nfpm"`
+	Contents   files.Contents `yaml:"contents,omitempty" jsonschema:"title=files to add to the package"`
+	Scripts    Scripts        `yaml:"scripts,omitempty" jsonschema:"title=scripts to execute"`
+	RPM        RPM            `yaml:"rpm,omitempty" jsonschema:"title=rpm-specific settings"`
+	Deb        Deb            `yaml:"deb,omitempty" jsonschema:"title=deb-specific settings"`
+	APK        APK            `yaml:"apk,omitempty" jsonschema:"title=apk-specific settings"`
 }
 
 // RPM is custom configs that are only available on RPM packages.
@@ -392,30 +390,7 @@ func Validate(info *Info) (err error) {
 		return err
 	}
 
-	if len(info.EmptyFolders) > 0 {
-		deprecation.Println("'empty_folders' is deprecated and " +
-			"will be removed in a future version, create content with type 'dir' and " +
-			"directory name as 'dst' instead")
-
-		for _, emptyFolder := range info.EmptyFolders {
-			if contents.ContainsDestination(emptyFolder) {
-				return fmt.Errorf("empty folder already exists in contents: %s", emptyFolder)
-			}
-
-			f := &files.Content{
-				Destination: emptyFolder,
-				Type:        "dir",
-			}
-			contents = append(contents, f.WithFileInfoDefaults())
-		}
-	}
-
-	// The deprecated EmptyFolders are already converted to contents, so we
-	// remove it such that Validate can be called more than once.
-	info.EmptyFolders = nil
-
 	info.Contents = contents
-
 	return nil
 }
 
