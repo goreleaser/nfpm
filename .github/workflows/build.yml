@@ -37,13 +37,7 @@ jobs:
         run: go install github.com/mfridman/tparse@latest
       - run: task setup
       - name: test
-        run: |
-          task test | tee output.json | tparse -notests -follow -all
-          tparse -format markdown -file output.json -all > $GITHUB_STEP_SUMMARY
-        env:
-          TEST_OPTIONS: "-json"
-          NO_COLOR: 1
-      - run: git diff
+        run: ./scripts/test.sh test ${{ matrix.os }}
       - uses: codecov/codecov-action@v3
         if: matrix.os == 'ubuntu-latest'
         with:
@@ -81,12 +75,8 @@ jobs:
       - name: setup-tparse
         run: go install github.com/mfridman/tparse@latest
       - name: acceptance
-        run: |
-          task acceptance | tee output.json | tparse -notests -follow -all
-          tparse -format markdown -file output.json -all > $GITHUB_STEP_SUMMARY
+        run: ./scripts/test.sh acceptance ubuntu-latest
         env:
-          TEST_OPTIONS: "-json"
-          NO_COLOR: 1
           TEST_PATTERN: "/${{ matrix.pkgFormat }}/${{ matrix.pkgPlatform }}/"
   goreleaser:
     strategy:
