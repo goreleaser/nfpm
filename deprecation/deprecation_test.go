@@ -8,7 +8,6 @@ import (
 )
 
 func TestNotice(t *testing.T) {
-	Print("before")
 	var b bytes.Buffer
 	Noticer = prefixed{&b}
 	Print("blah\n")
