@@ -108,10 +108,7 @@
 						"title": "conflicts directive"
 					},
 					"contents": {
-						"items": {
-							"$ref": "#/$defs/Content"
-						},
-						"type": "array",
+						"$ref": "#/$defs/Contents",
 						"title": "files to add to the package"
 					},
 					"scripts": {
@@ -313,6 +310,12 @@
 				"required": [
 					"group"
 				]
+			},
+			"Contents": {
+				"items": {
+					"$ref": "#/$defs/Content"
+				},
+				"type": "array"
 			},
 			"Deb": {
 				"properties": {
@@ -516,10 +519,7 @@
 						"title": "conflicts directive"
 					},
 					"contents": {
-						"items": {
-							"$ref": "#/$defs/Content"
-						},
-						"type": "array",
+						"$ref": "#/$defs/Contents",
 						"title": "files to add to the package"
 					},
 					"scripts": {
