@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/blakesmith/ar"
+	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
@@ -431,7 +432,7 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 		instSize += size
 	}
 
-	if info.Deb.Changelog != "" {
+	if info.Changelog != "" {
 		size, err := createChangelogInsideDataTar(tw, &md5buf, created, info)
 		if err != nil {
 			return md5buf, 0, err
@@ -476,11 +477,8 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 	return file.Size(), nil
 }
 
-func createChangelogInsideDataTar(
-	tarw *tar.Writer,
-	md5w io.Writer,
-	created map[string]bool,
-	info *nfpm.Info,
+func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
+	created map[string]bool, info *nfpm.Info,
 ) (int64, error) {
 	var buf bytes.Buffer
 	out := gzip.NewWriter(&buf)
@@ -488,12 +486,12 @@ func createChangelogInsideDataTar(
 	// an error in another part of the code.
 	defer out.Close() // nolint: errcheck
 
-	changelogContent, err := os.ReadFile(info.Deb.Changelog)
+	changelogContent, err := formatChangelog(info)
 	if err != nil {
 		return 0, err
 	}
 
-	if _, err = out.Write(changelogContent); err != nil {
+	if _, err = out.Write([]byte(changelogContent)); err != nil {
 		return 0, err
 	}
 
@@ -525,6 +523,25 @@ func createChangelogInsideDataTar(
 	return int64(len(changelogData)), nil
 }
 
+func formatChangelog(info *nfpm.Info) (string, error) {
+	changelog, err := info.GetChangeLog()
+	if err != nil {
+		return "", err
+	}
+
+	tpl, err := chglog.DebTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	formattedChangelog, err := chglog.FormatChangelog(changelog, tpl)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(formattedChangelog) + "\n", nil
+}
+
 // nolint:funlen
 func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarGz []byte, err error) {
 	var buf bytes.Buffer
@@ -549,13 +566,13 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		"conffiles": conffiles(info),
 	}
 
-	if info.Deb.Changelog != "" {
-		bts, err := os.ReadFile(info.Deb.Changelog)
+	if info.Changelog != "" {
+		changeLogData, err := formatChangelog(info)
 		if err != nil {
 			return nil, err
 		}
 
-		filesToCreate["changelog"] = bts
+		filesToCreate["changelog"] = []byte(changeLogData)
 	}
 
 	triggers := createTriggers(info)

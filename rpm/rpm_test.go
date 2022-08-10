@@ -10,10 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/caarlos0/go-rpmutils"
 	"github.com/caarlos0/go-rpmutils/cpio"
+	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/stretchr/testify/require"
@@ -573,53 +575,53 @@ func TestRPMConventionalFileName(t *testing.T) {
 	}
 }
 
-// func TestRPMChangelog(t *testing.T) {
-// 	info := exampleInfo()
-// 	info.Changelog = "../testdata/changelog.yaml"
-//
-// 	var rpmFileBuffer bytes.Buffer
-// 	err := Default.Package(info, &rpmFileBuffer)
-// 	require.NoError(t, err)
-//
-// 	rpm, err := rpmutils.ReadRpm(bytes.NewReader(rpmFileBuffer.Bytes()))
-// 	require.NoError(t, err)
-//
-// 	changelog, err := chglog.Parse(info.Changelog)
-// 	require.NoError(t, err)
-//
-// 	_times, err := rpm.Header.Get(tagChangelogTime)
-// 	require.NoError(t, err)
-// 	times, ok := _times.([]uint32)
-// 	require.True(t, ok)
-// 	require.Equal(t, len(changelog), len(times))
-//
-// 	_titles, err := rpm.Header.Get(tagChangelogName)
-// 	require.NoError(t, err)
-// 	titles, ok := _titles.([]string)
-// 	require.True(t, ok)
-// 	require.Equal(t, len(changelog), len(titles))
-//
-// 	_notes, err := rpm.Header.Get(tagChangelogText)
-// 	require.NoError(t, err)
-// 	allNotes, ok := _notes.([]string)
-// 	require.True(t, ok)
-// 	require.Equal(t, len(changelog), len(allNotes))
-//
-// 	for i, entry := range changelog {
-// 		timestamp := time.Unix(int64(times[i]), 0).UTC()
-// 		title := titles[i]
-// 		notes := strings.Split(allNotes[i], "\n")
-//
-// 		require.Equal(t, entry.Date, timestamp)
-// 		require.True(t, strings.Contains(title, entry.Packager))
-// 		require.True(t, strings.Contains(title, entry.Semver))
-// 		require.Equal(t, len(entry.Changes), len(notes))
-//
-// 		for j, change := range entry.Changes {
-// 			require.True(t, strings.Contains(notes[j], change.Note))
-// 		}
-// 	}
-// }
+func TestRPMChangelog(t *testing.T) {
+	info := exampleInfo()
+	info.Changelog = "../testdata/changelog.yaml"
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	require.NoError(t, err)
+
+	rpm, err := rpmutils.ReadRpm(bytes.NewReader(rpmFileBuffer.Bytes()))
+	require.NoError(t, err)
+
+	changelog, err := chglog.Parse(info.Changelog)
+	require.NoError(t, err)
+
+	_times, err := rpm.Header.Get(tagChangelogTime)
+	require.NoError(t, err)
+	times, ok := _times.([]uint32)
+	require.True(t, ok)
+	require.Equal(t, len(changelog), len(times))
+
+	_titles, err := rpm.Header.Get(tagChangelogName)
+	require.NoError(t, err)
+	titles, ok := _titles.([]string)
+	require.True(t, ok)
+	require.Equal(t, len(changelog), len(titles))
+
+	_notes, err := rpm.Header.Get(tagChangelogText)
+	require.NoError(t, err)
+	allNotes, ok := _notes.([]string)
+	require.True(t, ok)
+	require.Equal(t, len(changelog), len(allNotes))
+
+	for i, entry := range changelog {
+		timestamp := time.Unix(int64(times[i]), 0).UTC()
+		title := titles[i]
+		notes := strings.Split(allNotes[i], "\n")
+
+		require.Equal(t, entry.Date, timestamp)
+		require.True(t, strings.Contains(title, entry.Packager))
+		require.True(t, strings.Contains(title, entry.Semver))
+		require.Equal(t, len(entry.Changes), len(notes))
+
+		for j, change := range entry.Changes {
+			require.True(t, strings.Contains(notes[j], change.Note))
+		}
+	}
+}
 
 func TestRPMNoChangelogTagsWithoutChangelogConfigured(t *testing.T) {
 	info := exampleInfo()

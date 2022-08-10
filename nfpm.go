@@ -7,10 +7,10 @@ import (
 	"io"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/Masterminds/semver/v3"
+	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/imdario/mergo"
 	"gopkg.in/yaml.v3"
@@ -214,12 +214,32 @@ type Info struct {
 	Vendor          string `yaml:"vendor,omitempty" json:"vendor,omitempty" jsonschema:"title=package vendor,example=MyCorp"`
 	Homepage        string `yaml:"homepage,omitempty" json:"homepage,omitempty" jsonschema:"title=package homepage,example=https://example.com"`
 	License         string `yaml:"license,omitempty" json:"license,omitempty" jsonschema:"title=package license,example=MIT"`
+	Changelog       string `yaml:"changelog,omitempty" json:"changelog,omitempty" jsonschema:"title=package changelog,example=changelog.yaml,description=see https://github.com/goreleaser/chglog for more details"`
 	DisableGlobbing bool   `yaml:"disable_globbing,omitempty" json:"disable_globbing,omitempty" jsonschema:"title=wether to disable file globbing,default=false"`
 	Target          string `yaml:"-" json:"-"`
 }
 
 func (i *Info) Validate() error {
 	return Validate(i)
+}
+
+// GetChangeLog parses the provided changelog file.
+func (i *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
+	// if the file does not exist chglog.Parse will just silently
+	// create an empty changelog but we should notify the user instead
+	if _, err = os.Stat(i.Changelog); os.IsNotExist(err) {
+		return nil, err
+	}
+
+	entries, err := chglog.Parse(i.Changelog)
+	if err != nil {
+		return nil, err
+	}
+
+	return &chglog.PackageChangeLog{
+		Name:    i.Name,
+		Entries: entries,
+	}, nil
 }
 
 func (i *Info) parseSemver() {
@@ -261,13 +281,6 @@ type RPM struct {
 	Compression string       `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=lzma,enum=xz,default=gzip:-1"`
 	Signature   RPMSignature `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=rpm signature"`
 	Packager    string       `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that actually packaged the software"`
-	Changelog   RPMChangelog `yaml:"changelog,omitempty" json:"changelog,omitempty" jsonschema:"title=rpm changelog config"`
-}
-
-type RPMChangelog struct {
-	Changes []string
-	Titles  []string
-	Times   []time.Time
 }
 
 // RPMScripts represents scripts only available on RPM packages.
@@ -313,7 +326,6 @@ type Deb struct {
 	Signature   DebSignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=signature"`
 	Compression string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
 	Fields      map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
-	Changelog   string            `yaml:"changelog" json:"changelog" jsonschema:"title=path to the changelog file"`
 }
 
 type DebSignature struct {
