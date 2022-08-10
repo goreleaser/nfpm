@@ -3,7 +3,6 @@
 package rpm
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/rpmpack"
-	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
@@ -124,7 +122,7 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 		return err
 	}
 
-	if info.Changelog != "" {
+	if len(info.RPM.Changelog.Changes) > 0 {
 		if err = addChangeLog(info, rpm); err != nil {
 			return err
 		}
@@ -138,41 +136,14 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 }
 
 func addChangeLog(info *nfpm.Info, rpm *rpmpack.RPM) error {
-	changelog, err := info.GetChangeLog()
-	if err != nil {
-		return fmt.Errorf("reading changelog: %w", err)
-	}
-
-	if len(changelog.Entries) == 0 {
-		// no nothing because creating empty tags
-		// would result in an invalid package
-		return nil
-	}
-
-	tpl, err := chglog.LoadTemplateData(changelogNotesTemplate)
-	if err != nil {
-		return fmt.Errorf("parsing RPM changelog template: %w", err)
-	}
-
-	changes := make([]string, len(changelog.Entries))
-	titles := make([]string, len(changelog.Entries))
-	times := make([]uint32, len(changelog.Entries))
-	for idx, entry := range changelog.Entries {
-		var formattedNotes bytes.Buffer
-
-		err := tpl.Execute(&formattedNotes, entry)
-		if err != nil {
-			return fmt.Errorf("formatting changelog notes: %w", err)
-		}
-
-		changes[idx] = strings.TrimSpace(formattedNotes.String())
-		times[idx] = uint32(entry.Date.Unix())
-		titles[idx] = fmt.Sprintf("%s - %s", entry.Packager, entry.Semver)
+	times := make([]uint32, len(info.RPM.Changelog.Times))
+	for idx, entry := range info.RPM.Changelog.Times {
+		times[idx] = uint32(entry.Unix())
 	}
 
 	rpm.AddCustomTag(tagChangelogTime, rpmpack.EntryUint32(times))
-	rpm.AddCustomTag(tagChangelogName, rpmpack.EntryStringSlice(titles))
-	rpm.AddCustomTag(tagChangelogText, rpmpack.EntryStringSlice(changes))
+	rpm.AddCustomTag(tagChangelogName, rpmpack.EntryStringSlice(info.RPM.Changelog.Titles))
+	rpm.AddCustomTag(tagChangelogText, rpmpack.EntryStringSlice(info.RPM.Changelog.Changes))
 
 	return nil
 }
