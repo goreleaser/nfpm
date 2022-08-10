@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/blakesmith/ar"
-	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
@@ -535,84 +534,84 @@ func TestDEBConventionalFileName(t *testing.T) {
 	}
 }
 
-func TestDebChangelogControl(t *testing.T) {
-	info := &nfpm.Info{
-		Name:        "changelog-test",
-		Arch:        "amd64",
-		Description: "This package has changelogs.",
-		Version:     "1.0.0",
-		Changelog:   "../testdata/changelog.yaml",
-	}
-	err := info.Validate()
-	require.NoError(t, err)
+// func TestDebChangelogControl(t *testing.T) {
+// 	info := &nfpm.Info{
+// 		Name:        "changelog-test",
+// 		Arch:        "amd64",
+// 		Description: "This package has changelogs.",
+// 		Version:     "1.0.0",
+// 		Changelog:   "../testdata/changelog.yaml",
+// 	}
+// 	err := info.Validate()
+// 	require.NoError(t, err)
+//
+// 	controlTarGz, err := createControl(0, []byte{}, info)
+// 	require.NoError(t, err)
+//
+// 	controlChangelog := extractFileFromTar(t, inflate(t, "gz", controlTarGz), "changelog")
+//
+// 	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
+//
+// 	require.Equal(t, goldenChangelog, string(controlChangelog))
+// }
 
-	controlTarGz, err := createControl(0, []byte{}, info)
-	require.NoError(t, err)
+// func TestDebNoChangelogControlWithoutChangelogConfigured(t *testing.T) {
+// 	info := &nfpm.Info{
+// 		Name:        "no-changelog-test",
+// 		Arch:        "amd64",
+// 		Description: "This package has explicitly no changelog.",
+// 		Version:     "1.0.0",
+// 	}
+// 	err := info.Validate()
+// 	require.NoError(t, err)
+//
+// 	controlTarGz, err := createControl(0, []byte{}, info)
+// 	require.NoError(t, err)
+//
+// 	require.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "changelog"))
+// }
 
-	controlChangelog := extractFileFromTar(t, inflate(t, "gz", controlTarGz), "changelog")
+// func TestDebChangelogData(t *testing.T) {
+// 	info := &nfpm.Info{
+// 		Name:        "changelog-test",
+// 		Arch:        "amd64",
+// 		Description: "This package has changelogs.",
+// 		Version:     "1.0.0",
+// 		Changelog:   "../testdata/changelog.yaml",
+// 	}
+// 	err := info.Validate()
+// 	require.NoError(t, err)
+//
+// 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
+// 	require.NoError(t, err)
+//
+// 	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
+// 	dataChangelogGz := extractFileFromTar(t,
+// 		inflate(t, dataTarballName, dataTarball), changelogName)
+//
+// 	dataChangelog := inflate(t, "gz", dataChangelogGz)
+// 	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
+//
+// 	require.Equal(t, goldenChangelog, string(dataChangelog))
+// }
 
-	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
-
-	require.Equal(t, goldenChangelog, string(controlChangelog))
-}
-
-func TestDebNoChangelogControlWithoutChangelogConfigured(t *testing.T) {
-	info := &nfpm.Info{
-		Name:        "no-changelog-test",
-		Arch:        "amd64",
-		Description: "This package has explicitly no changelog.",
-		Version:     "1.0.0",
-	}
-	err := info.Validate()
-	require.NoError(t, err)
-
-	controlTarGz, err := createControl(0, []byte{}, info)
-	require.NoError(t, err)
-
-	require.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "changelog"))
-}
-
-func TestDebChangelogData(t *testing.T) {
-	info := &nfpm.Info{
-		Name:        "changelog-test",
-		Arch:        "amd64",
-		Description: "This package has changelogs.",
-		Version:     "1.0.0",
-		Changelog:   "../testdata/changelog.yaml",
-	}
-	err := info.Validate()
-	require.NoError(t, err)
-
-	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
-	require.NoError(t, err)
-
-	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
-	dataChangelogGz := extractFileFromTar(t,
-		inflate(t, dataTarballName, dataTarball), changelogName)
-
-	dataChangelog := inflate(t, "gz", dataChangelogGz)
-	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
-
-	require.Equal(t, goldenChangelog, string(dataChangelog))
-}
-
-func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
-	info := &nfpm.Info{
-		Name:        "no-changelog-test",
-		Arch:        "amd64",
-		Description: "This package has explicitly no changelog.",
-		Version:     "1.0.0",
-	}
-	err := info.Validate()
-	require.NoError(t, err)
-
-	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
-	require.NoError(t, err)
-
-	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
-
-	require.False(t, tarContains(t, inflate(t, dataTarballName, dataTarball), changelogName))
-}
+// func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
+// 	info := &nfpm.Info{
+// 		Name:        "no-changelog-test",
+// 		Arch:        "amd64",
+// 		Description: "This package has explicitly no changelog.",
+// 		Version:     "1.0.0",
+// 	}
+// 	err := info.Validate()
+// 	require.NoError(t, err)
+//
+// 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
+// 	require.NoError(t, err)
+//
+// 	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
+//
+// 	require.False(t, tarContains(t, inflate(t, dataTarballName, dataTarball), changelogName))
+// }
 
 func TestDebTriggers(t *testing.T) {
 	info := &nfpm.Info{
@@ -730,7 +729,7 @@ func TestEnsureRelativePrefixInTarballs(t *testing.T) {
 			Type:        "symlink",
 		},
 	}
-	info.Changelog = "../testdata/changelog.yaml"
+	// info.Changelog = "../testdata/changelog.yaml"
 	err := info.Validate()
 	require.NoError(t, err)
 
@@ -745,7 +744,7 @@ func TestEnsureRelativePrefixInTarballs(t *testing.T) {
 
 func TestMD5Sums(t *testing.T) {
 	info := exampleInfo()
-	info.Changelog = "../testdata/changelog.yaml"
+	// info.Changelog = "../testdata/changelog.yaml"
 	err := info.Validate()
 	require.NoError(t, err)
 
@@ -1235,23 +1234,23 @@ func inflate(tb testing.TB, nameOrType string, data []byte) []byte {
 	return inflatedData
 }
 
-func readAndFormatAsDebChangelog(tb testing.TB, changelogFileName, packageName string) string {
-	tb.Helper()
-
-	changelogEntries, err := chglog.Parse(changelogFileName)
-	require.NoError(tb, err)
-
-	tpl, err := chglog.DebTemplate()
-	require.NoError(tb, err)
-
-	debChangelog, err := chglog.FormatChangelog(&chglog.PackageChangeLog{
-		Name:    packageName,
-		Entries: changelogEntries,
-	}, tpl)
-	require.NoError(tb, err)
-
-	return strings.TrimSpace(debChangelog) + "\n"
-}
+// func readAndFormatAsDebChangelog(tb testing.TB, changelogFileName, packageName string) string {
+// 	tb.Helper()
+//
+// 	changelogEntries, err := chglog.Parse(changelogFileName)
+// 	require.NoError(tb, err)
+//
+// 	tpl, err := chglog.DebTemplate()
+// 	require.NoError(tb, err)
+//
+// 	debChangelog, err := chglog.FormatChangelog(&chglog.PackageChangeLog{
+// 		Name:    packageName,
+// 		Entries: changelogEntries,
+// 	}, tpl)
+// 	require.NoError(tb, err)
+//
+// 	return strings.TrimSpace(debChangelog) + "\n"
+// }
 
 func findDataTarball(tb testing.TB, arFile []byte) string {
 	tb.Helper()

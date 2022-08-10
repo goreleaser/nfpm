@@ -66,7 +66,6 @@ description: |
 vendor: "FooBarCorp"
 homepage: "http://example.com"
 license: "MIT"
-changelog: "changelog.yaml"
 contents:
 - src: ./foo
   dst: /usr/local/bin/foo
