@@ -1,5 +1,5 @@
 {
-		"$schema": "http://json-schema.org/draft/2020-12/schema",
+		"$schema": "https://json-schema.org/draft/2020-12/schema",
 		"$id": "https://github.com/goreleaser/nfpm/v2/config",
 		"$ref": "#/$defs/Config",
 		"$defs": {
