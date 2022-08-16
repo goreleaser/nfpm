@@ -5,12 +5,12 @@ go 1.18
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/ProtonMail/go-crypto v0.0.0-20220113124808-70ae35bab23f // required otherwise things go awry on signed rpms
+	github.com/ProtonMail/go-crypto v0.0.0-20210512092938-c05353c2d58c // DO NOT UPDATE THIS!!
 	github.com/ProtonMail/gopenpgp/v2 v2.2.2
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
 	github.com/google/rpmpack v0.0.0-20220314092521-38642b5e571e
-	github.com/goreleaser/chglog v0.2.1
+	github.com/goreleaser/chglog v0.2.2
 	github.com/goreleaser/fileglob v1.3.0
 	github.com/imdario/mergo v0.3.13
 	github.com/invopop/jsonschema v0.6.0
@@ -21,7 +21,6 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/ulikunitz/xz v0.5.10
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect; required otherwise things go awry on signed rpms
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -61,6 +60,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
