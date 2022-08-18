@@ -306,10 +306,7 @@
 					}
 				},
 				"additionalProperties": false,
-				"type": "object",
-				"required": [
-					"group"
-				]
+				"type": "object"
 			},
 			"Contents": {
 				"items": {
