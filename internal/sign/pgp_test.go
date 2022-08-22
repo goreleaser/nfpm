@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -140,11 +140,11 @@ func TestReadKey(t *testing.T) {
 }
 
 func TestIsASCII(t *testing.T) {
-	data, err := ioutil.ReadFile("testdata/privkey.asc")
+	data, err := os.ReadFile("testdata/privkey.asc")
 	require.NoError(t, err)
 	require.True(t, isASCII(data))
 
-	data, err = ioutil.ReadFile("testdata/privkey.gpg")
+	data, err = os.ReadFile("testdata/privkey.gpg")
 	require.NoError(t, err)
 	require.False(t, isASCII(data))
 }

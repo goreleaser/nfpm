@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"unicode"
 
@@ -117,7 +117,7 @@ func PGPClearSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKey
 // identity is not explicitly checked, other that the obvious fact that the signer's key must
 // be in the armoredPubKeyFile.
 func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) error {
-	keyFileContent, err := ioutil.ReadFile(armoredPubKeyFile)
+	keyFileContent, err := os.ReadFile(armoredPubKeyFile)
 	if err != nil {
 		return fmt.Errorf("reading armored public key file: %w", err)
 	}
@@ -146,7 +146,7 @@ func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) er
 }
 
 func PGPReadMessage(message []byte, armoredPubKeyFile string) error {
-	keyFileContent, err := ioutil.ReadFile(armoredPubKeyFile)
+	keyFileContent, err := os.ReadFile(armoredPubKeyFile)
 	if err != nil {
 		return fmt.Errorf("reading armored public key file: %w", err)
 	}
@@ -190,7 +190,7 @@ var (
 )
 
 func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
-	fileContent, err := ioutil.ReadFile(keyFile)
+	fileContent, err := os.ReadFile(keyFile)
 	if err != nil {
 		return nil, fmt.Errorf("reading PGP key file: %w", err)
 	}

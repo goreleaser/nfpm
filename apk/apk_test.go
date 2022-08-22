@@ -10,7 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"testing"
@@ -165,7 +165,7 @@ func TestDefaultWithArch(t *testing.T) {
 }
 
 func TestNoInfo(t *testing.T) {
-	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
+	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), io.Discard)
 	require.Error(t, err)
 }
 
@@ -200,7 +200,7 @@ func TestFileDoesNotExist(t *testing.T) {
 				},
 			},
 		}),
-		ioutil.Discard,
+		io.Discard,
 	)
 	require.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
@@ -223,7 +223,7 @@ func TestNoFiles(t *testing.T) {
 				},
 			},
 		}),
-		ioutil.Discard,
+		io.Discard,
 	)
 	require.NoError(t, err)
 }
@@ -242,9 +242,9 @@ func TestCreateBuilderControl(t *testing.T) {
 	control := string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
 	golden := "testdata/TestCreateBuilderControl.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
+		require.NoError(t, os.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), control)
 }
@@ -274,9 +274,9 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 	control := string(extractFromTar(t, w.Bytes(), ".PKGINFO"))
 	golden := "testdata/TestCreateBuilderControlScripts.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
+		require.NoError(t, os.WriteFile(golden, []byte(control), 0o655)) // nolint: gosec
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), control)
 
@@ -303,9 +303,9 @@ func TestControl(t *testing.T) {
 	}))
 	golden := "testdata/TestControl.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o655)) // nolint: gosec
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o655)) // nolint: gosec
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
 }
@@ -328,7 +328,7 @@ func TestSignature(t *testing.T) {
 	err = sign.RSAVerifySHA1Digest(digest, signature, "../internal/sign/testdata/rsa.pub")
 	require.NoError(t, err)
 
-	err = Default.Package(info, ioutil.Discard)
+	err = Default.Package(info, io.Discard)
 	require.NoError(t, err)
 }
 
@@ -377,11 +377,11 @@ func TestDisableGlobbing(t *testing.T) {
 
 	gzr, err := gzip.NewReader(&dataTarGz)
 	require.NoError(t, err)
-	dataTar, err := ioutil.ReadAll(gzr)
+	dataTar, err := io.ReadAll(gzr)
 	require.NoError(t, err)
 
 	extractedContent := extractFromTar(t, dataTar, "test/{file}[")
-	actualContent, err := ioutil.ReadFile("../testdata/{file}[")
+	actualContent, err := os.ReadFile("../testdata/{file}[")
 	require.NoError(t, err)
 	require.Equal(t, actualContent, extractedContent)
 }
@@ -402,7 +402,7 @@ func extractFromTar(t *testing.T, tarFile []byte, fileName string) []byte {
 			continue
 		}
 
-		data, err := ioutil.ReadAll(tr)
+		data, err := io.ReadAll(tr)
 		require.NoError(t, err)
 		return data
 	}
@@ -484,7 +484,7 @@ func TestPackageSymlinks(t *testing.T) {
 			Type:        "symlink",
 		},
 	}
-	require.NoError(t, Default.Package(info, ioutil.Discard))
+	require.NoError(t, Default.Package(info, io.Discard))
 }
 
 func TestDirectories(t *testing.T) {

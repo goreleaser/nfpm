@@ -10,7 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -92,7 +92,7 @@ func TestDeb(t *testing.T) {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
-			err := Default.Package(info, ioutil.Discard)
+			err := Default.Package(info, io.Discard)
 			require.NoError(t, err)
 		})
 	}
@@ -110,7 +110,7 @@ func extractDebVersion(deb *bytes.Buffer) string {
 func TestDebVersionWithDash(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0-beta"
-	err := Default.Package(info, ioutil.Discard)
+	err := Default.Package(info, io.Discard)
 	require.NoError(t, err)
 }
 
@@ -199,9 +199,9 @@ func TestControl(t *testing.T) {
 	}))
 	golden := "testdata/control.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o600))
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
 }
@@ -219,9 +219,9 @@ func TestSpecialFiles(t *testing.T) {
 	mode, err := strconv.ParseInt("0644", 8, 64)
 	require.NoError(t, err)
 	require.Equal(t, int64(header.FileInfo().Mode()), mode)
-	data, err := ioutil.ReadAll(in)
+	data, err := io.ReadAll(in)
 	require.NoError(t, err)
-	org, err := ioutil.ReadFile(filePath)
+	org, err := os.ReadFile(filePath)
 	require.NoError(t, err)
 	require.Equal(t, data, org)
 }
@@ -253,9 +253,9 @@ func TestNoJoinsControl(t *testing.T) {
 	}))
 	golden := "testdata/control2.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o600))
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
 }
@@ -288,9 +288,9 @@ func TestVersionControl(t *testing.T) {
 	}))
 	golden := "testdata/control4.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o600))
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
 }
@@ -326,7 +326,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 				},
 			},
 		}),
-		ioutil.Discard,
+		io.Discard,
 	)
 	require.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
@@ -349,13 +349,13 @@ func TestDebNoFiles(t *testing.T) {
 				},
 			},
 		}),
-		ioutil.Discard,
+		io.Discard,
 	)
 	require.NoError(t, err)
 }
 
 func TestDebNoInfo(t *testing.T) {
-	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), ioutil.Discard)
+	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), io.Discard)
 	require.Error(t, err)
 }
 
@@ -411,9 +411,9 @@ func TestMinimalFields(t *testing.T) {
 	}))
 	golden := "testdata/minimal.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o600))
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
 }
@@ -433,9 +433,9 @@ func TestDebEpoch(t *testing.T) {
 	}))
 	golden := "testdata/withepoch.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o600))
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
 }
@@ -462,9 +462,9 @@ func TestDebRules(t *testing.T) {
 	}))
 	golden := "testdata/rules.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o600))
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
 }
@@ -483,9 +483,9 @@ func TestMultilineFields(t *testing.T) {
 	}))
 	golden := "testdata/multiline.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o600))
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
 }
@@ -990,7 +990,7 @@ func TestDisableGlobbing(t *testing.T) {
 	dataTarball, _, _, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
-	expectedContent, err := ioutil.ReadFile("../testdata/{file}[")
+	expectedContent, err := os.ReadFile("../testdata/{file}[")
 	require.NoError(t, err)
 
 	actualContent := extractFileFromTar(t, inflate(t, tarballName, dataTarball), "/test/{file}[")
@@ -1105,7 +1105,7 @@ func extractFileFromTar(tb testing.TB, tarFile []byte, filename string) []byte {
 			continue
 		}
 
-		fileContents, err := ioutil.ReadAll(tr)
+		fileContents, err := io.ReadAll(tr)
 		require.NoError(tb, err)
 
 		return fileContents
@@ -1226,7 +1226,7 @@ func inflate(tb testing.TB, nameOrType string, data []byte) []byte {
 		tb.Fatalf("invalid inflation type: %s", ext)
 	}
 
-	inflatedData, err := ioutil.ReadAll(inflateReadCloser)
+	inflatedData, err := io.ReadAll(inflateReadCloser)
 	require.NoError(tb, err)
 
 	err = inflateReadCloser.Close()
@@ -1289,7 +1289,7 @@ func extractFileFromAr(tb testing.TB, arFile []byte, filename string) []byte {
 			continue
 		}
 
-		fileContents, err := ioutil.ReadAll(tr)
+		fileContents, err := io.ReadAll(tr)
 		require.NoError(tb, err)
 
 		return fileContents
@@ -1357,9 +1357,9 @@ func TestFields(t *testing.T) {
 	}))
 	golden := "testdata/control3.golden"
 	if *update {
-		require.NoError(t, ioutil.WriteFile(golden, w.Bytes(), 0o600))
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o600))
 	}
-	bts, err := ioutil.ReadFile(golden) //nolint:gosec
+	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,7 +87,7 @@ func exampleInfo() *nfpm.Info {
 }
 
 func TestRPM(t *testing.T) {
-	f, err := ioutil.TempFile("", "test.rpm")
+	f, err := os.CreateTemp("", "test.rpm")
 	require.NoError(t, err)
 	require.NoError(t, Default.Package(exampleInfo(), f))
 
@@ -132,7 +131,7 @@ func TestRPM(t *testing.T) {
 }
 
 func TestRPMGroup(t *testing.T) {
-	f, err := ioutil.TempFile("", "test.rpm")
+	f, err := os.CreateTemp("", "test.rpm")
 	require.NoError(t, err)
 	info := exampleInfo()
 	info.RPM.Group = "Unspecified"
@@ -166,7 +165,7 @@ func TestRPMCompression(t *testing.T) {
 				compLevel = "lzma"
 			}
 			t.Run(compLevel, func(t *testing.T) {
-				f, err := ioutil.TempFile("", "test.rpm")
+				f, err := os.CreateTemp("", "test.rpm")
 				require.NoError(t, err)
 
 				info := exampleInfo()
@@ -196,7 +195,7 @@ func TestRPMCompression(t *testing.T) {
 }
 
 func TestRPMSummary(t *testing.T) {
-	f, err := ioutil.TempFile("", "test.rpm")
+	f, err := os.CreateTemp("", "test.rpm")
 	require.NoError(t, err)
 
 	customSummary := "This is my custom summary"
@@ -223,7 +222,7 @@ func TestRPMSummary(t *testing.T) {
 }
 
 func TestRPMPackager(t *testing.T) {
-	f, err := ioutil.TempFile("", "test.rpm")
+	f, err := os.CreateTemp("", "test.rpm")
 	require.NoError(t, err)
 
 	customPackager := "GoReleaser <staff@goreleaser.com>"
@@ -250,7 +249,7 @@ func TestRPMPackager(t *testing.T) {
 }
 
 func TestWithRPMTags(t *testing.T) {
-	f, err := ioutil.TempFile("", "test.rpm")
+	f, err := os.CreateTemp("", "test.rpm")
 	require.NoError(t, err)
 
 	info := exampleInfo()
@@ -379,7 +378,7 @@ func TestRPMVersionWithVersionMetadata(t *testing.T) {
 }
 
 func TestWithInvalidEpoch(t *testing.T) {
-	f, err := ioutil.TempFile("", "test.rpm")
+	f, err := os.CreateTemp("", "test.rpm")
 	defer func() {
 		_ = f.Close()
 		err = os.Remove(f.Name())
@@ -398,7 +397,7 @@ func TestWithInvalidEpoch(t *testing.T) {
 
 func TestRPMScripts(t *testing.T) {
 	info := exampleInfo()
-	f, err := ioutil.TempFile(".", fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))
+	f, err := os.CreateTemp(".", fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))
 	require.NoError(t, err)
 	err = Default.Package(info, f)
 	require.NoError(t, err)
@@ -473,7 +472,7 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 	}
 	abs, err := filepath.Abs("../testdata/whatever.confzzz")
 	require.NoError(t, err)
-	err = Default.Package(info, ioutil.Discard)
+	err = Default.Package(info, io.Discard)
 	require.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
@@ -521,7 +520,7 @@ func TestConfigNoReplace(t *testing.T) {
 	err := Default.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
-	expectedConfigContent, err := ioutil.ReadFile(buildConfigFile)
+	expectedConfigContent, err := os.ReadFile(buildConfigFile)
 	require.NoError(t, err)
 
 	packageConfigContent, err := extractFileFromRpm(rpmFileBuffer.Bytes(), packageConfigFile)
@@ -690,7 +689,7 @@ func TestRPMSignature(t *testing.T) {
 	info.RPM.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
 	info.RPM.Signature.KeyPassphrase = "hunter2"
 
-	pubkeyFileContent, err := ioutil.ReadFile("../internal/sign/testdata/pubkey.gpg")
+	pubkeyFileContent, err := os.ReadFile("../internal/sign/testdata/pubkey.gpg")
 	require.NoError(t, err)
 
 	keyring, err := openpgp.ReadKeyRing(bytes.NewReader(pubkeyFileContent))
@@ -779,7 +778,7 @@ func TestDisableGlobbing(t *testing.T) {
 	err := Default.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
-	expectedContent, err := ioutil.ReadFile("../testdata/{file}[")
+	expectedContent, err := os.ReadFile("../testdata/{file}[")
 	require.NoError(t, err)
 
 	actualContent, err := extractFileFromRpm(rpmFileBuffer.Bytes(), "/test/{file}[")
@@ -869,7 +868,7 @@ func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 			continue
 		}
 
-		fileContents, err := ioutil.ReadAll(pr)
+		fileContents, err := io.ReadAll(pr)
 		if err != nil {
 			return nil, err
 		}

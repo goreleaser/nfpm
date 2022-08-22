@@ -10,7 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 )
 
 var (
@@ -27,7 +27,7 @@ func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, e
 		return nil, errDigestNotSH1
 	}
 
-	keyFileContent, err := ioutil.ReadFile(keyFile)
+	keyFileContent, err := os.ReadFile(keyFile)
 	if err != nil {
 		return nil, fmt.Errorf("reading key file: %w", err)
 	}
@@ -83,7 +83,7 @@ func RSAVerifySHA1Digest(sha1Digest, signature []byte, publicKeyFile string) err
 		return errDigestNotSH1
 	}
 
-	keyFileContent, err := ioutil.ReadFile(publicKeyFile)
+	keyFileContent, err := os.ReadFile(publicKeyFile)
 	if err != nil {
 		return fmt.Errorf("reading key file: %w", err)
 	}

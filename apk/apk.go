@@ -36,7 +36,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"net/mail"
 	"os"
 	"path/filepath"
@@ -358,7 +357,7 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 	if err != nil {
 		return err
 	}
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -478,7 +477,7 @@ func createSymlinkInsideTarGz(file *files.Content, out *tar.Writer) error {
 }
 
 func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error {
-	contents, err := ioutil.ReadFile(file.Source)
+	contents, err := os.ReadFile(file.Source)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -279,14 +278,14 @@ func toRelation(items []string) (rpmpack.Relations, error) {
 
 func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	if info.RPM.Scripts.PreTrans != "" {
-		data, err := ioutil.ReadFile(info.RPM.Scripts.PreTrans)
+		data, err := os.ReadFile(info.RPM.Scripts.PreTrans)
 		if err != nil {
 			return err
 		}
 		rpm.AddPretrans(string(data))
 	}
 	if info.Scripts.PreInstall != "" {
-		data, err := ioutil.ReadFile(info.Scripts.PreInstall)
+		data, err := os.ReadFile(info.Scripts.PreInstall)
 		if err != nil {
 			return err
 		}
@@ -294,7 +293,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	}
 
 	if info.Scripts.PreRemove != "" {
-		data, err := ioutil.ReadFile(info.Scripts.PreRemove)
+		data, err := os.ReadFile(info.Scripts.PreRemove)
 		if err != nil {
 			return err
 		}
@@ -302,7 +301,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	}
 
 	if info.Scripts.PostInstall != "" {
-		data, err := ioutil.ReadFile(info.Scripts.PostInstall)
+		data, err := os.ReadFile(info.Scripts.PostInstall)
 		if err != nil {
 			return err
 		}
@@ -310,7 +309,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	}
 
 	if info.Scripts.PostRemove != "" {
-		data, err := ioutil.ReadFile(info.Scripts.PostRemove)
+		data, err := os.ReadFile(info.Scripts.PostRemove)
 		if err != nil {
 			return err
 		}
@@ -318,7 +317,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	}
 
 	if info.RPM.Scripts.PostTrans != "" {
-		data, err := ioutil.ReadFile(info.RPM.Scripts.PostTrans)
+		data, err := os.ReadFile(info.RPM.Scripts.PostTrans)
 		if err != nil {
 			return err
 		}
@@ -393,7 +392,7 @@ func asRPMSymlink(content *files.Content) *rpmpack.RPMFile {
 }
 
 func asRPMFile(content *files.Content, fileType rpmpack.FileType) (*rpmpack.RPMFile, error) {
-	data, err := ioutil.ReadFile(content.Source)
+	data, err := os.ReadFile(content.Source)
 	if err != nil && content.Type != "ghost" {
 		return nil, err
 	}
