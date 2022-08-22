@@ -12,7 +12,7 @@ jobs:
   unit-tests:
     strategy:
       matrix:
-        go-version: [ 1.18 ]
+        go-version: [ 1.19 ]
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -46,7 +46,7 @@ jobs:
   Acceptance-Tests:
     strategy:
       matrix:
-        go-version: [ 1.18 ]
+        go-version: [ 1.19 ]
         pkgFormat: [ deb, rpm, apk ]
         pkgPlatform: [ amd64, arm64, 386, ppc64le, armv6, armv7, s390x ]
     runs-on: ubuntu-latest
@@ -81,7 +81,7 @@ jobs:
   goreleaser:
     strategy:
       matrix:
-        go-version: [ 1.18 ]
+        go-version: [ 1.19 ]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     needs:
