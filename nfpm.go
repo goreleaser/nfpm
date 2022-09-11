@@ -270,6 +270,18 @@ type Overridables struct {
 	RPM        RPM            `yaml:"rpm,omitempty" json:"rpm,omitempty" jsonschema:"title=rpm-specific settings"`
 	Deb        Deb            `yaml:"deb,omitempty" json:"deb,omitempty" jsonschema:"title=deb-specific settings"`
 	APK        APK            `yaml:"apk,omitempty" json:"apk,omitempty" jsonschema:"title=apk-specific settings"`
+	ArchLinux  ArchLinux      `yaml:"archlinux,omitempty" json:"archlinux,omitempty" jsonschema:"title=archlinux-specific settings"`
+}
+
+type ArchLinux struct {
+	Arch     string           `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in archlinux nomenclature"`
+	Packager string           `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that packaged the software"`
+	Scripts  ArchLinuxScripts `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=archlinux-specific scripts"`
+}
+
+type ArchLinuxScripts struct {
+	PreUpgrade  string `yaml:"preupgrade,omitempty" json:"preupgrade,omitempty" jsonschema:"title=preupgrade script"`
+	PostUpgrade string `yaml:"postupgrade,omitempty" json:"postupgrade,omitempty" jsonschema:"title=postupgrade script"`
 }
 
 // RPM is custom configs that are only available on RPM packages.
