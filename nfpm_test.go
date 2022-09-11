@@ -271,7 +271,8 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("GIT_COMMITTER_NAME", packager)
 		os.Setenv("GIT_COMMITTER_EMAIL", maintainerEmail)
-		info, err := nfpm.Parse(strings.NewReader(`name: foo
+		info, err := nfpm.Parse(strings.NewReader(`
+name: foo
 maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 `))
 		require.NoError(t, err)
