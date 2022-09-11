@@ -490,7 +490,7 @@ func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
 		return 0, err
 	}
 
-	if _, err = out.Write([]byte(changelogContent)); err != nil {
+	if _, err = io.WriteString(out, changelogContent); err != nil {
 		return 0, err
 	}
 

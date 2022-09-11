@@ -3,6 +3,7 @@ package nfpm_test
 import (
 	"fmt"
 	"io"
+	"net/mail"
 	"os"
 	"reflect"
 	"strings"
@@ -270,9 +271,15 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("GIT_COMMITTER_NAME", packager)
 		os.Setenv("GIT_COMMITTER_EMAIL", maintainerEmail)
-		info, err := nfpm.Parse(strings.NewReader("name: foo\nmaintainer: $GIT_COMMITTER_NAME <$GIT_COMMITTER_EMAIL>"))
+		info, err := nfpm.Parse(strings.NewReader(`name: foo
+maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
+`))
 		require.NoError(t, err)
-		require.Equal(t, fmt.Sprintf("%s <%s>", packager, maintainerEmail), info.Maintainer)
+		addr := mail.Address{
+			Name:    packager,
+			Address: maintainerEmail,
+		}
+		require.Equal(t, addr.String(), info.Maintainer)
 	})
 
 	t.Run("vendor", func(t *testing.T) {
