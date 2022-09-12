@@ -213,6 +213,10 @@ overrides:
     # ...
   apk:
     # ...
+  archlinux:
+    depends:
+      - baz
+      - some-lib
 
 # Custom configuration applied only to the RPM packager.
 rpm:
@@ -329,6 +333,24 @@ apk:
     key_name: origin
     # APK does not use pgp keys, so the key_id field is ignored.
     key_id: ignored
+
+archlinux:
+  # This value is used to specify the name used to refer to a group
+  # of packages when building a split package. Defaults to name
+  # See: https://wiki.archlinux.org/title/PKGBUILD#pkgbase
+  pkgbase: bar
+  # The packager identifies the organization packaging the software
+  # rather than the developer. Defaults to "Unknown Packager".
+  packager: GoReleaser <staff@goreleaser.com>
+
+  # Arch Linux specific scripts.
+  scripts:
+    # The preupdate script runs before pacman updates the package
+    preupdate: ./scripts/preupdate.sh
+    # The postupdate script runs after pacman updates the package
+    postupdate: ./scripts/postupdate.sh
+
+
 ```
 
 ## Templating
