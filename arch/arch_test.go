@@ -15,7 +15,7 @@ import (
 
 func exampleInfo() *nfpm.Info {
 	return nfpm.WithDefaults(&nfpm.Info{
-		Name:        "foo",
+		Name:        "foo-test",
 		Arch:        "amd64",
 		Description: "Foo does things",
 		Priority:    "extra",
@@ -55,6 +55,11 @@ func exampleInfo() *nfpm.Info {
 				{
 					Destination: "/usr/share/whatever",
 					Type:        "dir",
+				},
+				{
+					Source:      "/etc/fake/fake.conf",
+					Destination: "/etc/fake/fake-link.conf",
+					Type:        "symlink",
 				},
 			},
 			Scripts: nfpm.Scripts{
@@ -102,8 +107,8 @@ func TestArchPkginfo(t *testing.T) {
 	require.NoError(t, err)
 
 	fields := extractPkginfoFields(pkginfoData)
-	require.Equal(t, "foo", fields["pkgname"])
-	require.Equal(t, "foo", fields["pkgbase"])
+	require.Equal(t, "foo-test", fields["pkgname"])
+	require.Equal(t, "foo-test", fields["pkgbase"])
 	require.Equal(t, "1.0.0-1", fields["pkgver"])
 	require.Equal(t, "Foo does things", fields["pkgdesc"])
 	require.Equal(t, "http://carlosbecker.com", fields["url"])
