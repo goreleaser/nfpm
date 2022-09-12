@@ -3,8 +3,10 @@
 package nfpm
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"sync"
 
@@ -227,7 +229,7 @@ func (i *Info) Validate() error {
 func (i *Info) GetChangeLog() (log *chglog.PackageChangeLog, err error) {
 	// if the file does not exist chglog.Parse will just silently
 	// create an empty changelog but we should notify the user instead
-	if _, err = os.Stat(i.Changelog); os.IsNotExist(err) {
+	if _, err = os.Stat(i.Changelog); errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
 

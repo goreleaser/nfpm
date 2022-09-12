@@ -170,11 +170,7 @@ func writeFile(tw *tar.Writer, header *tar.Header, file io.Reader) error {
 	}
 
 	_, err = io.Copy(tw, file)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 type tarKind int
