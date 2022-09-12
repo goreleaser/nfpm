@@ -21,9 +21,7 @@ import (
 	"github.com/klauspost/pgzip"
 )
 
-var (
-	ErrInvalidPkgName = errors.New("archlinux: package names may only contain alphanumeric characters or one of ., _, +, or -, and may not start with hyphen or dot")
-)
+var ErrInvalidPkgName = errors.New("archlinux: package names may only contain alphanumeric characters or one of ., _, +, or -, and may not start with hyphen or dot")
 
 const packagerName = "archlinux"
 
@@ -203,7 +201,7 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 				LinkSource:  content.Source,
 				Destination: path,
 				Time:        modtime.Unix(),
-				Mode:        0777,
+				Mode:        0o777,
 				Type:        content.Type,
 			})
 		default:
@@ -273,7 +271,7 @@ func createDirs(dst string, tw *tar.Writer, created map[string]struct{}) error {
 
 		err := tw.WriteHeader(&tar.Header{
 			Name:     path,
-			Mode:     0755,
+			Mode:     0o755,
 			Typeflag: tar.TypeDir,
 			ModTime:  time.Now(),
 			Uname:    "root",
@@ -401,7 +399,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 
 	err = tw.WriteHeader(&tar.Header{
 		Typeflag: tar.TypeReg,
-		Mode:     0644,
+		Mode:     0o644,
 		Name:     ".PKGINFO",
 		Size:     int64(size),
 		ModTime:  time.Now(),
@@ -424,7 +422,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	return &MtreeEntry{
 		Destination: ".PKGINFO",
 		Time:        time.Now().Unix(),
-		Mode:        0644,
+		Mode:        0o644,
 		Size:        int64(size),
 		Type:        "file",
 		MD5:         md5Hash.Sum(nil),
@@ -549,7 +547,7 @@ func createMtree(info *nfpm.Info, tw *tar.Writer, entries []MtreeEntry) error {
 
 	err = tw.WriteHeader(&tar.Header{
 		Typeflag: tar.TypeReg,
-		Mode:     0644,
+		Mode:     0o644,
 		Name:     ".MTREE",
 		Size:     int64(buf.Len()),
 		ModTime:  time.Now(),
@@ -582,7 +580,7 @@ func createDirsMtree(dst string, created map[string]struct{}) []MtreeEntry {
 		out = append(out, MtreeEntry{
 			Destination: path,
 			Time:        time.Now().Unix(),
-			Mode:        0755,
+			Mode:        0o755,
 			Type:        "dir",
 		})
 
@@ -631,7 +629,7 @@ func createScripts(info *nfpm.Info, tw *tar.Writer) error {
 
 	err = tw.WriteHeader(&tar.Header{
 		Typeflag: tar.TypeReg,
-		Mode:     0644,
+		Mode:     0o644,
 		Name:     ".INSTALL",
 		Size:     int64(buf.Len()),
 		ModTime:  time.Now(),

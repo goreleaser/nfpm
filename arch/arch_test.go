@@ -228,7 +228,7 @@ func TestArchMtree(t *testing.T) {
 		{
 			Destination: "/3",
 			Time:        12345,
-			Mode:        0644,
+			Mode:        0o644,
 			Size:        100,
 			Type:        "file",
 			MD5:         []byte{0xAB, 0xCD},
@@ -238,7 +238,7 @@ func TestArchMtree(t *testing.T) {
 			LinkSource:  "/bin/bash",
 			Destination: "/sh",
 			Time:        123456,
-			Mode:        0777,
+			Mode:        0o777,
 			Type:        "symlink",
 		},
 	})

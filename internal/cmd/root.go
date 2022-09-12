@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	_ "github.com/goreleaser/nfpm/v2/apk"
+	_ "github.com/goreleaser/nfpm/v2/arch"
 	_ "github.com/goreleaser/nfpm/v2/deb"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
-	_ "github.com/goreleaser/nfpm/v2/arch"
 	"github.com/spf13/cobra"
 )
 
