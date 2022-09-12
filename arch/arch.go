@@ -349,6 +349,13 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		return nil, err
 	}
 
+	for _, replaces := range info.Replaces {
+		err = writeKVPair(buf, "replaces", replaces)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	for _, conflict := range info.Conflicts {
 		err = writeKVPair(buf, "conflict", conflict)
 		if err != nil {
