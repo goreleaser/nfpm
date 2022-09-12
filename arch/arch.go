@@ -1,3 +1,4 @@
+// Package arch implements nfpm.Packager providing bindings for Arch Linux packages.
 package arch
 
 import (
@@ -78,16 +79,19 @@ func (ArchLinux) ConventionalFileName(info *nfpm.Info) string {
 	return validPkgName(name)
 }
 
+// validPkgName remoces any invalid characters from a string
 func validPkgName(s string) string {
 	s = strings.Map(mapValidChar, s)
 	s = strings.TrimLeft(s, "-.")
 	return s
 }
 
+// nameIsValid checks whether a package name is valid
 func nameIsValid(s string) bool {
 	return s != "" && s == validPkgName(s)
 }
 
+// mapValidChar returns r if it is allowed, otherwise, returns -1
 func mapValidChar(r rune) rune {
 	if r >= 'a' && r <= 'z' ||
 		r >= 'A' && r <= 'Z' ||
@@ -98,6 +102,7 @@ func mapValidChar(r rune) rune {
 	return -1
 }
 
+// isOneOf checks whether a rune is one of the runes on rr
 func isOneOf(r rune, rr ...rune) bool {
 	for _, char := range rr {
 		if r == char {
@@ -107,6 +112,7 @@ func isOneOf(r rune, rr ...rune) bool {
 	return false
 }
 
+// Package writes a new archlinux package to the given writer using the given info.
 func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 	if !nameIsValid(info.Name) {
 		return ErrInvalidPkgName
@@ -147,6 +153,7 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 	return nil
 }
 
+// createFilesInTar adds the files described in the given info to the given tar writer
 func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, error) {
 	created := map[string]struct{}{}
 	var entries []MtreeEntry
@@ -177,6 +184,7 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 			}
 
 			modtime := time.Now()
+			// If the time is given, use it
 			if content.FileInfo != nil && !content.ModTime().IsZero() {
 				modtime = content.ModTime()
 			}
@@ -313,7 +321,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	if !nameIsValid(info.Name) {
 		return nil, ErrInvalidPkgName
 	}
-	
+
 	buf := &bytes.Buffer{}
 
 	info = ensureValidArch(info)
