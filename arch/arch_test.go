@@ -167,6 +167,8 @@ func TestArchOverrideArchitecture(t *testing.T) {
 }
 
 func makeTestPkginfo(t *testing.T, info *nfpm.Info) ([]byte, error) {
+	t.Helper()
+
 	buf := &bytes.Buffer{}
 	tw := tar.NewWriter(buf)
 
@@ -178,7 +180,8 @@ func makeTestPkginfo(t *testing.T, info *nfpm.Info) ([]byte, error) {
 	tw.Close()
 
 	tr := tar.NewReader(buf)
-	tr.Next()
+	_, err = tr.Next()
+	require.NoError(t, err)
 
 	pkginfoData := make([]byte, entry.Size)
 	_, err = io.ReadFull(tr, pkginfoData)
@@ -247,7 +250,8 @@ func TestArchMtree(t *testing.T) {
 	tw.Close()
 
 	tr := tar.NewReader(buf)
-	tr.Next()
+	_, err = tr.Next()
+	require.NoError(t, err)
 
 	gr, err := pgzip.NewReader(tr)
 	require.NoError(t, err)
