@@ -143,12 +143,7 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
-	err = createScripts(info, tw)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return createScripts(info, tw)
 }
 
 // createFilesInTar adds the files described in the given info to the given tar writer
@@ -464,11 +459,7 @@ func writeKVPair(w io.Writer, key, value string) error {
 	}
 
 	_, err = io.WriteString(w, "\n")
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 type MtreeEntry struct {
@@ -560,11 +551,7 @@ func createMtree(info *nfpm.Info, tw *tar.Writer, entries []MtreeEntry) error {
 	}
 
 	_, err = io.Copy(tw, buf)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func createDirsMtree(dst string, created map[string]struct{}) []MtreeEntry {
