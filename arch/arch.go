@@ -85,7 +85,7 @@ func validPkgName(s string) string {
 }
 
 func nameIsValid(s string) bool {
-	return s == validPkgName(s)
+	return s != "" && s == validPkgName(s)
 }
 
 func mapValidChar(r rune) rune {
