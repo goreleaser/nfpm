@@ -151,14 +151,9 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 				return nil, 0, err
 			}
 
-			srcFi, err := os.Stat(content.Destination)
-			if err != nil {
-				return nil, 0, err
-			}
-
 			entries = append(entries, MtreeEntry{
 				Destination: path,
-				Time:        srcFi.ModTime().Unix(),
+				Time:        time.Now().Unix(),
 				Type:        content.Type,
 			})
 		case "symlink":
