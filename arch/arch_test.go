@@ -140,6 +140,15 @@ func TestArchPkginfo(t *testing.T) {
 	require.Equal(t, "etc/fake/fake.conf", fields["backup"])
 }
 
+func TestArchPkgbase(t *testing.T) {
+	info := exampleInfo()
+	info.ArchLinux.Pkgbase = "foo"
+	pkginfoData, err := makeTestPkginfo(t, info)
+	require.NoError(t, err)
+	fields := extractPkginfoFields(pkginfoData)
+	require.Equal(t, "foo", fields["pkgbase"])
+}
+
 func TestArchInvalidName(t *testing.T) {
 	info := exampleInfo()
 	info.Name = "#"

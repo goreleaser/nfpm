@@ -274,6 +274,7 @@ type Overridables struct {
 }
 
 type ArchLinux struct {
+	Pkgbase  string           `yaml:"pkgbase,omitempty" json:"pkgbase,omitempty" jsonschema:"title=explicitly specify the name used to refer to a split package, defaults to name"`
 	Arch     string           `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in archlinux nomenclature"`
 	Packager string           `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that packaged the software"`
 	Scripts  ArchLinuxScripts `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=archlinux-specific scripts"`

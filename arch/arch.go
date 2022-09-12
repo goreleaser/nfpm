@@ -345,7 +345,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	err = writeKVPairs(buf, map[string]string{
 		"size":      totalSizeStr,
 		"pkgname":   info.Name,
-		"pkgbase":   info.Name,
+		"pkgbase":   defaultStr(info.ArchLinux.Pkgbase, info.Name),
 		"pkgver":    pkgver,
 		"pkgdesc":   pkgdesc,
 		"url":       info.Homepage,
