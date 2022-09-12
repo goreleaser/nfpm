@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +18,10 @@ import (
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
+)
+
+var (
+	ErrInvalidPkgName = errors.New("archlinux: package names may only contain alphanumeric characters or one of ., _, +, or -, and may not start with hyphen or dot")
 )
 
 const packagerName = "archlinux"
@@ -79,6 +84,10 @@ func validPkgName(s string) string {
 	return s
 }
 
+func nameIsValid(s string) bool {
+	return s == validPkgName(s)
+}
+
 func mapValidChar(r rune) rune {
 	if r >= 'a' && r <= 'z' ||
 		r >= 'A' && r <= 'Z' ||
@@ -99,6 +108,10 @@ func isOneOf(r rune, rr ...rune) bool {
 }
 
 func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
+	if !nameIsValid(info.Name) {
+		return ErrInvalidPkgName
+	}
+
 	zw, err := zstd.NewWriter(w)
 	if err != nil {
 		return err
@@ -297,6 +310,10 @@ func normalizePath(src string) string {
 }
 
 func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntry, error) {
+	if !nameIsValid(info.Name) {
+		return nil, ErrInvalidPkgName
+	}
+	
 	buf := &bytes.Buffer{}
 
 	info = ensureValidArch(info)
@@ -307,7 +324,6 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	}
 
 	pkgver := fmt.Sprintf("%s-%d", info.Version, pkgrel)
-	pkgname := validPkgName(info.Name)
 
 	// Description cannot containe newlines
 	pkgdesc := strings.ReplaceAll(info.Description, "\n", " ")
@@ -319,8 +335,8 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 
 	err = writeKVPairs(buf, map[string]string{
 		"size":      totalSizeStr,
-		"pkgname":   pkgname,
-		"pkgbase":   pkgname,
+		"pkgname":   info.Name,
+		"pkgbase":   info.Name,
 		"pkgver":    pkgver,
 		"pkgdesc":   pkgdesc,
 		"url":       info.Homepage,
