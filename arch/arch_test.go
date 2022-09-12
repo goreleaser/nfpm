@@ -133,6 +133,7 @@ func TestArchPkginfo(t *testing.T) {
 	require.Equal(t, "x86_64", fields["arch"])
 	require.Equal(t, "MIT", fields["license"])
 	require.Equal(t, "1234", fields["size"])
+	require.Equal(t, "svn", fields["replaces"])
 	require.Equal(t, "zsh", fields["conflict"])
 	require.Equal(t, "bzr", fields["provides"])
 	require.Equal(t, "bash", fields["depend"])
