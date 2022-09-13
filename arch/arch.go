@@ -146,6 +146,11 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 	return createScripts(info, tw)
 }
 
+// ConventionalExtension returns the file name conventionally used for Arch Linux packages
+func (ArchLinux) ConventionalExtension() string {
+	return ".pkg.tar.zst"
+}
+
 // createFilesInTar adds the files described in the given info to the given tar writer
 func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, error) {
 	created := map[string]struct{}{}

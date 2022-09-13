@@ -100,6 +100,11 @@ type Packager interface {
 	ConventionalFileName(info *Info) string
 }
 
+type PackagerWithExtension interface {
+	Packager
+	ConventionalExtension() string
+}
+
 // Config contains the top level configuration for packages.
 type Config struct {
 	Info           `yaml:",inline" json:",inline"`
