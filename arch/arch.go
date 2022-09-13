@@ -77,7 +77,7 @@ func (ArchLinux) ConventionalFileName(info *nfpm.Info) string {
 	return validPkgName(name)
 }
 
-// validPkgName remoces any invalid characters from a string
+// validPkgName removes any invalid characters from a string
 func validPkgName(s string) string {
 	s = strings.Map(mapValidChar, s)
 	s = strings.TrimLeft(s, "-.")
