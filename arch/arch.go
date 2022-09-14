@@ -158,6 +158,10 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 	var totalSize int64
 
 	for _, content := range info.Contents {
+		if content.Packager != "" && content.Packager != packagerName {
+			continue
+		}
+
 		path := normalizePath(content.Destination)
 
 		switch content.Type {
