@@ -38,3 +38,7 @@ overrides:
     scripts:
       postinstall: ./testdata/acceptance/scripts/postinstall.sh
       preremove: ./testdata/acceptance/scripts/preremove.sh
+  archlinux:
+    scripts:
+      postinstall: ./testdata/acceptance/scripts/postinstall.sh
+      preremove: ./testdata/acceptance/scripts/preremove.sh

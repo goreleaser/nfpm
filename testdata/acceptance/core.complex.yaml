@@ -29,8 +29,24 @@ contents:
   type: config
 - src: ./testdata/fake
   dst: /usr/sbin/fake
+  packager: deb
   file_info:
     mode: 04755
+- src: ./testdata/fake
+  dst: /usr/sbin/fake
+  packager: rpm
+  file_info:
+    mode: 04755
+- src: ./testdata/fake
+  dst: /usr/sbin/fake
+  packager: apk
+  file_info:
+    mode: 04755
+- src: ./testdata/fake
+  dst: /usr/bin/fake
+  file_info:
+    mode: 04755
+  packager: archlinux
 - dst: /usr/foo/bar/something
   type: dir
 - dst: /var/log/whatever
@@ -47,6 +63,10 @@ rpm:
     pretrans: ./testdata/acceptance/scripts/pretrans.sh
     posttrans: ./testdata/acceptance/scripts/posttrans.sh
 apk:
+  scripts:
+    preupgrade: ./testdata/acceptance/scripts/preupgrade.sh
+    postupgrade: ./testdata/acceptance/scripts/postupgrade.sh
+archlinux:
   scripts:
     preupgrade: ./testdata/acceptance/scripts/preupgrade.sh
     postupgrade: ./testdata/acceptance/scripts/postupgrade.sh

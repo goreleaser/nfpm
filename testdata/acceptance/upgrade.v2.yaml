@@ -39,3 +39,7 @@ apk:
   scripts:
     preupgrade: ./testdata/acceptance/scripts/preupgrade.sh
     postupgrade: ./testdata/acceptance/scripts/postupgrade.sh
+archlinux:
+  scripts:
+    preupgrade: ./testdata/acceptance/scripts/preupgrade.sh
+    postupgrade: ./testdata/acceptance/scripts/postupgrade.sh
