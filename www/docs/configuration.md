@@ -345,10 +345,10 @@ archlinux:
 
   # Arch Linux specific scripts.
   scripts:
-    # The preupdate script runs before pacman updates the package
-    preupdate: ./scripts/preupdate.sh
-    # The postupdate script runs after pacman updates the package
-    postupdate: ./scripts/postupdate.sh
+    # The postupgrade script runs before pacman upgrades the package
+    preupgrade: ./scripts/preupgrade.sh
+    # The postupgrade script runs after pacman upgrades the package
+    postupgrade: ./scripts/postupgrade.sh
 
 
 ```
