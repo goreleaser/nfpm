@@ -13,6 +13,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	_ "github.com/goreleaser/nfpm/v2/apk"
+	_ "github.com/goreleaser/nfpm/v2/arch"
 	_ "github.com/goreleaser/nfpm/v2/deb"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
 	"github.com/stretchr/testify/require"
@@ -20,9 +21,10 @@ import (
 
 // nolint: gochecknoglobals
 var formatArchs = map[string][]string{
-	"apk": {"amd64", "arm64", "386", "ppc64le", "armv6", "armv7", "s390x"},
-	"deb": {"amd64", "arm64", "ppc64le", "armv7", "s390x"},
-	"rpm": {"amd64", "arm64", "ppc64le", "armv7"},
+	"apk":       {"amd64", "arm64", "386", "ppc64le", "armv6", "armv7", "s390x"},
+	"deb":       {"amd64", "arm64", "ppc64le", "armv7", "s390x"},
+	"rpm":       {"amd64", "arm64", "ppc64le", "armv7"},
+	"archlinux": {"amd64"},
 }
 
 func TestCore(t *testing.T) {
