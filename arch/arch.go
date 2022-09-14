@@ -169,9 +169,15 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 				return nil, 0, err
 			}
 
+			modtime := time.Now()
+			// If the time is given, use it
+			if content.FileInfo != nil && !content.ModTime().IsZero() {
+				modtime = content.ModTime()
+			}
+
 			entries = append(entries, MtreeEntry{
 				Destination: path,
-				Time:        time.Now().Unix(),
+				Time:        modtime.Unix(),
 				Type:        content.Type,
 			})
 		case "symlink":
@@ -227,6 +233,18 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 				Typeflag: tar.TypeReg,
 				Size:     srcFi.Size(),
 				ModTime:  srcFi.ModTime(),
+			}
+
+			if content.FileInfo != nil && content.Mode() != 0 {
+				header.Mode = int64(content.Mode())
+			}
+
+			if content.FileInfo != nil && !content.ModTime().IsZero() {
+				header.ModTime = content.ModTime()
+			}
+
+			if content.FileInfo != nil && content.Size() != 0 {
+				header.Size = content.Size()
 			}
 
 			err = tw.WriteHeader(header)
