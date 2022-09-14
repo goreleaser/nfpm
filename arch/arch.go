@@ -621,7 +621,7 @@ func createScripts(info *nfpm.Info, tw *tar.Writer) error {
 		scripts["pre_remove"] = info.Scripts.PreRemove
 	}
 
-	if info.Scripts.PostInstall != "" {
+	if info.Scripts.PostRemove != "" {
 		scripts["post_remove"] = info.Scripts.PostRemove
 	}
 
@@ -641,7 +641,7 @@ func createScripts(info *nfpm.Info, tw *tar.Writer) error {
 
 	err := writeScripts(buf, scripts)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	err = tw.WriteHeader(&tar.Header{
