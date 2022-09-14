@@ -653,7 +653,7 @@ func writeScripts(w io.Writer, scripts map[string]string) error {
 
 		fl.Close()
 
-		_, err = io.WriteString(w, "}\n\n")
+		_, err = io.WriteString(w, "\n}\n\n")
 		if err != nil {
 			return err
 		}
