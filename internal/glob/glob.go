@@ -4,6 +4,7 @@ package glob
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -81,7 +82,7 @@ func Glob(pattern, dst string, ignoreMatchers bool) (map[string]string, error) {
 	files := make(map[string]string)
 	prefix := pattern
 	// the prefix may not be a complete path or may use glob patterns, in that case use the parent directory
-	if _, err := os.Stat(prefix); os.IsNotExist(err) || (fileglob.ContainsMatchers(pattern) && !ignoreMatchers) {
+	if _, err := os.Stat(prefix); errors.Is(err, fs.ErrNotExist) || (fileglob.ContainsMatchers(pattern) && !ignoreMatchers) {
 		prefix = filepath.Dir(longestCommonPrefix(matches))
 	}
 
