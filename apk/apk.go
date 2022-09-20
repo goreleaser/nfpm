@@ -103,7 +103,7 @@ func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 
 // ConventionalExtension returns the file name conventionally used for Apk packages
 func (*Apk) ConventionalExtension() string {
-	return ".deb"
+	return ".apk"
 }
 
 // Package writes a new apk package to the given writer using the given info.
