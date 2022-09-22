@@ -42,7 +42,9 @@ var archToArchLinux = map[string]string{
 	"amd64": "x86_64",
 	"386":   "i686",
 	"arm64": "aarch64",
-	"arm7":  "armv7hl",
+	"arm7":  "armv7h",
+	"arm6":  "armv6h",
+	"arm5":  "arm",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
