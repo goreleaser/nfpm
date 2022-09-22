@@ -352,6 +352,12 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	}
 
 	pkgver := fmt.Sprintf("%s-%d", info.Version, pkgrel)
+	if info.Epoch != "" {
+		epoch, err := strconv.ParseUint(info.Epoch, 10, 64)
+		if err == nil {
+			pkgver = fmt.Sprintf("%d:%s-%d", epoch, info.Version, pkgrel)
+		}
+	}
 
 	// Description cannot contain newlines
 	pkgdesc := strings.ReplaceAll(info.Description, "\n", " ")

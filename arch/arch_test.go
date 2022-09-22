@@ -3,7 +3,6 @@ package arch
 import (
 	"archive/tar"
 	"bytes"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -166,6 +165,16 @@ func TestArchVersionWithRelease(t *testing.T) {
 	require.Equal(t, "0.0.1-4", fields["pkgver"])
 }
 
+func TestArchVersionWithEpoch(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "0.0.1"
+	info.Epoch = "2"
+	pkginfoData, err := makeTestPkginfo(t, info)
+	require.NoError(t, err)
+	fields := extractPkginfoFields(pkginfoData)
+	require.Equal(t, "2:0.0.1-1", fields["pkgver"])
+}
+
 func TestArchOverrideArchitecture(t *testing.T) {
 	info := exampleInfo()
 	info.ArchLinux.Arch = "randomarch"
@@ -210,9 +219,7 @@ func extractPkginfoFields(data []byte) map[string]string {
 	out := map[string]string{}
 
 	for _, kvPair := range splitData {
-		fmt.Println(kvPair)
 		splitPair := strings.Split(kvPair, " = ")
-		fmt.Println(splitPair, len(splitPair), splitPair[0], splitPair[1])
 		out[splitPair[0]] = splitPair[1]
 	}
 
