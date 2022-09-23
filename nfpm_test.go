@@ -340,6 +340,28 @@ overrides:
 		require.Len(t, info.Overrides["rpm"].Depends, 1)
 		require.Equal(t, "package = 1.0.0", info.Overrides["rpm"].Depends[0])
 	})
+
+	t.Run("depends-strips-empty", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("VERSION", version)
+		os.Setenv("PKG", "")
+		info, err := nfpm.Parse(strings.NewReader(`---
+name: foo
+overrides:
+  deb:
+    depends:
+    - ${PKG}
+    - package (= ${VERSION})
+  rpm:
+    depends:
+    - package = ${VERSION}
+    - ${PKG}`))
+		require.NoError(t, err)
+		require.Len(t, info.Overrides["deb"].Depends, 1)
+		require.Equal(t, "package (= 1.0.0)", info.Overrides["deb"].Depends[0])
+		require.Len(t, info.Overrides["rpm"].Depends, 1)
+		require.Equal(t, "package = 1.0.0", info.Overrides["rpm"].Depends[0])
+	})
 }
 
 func TestOverrides(t *testing.T) {

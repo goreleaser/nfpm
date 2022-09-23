@@ -81,28 +81,46 @@ changelog: "changelog.yaml"
 disable_globbing: false
 
 # Packages it replaces. (overridable)
+# This will expand any env var you set in the field, eg ${REPLACE_BLA}
+# the env var approach can be used to account for differences in platforms
 replaces:
   - foobar
+  - ${REPLACE_BLA}
 
 # Packages it provides. (overridable)
+# This will expand any env var you set in the field, eg ${PROVIDES_BLA}
+# the env var approach can be used to account for differences in platforms
 provides:
   - bar
+  - ${PROVIDES_BLA}
 
 # Dependencies. (overridable)
+# This will expand any env var you set in the field, eg ${DEPENDS_NGINX}
+# the env var approach can be used to account for differences in platforms
+# eg rhel needs nginx >= 1:1.18 and deb needs nginx (>= 1.18.0)
 depends:
   - git
+  - ${DEPENDS_NGINX}
 
 # Recommended packages. (overridable)
+# This will expand any env var you set in the field, eg ${RECOMMENDS_BLA}
+# the env var approach can be used to account for differences in platforms
 recommends:
   - golang
+  - ${RECOMMENDS_BLA}
 
 # Suggested packages. (overridable)
+# This will expand any env var you set in the field, eg ${SUGGESTS_BLA}
+# the env var approach can be used to account for differences in platforms
 suggests:
   - bzr
 
 # Packages it conflicts with. (overridable)
+# This will expand any env var you set in the field, eg ${CONFLICTS_BLA}
+# the env var approach can be used to account for differences in platforms
 conflicts:
   - mercurial
+  - ${CONFLICTS_BLA}
 
 # Contents to add to the package
 # This can be binaries or any other files.
