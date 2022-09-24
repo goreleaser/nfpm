@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   lock:
-    if: github.repository == 'goreleaser/nfpm'
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: dessant/lock-threads@v3

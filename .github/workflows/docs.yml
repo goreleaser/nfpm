@@ -13,6 +13,7 @@ permissions: read-all
 
 jobs:
   htmltest:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,6 +23,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.19
+          cache: true
       - run: task docs:build
       - uses: wjdp/htmltest-action@master
         with:
