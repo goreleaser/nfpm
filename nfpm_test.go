@@ -153,7 +153,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestValidateError(t *testing.T) {
-	for err, info := range map[string]nfpm.Info{
+	for err, info := range map[string]*nfpm.Info{
 		"package name must be provided": {},
 		"package arch must be provided": {
 			Name: "fo",
@@ -167,7 +167,7 @@ func TestValidateError(t *testing.T) {
 			t.Run(e, func(t *testing.T) {
 				require.EqualError(t, nfpm.Validate(inf), e)
 			})
-		}(&info, err)
+		}(info, err)
 	}
 }
 
