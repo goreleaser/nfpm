@@ -163,11 +163,11 @@ func TestValidateError(t *testing.T) {
 			Arch: "asd",
 		},
 	} {
-		err := err
-		info := info
-		t.Run(err, func(t *testing.T) {
-			require.EqualError(t, nfpm.Validate(&info), err)
-		})
+		func(inf *nfpm.Info, e string) {
+			t.Run(e, func(t *testing.T) {
+				require.EqualError(t, nfpm.Validate(inf), e)
+			})
+		}(&info, err)
 	}
 }
 

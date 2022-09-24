@@ -106,7 +106,7 @@ type Packager interface {
 // Config contains the top level configuration for packages.
 type Config struct {
 	Info           `yaml:",inline" json:",inline"`
-	Overrides      map[string]Overridables `yaml:"overrides,omitempty" json:"overrides,omitempty" jsonschema:"title=overrides,description=override some fields when packaging with a specific packager,enum=apk,enum=deb,enum=rpm"`
+	Overrides      map[string]*Overridables `yaml:"overrides,omitempty" json:"overrides,omitempty" jsonschema:"title=overrides,description=override some fields when packaging with a specific packager,enum=apk,enum=deb,enum=rpm"`
 	envMappingFunc func(string) string
 }
 
@@ -173,14 +173,13 @@ func (c *Config) expandEnvVars() {
 	c.Info.Version = os.Expand(c.Info.Version, c.envMappingFunc)
 	c.Info.Prerelease = os.Expand(c.Info.Prerelease, c.envMappingFunc)
 	c.Info.Arch = os.Expand(c.Info.Arch, c.envMappingFunc)
-	for or, override := range c.Overrides {
-		override.Conflicts = c.expandEnvVarsStringSlice(override.Conflicts)
-		override.Depends = c.expandEnvVarsStringSlice(override.Depends)
-		override.Replaces = c.expandEnvVarsStringSlice(override.Replaces)
-		override.Recommends = c.expandEnvVarsStringSlice(override.Recommends)
-		override.Provides = c.expandEnvVarsStringSlice(override.Provides)
-		override.Suggests = c.expandEnvVarsStringSlice(override.Suggests)
-		c.Overrides[or] = override
+	for or := range c.Overrides {
+		c.Overrides[or].Conflicts = c.expandEnvVarsStringSlice(c.Overrides[or].Conflicts)
+		c.Overrides[or].Depends = c.expandEnvVarsStringSlice(c.Overrides[or].Depends)
+		c.Overrides[or].Replaces = c.expandEnvVarsStringSlice(c.Overrides[or].Replaces)
+		c.Overrides[or].Recommends = c.expandEnvVarsStringSlice(c.Overrides[or].Recommends)
+		c.Overrides[or].Provides = c.expandEnvVarsStringSlice(c.Overrides[or].Provides)
+		c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
 	}
 
 	// Maintainer and vendor fields

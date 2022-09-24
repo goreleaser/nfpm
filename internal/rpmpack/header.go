@@ -69,18 +69,23 @@ func intEntry(rpmtype, size int, value interface{}) IndexEntry {
 func EntryInt16(value []int16) IndexEntry {
 	return intEntry(typeInt16, len(value), value)
 }
+
 func EntryUint16(value []uint16) IndexEntry {
 	return intEntry(typeInt16, len(value), value)
 }
+
 func EntryInt32(value []int32) IndexEntry {
 	return intEntry(typeInt32, len(value), value)
 }
+
 func EntryUint32(value []uint32) IndexEntry {
 	return intEntry(typeInt32, len(value), value)
 }
+
 func EntryString(value string) IndexEntry {
-	return IndexEntry{typeString, 1, append([]byte(value), byte(00))}
+	return IndexEntry{typeString, 1, append([]byte(value), byte(0o0))}
 }
+
 func EntryBytes(value []byte) IndexEntry {
 	return IndexEntry{typeBinary, len(value), value}
 }
@@ -90,7 +95,7 @@ func EntryStringSlice(value []string) IndexEntry {
 	for _, v := range value {
 		b = append(b, []byte(v))
 	}
-	bb := append(bytes.Join(b, []byte{00}), byte(00))
+	bb := append(bytes.Join(b, []byte{0o0}), byte(0o0))
 	return IndexEntry{typeStringArray, len(value), bb}
 }
 
@@ -102,9 +107,11 @@ type index struct {
 func newIndex(h int) *index {
 	return &index{entries: make(map[int]IndexEntry), h: h}
 }
+
 func (i *index) Add(tag int, e IndexEntry) {
 	i.entries[tag] = e
 }
+
 func (i *index) AddEntries(m map[int]IndexEntry) {
 	for t, e := range m {
 		i.Add(t, e)

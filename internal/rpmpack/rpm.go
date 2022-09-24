@@ -144,8 +144,8 @@ func NewRPM(m RPMMetaData) (*RPM, error) {
 }
 
 func setupCompressor(compressorSetting string, w io.Writer) (wc io.WriteCloser,
-	compressorType string, err error) {
-
+	compressorType string, err error,
+) {
 	parts := strings.Split(compressorSetting, ":")
 	if len(parts) > 2 {
 		return nil, "", fmt.Errorf("malformed compressor setting: %s", compressorSetting)
@@ -222,7 +222,7 @@ func (r *RPM) FullVersion() string {
 // AllowListDirs removes all directories which are not explicitly allowlisted.
 func (r *RPM) AllowListDirs(allowList map[string]bool) {
 	for fn, ff := range r.files {
-		if ff.Mode&040000 == 040000 {
+		if ff.Mode&0o40000 == 0o40000 {
 			if !allowList[fn] {
 				delete(r.files, fn)
 			}
@@ -508,17 +508,17 @@ func (r *RPM) writeFile(f RPMFile) error {
 
 	links := 1
 	switch {
-	case f.Mode&040000 != 0: // directory
+	case f.Mode&0o40000 != 0: // directory
 		r.filesizes = append(r.filesizes, 4096)
 		r.filedigests = append(r.filedigests, "")
 		r.filelinktos = append(r.filelinktos, "")
 		links = 2
-	case f.Mode&0120000 == 0120000: //  symlink
+	case f.Mode&0o120000 == 0o120000: //  symlink
 		r.filesizes = append(r.filesizes, uint32(len(f.Body)))
 		r.filedigests = append(r.filedigests, "")
 		r.filelinktos = append(r.filelinktos, string(f.Body))
 	default: // regular file
-		f.Mode = f.Mode | 0100000
+		f.Mode = f.Mode | 0o100000
 		r.filesizes = append(r.filesizes, uint32(len(f.Body)))
 		r.filedigests = append(r.filedigests, fmt.Sprintf("%x", sha256.Sum256(f.Body)))
 		r.filelinktos = append(r.filelinktos, "")
