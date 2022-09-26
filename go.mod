@@ -25,7 +25,7 @@ require (
 
 require (
 	github.com/cavaliergopher/cpio v1.0.1
-	github.com/google/go-cmp v0.5.8
+	github.com/google/go-cmp v0.5.9
 	github.com/klauspost/compress v1.15.1
 	github.com/pkg/errors v0.9.1
 )
