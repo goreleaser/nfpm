@@ -248,7 +248,6 @@ milestones:
   - close: true
 
 announce:
-  skip: "{{gt .Patch 0}}"
   twitter:
     enabled: true
     message_template: "nFPM {{ .Tag }} was just released! See what's new: https://github.com/goreleaser/nfpm/releases/tag/{{ .Tag }}"
