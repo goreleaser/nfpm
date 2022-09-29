@@ -352,6 +352,8 @@ overrides:
     depends:
     - ${PKG}
     - package (= ${VERSION})
+    - ${PKG}
+    - ${PKG}
   rpm:
     depends:
     - package = ${VERSION}
