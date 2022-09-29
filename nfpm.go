@@ -149,18 +149,15 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func remove(slice []string, s int) []string {
-	return append(slice[:s], slice[s+1:]...)
-}
-
 func (c *Config) expandEnvVarsStringSlice(items []string) []string {
 	for i, dep := range items {
 		val := strings.TrimSpace(os.Expand(dep, c.envMappingFunc))
 		items[i] = val
 	}
-	for i, val := range items {
-		if val == "" {
-			items = remove(items, i)
+	for i := 0; i < len(items); i++ {
+		if items[i] == "" {
+			items = append(items[:i], items[i+1:]...)
+			i-- // Since we just deleted items[i], we must redo that index
 		}
 	}
 
