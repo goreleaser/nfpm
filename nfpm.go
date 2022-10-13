@@ -83,6 +83,9 @@ func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Conf
 
 // ParseFile decodes YAML data from a file path into a configuration struct.
 func ParseFile(path string) (config Config, err error) {
+	if path == "-" {
+		return ParseWithEnvMapping(os.Stdin, os.Getenv)
+	}
 	return ParseFileWithEnvMapping(path, os.Getenv)
 }
 
