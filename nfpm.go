@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/AlekSi/pointer"
@@ -82,6 +83,9 @@ func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Conf
 
 // ParseFile decodes YAML data from a file path into a configuration struct.
 func ParseFile(path string) (config Config, err error) {
+	if path == "-" {
+		return ParseWithEnvMapping(os.Stdin, os.Getenv)
+	}
 	return ParseFileWithEnvMapping(path, os.Getenv)
 }
 
@@ -110,7 +114,7 @@ type PackagerWithExtension interface {
 // Config contains the top level configuration for packages.
 type Config struct {
 	Info           `yaml:",inline" json:",inline"`
-	Overrides      map[string]Overridables `yaml:"overrides,omitempty" json:"overrides,omitempty" jsonschema:"title=overrides,description=override some fields when packaging with a specific packager,enum=apk,enum=deb,enum=rpm"`
+	Overrides      map[string]*Overridables `yaml:"overrides,omitempty" json:"overrides,omitempty" jsonschema:"title=overrides,description=override some fields when packaging with a specific packager,enum=apk,enum=deb,enum=rpm"`
 	envMappingFunc func(string) string
 }
 
@@ -153,16 +157,34 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+func (c *Config) expandEnvVarsStringSlice(items []string) []string {
+	for i, dep := range items {
+		val := strings.TrimSpace(os.Expand(dep, c.envMappingFunc))
+		items[i] = val
+	}
+	for i := 0; i < len(items); i++ {
+		if items[i] == "" {
+			items = append(items[:i], items[i+1:]...)
+			i-- // Since we just deleted items[i], we must redo that index
+		}
+	}
+
+	return items
+}
+
 func (c *Config) expandEnvVars() {
 	// Version related fields
 	c.Info.Release = os.Expand(c.Info.Release, c.envMappingFunc)
 	c.Info.Version = os.Expand(c.Info.Version, c.envMappingFunc)
 	c.Info.Prerelease = os.Expand(c.Info.Prerelease, c.envMappingFunc)
 	c.Info.Arch = os.Expand(c.Info.Arch, c.envMappingFunc)
-	for _, override := range c.Overrides {
-		for i, dep := range override.Depends {
-			override.Depends[i] = os.Expand(dep, c.envMappingFunc)
-		}
+	for or := range c.Overrides {
+		c.Overrides[or].Conflicts = c.expandEnvVarsStringSlice(c.Overrides[or].Conflicts)
+		c.Overrides[or].Depends = c.expandEnvVarsStringSlice(c.Overrides[or].Depends)
+		c.Overrides[or].Replaces = c.expandEnvVarsStringSlice(c.Overrides[or].Replaces)
+		c.Overrides[or].Recommends = c.expandEnvVarsStringSlice(c.Overrides[or].Recommends)
+		c.Overrides[or].Provides = c.expandEnvVarsStringSlice(c.Overrides[or].Provides)
+		c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
 	}
 
 	// Maintainer and vendor fields

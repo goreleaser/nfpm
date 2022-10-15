@@ -6,7 +6,6 @@ on:
 
 jobs:
   analyze:
-    name: analyze
     runs-on: ubuntu-latest
 
     permissions:

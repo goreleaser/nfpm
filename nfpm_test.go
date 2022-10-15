@@ -153,7 +153,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestValidateError(t *testing.T) {
-	for err, info := range map[string]nfpm.Info{
+	for err, info := range map[string]*nfpm.Info{
 		"package name must be provided": {},
 		"package arch must be provided": {
 			Name: "fo",
@@ -163,11 +163,11 @@ func TestValidateError(t *testing.T) {
 			Arch: "asd",
 		},
 	} {
-		err := err
-		info := info
-		t.Run(err, func(t *testing.T) {
-			require.EqualError(t, nfpm.Validate(&info), err)
-		})
+		func(inf *nfpm.Info, e string) {
+			t.Run(e, func(t *testing.T) {
+				require.EqualError(t, nfpm.Validate(inf), e)
+			})
+		}(info, err)
 	}
 }
 
@@ -334,6 +334,30 @@ overrides:
   rpm:
     depends:
     - package = ${VERSION}`))
+		require.NoError(t, err)
+		require.Len(t, info.Overrides["deb"].Depends, 1)
+		require.Equal(t, "package (= 1.0.0)", info.Overrides["deb"].Depends[0])
+		require.Len(t, info.Overrides["rpm"].Depends, 1)
+		require.Equal(t, "package = 1.0.0", info.Overrides["rpm"].Depends[0])
+	})
+
+	t.Run("depends-strips-empty", func(t *testing.T) {
+		os.Clearenv()
+		os.Setenv("VERSION", version)
+		os.Setenv("PKG", "")
+		info, err := nfpm.Parse(strings.NewReader(`---
+name: foo
+overrides:
+  deb:
+    depends:
+    - ${PKG}
+    - package (= ${VERSION})
+    - ${PKG}
+    - ${PKG}
+  rpm:
+    depends:
+    - package = ${VERSION}
+    - ${PKG}`))
 		require.NoError(t, err)
 		require.Len(t, info.Overrides["deb"].Depends, 1)
 		require.Equal(t, "package (= 1.0.0)", info.Overrides["deb"].Depends[0])

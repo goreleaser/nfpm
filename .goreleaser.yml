@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema-pro.json
+
 env:
   - GO111MODULE=on
 
@@ -137,7 +139,7 @@ nfpms:
       file_info:
         mode: 0644
     - src: ./completions/nfpm.fish
-      dst: /usr/share/fish/completions/nfpm.fish
+      dst: /usr/share/fish/vendor_completions.d/nfpm.fish
       file_info:
         mode: 0644
     - src: ./completions/nfpm.zsh
@@ -246,7 +248,6 @@ milestones:
   - close: true
 
 announce:
-  skip: "{{gt .Patch 0}}"
   twitter:
     enabled: true
     message_template: "nFPM {{ .Tag }} was just released! See what's new: https://github.com/goreleaser/nfpm/releases/tag/{{ .Tag }}"

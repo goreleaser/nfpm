@@ -27,14 +27,20 @@ contents:
   type: config
 overrides:
   rpm:
+    depends:
+      - (bash >= 4.4 or fish)
     scripts:
       preinstall: ./testdata/acceptance/scripts/preinstall.sh
       postremove: ./testdata/acceptance/scripts/postremove.sh
   deb:
+    depends:
+      - bash (>= 4.4) | fish
     scripts:
       postinstall: ./testdata/acceptance/scripts/postinstall.sh
       preremove: ./testdata/acceptance/scripts/preremove.sh
   apk:
+    depends:
+      - bash (>= 4.4) | fish
     scripts:
       postinstall: ./testdata/acceptance/scripts/postinstall.sh
       preremove: ./testdata/acceptance/scripts/preremove.sh

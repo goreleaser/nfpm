@@ -102,39 +102,40 @@ cleanup
 ```bash
 #!/bin/sh
 
-cleanInstall() {
-    printf "\033[32m Post Install of a clean install\033[0m\n"
+remove() {
+    printf "\033[32m Post Remove of a normal remove\033[0m\n"
+    echo "Remove" > /tmp/postremove-proof
+}
+
+purge() {
+    printf "\033[32m Post Remove purge, deb only\033[0m\n"
+    echo "Purge" > /tmp/postremove-proof
 }
 
 upgrade() {
-    printf "\033[32m Post Install of an upgrade\033[0m\n"
+    printf "\033[32m Post Remove of an upgrade\033[0m\n"
+    echo "Upgrade" > /tmp/postremove-proof
 }
 
+echo "$@"
+
 action="$1"
-if  [ "$1" = "configure" ] && [ -z "$2" ]; then
-  # Alpine linux does not pass args, and deb passes $1=configure
-  action="install"
-elif [ "$1" = "configure" ] && [ -n "$2" ]; then
-    # deb passes $1=configure $2=<current version>
-    action="upgrade"
-fi
 
 case "$action" in
-  "1" | "install")
-    printf "\033[32m Post Install of a clean install\033[0m\n"
-    cleanInstall
+  "0" | "remove")
+    remove
     ;;
-  "2" | "upgrade")
-    printf "\033[32m Post Install of an upgrade\033[0m\n"
+  "1" | "upgrade")
     upgrade
     ;;
+  "purge")
+    purge
+    ;;
   *)
-    # $1 == version being installed
     printf "\033[32m Alpine\033[0m"
-    cleanInstall
+    remove
     ;;
 esac
-
 ```
 
 ### Deb & RPM
