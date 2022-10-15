@@ -2,7 +2,7 @@
 
 ![](/static/banner.svg)
 
-nFPM is a simple, 0-dependencies, `deb`, `rpm` and `apk` packager.
+nFPM is a simple, 0-dependencies, `deb`, `rpm`, `apk`, and Arch Linux packager.
 
 ## Why
 

@@ -101,6 +101,11 @@ func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 	return fmt.Sprintf("%s_%s_%s.apk", info.Name, version, info.Arch)
 }
 
+// ConventionalExtension returns the file name conventionally used for Apk packages
+func (*Apk) ConventionalExtension() string {
+	return ".apk"
+}
+
 // Package writes a new apk package to the given writer using the given info.
 func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 	info = ensureValidArch(info)

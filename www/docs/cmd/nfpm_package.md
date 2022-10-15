@@ -11,7 +11,7 @@ nfpm package [flags]
 ```
   -f, --config string     config file to be used (default "nfpm.yaml")
   -h, --help              help for package
-  -p, --packager string   which packager implementation to use [apk|deb|rpm]
+  -p, --packager string   which packager implementation to use [apk|deb|rpm|archlinux]
   -t, --target string     where to save the generated package (filename, folder or empty for current folder)
 ```
 

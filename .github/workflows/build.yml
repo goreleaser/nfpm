@@ -64,7 +64,7 @@ jobs:
   acceptance-tests:
     strategy:
       matrix:
-        pkgFormat: [ deb, rpm, apk ]
+        pkgFormat: [ deb, rpm, apk, archlinux ]
         pkgPlatform: [ amd64, arm64, 386, ppc64le, armv6, armv7, s390x ]
     runs-on: ubuntu-latest
     env:
@@ -88,4 +88,3 @@ jobs:
         run: ./scripts/test.sh acceptance ubuntu-latest
         env:
           TEST_PATTERN: "/${{ matrix.pkgFormat }}/${{ matrix.pkgPlatform }}/"
-

@@ -93,6 +93,11 @@ func (*RPM) ConventionalFileName(info *nfpm.Info) string {
 	return fmt.Sprintf("%s-%s.%s.rpm", info.Name, version, info.Arch)
 }
 
+// ConventionalExtension returns the file name conventionally used for RPM packages
+func (*RPM) ConventionalExtension() string {
+	return ".rpm"
+}
+
 // Package writes a new RPM package to the given writer using the given info.
 func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 	var (

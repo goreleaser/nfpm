@@ -34,7 +34,7 @@ func newPackageCmd() *packageCmd {
 
 	cmd.Flags().StringVarP(&root.config, "config", "f", "nfpm.yaml", "config file to be used")
 	cmd.Flags().StringVarP(&root.target, "target", "t", "", "where to save the generated package (filename, folder or empty for current folder)")
-	cmd.Flags().StringVarP(&root.packager, "packager", "p", "", "which packager implementation to use [apk|deb|rpm]")
+	cmd.Flags().StringVarP(&root.packager, "packager", "p", "", "which packager implementation to use [apk|deb|rpm|archlinux]")
 
 	root.cmd = cmd
 	return root

@@ -84,6 +84,11 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 	return fmt.Sprintf("%s_%s_%s.deb", info.Name, version, info.Arch)
 }
 
+// ConventionalExtension returns the file name conventionally used for Deb packages
+func (*Deb) ConventionalExtension() string {
+	return ".deb"
+}
+
 // ErrInvalidSignatureType happens if the signature type of a deb is not one of
 // origin, maint or archive.
 var ErrInvalidSignatureType = errors.New("invalid signature type")
