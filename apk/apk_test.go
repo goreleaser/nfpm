@@ -89,6 +89,10 @@ func exampleInfo() *nfpm.Info {
 	})
 }
 
+func TestConventionalExtension(t *testing.T) {
+	require.Equal(t, ".apk", Default.ConventionalExtension())
+}
+
 func TestCreateBuilderData(t *testing.T) {
 	info := exampleInfo()
 	err := info.Validate()

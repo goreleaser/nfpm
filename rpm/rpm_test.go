@@ -86,6 +86,10 @@ func exampleInfo() *nfpm.Info {
 	})
 }
 
+func TestConventionalExtension(t *testing.T) {
+	require.Equal(t, ".rpm", Default.ConventionalExtension())
+}
+
 func TestRPM(t *testing.T) {
 	f, err := os.CreateTemp("", "test.rpm")
 	require.NoError(t, err)

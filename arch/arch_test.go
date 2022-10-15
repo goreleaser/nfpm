@@ -78,6 +78,10 @@ func exampleInfo() *nfpm.Info {
 	})
 }
 
+func TestConventionalExtension(t *testing.T) {
+	require.Equal(t, ".pkg.tar.zst", Default.ConventionalExtension())
+}
+
 func TestArch(t *testing.T) {
 	for _, arch := range []string{"386", "amd64", "arm64"} {
 		arch := arch

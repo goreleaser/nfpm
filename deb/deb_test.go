@@ -86,6 +86,10 @@ func exampleInfo() *nfpm.Info {
 	})
 }
 
+func TestConventionalExtension(t *testing.T) {
+	require.Equal(t, ".deb", Default.ConventionalExtension())
+}
+
 func TestDeb(t *testing.T) {
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
