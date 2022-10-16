@@ -539,43 +539,6 @@ func TestDEBConventionalFileName(t *testing.T) {
 	}
 }
 
-func TestDebChangelogControl(t *testing.T) {
-	info := &nfpm.Info{
-		Name:        "changelog-test",
-		Arch:        "amd64",
-		Description: "This package has changelogs.",
-		Version:     "1.0.0",
-		Changelog:   "../testdata/changelog.yaml",
-	}
-	err := info.Validate()
-	require.NoError(t, err)
-
-	controlTarGz, err := createControl(0, []byte{}, info)
-	require.NoError(t, err)
-
-	controlChangelog := extractFileFromTar(t, inflate(t, "gz", controlTarGz), "changelog")
-
-	goldenChangelog := readAndFormatAsDebChangelog(t, info.Changelog, info.Name)
-
-	require.Equal(t, goldenChangelog, string(controlChangelog))
-}
-
-func TestDebNoChangelogControlWithoutChangelogConfigured(t *testing.T) {
-	info := &nfpm.Info{
-		Name:        "no-changelog-test",
-		Arch:        "amd64",
-		Description: "This package has explicitly no changelog.",
-		Version:     "1.0.0",
-	}
-	err := info.Validate()
-	require.NoError(t, err)
-
-	controlTarGz, err := createControl(0, []byte{}, info)
-	require.NoError(t, err)
-
-	require.False(t, tarContains(t, inflate(t, "gz", controlTarGz), "changelog"))
-}
-
 func TestDebChangelogData(t *testing.T) {
 	info := &nfpm.Info{
 		Name:        "changelog-test",
@@ -590,7 +553,7 @@ func TestDebChangelogData(t *testing.T) {
 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
-	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
+	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.Debian.gz", info.Name)
 	dataChangelogGz := extractFileFromTar(t,
 		inflate(t, dataTarballName, dataTarball), changelogName)
 
