@@ -2,6 +2,7 @@ package nfpm_test
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"net/mail"
 	"os"
@@ -363,6 +364,18 @@ overrides:
 		require.Equal(t, "package (= 1.0.0)", info.Overrides["deb"].Depends[0])
 		require.Len(t, info.Overrides["rpm"].Depends, 1)
 		require.Equal(t, "package = 1.0.0", info.Overrides["rpm"].Depends[0])
+	})
+
+	t.Run("prefix-is-allowed", func(t *testing.T) {
+		os.Clearenv()
+		require.NoError(t, os.Setenv("VERSION", version))
+		require.NoError(t, os.Setenv("PKG", ""))
+		info, err := nfpm.Parse(strings.NewReader(`---
+name: foo
+prefix: /opt/homebrew
+`))
+		require.NoError(t, err)
+		assert.Equal(t, "/opt/homebrew", info.Prefix)
 	})
 }
 

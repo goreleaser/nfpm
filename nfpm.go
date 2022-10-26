@@ -244,8 +244,9 @@ type Info struct {
 	Homepage        string `yaml:"homepage,omitempty" json:"homepage,omitempty" jsonschema:"title=package homepage,example=https://example.com"`
 	License         string `yaml:"license,omitempty" json:"license,omitempty" jsonschema:"title=package license,example=MIT"`
 	Changelog       string `yaml:"changelog,omitempty" json:"changelog,omitempty" jsonschema:"title=package changelog,example=changelog.yaml,description=see https://github.com/goreleaser/chglog for more details"`
-	DisableGlobbing bool   `yaml:"disable_globbing,omitempty" json:"disable_globbing,omitempty" jsonschema:"title=wether to disable file globbing,default=false"`
+	DisableGlobbing bool   `yaml:"disable_globbing,omitempty" json:"disable_globbing,omitempty" jsonschema:"title=whether to disable file globbing,default=false"`
 	Target          string `yaml:"-" json:"-"`
+	Prefix          string `yaml:"prefix,omitempty" json:"prefix,omitempty" jsonschema:"title=Prefix for relocatable packages,example=/opt/homebrew"`
 }
 
 func (i *Info) Validate() error {

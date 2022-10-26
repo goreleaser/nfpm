@@ -25,6 +25,8 @@ const (
 	tagChangelogName = 1081
 	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L154
 	tagChangelogText = 1082
+	// http://ftp.rpm.org/api/4.12.0.1/rpmtag_8h.html
+	tagPrefixes = 1098
 
 	// Symbolic link
 	tagLink = 0o120000
@@ -134,11 +136,19 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 		}
 	}
 
+	if info.Prefix != "" {
+		addPrefix(info, rpm)
+	}
+
 	if err = rpm.Write(w); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func addPrefix(info *nfpm.Info, rpm *rpmpack.RPM) {
+	rpm.AddCustomTag(tagPrefixes, rpmpack.EntryString(info.Prefix))
 }
 
 func addChangeLog(info *nfpm.Info, rpm *rpmpack.RPM) error {
