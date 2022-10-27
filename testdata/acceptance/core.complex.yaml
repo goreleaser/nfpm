@@ -27,6 +27,8 @@ contents:
 - src: ./testdata/whatever.conf
   dst: /etc/foo/whatever.conf
   type: config
+- src: ./testdata/something
+  dst: /etc/something
 - src: ./testdata/fake
   dst: /usr/sbin/fake
   packager: deb

@@ -61,6 +61,10 @@ func exampleInfo() *nfpm.Info {
 					Destination: "/etc/fake/fake-link.conf",
 					Type:        "symlink",
 				},
+				{
+					Source:      "../testdata/something",
+					Destination: "/etc/something",
+				},
 			},
 			Scripts: nfpm.Scripts{
 				PreInstall:  "../testdata/scripts/preinstall.sh",
