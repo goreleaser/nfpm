@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -61,6 +62,10 @@ func exampleInfo() *nfpm.Info {
 					Destination: "/etc/fake/fake-link.conf",
 					Type:        "symlink",
 				},
+				{
+					Source:      "../testdata/something",
+					Destination: "/etc/something",
+				},
 			},
 			Scripts: nfpm.Scripts{
 				PreInstall:  "../testdata/scripts/preinstall.sh",
@@ -88,7 +93,8 @@ func TestArch(t *testing.T) {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
-			err := Default.Package(info, io.Discard)
+			f, _ := os.Create("hi.pkg.tar.zst")
+			err := Default.Package(info, f)
 			require.NoError(t, err)
 		})
 	}

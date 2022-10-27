@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -159,7 +160,56 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 	var entries []MtreeEntry
 	var totalSize int64
 
+	var contents []*files.Content
+
 	for _, content := range info.Contents {
+		switch content.Type {
+		case "dir", "symlink":
+			contents = append(contents, content)
+			continue
+		}
+
+		fi, err := os.Stat(content.Source)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		if fi.IsDir() {
+			err = filepath.WalkDir(content.Source, func(path string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+
+				relPath := strings.TrimPrefix(path, content.Source)
+
+				if d.IsDir() {
+					return nil
+				}
+
+				c := &files.Content{
+					Source:      path,
+					Destination: filepath.Join(content.Destination, relPath),
+					FileInfo: &files.ContentFileInfo{
+						Mode: d.Type(),
+					},
+				}
+
+				if d.Type()&os.ModeSymlink != 0 {
+					c.Type = "symlink"
+				}
+
+				contents = append(contents, c)
+				return nil
+			})
+			if err != nil {
+				return nil, 0, err
+			}
+		} else {
+			contents = append(contents, content)
+		}
+	}
+
+	for _, content := range contents {
 		if content.Packager != "" && content.Packager != packagerName {
 			continue
 		}
