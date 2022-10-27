@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -93,8 +92,7 @@ func TestArch(t *testing.T) {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
-			f, _ := os.Create("hi.pkg.tar.zst")
-			err := Default.Package(info, f)
+			err := Default.Package(info, io.Discard)
 			require.NoError(t, err)
 		})
 	}

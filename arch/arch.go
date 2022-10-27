@@ -163,6 +163,10 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 	var contents []*files.Content
 
 	for _, content := range info.Contents {
+		if content.Packager != "" && content.Packager != packagerName {
+			continue
+		}
+
 		switch content.Type {
 		case "dir", "symlink":
 			contents = append(contents, content)
@@ -210,10 +214,6 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 	}
 
 	for _, content := range contents {
-		if content.Packager != "" && content.Packager != packagerName {
-			continue
-		}
-
 		path := normalizePath(content.Destination)
 
 		switch content.Type {
