@@ -48,6 +48,11 @@ RUN test -f /usr/share/whatever/folder/folder2/file2
 RUN test -d /var/log/whatever
 RUN test -d /usr/share/foo
 RUN test -d /usr/foo/bar/something
+RUN test -d /etc/something
+RUN test -f /etc/something/a
+RUN test -f /etc/something/b
+RUN test -d /etc/something/c
+RUN test -f /etc/something/c/d
 RUN test $(stat -c %a /usr/sbin/fake) -eq 4755
 RUN test -f /tmp/preinstall-proof
 RUN test -f /tmp/postinstall-proof
