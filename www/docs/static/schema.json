@@ -63,6 +63,42 @@
 				"additionalProperties": false,
 				"type": "object"
 			},
+			"ArchLinux": {
+				"properties": {
+					"pkgbase": {
+						"type": "string",
+						"title": "explicitly specify the name used to refer to a split package"
+					},
+					"arch": {
+						"type": "string",
+						"title": "architecture in archlinux nomenclature"
+					},
+					"packager": {
+						"type": "string",
+						"title": "organization that packaged the software"
+					},
+					"scripts": {
+						"$ref": "#/$defs/ArchLinuxScripts",
+						"title": "archlinux-specific scripts"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"ArchLinuxScripts": {
+				"properties": {
+					"preupgrade": {
+						"type": "string",
+						"title": "preupgrade script"
+					},
+					"postupgrade": {
+						"type": "string",
+						"title": "postupgrade script"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
 			"Config": {
 				"properties": {
 					"replaces": {
@@ -126,6 +162,10 @@
 					"apk": {
 						"$ref": "#/$defs/APK",
 						"title": "apk-specific settings"
+					},
+					"archlinux": {
+						"$ref": "#/$defs/ArchLinux",
+						"title": "archlinux-specific settings"
 					},
 					"name": {
 						"type": "string",
@@ -246,7 +286,7 @@
 					},
 					"disable_globbing": {
 						"type": "boolean",
-						"title": "wether to disable file globbing",
+						"title": "whether to disable file globbing",
 						"default": false
 					},
 					"overrides": {
@@ -534,6 +574,10 @@
 					"apk": {
 						"$ref": "#/$defs/APK",
 						"title": "apk-specific settings"
+					},
+					"archlinux": {
+						"$ref": "#/$defs/ArchLinux",
+						"title": "archlinux-specific settings"
 					}
 				},
 				"additionalProperties": false,
