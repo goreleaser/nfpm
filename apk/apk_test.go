@@ -722,3 +722,20 @@ func TestArches(t *testing.T) {
 		require.Equal(t, "foo64", info.Arch)
 	})
 }
+
+func TestGlob(t *testing.T) {
+	require.NoError(t, Default.Package(nfpm.WithDefaults(&nfpm.Info{
+		Name:       "nfpm-repro",
+		Version:    "1.0.0",
+		Maintainer: "asdfasdf",
+
+		Overridables: nfpm.Overridables{
+			Contents: files.Contents{
+				{
+					Destination: "/usr/share/nfpm-repro",
+					Source:      "../files/*",
+				},
+			},
+		},
+	}), io.Discard))
+}

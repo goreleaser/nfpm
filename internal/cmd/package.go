@@ -92,16 +92,15 @@ func doPackage(configPath, target, packager string) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
 	info.Target = target
 
-	err = pkg.Package(info, f)
-	_ = f.Close()
-	if err != nil {
+	if err := pkg.Package(info, f); err != nil {
 		os.Remove(target)
 		return err
 	}
 
 	fmt.Printf("created package: %s\n", target)
-	return nil
+	return f.Close()
 }
