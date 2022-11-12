@@ -848,6 +848,23 @@ func TestDirectories(t *testing.T) {
 	require.Equal(t, h.Mode(), int(tagDirectory|0o700))
 }
 
+func TestGlob(t *testing.T) {
+	require.NoError(t, Default.Package(nfpm.WithDefaults(&nfpm.Info{
+		Name:       "nfpm-repro",
+		Version:    "1.0.0",
+		Maintainer: "asdfasdf",
+
+		Overridables: nfpm.Overridables{
+			Contents: files.Contents{
+				{
+					Destination: "/usr/share/nfpm-repro",
+					Source:      "../files/*",
+				},
+			},
+		},
+	}), io.Discard))
+}
+
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 	rpmFile, err := rpmutils.ReadRpm(bytes.NewReader(rpm))
 	if err != nil {

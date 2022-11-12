@@ -286,3 +286,20 @@ func TestArchMtree(t *testing.T) {
 
 	require.InDeltaSlice(t, []byte(correctMtree), mtree, 0)
 }
+
+func TestGlob(t *testing.T) {
+	require.NoError(t, Default.Package(nfpm.WithDefaults(&nfpm.Info{
+		Name:       "nfpm-repro",
+		Version:    "1.0.0",
+		Maintainer: "asdfasdf",
+
+		Overridables: nfpm.Overridables{
+			Contents: files.Contents{
+				{
+					Destination: "/usr/share/nfpm-repro",
+					Source:      "../files/*",
+				},
+			},
+		},
+	}), io.Discard))
+}

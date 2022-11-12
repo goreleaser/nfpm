@@ -115,6 +115,10 @@ func isOneOf(r rune, rr ...rune) bool {
 
 // Package writes a new archlinux package to the given writer using the given info.
 func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
+	if err := info.Validate(); err != nil {
+		return err
+	}
+
 	if !nameIsValid(info.Name) {
 		return ErrInvalidPkgName
 	}
