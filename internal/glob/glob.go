@@ -92,6 +92,11 @@ func Glob(pattern, dst string, ignoreMatchers bool) (map[string]string, error) {
 			continue
 		}
 
+		if strings.HasSuffix(dst, "/") {
+			files[src] = filepath.Join(dst, filepath.Base(src))
+			continue
+		}
+
 		relpath, err := filepath.Rel(prefix, src)
 		if err != nil {
 			// since prefix is a prefix of src a relative path should always be found

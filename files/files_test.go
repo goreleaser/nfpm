@@ -370,3 +370,15 @@ func TestGlobbingFilesWithDifferentSizesWithFileInfo(t *testing.T) {
 		t.Fatal("test FileInfos have the same size, expected different")
 	}
 }
+
+func TestDestEndsWithSlash(t *testing.T) {
+	result, err := files.ExpandContentGlobs(files.Contents{
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "./foo/",
+		},
+	}, false)
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+	require.Equal(t, "foo/a.txt", result[0].Destination)
+}
