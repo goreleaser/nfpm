@@ -47,6 +47,13 @@ func TestGlob(t *testing.T) {
 		require.Equal(t, "/foo/bar/dir_c/test_c.txt", files["testdata/dir_a/dir_c/test_c.txt"])
 	})
 
+	t.Run("dst is a dir", func(t *testing.T) {
+		files, err := Glob("./testdata/dir_a/dir_b/test_b.txt", "/foo/bar/", false)
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		require.Equal(t, "/foo/bar/test_b.txt", files["testdata/dir_a/dir_b/test_b.txt"])
+	})
+
 	t.Run("to parent", func(t *testing.T) {
 		pattern := "../../testdata/fake"
 		abs, err := filepath.Abs(pattern)
