@@ -23,7 +23,7 @@ import (
 var formatArchs = map[string][]string{
 	"apk":       {"amd64", "arm64", "386", "ppc64le", "armv6", "armv7", "s390x"},
 	"deb":       {"amd64", "arm64", "ppc64le", "armv7", "s390x"},
-	"rpm":       {"amd64", "arm64", "ppc64le", "armv7"},
+	"rpm":       {"amd64", "arm64", "ppc64le"},
 	"archlinux": {"amd64"},
 }
 
@@ -296,15 +296,6 @@ type dockerParams struct {
 	BuildArgs []string
 }
 
-type testWriter struct {
-	*testing.T
-}
-
-func (t testWriter) Write(p []byte) (n int, err error) {
-	t.Log(string(p))
-	return len(p), nil
-}
-
 func accept(t *testing.T, params acceptParms) {
 	t.Helper()
 
@@ -314,8 +305,6 @@ func accept(t *testing.T, params acceptParms) {
 	require.NoError(t, err)
 	packageName := params.Name + "." + params.Format
 	target := filepath.Join(tmp, packageName)
-	t.Log("package: " + target)
-
 	require.NoError(t, os.MkdirAll(tmp, 0o700))
 
 	envFunc := func(s string) string {
@@ -357,9 +346,14 @@ func accept(t *testing.T, params acceptParms) {
 	//nolint:gosec
 	cmd := exec.Command("docker", cmdArgs...)
 	cmd.Dir = "./testdata/acceptance"
-	cmd.Stderr = testWriter{t}
-	cmd.Stdout = cmd.Stderr
-
-	t.Log("will exec:", cmd.Args, "with env BUILD_ARCH:", envFunc("BUILD_ARCH"))
-	require.NoError(t, cmd.Run())
+	bts, err := cmd.CombinedOutput()
+	require.NoError(
+		t,
+		err,
+		"failed: %v; env BUILD_ARCH: %s; package: %s; output: %s",
+		cmd.Args,
+		envFunc("BUILD_ARCH"),
+		target,
+		string(bts),
+	)
 }
