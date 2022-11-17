@@ -72,7 +72,7 @@ func (ArchLinux) ConventionalFileName(info *nfpm.Info) string {
 	name := fmt.Sprintf(
 		"%s-%s-%d-%s.pkg.tar.zst",
 		info.Name,
-		info.Version,
+		info.Version+strings.ReplaceAll(info.Prerelease, "-", "_"),
 		pkgrel,
 		info.Arch,
 	)
@@ -411,7 +411,13 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	if info.Epoch != "" {
 		epoch, err := strconv.ParseUint(info.Epoch, 10, 64)
 		if err == nil {
-			pkgver = fmt.Sprintf("%d:%s-%d", epoch, info.Version, pkgrel)
+			pkgver = fmt.Sprintf(
+				"%d:%s%s-%d",
+				epoch,
+				info.Version,
+				strings.ReplaceAll(info.Prerelease, "-", "_"),
+				pkgrel,
+			)
 		}
 	}
 

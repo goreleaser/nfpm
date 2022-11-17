@@ -21,6 +21,7 @@ func exampleInfo() *nfpm.Info {
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
 		Version:     "1.0.0",
+		Prerelease:  "beta-1",
 		Section:     "default",
 		Homepage:    "http://carlosbecker.com",
 		Vendor:      "nope",
@@ -120,7 +121,7 @@ func TestArchConventionalFileName(t *testing.T) {
 			info.Arch = arch
 			name := Default.ConventionalFileName(info)
 			require.Equal(t,
-				"foo-test-1.0.0-1-"+archToArchLinux[arch]+".pkg.tar.zst",
+				"foo-test-1.0.0beta_1-1-"+archToArchLinux[arch]+".pkg.tar.zst",
 				name,
 			)
 		})
@@ -180,7 +181,7 @@ func TestArchVersionWithEpoch(t *testing.T) {
 	pkginfoData, err := makeTestPkginfo(t, info)
 	require.NoError(t, err)
 	fields := extractPkginfoFields(pkginfoData)
-	require.Equal(t, "2:0.0.1-1", fields["pkgver"])
+	require.Equal(t, "2:0.0.1beta_1-1", fields["pkgver"])
 }
 
 func TestArchOverrideArchitecture(t *testing.T) {
