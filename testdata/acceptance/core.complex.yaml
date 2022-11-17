@@ -23,7 +23,7 @@ contents:
 - src: ./testdata/fake
   dst: /usr/local/bin/fake
 - src: ./testdata/acceptance/folder/*
-  dst: /usr/share/whatever/folder/
+  dst: /usr/share/whatever/folder
 - src: ./testdata/whatever.conf
   dst: /etc/foo/whatever.conf
   type: config
