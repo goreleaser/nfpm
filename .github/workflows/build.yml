@@ -12,7 +12,7 @@ on:
       - 'Taskfile.yml'
       - 'Dockerfile'
       - '.github/workflows/build.yml'
-      - 'testdata/'
+      - 'testdata/**'
   pull_request:
     paths:
       - 'go.*'
