@@ -477,7 +477,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	}
 
 	for _, content := range info.Contents {
-		if content.Type == "config" {
+		if content.Type == "config" || content.Type == "config|noreplace" {
 			path := normalizePath(content.Destination)
 			path = strings.TrimPrefix(path, "./")
 

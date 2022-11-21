@@ -77,6 +77,11 @@ func exampleInfo() *nfpm.Info {
 					Type:        "config",
 				},
 				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/etc/fake/fake2.conf",
+					Type:        "config|noreplace",
+				},
+				{
 					Destination: "/var/log/whatever",
 					Type:        "dir",
 				},
@@ -105,7 +110,7 @@ func TestCreateBuilderData(t *testing.T) {
 
 	require.NoError(t, builderData(tw))
 
-	require.Equal(t, 11784, buf.Len())
+	require.Equal(t, 13832, buf.Len())
 }
 
 func TestCombineToApk(t *testing.T) {
@@ -140,6 +145,7 @@ func TestDefaultWithArch(t *testing.T) {
 		"usr/share/doc/fake/fake.txt": "96c335dc28122b5f09a4cef74b156cd24c23784c",
 		"usr/local/bin/fake":          "f46cece3eeb7d9ed5cb244d902775427be71492d",
 		"etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
+		"etc/fake/fake2.conf":         "96c335dc28122b5f09a4cef74b156cd24c23784c",
 	}
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch
