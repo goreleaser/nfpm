@@ -9,6 +9,7 @@ on:
       - 'www/*'
       - 'cmd/*'
       - 'internal/cmd/*'
+      - 'files/*'
 
 jobs:
   docs:
