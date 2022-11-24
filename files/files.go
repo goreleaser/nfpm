@@ -15,8 +15,8 @@ import (
 // of one file to copy into a package.
 type Content struct {
 	Source      string           `yaml:"src,omitempty" json:"src,omitempty"`
-	Destination string           `yaml:"dst,omitempty" json:"dst,omitempty"`
-	Type        string           `yaml:"type,omitempty" json:"type,omitempty"`
+	Destination string           `yaml:"dst" json:"dst"`
+	Type        string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=dir,enum=,default="`
 	Packager    string           `yaml:"packager,omitempty" json:"packager,omitempty"`
 	FileInfo    *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
 }
@@ -150,7 +150,7 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 			// Ghost, symlinks and dirs need to be in the list, but dont glob
 			// them because they do not really exist
 			files = append(files, f.WithFileInfoDefaults())
-		default:
+		case "config", "config|noreplace", "file", "":
 			globbed, err = glob.Glob(f.Source, f.Destination, disableGlobbing)
 			if err != nil {
 				return nil, err
@@ -160,6 +160,8 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 			if err != nil {
 				return nil, err
 			}
+		default:
+			return files, fmt.Errorf("invalid file type: %s", f.Type)
 		}
 
 	}

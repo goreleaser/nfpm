@@ -74,6 +74,11 @@ func exampleInfo() *nfpm.Info {
 					Type:        "config",
 				},
 				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/etc/fake/fake2.conf",
+					Type:        "config|noreplace",
+				},
+				{
 					Destination: "/var/log/whatever",
 					Type:        "dir",
 				},

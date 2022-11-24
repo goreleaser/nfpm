@@ -382,3 +382,48 @@ func TestDestEndsWithSlash(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, "foo/a.txt", result[0].Destination)
 }
+
+func TestInvalidFileType(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+- src: testdata/globtest/**/*
+  dst: /bla
+  type: filr
+`))
+	dec.KnownFields(true)
+	require.NoError(t, dec.Decode(&config))
+	_, err := files.ExpandContentGlobs(config.Contents, false)
+	require.EqualError(t, err, "invalid file type: filr")
+}
+
+func TestValidFileTypes(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+- src: testdata/globtest/a.txt
+  dst: /f1.txt
+- src: testdata/globtest/a.txt
+  dst: /f2.txt
+  type: file
+- src: testdata/globtest/a.txt
+  dst: /f3.txt
+  type: config
+- src: testdata/globtest/a.txt
+  dst: /f4.txt
+  type: config|noreplace
+- src: testdata/globtest/a.txt
+  dst: /f5.txt
+  type: symlink
+- src: testdata/globtest/a.txt
+  dst: /f6.txt
+  type: dir
+- src: testdata/globtest/a.txt
+  dst: /f7.txt
+  type: ghost
+`))
+	dec.KnownFields(true)
+	require.NoError(t, dec.Decode(&config))
+	_, err := files.ExpandContentGlobs(config.Contents, false)
+	require.NoError(t, err)
+}
