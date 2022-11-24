@@ -2,7 +2,7 @@
 
 ## Reference
 
-A commented out `nfpm.yaml` config file example:
+A commented `nfpm.yaml` config file example:
 
 ```yaml
 # Name. (required)
@@ -13,10 +13,13 @@ name: foo
 # The architecture is specified using Go nomenclature (GOARCH) and translated
 # to the platform specific equivalent. In order to manually set the architecture
 # to a platform specific value, use deb_arch, rpm_arch and apk_arch.
+# Examples: `all`, `amd64`, `386`, `arm5`, `arm6`, `arm7`, `arm64`, `mips`,
+# `mipsle`, `mips64le`, `ppc64le`, `s390`
 arch: amd64
 
 # Platform.
-# Defaults to `linux`.
+# This is only used by the rpm packager.
+# Examples: `linux` (default), `darwin`
 platform: linux
 
 # Version. (required)
@@ -25,36 +28,52 @@ version: v1.2.3
 
 # Version Schema allows you to specify how to parse the version String.
 # Default is `semver`
-#   `semver` parse the version string as a valid semver version
+#   `semver` attempt to parse the version string as a valid semver version.
+#       The parser is lenient; it will strip a `v` prefix and will accept
+#       versions with fewer than 3 components, like `v1.2`.
+#       If parsing succeeds, then the version will be molded into a format
+#       compatible with the specific packager used.
+#       If parsing fails, then the version is used as-is.
 #   `none` skip trying to parse the version string and just use what is passed in
 version_schema: semver
 
 # Version Epoch.
-# Default is extracted from `version` if it is semver compatible.
+# A package with a higher version epoch will always be considered newer.
+# See: https://www.debian.org/doc/debian-policy/ch-controlfields.html#epochs-should-be-used-sparingly
 epoch: 2
 
 # Version Prerelease.
 # Default is extracted from `version` if it is semver compatible.
+# This is appended to the `version`, e.g. `1.2.3+beta1`. If the `version` is
+# semver compatible, then this replaces the prerelease component of the semver.
 prerelease: beta1
 
 # Version Metadata (previously deb.metadata).
 # Default is extracted from `version` if it is semver compatible.
-# Setting metadata might interfere with version comparisons depending on the packager.
+# Setting metadata might interfere with version comparisons depending on the
+# packager. If the `version` is semver compatible, then this replaces the
+# version metadata component of the semver.
 version_metadata: git
 
-# Version Release.
+# Version Release, aka revision.
 # This will expand any env var you set in the field, eg release: ${VERSION_RELEASE}
+# This is appended to the `version` after `prerelease`. This should be
+# incremented if you release an updated package of the same upstream version,
+# and it should reset to 1 when bumping the version.
 release: 1
 
 # Section.
+# This is only used by the deb packager.
+# See: https://www.debian.org/doc/debian-policy/ch-archive.html#sections
 section: default
 
 # Priority.
 # Defaults to `optional` on deb
 # Defaults to empty on rpm and apk
+# See: https://www.debian.org/doc/debian-policy/ch-archive.html#priorities
 priority: extra
 
-# Maintainer.
+# Maintainer. (required)
 # This will expand any env var you set in the field, eg maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
 # Defaults to empty on rpm and apk
 # Leaving the 'maintainer' field unset will not be allowed in a future version
@@ -62,10 +81,13 @@ maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 
 # Description.
 # Defaults to `no description given`.
+# Most packagers call for a one-line synopsis of the package. Some (like deb)
+# also call for a multi-line description starting on the second line.
 description: Sample package
 
 # Vendor.
 # This will expand any env var you set in the field, eg vendor: ${VENDOR}
+# This is only used by the rpm packager.
 vendor: GoReleaser
 
 # Package's homepage.
@@ -133,6 +155,12 @@ contents:
   - src: path/to/local/foo.conf
     dst: /etc/foo.conf
     type: config
+
+  # Select files with a glob (doesn't work if you set disable_globbing: true).
+  # If `src` is a glob, then the `dst` will be treated like a directory - even
+  # if it doesn't end with `/`, and even if the glob only matches one file.
+  - src: path/to/local/*.1.gz
+    dst: /usr/share/man/man1/
 
   # Simple symlink at /usr/local/bin/foo which points to /sbin/foo, which is
   # the same behaviour as `ln -s /sbin/foo /usr/local/bin/foo`.
