@@ -40,7 +40,8 @@ overrides:
       preremove: ./testdata/acceptance/scripts/preremove.sh
   apk:
     depends:
-      - bash (>= 4.4) | fish
+      - bash
+      - fish
     scripts:
       postinstall: ./testdata/acceptance/scripts/postinstall.sh
       preremove: ./testdata/acceptance/scripts/preremove.sh
