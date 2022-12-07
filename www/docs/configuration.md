@@ -23,8 +23,10 @@ arch: amd64
 platform: linux
 
 # Version. (required)
-# This will expand any env var you set in the field, eg version: v${SEMVER}
-version: v1.2.3
+# This will expand any env var you set in the field, eg version: ${SEMVER}
+# Some package managers, like deb, require the version to start with a digit.
+# Hence, you should not prefix the version with 'v'.
+version: 1.2.3
 
 # Version Schema allows you to specify how to parse the version String.
 # Default is `semver`
