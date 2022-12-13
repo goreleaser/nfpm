@@ -9,7 +9,7 @@ A commented `nfpm.yaml` config file example:
 name: foo
 
 # Architecture. (required)
-# This will expand any env var you set in the field, eg version: ${GOARCH}
+# This will expand any env var you set in the field, e.g. version: ${GOARCH}
 # The architecture is specified using Go nomenclature (GOARCH) and translated
 # to the platform specific equivalent. In order to manually set the architecture
 # to a platform specific value, use deb_arch, rpm_arch and apk_arch.
@@ -23,12 +23,12 @@ arch: amd64
 platform: linux
 
 # Version. (required)
-# This will expand any env var you set in the field, eg version: ${SEMVER}
+# This will expand any env var you set in the field, e.g. version: ${SEMVER}
 # Some package managers, like deb, require the version to start with a digit.
 # Hence, you should not prefix the version with 'v'.
 version: 1.2.3
 
-# Version Schema allows you to specify how to parse the version String.
+# Version Schema allows you to specify how to parse the version string.
 # Default is `semver`
 #   `semver` attempt to parse the version string as a valid semver version.
 #       The parser is lenient; it will strip a `v` prefix and will accept
@@ -58,7 +58,7 @@ prerelease: beta1
 version_metadata: git
 
 # Version Release, aka revision.
-# This will expand any env var you set in the field, eg release: ${VERSION_RELEASE}
+# This will expand any env var you set in the field, e.g. release: ${VERSION_RELEASE}
 # This is appended to the `version` after `prerelease`. This should be
 # incremented if you release an updated package of the same upstream version,
 # and it should reset to 1 when bumping the version.
@@ -76,7 +76,7 @@ section: default
 priority: extra
 
 # Maintainer. (required)
-# This will expand any env var you set in the field, eg maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
+# This will expand any env var you set in the field, e.g. maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
 # Defaults to empty on rpm and apk
 # Leaving the 'maintainer' field unset will not be allowed in a future version
 maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
@@ -88,7 +88,7 @@ maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 description: Sample package
 
 # Vendor.
-# This will expand any env var you set in the field, eg vendor: ${VENDOR}
+# This will expand any env var you set in the field, e.g. vendor: ${VENDOR}
 # This is only used by the rpm packager.
 vendor: GoReleaser
 
@@ -105,42 +105,42 @@ changelog: "changelog.yaml"
 disable_globbing: false
 
 # Packages it replaces. (overridable)
-# This will expand any env var you set in the field, eg ${REPLACE_BLA}
+# This will expand any env var you set in the field, e.g. ${REPLACE_BLA}
 # the env var approach can be used to account for differences in platforms
 replaces:
   - foobar
   - ${REPLACE_BLA}
 
 # Packages it provides. (overridable)
-# This will expand any env var you set in the field, eg ${PROVIDES_BLA}
+# This will expand any env var you set in the field, e.g. ${PROVIDES_BLA}
 # the env var approach can be used to account for differences in platforms
 provides:
   - bar
   - ${PROVIDES_BLA}
 
 # Dependencies. (overridable)
-# This will expand any env var you set in the field, eg ${DEPENDS_NGINX}
+# This will expand any env var you set in the field, e.g. ${DEPENDS_NGINX}
 # the env var approach can be used to account for differences in platforms
-# eg rhel needs nginx >= 1:1.18 and deb needs nginx (>= 1.18.0)
+# e.g. rhel needs nginx >= 1:1.18 and deb needs nginx (>= 1.18.0)
 depends:
   - git
   - ${DEPENDS_NGINX}
 
 # Recommended packages. (overridable)
-# This will expand any env var you set in the field, eg ${RECOMMENDS_BLA}
+# This will expand any env var you set in the field, e.g. ${RECOMMENDS_BLA}
 # the env var approach can be used to account for differences in platforms
 recommends:
   - golang
   - ${RECOMMENDS_BLA}
 
 # Suggested packages. (overridable)
-# This will expand any env var you set in the field, eg ${SUGGESTS_BLA}
+# This will expand any env var you set in the field, e.g. ${SUGGESTS_BLA}
 # the env var approach can be used to account for differences in platforms
 suggests:
   - bzr
 
 # Packages it conflicts with. (overridable)
-# This will expand any env var you set in the field, eg ${CONFLICTS_BLA}
+# This will expand any env var you set in the field, e.g. ${CONFLICTS_BLA}
 # the env var approach can be used to account for differences in platforms
 conflicts:
   - mercurial
@@ -189,7 +189,7 @@ contents:
   # installed - log files and state files are good examples of cases you might
   # desire this to happen."
   #
-  # "The way to achieve this, is to use the %ghost directive. By adding this
+  # "The way to achieve this is to use the %ghost directive. By adding this
   # directive to the line containing a file, RPM will know about the ghosted
   # file, but will not add it to the package."
   #
@@ -199,7 +199,7 @@ contents:
   - dst: /var/log/boo.log
     type: ghost
 
-  # You can user the packager field to add files that are unique to a specific packager
+  # You can use the packager field to add files that are unique to a specific packager
   - src: path/to/rpm/file.conf
     dst: /etc/file.conf
     type: config|noreplace
@@ -284,12 +284,12 @@ rpm:
 
   # The package summary. This is, by default, the first line of the
   # description, but can be explicitly provided here.
-  summary: Explicit Summary for Sample Package
+  summary: Explicit summary for the package
 
   # The packager is used to identify the organization that actually packaged
   # the software, as opposed to the author of the software.
   # `maintainer` will be used as fallback if not specified.
-  # This will expand any env var you set in the field, eg packager: ${PACKAGER}
+  # This will expand any env var you set in the field, e.g. packager: ${PACKAGER}
   packager: GoReleaser <staff@goreleaser.com>
 
   # Compression algorithm (gzip (default), lzma or xz).
@@ -300,12 +300,12 @@ rpm:
     # PGP secret key (can also be ASCII-armored), the passphrase is taken
     # from the environment variable $NFPM_RPM_PASSPHRASE with a fallback
     # to $NFPM_PASSPHRASE.
-    # This will expand any env var you set in the field, eg key_file: ${SIGNING_KEY_FILE}
+    # This will expand any env var you set in the field, e.g. key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
     # PGP secret key id in hex format, if it is not set it will select the first subkey
     # that has the signing flag set. You may need to set this if you want to use the primary key as the signing key
     # or to support older versions of RPM < 4.13.0 which cannot validate a signed RPM that used a subkey to sign
-    # This will expand any env var you set in the field, eg key_id: ${RPM_SIGNING_KEY_ID}
+    # This will expand any env var you set in the field, e.g. key_id: ${RPM_SIGNING_KEY_ID}
     key_id: bc8acdd415bd80b3
 
 # Custom configuration applied only to the Deb packager.
@@ -350,14 +350,14 @@ deb:
     # PGP secret key (can also be ASCII-armored). The passphrase is taken
     # from the environment variable $NFPM_DEB_PASSPHRASE with a fallback
     # to $NFPM_PASSPHRASE.
-    # This will expand any env var you set in the field, eg key_file: ${SIGNING_KEY_FILE}
+    # This will expand any env var you set in the field, e.g. key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
     # The type describes the signers role, possible values are "origin",
     # "maint" and "archive". If unset, the type defaults to "origin".
     type: origin
     # PGP secret key id in hex format, if it is not set it will select the first subkey
     # that has the signing flag set. You may need to set this if you want to use the primary key as the signing key
-    # This will expand any env var you set in the field, eg key_id: ${DEB_SIGNING_KEY_ID}
+    # This will expand any env var you set in the field, e.g. key_id: ${DEB_SIGNING_KEY_ID}
     key_id: bc8acdd415bd80b3
 
   # Additional fields for the control file. Empty fields are ignored.
@@ -373,7 +373,7 @@ apk:
     # RSA private key in the PEM format. The passphrase is taken from
     # the environment variable $NFPM_APK_PASSPHRASE with a fallback
     # to $NFPM_PASSPHRASE.
-    # This will expand any env var you set in the field, eg key_file: ${SIGNING_KEY_FILE}
+    # This will expand any env var you set in the field, e.g. key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
     # The name of the signing key. When verifying a package, the signature
     # is matched to the public key store in /etc/apk/keys/<key_name>.rsa.pub.
@@ -393,7 +393,7 @@ archlinux:
 
   # Arch Linux specific scripts.
   scripts:
-    # The postupgrade script runs before pacman upgrades the package
+    # The preupgrade script runs before pacman upgrades the package
     preupgrade: ./scripts/preupgrade.sh
     # The postupgrade script runs after pacman upgrades the package
     postupgrade: ./scripts/postupgrade.sh
