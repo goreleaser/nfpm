@@ -10,6 +10,7 @@ on:
       - 'cmd/*'
       - 'internal/cmd/*'
       - 'files/*'
+  workflow_dispatch:
 
 jobs:
   docs:
@@ -24,6 +25,9 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task docs:generate
+      - run: task docs:releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "docs: update cmd docs"

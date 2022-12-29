@@ -96,6 +96,13 @@ tasks:
       - www/docs/cmd/*.md
       - www/docs/contributing.md
 
+  docs:releases:
+    desc: Generate the latest file
+    cmds:
+      - ./scripts/pages/releases.sh
+    generates:
+      - www/docs/static/latest
+
   docs:imgs:
     desc: Download and resize images
     cmds:
