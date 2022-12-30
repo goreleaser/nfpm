@@ -12,7 +12,7 @@ homepage: "https://foobar.org"
 license: "MIT"
 contents:
 - src: ./testdata/fake
-  dst: /usr/local/bin/fake
+  dst: /usr/bin/fake
 - src: ./testdata/whatever.conf
   dst: /etc/foo/whatever.conf
   type: config

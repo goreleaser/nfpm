@@ -151,7 +151,7 @@ conflicts:
 contents:
   # Basic file that applies to all packagers
   - src: path/to/local/foo
-    dst: /usr/local/bin/foo
+    dst: /usr/bin/foo
 
   # Simple config file
   - src: path/to/local/foo.conf
@@ -164,8 +164,8 @@ contents:
   - src: path/to/local/*.1.gz
     dst: /usr/share/man/man1/
 
-  # Simple symlink at /usr/local/bin/foo which points to /sbin/foo, which is
-  # the same behaviour as `ln -s /sbin/foo /usr/local/bin/foo`.
+  # Simple symlink at /usr/bin/foo which points to /sbin/foo, which is
+  # the same behaviour as `ln -s /sbin/foo /usr/bin/foo`.
   #
   # This also means that both "src" and "dst" are paths inside the package (or
   # rather paths in the file system where the package will be installed) and
@@ -218,7 +218,7 @@ contents:
   # than 'root') has to be always specified manually in 'file_info' as it will not be copied
   # from the 'src' file.
   - src: path/to/foo
-    dst: /usr/local/foo
+    dst: /usr/share/foo
     file_info:
       # Make sure that the mode is specified in octal, e.g. 0644 instead of 644.
       mode: 0644

@@ -62,7 +62,7 @@ func exampleInfo() *nfpm.Info {
 			Contents: []*files.Content{
 				{
 					Source:      "../testdata/fake",
-					Destination: "/usr/local/bin/fake",
+					Destination: "/usr/bin/fake",
 				},
 				{
 					Source:      "../testdata/whatever.conf",
@@ -325,7 +325,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 				Contents: []*files.Content{
 					{
 						Source:      "../testdata/fake",
-						Destination: "/usr/local/bin/fake",
+						Destination: "/usr/bin/fake",
 					},
 					{
 						Source:      "../testdata/whatever.confzzz",

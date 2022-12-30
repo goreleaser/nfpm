@@ -16,12 +16,12 @@ RUN ls -l /path/to/symlink | grep "/path/to/symlink -> /etc/foo/whatever.conf"
 
 # ---- simple test ----
 FROM min AS simple
-RUN test -e /usr/local/bin/fake
+RUN test -e /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN echo wat >> /etc/foo/whatever.conf
 RUN rpm -e foo
 RUN test -f /etc/foo/whatever.conf.rpmsave
-RUN test ! -f /usr/local/bin/fake
+RUN test ! -f /usr/bin/fake
 
 
 # ---- no-glob test ----
@@ -39,7 +39,7 @@ FROM min AS complex
 RUN test "$(rpm -qp --recommends /tmp/foo.rpm)" = "fish"
 RUN test "$(rpm -qp --suggests /tmp/foo.rpm)" = "zsh"
 RUN test "$(rpm -qp --requires /tmp/foo.rpm)" = "bash"
-RUN test -e /usr/local/bin/fake
+RUN test -e /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /usr/share/whatever/folder
 RUN test -f /usr/share/whatever/folder/file1
@@ -55,7 +55,7 @@ RUN test -f /etc/something/a
 RUN test -f /etc/something/b
 RUN test -d /etc/something/c
 RUN test -f /etc/something/c/d
-RUN test $(stat -c %a /usr/sbin/fake) -eq 4755
+RUN test $(stat -c %a /usr/bin/fake2) -eq 4755
 RUN test -f /tmp/preinstall-proof
 RUN test -f /tmp/postinstall-proof
 RUN test -f /tmp/pretrans-proof
@@ -65,8 +65,8 @@ RUN test ! -f /tmp/postremove-proof
 RUN echo wat >> /etc/foo/whatever.conf
 RUN rpm -e foo
 RUN test -f /etc/foo/whatever.conf.rpmsave
-RUN test ! -f /usr/local/bin/fake
-RUN test ! -f /usr/sbin/fake
+RUN test ! -f /usr/bin/fake
+RUN test ! -f /usr/bin/fake2
 RUN test -f /tmp/preremove-proof
 RUN test -f /tmp/postremove-proof
 RUN test ! -d /var/log/whatever
@@ -94,7 +94,7 @@ RUN yum install -y foo
 
 # ---- overrides test ----
 FROM min AS overrides
-RUN test -e /usr/local/bin/fake
+RUN test -e /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /usr/share/whatever/folder
 RUN test -f /usr/share/whatever/folder/file1
@@ -109,7 +109,7 @@ RUN test ! -f /tmp/postremove-proof
 RUN echo wat >> /etc/foo/whatever.conf
 RUN rpm -e foo
 RUN test -f /etc/foo/whatever.conf.rpmsave
-RUN test ! -f /usr/local/bin/fake
+RUN test ! -f /usr/bin/fake
 RUN test ! -f /tmp/preremove-proof
 RUN test -f /tmp/postremove-proof
 
@@ -150,12 +150,12 @@ RUN rpm -q foo --changelog | grep -E "^- note 3$"
 FROM min AS compression
 ARG compression
 RUN test "${compression}" = "$(rpm -qp --qf '%{PAYLOADCOMPRESSOR}' /tmp/foo.rpm)"
-RUN test -e /usr/local/bin/fake
+RUN test -e /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN echo wat >> /etc/foo/whatever.conf
 RUN rpm -e foo
 RUN test -f /etc/foo/whatever.conf.rpmsave
-RUN test ! -f /usr/local/bin/fake
+RUN test ! -f /usr/bin/fake
 
 # ---- upgrade test ----
 FROM test_base AS upgrade
@@ -197,12 +197,12 @@ RUN cat /etc/noreplace.conf.rpmnew | grep foo=baz
 
 # ---- release test ----
 FROM min AS release
-RUN test -e /usr/local/bin/fake
+RUN test -e /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN echo wat >> /etc/foo/whatever.conf
 RUN rpm -e foo
 RUN test -f /etc/foo/whatever.conf.rpmsave
-RUN test ! -f /usr/local/bin/fake
+RUN test ! -f /usr/bin/fake
 
 # ---- directories test ----
 FROM test_base AS directories

@@ -16,12 +16,12 @@ RUN ls -l /path/to/symlink | grep "/path/to/symlink -> /etc/foo/whatever.conf"
 
 # ---- simple test ----
 FROM min AS simple
-RUN test -e /usr/local/bin/fake
+RUN test -e /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN echo wat >> /etc/foo/whatever.conf
 RUN apk del foo
 RUN test -f /etc/foo/whatever.conf
-RUN test ! -f /usr/local/bin/fake
+RUN test ! -f /usr/bin/fake
 
 
 # ---- no-glob test ----
@@ -36,7 +36,7 @@ RUN test -f /usr/share/whatever/folder2/file2
 
 # ---- complex test ----
 FROM min AS complex
-RUN test -e /usr/local/bin/fake
+RUN test -e /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /usr/share/whatever/
 RUN test -d /usr/share/whatever/folder
@@ -53,7 +53,7 @@ RUN test -f /etc/something/a
 RUN test -f /etc/something/b
 RUN test -d /etc/something/c
 RUN test -f /etc/something/c/d
-RUN test $(stat -c %a /usr/sbin/fake) -eq 4755
+RUN test $(stat -c %a /usr/bin/fake2) -eq 4755
 RUN test -f /tmp/preinstall-proof
 RUN test -f /tmp/postinstall-proof
 RUN test ! -f /tmp/preremove-proof
@@ -61,8 +61,8 @@ RUN test ! -f /tmp/postremove-proof
 RUN echo wat >> /etc/foo/whatever.conf
 RUN apk del foo
 RUN test -f /etc/foo/whatever.conf
-RUN test ! -f /usr/local/bin/fake
-RUN test ! -f /usr/sbin/fake
+RUN test ! -f /usr/bin/fake
+RUN test ! -f /usr/bin/fake2
 RUN test -f /tmp/preremove-proof
 RUN test -f /tmp/postremove-proof
 RUN test ! -d /var/log/whatever
@@ -79,7 +79,7 @@ RUN apk add  /tmp/foo.apk
 
 # ---- overrides test ----
 FROM min AS overrides
-RUN test -e /usr/local/bin/fake
+RUN test -e /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test ! -f /tmp/preinstall-proof
 RUN test -f /tmp/postinstall-proof
@@ -88,7 +88,7 @@ RUN test ! -f /tmp/postremove-proof
 RUN echo wat >> /etc/foo/whatever.conf
 RUN apk del foo
 RUN test -f /etc/foo/whatever.conf
-RUN test ! -f /usr/local/bin/fake
+RUN test ! -f /usr/bin/fake
 RUN test -f /tmp/preremove-proof
 RUN test ! -f /tmp/postremove-proof
 

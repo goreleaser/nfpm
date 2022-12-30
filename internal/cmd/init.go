@@ -69,13 +69,13 @@ license: "MIT"
 changelog: "changelog.yaml"
 contents:
 - src: ./foo
-  dst: /usr/local/bin/foo
+  dst: /usr/bin/foo
 - src: ./bar
-  dst: /usr/local/bin/bar
+  dst: /usr/bin/bar
 - src: ./foobar.conf
   dst: /etc/foobar.conf
   type: config
-- src: /usr/local/bin/foo
+- src: /usr/bin/foo
   dst: /sbin/foo
   type: symlink
 overrides:

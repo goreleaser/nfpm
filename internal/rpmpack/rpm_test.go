@@ -22,7 +22,7 @@ func TestFileOwner(t *testing.T) {
 	user := "testUser"
 
 	r.AddFile(RPMFile{
-		Name:  "/usr/local/hello",
+		Name:  "/usr/hello",
 		Body:  []byte("content of the file"),
 		Group: group,
 		Owner: user,
@@ -46,7 +46,7 @@ func Test100644(t *testing.T) {
 		t.Fatalf("NewRPM returned error %v", err)
 	}
 	r.AddFile(RPMFile{
-		Name: "/usr/local/hello",
+		Name: "/usr/share/hello",
 		Body: []byte("content of the file"),
 		Mode: 0o100644,
 	})
@@ -162,20 +162,20 @@ func TestAllowListDirs(t *testing.T) {
 	}
 
 	r.AddFile(RPMFile{
-		Name: "/usr/local/dir1",
+		Name: "/usr/share/dir1",
 		Mode: 0o40000,
 	})
 	r.AddFile(RPMFile{
-		Name: "/usr/local/dir2",
+		Name: "/usr/share/dir2",
 		Mode: 0o40000,
 	})
 
-	r.AllowListDirs(map[string]bool{"/usr/local/dir1": true})
+	r.AllowListDirs(map[string]bool{"/usr/share/dir1": true})
 
 	if err := r.Write(io.Discard); err != nil {
 		t.Errorf("NewRPM returned error %v", err)
 	}
-	expected := map[string]RPMFile{"/usr/local/dir1": {Name: "/usr/local/dir1", Mode: 0o40000}}
+	expected := map[string]RPMFile{"/usr/share/dir1": {Name: "/usr/share/dir1", Mode: 0o40000}}
 	if d := cmp.Diff(expected, r.files); d != "" {
 		t.Errorf("Expected dirs differs (want->got):\n%v", d)
 	}

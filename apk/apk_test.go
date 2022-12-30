@@ -65,7 +65,7 @@ func exampleInfo() *nfpm.Info {
 			Contents: []*files.Content{
 				{
 					Source:      "../testdata/fake",
-					Destination: "/usr/local/bin/fake",
+					Destination: "/usr/bin/fake",
 				},
 				{
 					Source:      "../testdata/whatever.conf",
@@ -110,7 +110,7 @@ func TestCreateBuilderData(t *testing.T) {
 
 	require.NoError(t, builderData(tw))
 
-	require.Equal(t, 13832, buf.Len())
+	require.Equal(t, 13320, buf.Len())
 }
 
 func TestCombineToApk(t *testing.T) {
@@ -143,7 +143,7 @@ func TestPathsToCreate(t *testing.T) {
 func TestDefaultWithArch(t *testing.T) {
 	expectedChecksums := map[string]string{
 		"usr/share/doc/fake/fake.txt": "96c335dc28122b5f09a4cef74b156cd24c23784c",
-		"usr/local/bin/fake":          "f46cece3eeb7d9ed5cb244d902775427be71492d",
+		"usr/bin/fake":                "f46cece3eeb7d9ed5cb244d902775427be71492d",
 		"etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
 		"etc/fake/fake2.conf":         "96c335dc28122b5f09a4cef74b156cd24c23784c",
 	}
@@ -200,7 +200,7 @@ func TestFileDoesNotExist(t *testing.T) {
 				Contents: []*files.Content{
 					{
 						Source:      "../testdata/fake",
-						Destination: "/usr/local/bin/fake",
+						Destination: "/usr/bin/fake",
 					},
 					{
 						Source:      "../testdata/whatever.confzzz",
