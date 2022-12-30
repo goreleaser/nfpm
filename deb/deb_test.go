@@ -595,7 +595,7 @@ func TestDebChangelogData(t *testing.T) {
 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
 
-	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name)
+	changelogName := fmt.Sprintf("/usr/share/doc/%s/changelog.Debian.gz", info.Name)
 	dataChangelogGz := extractFileFromTar(t,
 		inflate(t, dataTarballName, dataTarball), changelogName)
 

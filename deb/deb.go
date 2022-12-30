@@ -485,7 +485,10 @@ func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
 	created map[string]bool, info *nfpm.Info,
 ) (int64, error) {
 	var buf bytes.Buffer
-	out := gzip.NewWriter(&buf)
+	out, err := gzip.NewWriterLevel(&buf, gzip.BestCompression)
+	if err != nil {
+		return 0, fmt.Errorf("could not create gzip writer: %w", err)
+	}
 	// the writers are properly closed later, this is just in case that we have
 	// an error in another part of the code.
 	defer out.Close() // nolint: errcheck
@@ -500,13 +503,14 @@ func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
 	}
 
 	if err = out.Close(); err != nil {
-		return 0, fmt.Errorf("closing changelog.gz: %w", err)
+		return 0, fmt.Errorf("closing changelog.Debian.gz: %w", err)
 	}
 
 	changelogData := buf.Bytes()
 
 	// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
-	changelogName := normalizePath(fmt.Sprintf("/usr/share/doc/%s/changelog.gz", info.Name))
+	// https://lintian.debian.org/tags/debian-changelog-file-missing-or-wrong-name
+	changelogName := normalizePath(fmt.Sprintf("/usr/share/doc/%s/changelog.Debian.gz", info.Name))
 	if err = createTree(tarw, changelogName, created); err != nil {
 		return 0, err
 	}
@@ -568,15 +572,6 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		"control":   body.Bytes(),
 		"md5sums":   md5sums,
 		"conffiles": conffiles(info),
-	}
-
-	if info.Changelog != "" {
-		changeLogData, err := formatChangelog(info)
-		if err != nil {
-			return nil, err
-		}
-
-		filesToCreate["changelog"] = []byte(changeLogData)
 	}
 
 	triggers := createTriggers(info)
