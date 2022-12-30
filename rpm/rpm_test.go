@@ -54,7 +54,7 @@ func exampleInfo() *nfpm.Info {
 			Contents: []*files.Content{
 				{
 					Source:      "../testdata/fake",
-					Destination: "/usr/local/bin/fake",
+					Destination: "/usr/bin/fake",
 				},
 				{
 					Source:      "../testdata/whatever.conf",
@@ -466,7 +466,7 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 	info.Contents = []*files.Content{
 		{
 			Source:      "../testdata/fake",
-			Destination: "/usr/local/bin/fake",
+			Destination: "/usr/bin/fake",
 		},
 		{
 			Source:      "../testdata/whatever.confzzz",

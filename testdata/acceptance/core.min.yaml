@@ -5,4 +5,4 @@ license: MIT
 maintainer: "Foo Bar"
 contents:
 - src: ./testdata/fake
-  dst: /usr/local/bin/fake
+  dst: /usr/bin/fake

@@ -7,7 +7,7 @@ vendor: "foobar"
 license: "MIT"
 contents:
 - src: ./testdata/fake
-  dst: /usr/local/bin/fake
+  dst: /usr/bin/fake
 scripts:
   postinstall: ./testdata/acceptance/scripts/postinstall_trigger.sh
 deb:

@@ -21,7 +21,7 @@ homepage: "https://foobar.org"
 license: "MIT"
 contents:
 - src: ./testdata/fake
-  dst: /usr/local/bin/fake
+  dst: /usr/bin/fake
 - src: ./testdata/acceptance/folder/*
   dst: /usr/share/whatever/folder
 - src: ./testdata/whatever.conf
