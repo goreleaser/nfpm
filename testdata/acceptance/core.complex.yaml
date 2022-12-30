@@ -29,32 +29,39 @@ contents:
   type: config
 - src: ./testdata/something
   dst: /etc/something
-- src: ./testdata/fake
-  dst: /usr/sbin/fake
-  packager: deb
-  file_info:
-    mode: 04755
-- src: ./testdata/fake
-  dst: /usr/sbin/fake
-  packager: rpm
-  file_info:
-    mode: 04755
-- src: ./testdata/fake
-  dst: /usr/sbin/fake
-  packager: apk
-  file_info:
-    mode: 04755
-- src: ./testdata/fake
-  dst: /usr/bin/fake
-  file_info:
-    mode: 04755
-  packager: archlinux
 - dst: /usr/foo/bar/something
   type: dir
 - dst: /var/log/whatever
   type: dir
 - dst: /usr/share/foo
   type: dir
+
+# Packager specifics:
+
+- packager: deb
+  src: ./testdata/fake
+  dst: /usr/bin/fake2
+  file_info:
+    mode: 04755
+
+- packager: rpm
+  src: ./testdata/fake
+  dst: /usr/bin/fake2
+  file_info:
+    mode: 04755
+
+- packager: apk
+  src: ./testdata/fake
+  dst: /usr/bin/fake2
+  file_info:
+    mode: 04755
+
+- packager: archlinux
+  src: ./testdata/fake
+  dst: /usr/bin/fake2
+  file_info:
+    mode: 04755
+
 scripts:
   preinstall: ./testdata/acceptance/scripts/preinstall.sh
   postinstall: ./testdata/acceptance/scripts/postinstall.sh

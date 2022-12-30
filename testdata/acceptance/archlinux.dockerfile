@@ -56,7 +56,7 @@ RUN test -f /etc/something/a
 RUN test -f /etc/something/b
 RUN test -d /etc/something/c
 RUN test -f /etc/something/c/d
-RUN test $(stat -c %a /usr/bin/fake) -eq 4755
+RUN test $(stat -c %a /usr/bin/fake2) -eq 4755
 RUN test -f /tmp/preinstall-proof
 RUN test -f /tmp/postinstall-proof
 RUN test ! -f /tmp/preremove-proof
@@ -65,7 +65,7 @@ RUN echo wat >> /etc/foo/whatever.conf
 RUN pacman --noconfirm -R foo
 RUN test -f /etc/foo/whatever.conf.pacsave
 RUN test ! -f /usr/bin/fake
-RUN test ! -f /usr/bin/fake
+RUN test ! -f /usr/bin/fake2
 RUN test -f /tmp/preremove-proof
 RUN test -f /tmp/postremove-proof
 RUN test ! -d /var/log/whatever
