@@ -130,12 +130,18 @@ FROM test_base AS withchangelog
 # image filters out changelogs by default
 # so we have to remove that rule
 RUN apt update -y
-RUN apt install -y gzip
+RUN apt install -y gzip lintian
 RUN dpkg -i /tmp/foo.deb
-RUN zcat "/usr/share/doc/foo/changelog.gz" | grep "Carlos A Becker <pkg@carlosbecker.com>"
-RUN zcat "/usr/share/doc/foo/changelog.gz" | grep "note 1"
-RUN zcat "/usr/share/doc/foo/changelog.gz" | grep "note 2"
-RUN zcat "/usr/share/doc/foo/changelog.gz" | grep "note 3"
+RUN zcat "/usr/share/doc/foo/changelog.Debian.gz" | grep "Carlos A Becker <pkg@carlosbecker.com>"
+RUN zcat "/usr/share/doc/foo/changelog.Debian.gz" | grep "note 1"
+RUN zcat "/usr/share/doc/foo/changelog.Debian.gz" | grep "note 2"
+RUN zcat "/usr/share/doc/foo/changelog.Debian.gz" | grep "note 3"
+RUN lintian /tmp/foo.deb > lintian.out
+RUN test $(grep -c 'debian-changelog-file-missing-or-wrong-name' lintian.out) = 0
+RUN test $(grep -c 'changelog-not-compressed-with-max-compression' lintian.out) = 0
+RUN test $(grep -c 'unknown-control-file' lintian.out) = 0
+# TODO: RUN test $(grep -c 'package-contains-timestamped-gzip' lintian.out) = 0
+# TODO: RUN test $(grep -c 'syntax-error-in-debian-changelog' lintian.out) = 0
 
 # ---- rules test ----
 FROM min AS rules
