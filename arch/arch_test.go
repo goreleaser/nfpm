@@ -42,7 +42,7 @@ func exampleInfo() *nfpm.Info {
 			Contents: []*files.Content{
 				{
 					Source:      "../testdata/fake",
-					Destination: "/usr/share/bin/fake",
+					Destination: "/usr/bin/fake",
 				},
 				{
 					Source:      "../testdata/whatever.conf",
