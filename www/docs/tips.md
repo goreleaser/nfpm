@@ -1,23 +1,39 @@
-# Tips, Hints, and useful information
+# Tips, Hints and useful information
 
 ## General maintainability of your packages
 * Try hard to make all files work on all platforms you support.
-    * Maintaining separate scripts, config, service files, etc for each platform quickly becomes difficult
-* Put as much conditional logic in the pre/post install scripts as possible instead of trying to build it into the nfpm.yaml
-* *if* you need to know the packaging system I have found it useful to add a `/etc/path-to-cfg/package.env` that contains `_INSTALLED_FROM=apk|deb|rpm` which can be sourced into the pre/post install/remove scripts
-* *if/when* you need to ask questions during the installation process, create an `install.sh` || `setup.sh` script that asks those questions and stores the answers as env vars in `/etc/path-to-cfg/package.env` for use by the pre/post install/remove scripts
-  * If you only need to support deb packages you can use the debconf template/config feature, but since rpm does not support this I would try to unify the way you ask questions.
+	* Maintaining separate scripts, config, service files, etc for each platform
+	  quickly becomes difficult
+* Put as much conditional logic in the pre/post install scripts as possible
+  instead of trying to build it into the nfpm.yaml
+* *if* you need to know the packaging system I have found it useful to add a
+  `/etc/path-to-cfg/package.env` that contains `_INSTALLED_FROM=apk|deb|rpm`
+  which can be sourced into the pre/post install/remove scripts
+* *if/when* you need to ask questions during the installation process, create an
+  `install.sh` || `setup.sh` script that asks those questions and stores the
+  answers as env vars in `/etc/path-to-cfg/package.env` for use by the pre/post
+  install/remove scripts
+  * If you only need to support deb packages you can use the debconf
+	template/config feature, but since rpm does not support this I would try to
+	unify the way you ask questions.
 
-## Pre/Post Install/Remove/Upgrade scripts
+## Pre/post install scripts
+
+Here are some useful links for how these scripts work in each packager:
+
 * [APK Docs](https://wiki.alpinelinux.org/wiki/Creating_an_Alpine_package#install)
 * [RPM Docs](https://docs.fedoraproject.org/en-US/packaging-guidelines/Scriptlets/)
 * [DEB Docs](https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html)
 
-### Example Multi platform post-install script
+### Examples
+
+<details>
+<summary>Example Multi platform post-install script</summary>
+
 ```bash
 #!/bin/sh
 
-# Step 1, decide if we should use systemd or init/upstart
+# Step 1, decide if we should use SystemD or init/upstart
 use_systemctl="True"
 systemd_version=0
 if ! command -V systemctl >/dev/null 2>&1; then
@@ -97,8 +113,15 @@ esac
 
 # Step 4, clean up unused files, yes you get a warning when you remove the package, but that is ok.
 cleanup
+
 ```
-### Example Multi platform (RPM & Deb) post-remove script
+
+</details>
+
+
+<details>
+<summary>Example Multi platform (RPM & Deb) post-remove script</summary>
+
 ```bash
 #!/bin/sh
 
@@ -138,36 +161,53 @@ case "$action" in
 esac
 ```
 
-### Deb & RPM
-* On upgrade, the scripts are being executed in the following order:
-    1. `pretrans` of new package (only applies to RPM)
-    2. `preinstall` of new package
-    3. `postinstall` of new package
-    4. `preremove` of old package
-    5. `postremove` of old package
-    6. `posttrans` of new package (only applies to RPM)
+</details>
 
-## Systemd and upstart/init
+
+### Execution order
+On upgrade, the scripts are being executed in the following order:
+
+1. `pretrans` of new package (only applies to RPM)
+2. `preinstall` of new package
+3. `postinstall` of new package
+4. `preremove` of old package
+5. `postremove` of old package
+6. `posttrans` of new package (only applies to RPM)
+
+## SystemD and upstart/init
+
 ### upstart / init
-* try to just say no to supporting this, but if you must make sure you have a single script that works on all platforms you need to support.
+* try to just say no to supporting this, but if you must make sure you have a
+  single script that works on all platforms you need to support.
   * as the `post-install` script above does.
 
-### Systemd
-* The docs you find for systemd are generally for the latest and greatest version, and it can be hard to find docs for older versions.
-  * In the above `post-install` script you see I am doing a systemd version check to correct the `ExecStartPre=+...` and `ExecStop=+...` lines
-* You should always use [Table 2. Automatic directory creation and environment variables](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#id-1.14.4.3.6.2)
-  * With the note that only `RuntimeDirectory` is used in systemd < 231
-* `/bin/bash -c "$(which ...) ...` is a great way to make your single service file work on all platforms since rhel and debian based systems have standard executables in differing locations and complain about `executable path is not absolute`
-  * eg `/bin/bash -c '$(which mkdir) -p /var/log/your-service'`
+### SystemD
 
-### Debs and Lintian
+* The docs you find for SystemD are generally for the latest and greatest
+  version, and it can be hard to find docs for older versions.
+  * In the above `post-install` script you see I am doing a SystemD version
+	check to correct the `ExecStartPre=+...` and `ExecStop=+...` lines
+* You should always use
+  [automatic directory creation and environment variables](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#id-1.14.4.3.6.2)
+  * With the note that only `RuntimeDirectory` is used in SystemD < 231
+* `/bin/bash -c "$(which ...) ...` is a great way to make your single service
+  file work on all platforms since RHEL and Debian-based systems have standard
+  executables in differing locations and complain about `executable path is not
+  absolute`
+  * e.g. `/bin/bash -c '$(which mkdir) -p /var/log/your-service'`
 
-Its recommended to run [lintian](https://lintian.debian.org) against your
+
+## Debian packages
+
+### The `.lintian-overrides` file
+
+It is recommended to run [lintian](https://lintian.debian.org) against your
 deb packages to see if there are any problems.
 
 You can also add a `lintian-overrides` file:
 
 ```yaml
+# nfpm.yaml
 contents:
 - src: .lintian-overrides
   dst: ./usr/share/lintian/overrides/nfpm
@@ -177,3 +217,19 @@ contents:
 ```
 
 You can read more in [lintian's documentation](https://lintian.debian.org/manual/index.html).
+
+### The `copyright` file
+
+If you need a `copyright` file, you can add it using the `contents` directive:
+
+
+```yaml
+# nfpm.yaml
+contents:
+- src: ./path/to/copyright
+  dst: /usr/share/doc/<product_name>/copyright
+  packager: deb
+  file_info:
+	mode: 0644
+```
+
