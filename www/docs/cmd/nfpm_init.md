@@ -1,6 +1,6 @@
 # nfpm init
 
-Creates a sample nfpm.yaml config file
+Creates a sample nfpm.yaml configuration file
 
 ```
 nfpm init [flags]
