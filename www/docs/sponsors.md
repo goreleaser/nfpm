@@ -1,25 +1,32 @@
 # Sponsoring the Project
 
 Does you or your company use nFPM?
-You can help keep the project bug-free and feature rich by sponsoring the project and the maintainers.
+You can help keep the project bug-free and feature rich by sponsoring the
+project and the maintainers.
 
 ## GitHub Sponsors
 
-GitHub Sponsors is a great way to contribute directly to the main maintainer, [caarlos0](https://github.com/caarlos0).
+GitHub Sponsors is a great way to contribute directly to the main maintainer,
+[caarlos0](https://github.com/caarlos0).
 
 This money usually goes to buying coffee, beer, better hardware and such.
 
-You can sponsor and see who's sponsoring Carlos [here](https://github.com/sponsors/caarlos0).
+You can sponsor and see who's sponsoring Carlos
+[here](https://github.com/sponsors/caarlos0).
 
 <iframe src="https://github.com/sponsors/caarlos0/card" title="Sponsor caarlos0" height="225" width="600" style="border: 0;"></iframe>
 
 ## OpenCollective
 
-OpenCollective is a great way to send some money towards the GoReleaser organization.
+OpenCollective is a great way to send some money towards the GoReleaser
+organization.
 
-This ultimately is used to buy/renew domains, keep servers up (although right now we're on free plans), print and send stickers to other contributors among other things.
+This ultimately is used to buy/renew domains, keep servers up (although right
+now we're on free plans), print and send stickers to other contributors among
+other things.
 
-You can start sponsoring at the [OpenCollective website](https://opencollective.com/goreleaser).
+You can start sponsoring at the
+[OpenCollective website](https://opencollective.com/goreleaser).
 
 Bellow you can see a list of the current sponsors and backers on OpenCollective:
 

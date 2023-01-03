@@ -17,8 +17,8 @@ So I decided to create nFPM: a **simpler**, **0-dependency**,
 
 ## nFPM is not FPM
 
-This is a subtle way of saying it wont have all features, nor all
-formats that fpm has: it is supposed to be simpler.
+This is a subtle way of saying it won't have all features, nor all
+formats that `fpm` has: it is supposed to be simpler.
 
 And that's OK!, most of us don't need all those features most of the time.
 

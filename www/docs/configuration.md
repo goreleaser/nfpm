@@ -177,7 +177,8 @@ contents:
     dst: /usr/bin/foo
     type: symlink
 
-  # Corresponds to `%config(noreplace)` if the packager is rpm, otherwise it is just a config file
+  # Corresponds to `%config(noreplace)` if the packager is rpm, otherwise it
+  # is just a config file
   - src: path/to/local/bar.conf
     dst: /etc/bar.conf
     type: config|noreplace
@@ -199,7 +200,8 @@ contents:
   - dst: /var/log/boo.log
     type: ghost
 
-  # You can use the packager field to add files that are unique to a specific packager
+  # You can use the packager field to add files that are unique to a specific
+  # packager
   - src: path/to/rpm/file.conf
     dst: /etc/file.conf
     type: config|noreplace
@@ -245,10 +247,12 @@ scripts:
   preremove: ./scripts/preremove.sh
   postremove: ./scripts/postremove.sh
 
-# All fields above marked as `overridable` can be overridden for a given package format in this section.
+# All fields above marked as `overridable` can be overridden for a given
+# package format in this section.
 overrides:
-  # The depends override can for example be used to provide version constraints for dependencies where
-  # different package formats use different versions or for dependencies that are named differently.
+  # The depends override can for example be used to provide version
+  # constraints for dependencies where different package formats use different
+  # versions or for dependencies that are named differently.
   deb:
     depends:
       - baz (>= 1.2.3-0)
@@ -268,7 +272,8 @@ overrides:
 
 # Custom configuration applied only to the RPM packager.
 rpm:
-  # rpm specific architecture name that overrides "arch" without performing any replacements.
+  # rpm specific architecture name that overrides "arch" without performing any
+  # replacements.
   rpm_arch: ia64
 
   # RPM specific scripts.
@@ -302,6 +307,7 @@ rpm:
     # to $NFPM_PASSPHRASE.
     # This will expand any env var you set in the field, e.g. key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
+
     # PGP secret key id in hex format, if it is not set it will select the first subkey
     # that has the signing flag set. You may need to set this if you want to use the primary key as the signing key
     # or to support older versions of RPM < 4.13.0 which cannot validate a signed RPM that used a subkey to sign
@@ -317,8 +323,10 @@ deb:
   scripts:
     # Deb rules script.
     rules: foo.sh
+
     # Deb templates file, when using debconf.
     templates: templates
+
     # Deb config maintainer script for asking questions when using debconf.
     config: config
 
@@ -328,6 +336,7 @@ deb:
     # (also available: interest_await, interest_noawait)
     interest:
       - some-trigger-name
+
     # activate a trigger for another package
     # (also available: activate_await, activate_noawait)
     activate:
@@ -347,14 +356,17 @@ deb:
     # Signature method, either "dpkg-sig" or "debsign".
     # Defaults to "debsign"
     method: dpkg-sig
+
     # PGP secret key (can also be ASCII-armored). The passphrase is taken
     # from the environment variable $NFPM_DEB_PASSPHRASE with a fallback
     # to $NFPM_PASSPHRASE.
     # This will expand any env var you set in the field, e.g. key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
+
     # The type describes the signers role, possible values are "origin",
     # "maint" and "archive". If unset, the type defaults to "origin".
     type: origin
+
     # PGP secret key id in hex format, if it is not set it will select the first subkey
     # that has the signing flag set. You may need to set this if you want to use the primary key as the signing key
     # This will expand any env var you set in the field, e.g. key_id: ${DEB_SIGNING_KEY_ID}
@@ -375,10 +387,12 @@ apk:
     # to $NFPM_PASSPHRASE.
     # This will expand any env var you set in the field, e.g. key_file: ${SIGNING_KEY_FILE}
     key_file: key.gpg
+
     # The name of the signing key. When verifying a package, the signature
     # is matched to the public key store in /etc/apk/keys/<key_name>.rsa.pub.
     # If unset, it defaults to the maintainer email address.
     key_name: origin
+
     # APK does not use pgp keys, so the key_id field is ignored.
     key_id: ignored
 
@@ -387,6 +401,7 @@ archlinux:
   # of packages when building a split package. Defaults to name
   # See: https://wiki.archlinux.org/title/PKGBUILD#pkgbase
   pkgbase: bar
+
   # The packager identifies the organization packaging the software
   # rather than the developer. Defaults to "Unknown Packager".
   packager: GoReleaser <staff@goreleaser.com>
@@ -395,10 +410,9 @@ archlinux:
   scripts:
     # The preupgrade script runs before pacman upgrades the package
     preupgrade: ./scripts/preupgrade.sh
+
     # The postupgrade script runs after pacman upgrades the package
     postupgrade: ./scripts/postupgrade.sh
-
-
 ```
 
 ## Templating
@@ -410,13 +424,15 @@ or apply some other templating on top of it.
 
 ## JSON Schema
 
-nFPM also has a [jsonschema][] file which you can use to have better editor support:
+nFPM also has a [jsonschema][] file which you can use to have better editor
+support:
 
 ```
 https://nfpm.goreleaser.com/schema.json
 ```
 
-You can also generate it for your specific version using the [`nfpm jsonschema`][schema] command.
+You can also generate it for your specific version using the
+[`nfpm jsonschema`][schema] command.
 
 Note that it is in early stages.
 Any help and/or feedback is greatly appreciated!

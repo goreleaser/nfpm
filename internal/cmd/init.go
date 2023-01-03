@@ -17,7 +17,7 @@ func newInitCmd() *initCmd {
 	cmd := &cobra.Command{
 		Use:           "init",
 		Aliases:       []string{"i"},
-		Short:         "Creates a sample nfpm.yaml config file",
+		Short:         "Creates a sample nfpm.yaml configuration file",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
@@ -35,7 +35,7 @@ func newInitCmd() *initCmd {
 	return root
 }
 
-const example = `# nfpm example config file
+const example = `# nfpm example configuration file
 #
 # check https://nfpm.goreleaser.com/configuration for detailed usage
 #
