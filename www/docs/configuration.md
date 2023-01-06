@@ -19,7 +19,7 @@ arch: amd64
 
 # Platform.
 # This will expand any env var you set in the field, e.g. version: ${GOOS}
-# This is only used by the rpm packager.
+# This is only used by the rpm and deb packagers.
 # Examples: `linux` (default), `darwin`
 platform: linux
 
