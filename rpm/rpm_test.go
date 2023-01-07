@@ -91,7 +91,7 @@ func TestConventionalExtension(t *testing.T) {
 }
 
 func TestRPM(t *testing.T) {
-	f, err := os.CreateTemp("", "test.rpm")
+	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)
 	require.NoError(t, Default.Package(exampleInfo(), f))
 
@@ -143,7 +143,7 @@ func TestRPM(t *testing.T) {
 }
 
 func TestRPMPlatform(t *testing.T) {
-	f, err := os.CreateTemp("", "test*.rpm")
+	f, err := os.CreateTemp(t.TempDir(), "test*.rpm")
 	require.NoError(t, err)
 	info := exampleInfo()
 	info.Platform = "darwin"
@@ -151,7 +151,7 @@ func TestRPMPlatform(t *testing.T) {
 }
 
 func TestRPMGroup(t *testing.T) {
-	f, err := os.CreateTemp("", "test.rpm")
+	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)
 	info := exampleInfo()
 	info.RPM.Group = "Unspecified"
@@ -185,7 +185,7 @@ func TestRPMCompression(t *testing.T) {
 				compLevel = "lzma"
 			}
 			t.Run(compLevel, func(t *testing.T) {
-				f, err := os.CreateTemp("", "test.rpm")
+				f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 				require.NoError(t, err)
 
 				info := exampleInfo()
@@ -215,7 +215,7 @@ func TestRPMCompression(t *testing.T) {
 }
 
 func TestRPMSummary(t *testing.T) {
-	f, err := os.CreateTemp("", "test.rpm")
+	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)
 
 	customSummary := "This is my custom summary"
@@ -242,7 +242,7 @@ func TestRPMSummary(t *testing.T) {
 }
 
 func TestRPMPackager(t *testing.T) {
-	f, err := os.CreateTemp("", "test.rpm")
+	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)
 
 	customPackager := "GoReleaser <staff@goreleaser.com>"
@@ -269,7 +269,7 @@ func TestRPMPackager(t *testing.T) {
 }
 
 func TestWithRPMTags(t *testing.T) {
-	f, err := os.CreateTemp("", "test.rpm")
+	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)
 
 	info := exampleInfo()
@@ -398,7 +398,7 @@ func TestRPMVersionWithVersionMetadata(t *testing.T) {
 }
 
 func TestWithInvalidEpoch(t *testing.T) {
-	f, err := os.CreateTemp("", "test.rpm")
+	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	defer func() {
 		_ = f.Close()
 		err = os.Remove(f.Name())
@@ -417,7 +417,7 @@ func TestWithInvalidEpoch(t *testing.T) {
 
 func TestRPMScripts(t *testing.T) {
 	info := exampleInfo()
-	f, err := os.CreateTemp(".", fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))
+	f, err := os.CreateTemp(t.TempDir(), fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))
 	require.NoError(t, err)
 	err = Default.Package(info, f)
 	require.NoError(t, err)
