@@ -175,7 +175,7 @@ func TestDefaultWithArch(t *testing.T) {
 }
 
 func TestApkPlatform(t *testing.T) {
-	f, err := os.CreateTemp("", "test*.apk")
+	f, err := os.CreateTemp(t.TempDir(), "test*.apk")
 	require.NoError(t, err)
 	info := exampleInfo()
 	info.Platform = "darwin"

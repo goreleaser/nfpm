@@ -108,7 +108,7 @@ func TestDeb(t *testing.T) {
 }
 
 func TestDebPlatform(t *testing.T) {
-	f, err := os.CreateTemp("", "test*.deb")
+	f, err := os.CreateTemp(t.TempDir(), "test*.deb")
 	require.NoError(t, err)
 	info := exampleInfo()
 	info.Platform = "darwin"

@@ -191,9 +191,9 @@ func TestParseFile(t *testing.T) {
 	require.NoError(t, err)
 	_, err = parseAndValidate("./testdata/doesnotexist.yaml")
 	require.Error(t, err)
-	os.Setenv("RPM_KEY_FILE", "my/rpm/key/file")
-	os.Setenv("TEST_RELEASE_ENV_VAR", "1234")
-	os.Setenv("TEST_PRERELEASE_ENV_VAR", "beta1")
+	t.Setenv("RPM_KEY_FILE", "my/rpm/key/file")
+	t.Setenv("TEST_RELEASE_ENV_VAR", "1234")
+	t.Setenv("TEST_PRERELEASE_ENV_VAR", "beta1")
 	config, err := parseAndValidate("./testdata/env-fields.yaml")
 	require.NoError(t, err)
 	require.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
@@ -268,25 +268,22 @@ func TestOptionsFromEnvironment(t *testing.T) {
 	})
 
 	t.Run("version", func(t *testing.T) {
-		os.Clearenv()
-		os.Setenv("VERSION", version)
+		t.Setenv("VERSION", version)
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nversion: $VERSION"))
 		require.NoError(t, err)
 		require.Equal(t, version, info.Version)
 	})
 
 	t.Run("release", func(t *testing.T) {
-		os.Clearenv()
-		os.Setenv("RELEASE", release)
+		t.Setenv("RELEASE", release)
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nrelease: $RELEASE"))
 		require.NoError(t, err)
 		require.Equal(t, release, info.Release)
 	})
 
 	t.Run("maintainer", func(t *testing.T) {
-		os.Clearenv()
-		os.Setenv("GIT_COMMITTER_NAME", packager)
-		os.Setenv("GIT_COMMITTER_EMAIL", maintainerEmail)
+		t.Setenv("GIT_COMMITTER_NAME", packager)
+		t.Setenv("GIT_COMMITTER_EMAIL", maintainerEmail)
 		info, err := nfpm.Parse(strings.NewReader(`
 name: foo
 maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
@@ -300,16 +297,14 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 	})
 
 	t.Run("vendor", func(t *testing.T) {
-		os.Clearenv()
-		os.Setenv("VENDOR", vendor)
+		t.Setenv("VENDOR", vendor)
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nvendor: $VENDOR"))
 		require.NoError(t, err)
 		require.Equal(t, vendor, info.Vendor)
 	})
 
 	t.Run("global passphrase", func(t *testing.T) {
-		os.Clearenv()
-		os.Setenv("NFPM_PASSPHRASE", globalPass)
+		t.Setenv("NFPM_PASSPHRASE", globalPass)
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
@@ -318,11 +313,10 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 	})
 
 	t.Run("specific passphrases", func(t *testing.T) {
-		os.Clearenv()
-		os.Setenv("NFPM_PASSPHRASE", globalPass)
-		os.Setenv("NFPM_DEB_PASSPHRASE", debPass)
-		os.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
-		os.Setenv("NFPM_APK_PASSPHRASE", apkPass)
+		t.Setenv("NFPM_PASSPHRASE", globalPass)
+		t.Setenv("NFPM_DEB_PASSPHRASE", debPass)
+		t.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
+		t.Setenv("NFPM_APK_PASSPHRASE", apkPass)
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
@@ -331,16 +325,14 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 	})
 
 	t.Run("packager", func(t *testing.T) {
-		os.Clearenv()
-		os.Setenv("PACKAGER", packager)
+		t.Setenv("PACKAGER", packager)
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nrpm:\n  packager: $PACKAGER"))
 		require.NoError(t, err)
 		require.Equal(t, packager, info.RPM.Packager)
 	})
 
 	t.Run("depends", func(t *testing.T) {
-		os.Clearenv()
-		os.Setenv("VERSION", version)
+		t.Setenv("VERSION", version)
 		info, err := nfpm.Parse(strings.NewReader(`---
 name: foo
 overrides:
@@ -358,9 +350,8 @@ overrides:
 	})
 
 	t.Run("depends-strips-empty", func(t *testing.T) {
-		os.Clearenv()
-		os.Setenv("VERSION", version)
-		os.Setenv("PKG", "")
+		t.Setenv("VERSION", version)
+		t.Setenv("PKG", "")
 		info, err := nfpm.Parse(strings.NewReader(`---
 name: foo
 overrides:
