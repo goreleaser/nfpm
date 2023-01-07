@@ -779,7 +779,7 @@ Version: {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
          {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
 Section: {{.Info.Section}}
 Priority: {{.Info.Priority}}
-Architecture: {{.Info.Arch}}
+Architecture: {{ if ne .Info.Platform "linux"}}{{ .Info.Platform }}-{{ end }}{{.Info.Arch}}
 {{- /* Optional fields */ -}}
 {{- if .Info.Maintainer}}
 Maintainer: {{.Info.Maintainer}}

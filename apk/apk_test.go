@@ -174,6 +174,15 @@ func TestDefaultWithArch(t *testing.T) {
 	}
 }
 
+func TestApkPlatform(t *testing.T) {
+	f, err := os.CreateTemp("", "test*.apk")
+	require.NoError(t, err)
+	info := exampleInfo()
+	info.Platform = "darwin"
+	err = Default.Package(info, f)
+	require.Error(t, err)
+}
+
 func TestNoInfo(t *testing.T) {
 	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), io.Discard)
 	require.Error(t, err)

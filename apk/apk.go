@@ -108,6 +108,9 @@ func (*Apk) ConventionalExtension() string {
 
 // Package writes a new apk package to the given writer using the given info.
 func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
+	if info.Platform != "linux" {
+		return fmt.Errorf("invalid platform: %s", info.Platform)
+	}
 	info = ensureValidArch(info)
 	if err = info.Validate(); err != nil {
 		return err

@@ -177,6 +177,7 @@ func (c *Config) expandEnvVars() {
 	c.Info.Release = os.Expand(c.Info.Release, c.envMappingFunc)
 	c.Info.Version = os.Expand(c.Info.Version, c.envMappingFunc)
 	c.Info.Prerelease = os.Expand(c.Info.Prerelease, c.envMappingFunc)
+	c.Info.Platform = os.Expand(c.Info.Platform, c.envMappingFunc)
 	c.Info.Arch = os.Expand(c.Info.Arch, c.envMappingFunc)
 	for or := range c.Overrides {
 		c.Overrides[or].Conflicts = c.expandEnvVarsStringSlice(c.Overrides[or].Conflicts)

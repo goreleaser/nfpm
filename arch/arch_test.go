@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -97,6 +98,15 @@ func TestArch(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestArchPlatform(t *testing.T) {
+	f, err := os.CreateTemp("", "test*.pkg.tar.zstd")
+	require.NoError(t, err)
+	info := exampleInfo()
+	info.Platform = "darwin"
+	err = Default.Package(info, f)
+	require.Error(t, err)
 }
 
 func TestArchNoFiles(t *testing.T) {

@@ -244,12 +244,28 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		debPass         = "password123"
 		rpmPass         = "secret"
 		apkPass         = "foobar"
+		platform        = "linux"
+		arch            = "amd64"
 		release         = "3"
 		version         = "1.0.0"
 		vendor          = "GoReleaser"
 		packager        = "nope"
 		maintainerEmail = "nope@example.com"
 	)
+
+	t.Run("platform", func(t *testing.T) {
+		t.Setenv("OS", platform)
+		info, err := nfpm.Parse(strings.NewReader("name: foo\nplatform: $OS"))
+		require.NoError(t, err)
+		require.Equal(t, platform, info.Platform)
+	})
+
+	t.Run("arch", func(t *testing.T) {
+		t.Setenv("ARCH", arch)
+		info, err := nfpm.Parse(strings.NewReader("name: foo\narch: $ARCH"))
+		require.NoError(t, err)
+		require.Equal(t, arch, info.Arch)
+	})
 
 	t.Run("version", func(t *testing.T) {
 		os.Clearenv()

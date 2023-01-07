@@ -106,6 +106,14 @@ func TestRPM(t *testing.T) {
 	rpm, err := rpmutils.ReadRpm(file)
 	require.NoError(t, err)
 
+	os, err := rpm.Header.GetString(rpmutils.OS)
+	require.NoError(t, err)
+	require.Equal(t, "linux", os)
+
+	arch, err := rpm.Header.GetString(rpmutils.ARCH)
+	require.NoError(t, err)
+	require.Equal(t, archToRPM["amd64"], arch)
+
 	version, err := rpm.Header.GetString(rpmutils.VERSION)
 	require.NoError(t, err)
 	require.Equal(t, "1.0.0", version)
@@ -132,6 +140,14 @@ func TestRPM(t *testing.T) {
 	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
 	require.NoError(t, err)
 	require.Equal(t, "Foo does things", description)
+}
+
+func TestRPMPlatform(t *testing.T) {
+	f, err := os.CreateTemp("", "test*.rpm")
+	require.NoError(t, err)
+	info := exampleInfo()
+	info.Platform = "darwin"
+	require.NoError(t, Default.Package(info, f))
 }
 
 func TestRPMGroup(t *testing.T) {

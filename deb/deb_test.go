@@ -107,6 +107,51 @@ func TestDeb(t *testing.T) {
 	}
 }
 
+func TestDebPlatform(t *testing.T) {
+	f, err := os.CreateTemp("", "test*.deb")
+	require.NoError(t, err)
+	info := exampleInfo()
+	info.Platform = "darwin"
+	err = Default.Package(info, f)
+	require.NoError(t, err)
+}
+
+func extractDebArchitecture(deb *bytes.Buffer) string {
+	for _, s := range strings.Split(deb.String(), "\n") {
+		if strings.Contains(s, "Architecture: ") {
+			return strings.TrimPrefix(s, "Architecture: ")
+		}
+	}
+	return ""
+}
+
+func splitDebArchitecture(deb *bytes.Buffer) (string, string) {
+	a := extractDebArchitecture(deb)
+	if strings.Contains(a, "-") {
+		f := strings.Split(a, "-")
+		return f[0], f[1]
+	}
+	return "linux", a
+}
+
+func TestDebOS(t *testing.T) {
+	info := exampleInfo()
+	var buf bytes.Buffer
+	err := writeControl(&buf, controlData{info, 0})
+	require.NoError(t, err)
+	o, _ := splitDebArchitecture(&buf)
+	require.Equal(t, "linux", o)
+}
+
+func TestDebArch(t *testing.T) {
+	info := exampleInfo()
+	var buf bytes.Buffer
+	err := writeControl(&buf, controlData{info, 0})
+	require.NoError(t, err)
+	_, a := splitDebArchitecture(&buf)
+	require.Equal(t, "amd64", a)
+}
+
 func extractDebVersion(deb *bytes.Buffer) string {
 	for _, s := range strings.Split(deb.String(), "\n") {
 		if strings.Contains(s, "Version: ") {
