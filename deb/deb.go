@@ -89,14 +89,23 @@ func (*Deb) ConventionalExtension() string {
 	return ".deb"
 }
 
-// ErrInvalidSignatureType happens if the signature type of a deb is not one of
-// origin, maint or archive.
-var ErrInvalidSignatureType = errors.New("invalid signature type")
+var (
+	// ErrInvalidSignatureType happens if the signature type of a deb is not one of
+	// origin, maint or archive.
+	ErrInvalidSignatureType = errors.New("invalid signature type")
+
+	// ErrInvalidProvides occurs when the provides field contains an empty string
+	ErrInvalidProvides = errors.New("invalid provides value")
+)
 
 // Package writes a new deb package to the given writer using the given info.
 func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: funlen
 	info = ensureValidArch(info)
 	if err = info.Validate(); err != nil {
+		return err
+	}
+
+	if err = d.validate(info); err != nil {
 		return err
 	}
 
@@ -146,6 +155,22 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 	}
 
 	return nil
+}
+
+func (d *Deb) validate(info *nfpm.Info) error {
+	if stringSliceContains(info.Provides, "") {
+		return ErrInvalidProvides
+	}
+	return nil
+}
+
+func stringSliceContains(ss []string, s string) bool {
+	for _, str := range ss {
+		if str == s {
+			return true
+		}
+	}
+	return false
 }
 
 func doSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
