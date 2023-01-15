@@ -116,6 +116,13 @@ func TestDebPlatform(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestDebEmptyProvides(t *testing.T) {
+	info := exampleInfo()
+	info.Provides = append(info.Provides, "")
+	err := Default.Package(info, io.Discard)
+	require.Equal(t, err, ErrInvalidProvides)
+}
+
 func extractDebArchitecture(deb *bytes.Buffer) string {
 	for _, s := range strings.Split(deb.String(), "\n") {
 		if strings.Contains(s, "Architecture: ") {
