@@ -1397,3 +1397,19 @@ func TestGlob(t *testing.T) {
 		},
 	}), io.Discard))
 }
+
+func TestBadProvides(t *testing.T) {
+	var w bytes.Buffer
+	info := exampleInfo()
+	info.Provides = []string{"  "}
+	require.NoError(t, writeControl(&w, controlData{
+		Info: nfpm.WithDefaults(info),
+	}))
+	golden := "testdata/bad_provides.golden"
+	if *update {
+		require.NoError(t, os.WriteFile(golden, w.Bytes(), 0o600))
+	}
+	bts, err := os.ReadFile(golden) //nolint:gosec
+	require.NoError(t, err)
+	require.Equal(t, string(bts), w.String())
+}
