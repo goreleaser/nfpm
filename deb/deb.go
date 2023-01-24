@@ -788,7 +788,7 @@ Installed-Size: {{.InstalledSize}}
 {{- with .Info.Replaces}}
 Replaces: {{join .}}
 {{- end }}
-{{- with .Info.Provides}}
+{{- with nonEmpty .Info.Provides}}
 Provides: {{join .}}
 {{- end }}
 {{- with .Info.Depends}}
@@ -832,6 +832,17 @@ func writeControl(w io.Writer, data controlData) error {
 		"multiline": func(strs string) string {
 			ret := strings.ReplaceAll(strs, "\n", "\n ")
 			return strings.Trim(ret, " \n")
+		},
+		"nonEmpty": func(strs []string) []string {
+			var result []string
+			for _, s := range strs {
+				s := strings.TrimSpace(s)
+				if s == "" {
+					continue
+				}
+				result = append(result, s)
+			}
+			return result
 		},
 	})
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
