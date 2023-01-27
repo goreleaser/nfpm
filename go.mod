@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Masterminds/semver/v3 v3.2.0
-	github.com/ProtonMail/go-crypto v0.0.0-20221026131551-cf6655e29de4 // DO NOT UPDATE THIS!!
-	github.com/ProtonMail/gopenpgp/v2 v2.5.1
+	github.com/ProtonMail/go-crypto v0.0.0-20230124153114-0acdc8ae009b // DO NOT UPDATE THIS!!
+	github.com/ProtonMail/gopenpgp/v2 v2.5.2
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
 	github.com/goreleaser/chglog v0.3.0
