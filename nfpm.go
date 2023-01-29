@@ -381,15 +381,23 @@ type APKScripts struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
-	Scripts      DebScripts        `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=scripts"`
-	Triggers     DebTriggers       `yaml:"triggers,omitempty" json:"triggers,omitempty" jsonschema:"title=triggers"`
-	Breaks       []string          `yaml:"breaks,omitempty" json:"breaks,omitempty" jsonschema:"title=breaks"`
-	Signature    DebSignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=signature"`
-	Compression  string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
-	Fields       map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
+	Arch        string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
+	Scripts     DebScripts        `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=scripts"`
+	Triggers    DebTriggers       `yaml:"triggers,omitempty" json:"triggers,omitempty" jsonschema:"title=triggers"`
+	Breaks      []string          `yaml:"breaks,omitempty" json:"breaks,omitempty" jsonschema:"title=breaks"`
+	Signature   DebSignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=signature"`
+	Compression string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
+	Fields      map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
+	Metadata    DebMetadata       `yaml:"metadata,omitempty" json:"metadata,omitempty" jsonschema:"title=metadata"`
+}
+
+// DebMetadata is custom configs for generating .changes file that are only available on deb packages.
+type DebMetadata struct {
+	Binary       string            `yaml:"binary" json:"binary" jsonschema:"title=binary"`
 	Distribution string            `yaml:"distribution" json:"distribution" jsonschema:"title=distribution"`
 	Urgency      string            `yaml:"urgency" json:"urgency" jsonschema:"title=urgency"`
+	ChangedBy    string            `yaml:"changed_by" json:"changed_by" jsonschema:"title=changed_by"`
+	Fields       map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
 }
 
 type DebSignature struct {
