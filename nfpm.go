@@ -452,6 +452,16 @@ type Deb struct {
 	Predepends  []string          `yaml:"predepends,omitempty" json:"predepends,omitempty" jsonschema:"title=predepends directive,example=nfpm"`
 	Distribution string           `yaml:"distribution" json:"distribution" jsonschema:"title=distribution"`
 	Urgency      string           `yaml:"urgency" json:"urgency" jsonschema:"title=urgency"`
+	Metadata    DebMetadata       `yaml:"metadata,omitempty" json:"metadata,omitempty" jsonschema:"title=metadata"`
+}
+
+// DebMetadata is custom configs for generating .changes file that are only available on deb packages.
+type DebMetadata struct {
+	Binary       string            `yaml:"binary" json:"binary" jsonschema:"title=binary"`
+	Distribution string            `yaml:"distribution" json:"distribution" jsonschema:"title=distribution"`
+	Urgency      string            `yaml:"urgency" json:"urgency" jsonschema:"title=urgency"`
+	ChangedBy    string            `yaml:"changed_by" json:"changed_by" jsonschema:"title=changed_by"`
+	Fields       map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
 }
 
 type DebSignature struct {

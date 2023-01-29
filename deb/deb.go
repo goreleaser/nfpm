@@ -301,11 +301,11 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 
 	// Default values for distribution & urgency
 	// Required only for generating .changes metadata files
-	if info.Deb.Distribution == "" {
-		info.Deb.Distribution = "unstable"
+	if info.Deb.Metadata.Distribution == "" {
+		info.Deb.Metadata.Distribution = "unstable"
 	}
-	if info.Deb.Urgency == "" {
-		info.Deb.Urgency = "medium"
+	if info.Deb.Metadata.Urgency == "" {
+		info.Deb.Metadata.Urgency = "medium"
 	}
 }
 
