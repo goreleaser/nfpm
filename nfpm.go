@@ -128,6 +128,12 @@ type PackagerWithExtension interface {
 	ConventionalExtension() string
 }
 
+type PackagerWithMetadata interface {
+	IsDefined() bool
+	PackageMetadata(info *Info, w io.Writer) error
+	ConventionalMetadataFileName(info *Info) string
+}
+
 // Config contains the top level configuration for packages.
 type Config struct {
 	Info           `yaml:",inline" json:",inline"`
