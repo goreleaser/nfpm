@@ -112,7 +112,6 @@ type PackagerWithExtension interface {
 }
 
 type PackagerWithMetadata interface {
-	IsDefined() bool
 	PackageMetadata(info *Info, w io.Writer) error
 	ConventionalMetadataFileName(info *Info) string
 }
@@ -260,6 +259,7 @@ type Info struct {
 	Changelog       string `yaml:"changelog,omitempty" json:"changelog,omitempty" jsonschema:"title=package changelog,example=changelog.yaml,description=see https://github.com/goreleaser/chglog for more details"`
 	DisableGlobbing bool   `yaml:"disable_globbing,omitempty" json:"disable_globbing,omitempty" jsonschema:"title=whether to disable file globbing,default=false"`
 	Target          string `yaml:"-" json:"-"`
+	EnableMetadata  bool   `yaml:"enable_metadata,omitempty" json:"enable_metadata,omitempty" jsonschema:"title=enable_metadata"`
 }
 
 func (i *Info) Validate() error {
@@ -375,13 +375,15 @@ type APKScripts struct {
 
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
-	Arch        string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
-	Scripts     DebScripts        `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=scripts"`
-	Triggers    DebTriggers       `yaml:"triggers,omitempty" json:"triggers,omitempty" jsonschema:"title=triggers"`
-	Breaks      []string          `yaml:"breaks,omitempty" json:"breaks,omitempty" jsonschema:"title=breaks"`
-	Signature   DebSignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=signature"`
-	Compression string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
-	Fields      map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
+	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
+	Scripts      DebScripts        `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=scripts"`
+	Triggers     DebTriggers       `yaml:"triggers,omitempty" json:"triggers,omitempty" jsonschema:"title=triggers"`
+	Breaks       []string          `yaml:"breaks,omitempty" json:"breaks,omitempty" jsonschema:"title=breaks"`
+	Signature    DebSignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=signature"`
+	Compression  string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
+	Fields       map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
+	Distribution string            `yaml:"distribution" json:"distribution" jsonschema:"title=distribution"`
+	Urgency      string            `yaml:"urgency" json:"urgency" jsonschema:"title=urgency"`
 }
 
 type DebSignature struct {

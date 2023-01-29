@@ -96,7 +96,7 @@ func doPackage(configPath, target, packager string) error {
 	}
 
 	meta, supports := pkg.(nfpm.PackagerWithMetadata)
-	if !supports || !meta.IsDefined() {
+	if !supports || !info.EnableMetadata {
 		return nil
 	}
 
