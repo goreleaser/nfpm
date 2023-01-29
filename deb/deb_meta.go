@@ -10,6 +10,7 @@ import (
 	"io"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const debChangesTemplate = `
@@ -17,6 +18,7 @@ const debChangesTemplate = `
 Format: 1.8
 Date: {{.Date}}
 Source: {{.Info.Name}}
+Binary: {{.Info.Name}}
 Architecture: {{ if ne .Info.Platform "linux"}}{{ .Info.Platform }}-{{ end }}{{.Info.Arch}}
 Version: {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
          {{- if .Info.Prerelease}}~{{ .Info.Prerelease }}{{- end }}
@@ -27,13 +29,12 @@ Distribution: {{ .Info.Deb.Distribution }}
 Urgency: {{.Info.Deb.Urgency}}
 {{- end }}
 Maintainer: {{.Info.Maintainer}}
-Description: {{multiline .Info.Description}}
-{{- /* Optional fields */ -}}
+Description: {{ multiline .Info.Description }}
 {{- range $key, $value := .Info.Deb.Fields }}
 {{- if $value }}
 {{$key}}: {{$value}}
 {{- end }}
-{{- /* Mandatory fields */ -}}
+{{- end }}
 Changes:
 {{range .Changes}} {{.}}{{end}}
 Files:
@@ -45,7 +46,7 @@ Checksums-Sha256:
 `
 
 type changesData struct {
-	Version string
+	Date    string
 	Info    *nfpm.Info
 	Changes []string
 	Files   []changesFileData
@@ -56,9 +57,9 @@ type changesFileData struct {
 	Size      int
 	Section   string
 	Priority  string
-	Md5Sum    [16]byte
-	Sha1Sum   [20]byte
-	Sha256Sum [32]byte
+	Md5Sum    string
+	Sha1Sum   string
+	Sha256Sum string
 }
 
 func (d *Deb) ConventionalMetadataFileName(info *nfpm.Info) string {
@@ -106,6 +107,7 @@ func prepareChangesData(meta *nfpm.MetaInfo) (*changesData, error) {
 	}
 
 	return &changesData{
+		Date: time.Now().Format(time.RFC1123Z),
 		Info: info,
 		Changes: []string{
 			fmt.Sprintf("%s (%s) %s; urgency=%s\n  *Package created with nFPM",
@@ -117,9 +119,9 @@ func prepareChangesData(meta *nfpm.MetaInfo) (*changesData, error) {
 				Size:      buf.Len(),
 				Section:   "default",
 				Priority:  "optional",
-				Md5Sum:    md5.Sum(buf.Bytes()),
-				Sha1Sum:   sha1.Sum(buf.Bytes()),
-				Sha256Sum: sha256.Sum256(buf.Bytes()),
+				Md5Sum:    fmt.Sprintf("%x", md5.Sum(buf.Bytes())),
+				Sha1Sum:   fmt.Sprintf("%x", sha1.Sum(buf.Bytes())),
+				Sha256Sum: fmt.Sprintf("%x", sha256.Sum256(buf.Bytes())),
 			},
 		},
 	}, nil

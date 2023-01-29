@@ -120,12 +120,7 @@ func doPackage(configPath, target, packager string) error {
 		return nil
 	}
 
-	if err := doPackageMeta(meta, f, info); err != nil {
-		return err
-	}
-
-	fmt.Printf("created package metadata: %s\n", target)
-	return nil
+	return doPackageMeta(meta, f, info)
 }
 
 func doPackageMeta(pkgMeta nfpm.PackagerWithMetadata, p io.ReadSeeker, info *nfpm.Info) error {
@@ -147,5 +142,6 @@ func doPackageMeta(pkgMeta nfpm.PackagerWithMetadata, p io.ReadSeeker, info *nfp
 		return err
 	}
 
+	fmt.Printf("created package metadata: %s\n", target)
 	return f.Close()
 }
