@@ -112,7 +112,7 @@ type PackagerWithExtension interface {
 }
 
 type PackagerWithMetadata interface {
-	PackageMetadata(info *Info, w io.Writer) error
+	PackageMetadata(info *MetaInfo, w io.Writer) error
 	ConventionalMetadataFileName(info *Info) string
 }
 
@@ -260,6 +260,12 @@ type Info struct {
 	DisableGlobbing bool   `yaml:"disable_globbing,omitempty" json:"disable_globbing,omitempty" jsonschema:"title=whether to disable file globbing,default=false"`
 	Target          string `yaml:"-" json:"-"`
 	EnableMetadata  bool   `yaml:"enable_metadata,omitempty" json:"enable_metadata,omitempty" jsonschema:"title=enable_metadata"`
+}
+
+// MetaInfo is a wrapper around information about single package and generated package data
+type MetaInfo struct {
+	Info    *Info
+	Package io.ReadSeeker
 }
 
 func (i *Info) Validate() error {
