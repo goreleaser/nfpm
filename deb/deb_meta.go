@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"io"
 	"path/filepath"
 	"strings"
@@ -46,6 +47,7 @@ Checksums-Sha1:
 {{range .Files}} {{ .Sha1Sum }} {{.Size}} {{.Name}}{{end}}
 Files:
 {{range .Files}} {{ .Md5Sum }} {{.Size}} {{.Section}} {{.Priority}} {{.Name}}{{end}}
+
 `
 
 type changesData struct {
@@ -75,23 +77,40 @@ func (d *Deb) ConventionalMetadataFileName(info *nfpm.Info) string {
 	return strings.Replace(target, ".deb", ".changes", 1)
 }
 
-func (d *Deb) PackageMetadata(info *nfpm.MetaInfo, w io.Writer) error {
-	if err := createChanges(info, w); err != nil {
-		return err
-	}
-
-	// todo: Sign if required
-
-	return nil
-}
-
-func createChanges(info *nfpm.MetaInfo, w io.Writer) error {
-	data, err := prepareChangesData(info)
+func (d *Deb) PackageMetadata(metaInfo *nfpm.MetaInfo, w io.Writer) error {
+	data, err := createChanges(metaInfo)
 	if err != nil {
 		return err
 	}
 
-	return writeTemplate("changes", debChangesTemplate, w, data)
+	if metaInfo.Info.Deb.Signature.KeyFile == "" {
+		_, err = w.Write(data.Bytes())
+		return err
+	}
+
+	signConfig := metaInfo.Info.Deb.Signature
+	signature, err := sign.PGPClearSignWithKeyID(data, signConfig.KeyFile, signConfig.KeyPassphrase, signConfig.KeyID)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(signature)
+	return err
+}
+
+func createChanges(info *nfpm.MetaInfo) (*bytes.Buffer, error) {
+	data, err := prepareChangesData(info)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := new(bytes.Buffer)
+
+	if err := writeTemplate("changes", debChangesTemplate, buf, data); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
 }
 
 func prepareChangesData(meta *nfpm.MetaInfo) (*changesData, error) {
