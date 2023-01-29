@@ -21,6 +21,7 @@ import (
 	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
+	"github.com/klauspost/compress/zstd"
 	gzip "github.com/klauspost/pgzip"
 	"github.com/ulikunitz/xz"
 )
@@ -312,6 +313,12 @@ func createDataTarball(info *nfpm.Info) (dataTarBall, md5sums []byte,
 			return nil, nil, 0, "", err
 		}
 		name = "data.tar.xz"
+	case "zstd":
+		dataTarballWriteCloser, err = zstd.NewWriter(&dataTarball)
+		if err != nil {
+			return nil, nil, 0, "", err
+		}
+		name = "data.tar.zst"
 	case "none":
 		dataTarballWriteCloser = nopCloser{Writer: &dataTarball}
 		name = "data.tar"

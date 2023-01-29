@@ -135,7 +135,7 @@ func TestUpgrade(t *testing.T) {
 func TestRPMCompression(t *testing.T) {
 	t.Parallel()
 	format := "rpm"
-	compressFormats := []string{"gzip", "xz", "lzma"}
+	compressFormats := []string{"gzip", "xz", "lzma", "zstd"}
 	for _, arch := range formatArchs[format] {
 		for _, compFormat := range compressFormats {
 			func(t *testing.T, testCompFormat, testArch string) {
@@ -164,7 +164,7 @@ func TestRPMCompression(t *testing.T) {
 func TestDebCompression(t *testing.T) {
 	t.Parallel()
 	format := "deb"
-	compressFormats := []string{"gzip", "xz", "none"}
+	compressFormats := []string{"gzip", "xz", "zstd", "none"}
 	for _, arch := range formatArchs[format] {
 		for _, compFormat := range compressFormats {
 			func(t *testing.T, testCompFormat, testArch string) {
@@ -173,13 +173,20 @@ func TestDebCompression(t *testing.T) {
 					if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
 						t.Skip("ppc64le arch not supported in pipeline")
 					}
+
+					target := "compression"
+					if testCompFormat == "zstd" {
+						// we can remove this exception as soon as the debian image supports zstd
+						target = "zstdcompression"
+					}
+
 					accept(t, acceptParms{
 						Name:   fmt.Sprintf("%s_compression_%s", testCompFormat, testArch),
 						Conf:   fmt.Sprintf("deb.%s.compression.yaml", testCompFormat),
 						Format: format,
 						Docker: dockerParams{
 							File:   fmt.Sprintf("%s.dockerfile", format),
-							Target: "compression",
+							Target: target,
 							Arch:   testArch,
 						},
 					})
