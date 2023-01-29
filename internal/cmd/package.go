@@ -100,50 +100,49 @@ func doPackage(configPath, target, packager string) error {
 		target = path.Join(target, pkg.ConventionalFileName(info))
 	}
 
-	info.Target = target
-
-	if err := doPackageCore(pkg, info); err != nil {
-		return err
-	}
-
-	meta, supports := pkg.(nfpm.PackagerWithMetadata)
-	if !supports || !info.EnableMetadata {
-		return nil
-	}
-
-	return doPackageMeta(meta, info)
-}
-
-func doPackageCore(pkg nfpm.Packager, info *nfpm.Info) error {
-	target := info.Target
-
-	if err := doPackageHandler(target, info, pkg.Package); err != nil {
-		return err
-	}
-
-	fmt.Printf("created package: %s\n", target)
-	return nil
-}
-
-func doPackageMeta(meta nfpm.PackagerWithMetadata, info *nfpm.Info) error {
-	metadataTarget := meta.ConventionalMetadataFileName(info)
-
-	if err := doPackageHandler(metadataTarget, info, meta.PackageMetadata); err != nil {
-		return err
-	}
-
-	fmt.Printf("created package metadata: %s\n", metadataTarget)
-	return nil
-}
-
-func doPackageHandler(target string, info *nfpm.Info, handler func(info *nfpm.Info, writer io.Writer) error) error {
 	f, err := os.Create(target)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	if err := handler(info, f); err != nil {
+	info.Target = target
+
+	if err := pkg.Package(info, f); err != nil {
+		os.Remove(target)
+		return err
+	}
+
+	fmt.Printf("created package: %s\n", target)
+
+	meta, supports := pkg.(nfpm.PackagerWithMetadata)
+	if !supports || !info.EnableMetadata {
+		return nil
+	}
+
+	if err := doPackageMeta(meta, f, info); err != nil {
+		return err
+	}
+
+	fmt.Printf("created package metadata: %s\n", target)
+	return nil
+}
+
+func doPackageMeta(pkgMeta nfpm.PackagerWithMetadata, p io.ReadSeeker, info *nfpm.Info) error {
+	target := pkgMeta.ConventionalMetadataFileName(info)
+
+	f, err := os.Create(target)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	metaInfo := &nfpm.MetaInfo{
+		Info:    info,
+		Package: p,
+	}
+
+	if err := pkgMeta.PackageMetadata(metaInfo, f); err != nil {
 		_ = os.Remove(target)
 		return err
 	}

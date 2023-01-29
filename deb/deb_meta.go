@@ -1,8 +1,14 @@
 package deb
 
 import (
+	"bytes"
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"fmt"
 	"github.com/goreleaser/nfpm/v2"
 	"io"
+	"path/filepath"
 	"strings"
 )
 
@@ -39,6 +45,7 @@ Checksums-Sha256:
 `
 
 type changesData struct {
+	Version string
 	Info    *nfpm.Info
 	Changes []string
 	Files   []changesFileData
@@ -49,9 +56,9 @@ type changesFileData struct {
 	Size      int
 	Section   string
 	Priority  string
-	Md5Sum    string
-	Sha1Sum   string
-	Sha256Sum string
+	Md5Sum    [16]byte
+	Sha1Sum   [20]byte
+	Sha256Sum [32]byte
 }
 
 func (d *Deb) ConventionalMetadataFileName(info *nfpm.Info) string {
@@ -64,34 +71,56 @@ func (d *Deb) ConventionalMetadataFileName(info *nfpm.Info) string {
 	return strings.Replace(target, ".deb", ".changes", 1)
 }
 
-func (d *Deb) PackageMetadata(info *nfpm.Info, changes io.Writer) error {
-	info = ensureValidArch(info)
-
-	if err := info.Validate(); err != nil {
+func (d *Deb) PackageMetadata(info *nfpm.MetaInfo, w io.Writer) error {
+	if err := createChanges(info, w); err != nil {
 		return err
 	}
 
-	// Set up some deb specific defaults
-	d.SetPackagerDefaults(info)
-
-	if err := d.createChanges(info, changes); err != nil {
-		return err
-	}
-
-	// todo:
-	// 2. Prepare changes template data (changes, files & checksums)
-	// 3. Render template
-	// 4. Sign if required
+	// todo: Sign if required
 
 	return nil
 }
 
-func (d *Deb) createChanges(info *nfpm.Info, w io.Writer) error {
-	_ = d.prepareChangesValues(info)
+func createChanges(info *nfpm.MetaInfo, w io.Writer) error {
+	data, err := prepareChangesData(info)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	return writeTemplate("changes", debChangesTemplate, w, data)
 }
 
-func (d *Deb) prepareChangesValues(info *nfpm.Info) *changesData {
-	return &changesData{}
+func prepareChangesData(meta *nfpm.MetaInfo) (*changesData, error) {
+	info := meta.Info
+
+	_, err := meta.Package.Seek(0, io.SeekStart)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := new(bytes.Buffer)
+
+	_, err = buf.ReadFrom(meta.Package)
+	if err != nil {
+		return nil, err
+	}
+
+	return &changesData{
+		Info: info,
+		Changes: []string{
+			fmt.Sprintf("%s (%s) %s; urgency=%s\n  *Package created with nFPM",
+				info.Name, info.Version, info.Deb.Distribution, info.Deb.Urgency),
+		},
+		Files: []changesFileData{
+			{
+				Name:      filepath.Base(info.Target),
+				Size:      buf.Len(),
+				Section:   "default",
+				Priority:  "optional",
+				Md5Sum:    md5.Sum(buf.Bytes()),
+				Sha1Sum:   sha1.Sum(buf.Bytes()),
+				Sha256Sum: sha256.Sum256(buf.Bytes()),
+			},
+		},
+	}, nil
 }
