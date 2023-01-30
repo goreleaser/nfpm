@@ -67,6 +67,8 @@ type changesFileData struct {
 	Sha256Sum string
 }
 
+var now = time.Now
+
 func (d *Deb) ConventionalMetadataFileName(info *nfpm.Info) string {
 	target := info.Target
 
@@ -88,13 +90,12 @@ func (d *Deb) PackageMetadata(metaInfo *nfpm.MetaInfo, w io.Writer) error {
 		return err
 	}
 
-	signConfig := metaInfo.Info.Deb.Signature
-	signature, err := sign.PGPClearSignWithKeyID(data, signConfig.KeyFile, signConfig.KeyPassphrase, signConfig.KeyID)
+	signedData, err := signChanges(data, metaInfo.Info)
 	if err != nil {
 		return err
 	}
 
-	_, err = w.Write(signature)
+	_, err = w.Write(signedData)
 	return err
 }
 
@@ -129,7 +130,7 @@ func prepareChangesData(meta *nfpm.MetaInfo) (*changesData, error) {
 	}
 
 	return &changesData{
-		Date: time.Now().Format(time.RFC1123Z),
+		Date: now().Format(time.RFC1123Z),
 		Info: info,
 		Changes: []string{
 			fmt.Sprintf("%s (%s) %s; urgency=%s\n  * Package created with nFPM",
@@ -147,4 +148,13 @@ func prepareChangesData(meta *nfpm.MetaInfo) (*changesData, error) {
 			},
 		},
 	}, nil
+}
+
+func signChanges(data *bytes.Buffer, info *nfpm.Info) ([]byte, error) {
+	signConfig := info.Deb.Signature
+	signature, err := sign.PGPClearSignWithKeyID(data, signConfig.KeyFile, signConfig.KeyPassphrase, signConfig.KeyID)
+	if err != nil {
+		return nil, &nfpm.ErrSigningFailure{Err: err}
+	}
+	return signature, nil
 }
