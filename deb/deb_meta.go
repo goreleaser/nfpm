@@ -6,12 +6,13 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"fmt"
-	"github.com/goreleaser/nfpm/v2"
-	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"io"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/internal/sign"
 )
 
 const debChangesTemplate = `
