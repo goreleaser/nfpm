@@ -298,8 +298,8 @@ rpm:
   # This will expand any env var you set in the field, e.g. packager: ${PACKAGER}
   packager: GoReleaser <staff@goreleaser.com>
 
-  # Compression algorithm (gzip (default), lzma or xz).
-  compression: lzma
+  # Compression algorithm (gzip (default), zstd, lzma or xz).
+  compression: zstd
 
   # The package is signed if a key_file is set
   signature:
@@ -349,8 +349,8 @@ deb:
   breaks:
     - some-package
 
-  # Compression algorithm (gzip (default), xz or none).
-  compression: xz
+  # Compression algorithm (gzip (default), zstd, xz or none).
+  compression: zstd
 
   # The package is signed if a key_file is set
   signature:

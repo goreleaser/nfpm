@@ -173,6 +173,20 @@ RUN echo wat >> /etc/foo/whatever.conf
 RUN dpkg -r foo
 RUN test ! -f /usr/bin/fake
 
+# ---- zstdcompression test ----
+# we can use the regular compression image as
+# soon as zstd is supported on debian
+FROM ubuntu AS zstdcompression
+ARG package
+RUN echo "${package}"
+COPY ${package} /tmp/foo.deb
+RUN dpkg -i /tmp/foo.deb
+RUN test -e /usr/bin/fake
+RUN test -f /etc/foo/whatever.conf
+RUN echo wat >> /etc/foo/whatever.conf
+RUN dpkg -r foo
+RUN test ! -f /usr/bin/fake
+
 # ---- upgrade test ----
 FROM test_base AS upgrade
 ARG oldpackage

@@ -22,6 +22,7 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
 	"github.com/xi2/xz"
 )
@@ -1080,6 +1081,7 @@ func TestCompressionAlgorithms(t *testing.T) {
 		{"", "data.tar.gz"}, // test current default
 		{"xz", "data.tar.xz"},
 		{"none", "data.tar"},
+		{"zstd", "data.tar.zst"},
 	}
 
 	for _, testCase := range testCases {
@@ -1237,6 +1239,10 @@ func inflate(tb testing.TB, nameOrType string, data []byte) []byte {
 		r, err := xz.NewReader(dataReader, 0)
 		require.NoError(tb, err)
 		inflateReadCloser = io.NopCloser(r)
+	case "zst":
+		r, err := zstd.NewReader(dataReader)
+		require.NoError(tb, err)
+		inflateReadCloser = &zstdReadCloser{r}
 	case "tar", "": // no compression
 		inflateReadCloser = io.NopCloser(dataReader)
 	default:
@@ -1412,4 +1418,14 @@ func TestBadProvides(t *testing.T) {
 	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), w.String())
+}
+
+type zstdReadCloser struct {
+	*zstd.Decoder
+}
+
+func (zrc *zstdReadCloser) Close() error {
+	zrc.Decoder.Close()
+
+	return nil
 }
