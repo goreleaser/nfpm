@@ -3,12 +3,13 @@ package deb
 import (
 	"bytes"
 	"errors"
-	"github.com/goreleaser/nfpm/v2"
-	"github.com/goreleaser/nfpm/v2/internal/sign"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/internal/sign"
+	"github.com/stretchr/testify/require"
 )
 
 func fakeTime() time.Time {
