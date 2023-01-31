@@ -298,15 +298,6 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 		deprecation.Println("Leaving the 'maintainer' field unset will not be allowed in a future version")
 		info.Maintainer = "Unset Maintainer <unset@localhost>"
 	}
-
-	// Default values for distribution & urgency
-	// Required only for generating .changes metadata files
-	if info.Deb.Metadata.Distribution == "" {
-		info.Deb.Metadata.Distribution = "unstable"
-	}
-	if info.Deb.Metadata.Urgency == "" {
-		info.Deb.Metadata.Urgency = "medium"
-	}
 }
 
 func addArFile(w *ar.Writer, name string, body []byte, date time.Time) error {
