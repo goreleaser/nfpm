@@ -56,7 +56,7 @@ jobs:
         if: success()
         with:
           version: latest
-          args: release --rm-dist
+          args: release --clean
           distribution: goreleaser-pro
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
