@@ -13,7 +13,7 @@ require (
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
 	github.com/cavaliergopher/cpio v1.0.1
 	github.com/google/go-cmp v0.5.9
-	github.com/goreleaser/chglog v0.4.0
+	github.com/goreleaser/chglog v0.4.1
 	github.com/goreleaser/fileglob v1.3.0
 	github.com/imdario/mergo v0.3.13
 	github.com/invopop/jsonschema v0.7.0
