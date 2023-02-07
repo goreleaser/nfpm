@@ -442,11 +442,8 @@ func PrepareForPackager(info *Info, packager string) (err error) {
 	}
 
 	info.Contents, err = files.PrepareForPackager(info.Contents, packager, info.DisableGlobbing)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 // Validate the given Info and returns an error if it is invalid. Validate will
