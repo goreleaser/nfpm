@@ -527,8 +527,19 @@ func addTree(all map[string]*Content, tree *Content) error {
 
 		switch {
 		case d.IsDir():
+			info, err := d.Info()
+			if err != nil {
+				return fmt.Errorf("get directory information: %w", err)
+			}
+
 			c.Type = TypeDir
 			c.Destination = NormalizeAbsoluteDirPath(destination)
+			c.FileInfo = &ContentFileInfo{
+				Owner: "root",
+				Group: "root",
+				Mode:  info.Mode(),
+				MTime: info.ModTime(),
+			}
 		case d.Type()&os.ModeSymlink != 0:
 			linkDestination, err := os.Readlink(path)
 			if err != nil {
@@ -542,10 +553,9 @@ func addTree(all map[string]*Content, tree *Content) error {
 			c.Source = path
 			c.Destination = NormalizeAbsoluteFilePath(destination)
 			c.Type = TypeFile
-		}
-
-		c.FileInfo = &ContentFileInfo{
-			Mode: d.Type(),
+			c.FileInfo = &ContentFileInfo{
+				Mode: d.Type(),
+			}
 		}
 
 		all[c.Destination] = c.WithFileInfoDefaults()
