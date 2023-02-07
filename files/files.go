@@ -128,11 +128,14 @@ func (c *Content) WithFileInfoDefaults() *Content {
 	if (cc.Type == TypeDir || cc.Type == TypeImplicitDir) && cc.FileInfo.Mode == 0 {
 		cc.FileInfo.Mode = 0o755
 	}
+	if (cc.Type == TypeDir || cc.Type == TypeImplicitDir) && cc.FileInfo.MTime.IsZero() {
+		cc.FileInfo.MTime = time.Now()
+	}
 
 	// determine if we still need info
 	fileInfoAlreadyComplete := (!cc.FileInfo.MTime.IsZero() &&
 		cc.FileInfo.Mode != 0 &&
-		(cc.FileInfo.Size != 0 || cc.Type == TypeDir))
+		(cc.FileInfo.Size != 0 || (cc.Type == TypeDir || cc.Type == TypeImplicitDir)))
 
 	// only stat source when we actually need more information
 	if cc.Source != "" && !fileInfoAlreadyComplete {
