@@ -309,18 +309,6 @@ func PrepareForPackager(rawContents Contents, packager string, disableGlobbing b
 	contentMap := make(map[string]*Content)
 
 	for _, content := range rawContents {
-		// remove this whole block at some point
-		if packager == "arch" && content.Type != TypeDir &&
-			content.Type != TypeSymlink && content.Type != TypeTree {
-			stat, err := os.Stat(content.Source)
-			if err != nil && stat.IsDir() {
-				content.Type = TypeTree
-				deprecation.Printf("adding directory tree %s: adding a whole directory "+
-					"tree without specifying the type to be \"tree\" is deprecated may "+
-					"cause an error in a future version", content.Source)
-			}
-		}
-
 		if !isRelevantForPackager(packager, content) {
 			continue
 		}
