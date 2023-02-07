@@ -97,7 +97,9 @@ var ErrInvalidSignatureType = errors.New("invalid signature type")
 // Package writes a new deb package to the given writer using the given info.
 func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: funlen
 	info = ensureValidArch(info)
-	if err = info.Validate(); err != nil {
+
+	err = nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
+	if err != nil {
 		return err
 	}
 
@@ -362,93 +364,42 @@ func fillDataTar(info *nfpm.Info, w io.Writer) (md5sums []byte, instSize int64, 
 	return md5buf.Bytes(), instSize, nil
 }
 
-func createSymlinkInsideTar(file *files.Content, out *tar.Writer) error {
-	return newItemInsideTar(out, []byte{}, &tar.Header{
-		Name:     normalizePath(file.Destination),
-		Linkname: file.Source,
-		Typeflag: tar.TypeSymlink,
-		ModTime:  file.FileInfo.MTime,
-		Format:   tar.FormatGNU,
-	})
-}
-
 func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 	created map[string]bool,
 ) (md5buf bytes.Buffer, instSize int64, err error) {
-	// create explicit directories first
-	for _, file := range info.Contents {
-		// at this point, we don't care about other types yet
-		if file.Type != "dir" {
-			continue
-		}
-
-		// only consider contents for this packager
-		if file.Packager != "" && file.Packager != packagerName {
-			continue
-		}
-
-		if err := createTree(tw, file.Destination, created); err != nil {
-			return md5buf, 0, err
-		}
-
-		normalizedName := normalizePath(strings.Trim(file.Destination, "/")) + "/"
-
-		if created[normalizedName] {
-			return md5buf, 0, fmt.Errorf("duplicate directory: %q", normalizedName)
-		}
-
-		err = tw.WriteHeader(&tar.Header{
-			Name:     normalizedName,
-			Mode:     int64(file.FileInfo.Mode),
-			Typeflag: tar.TypeDir,
-			Format:   tar.FormatGNU,
-			Uname:    file.FileInfo.Owner,
-			Gname:    file.FileInfo.Group,
-			ModTime:  file.FileInfo.MTime,
-		})
-		if err != nil {
-			return md5buf, 0, err
-		}
-
-		created[normalizedName] = true
-	}
-
 	// create files and implicit directories
 	for _, file := range info.Contents {
-		// only consider contents for this packager
-		if file.Packager != "" && file.Packager != packagerName {
-			continue
-		}
-		// create implicit directory structure below the current content
-		if err = createTree(tw, file.Destination, created); err != nil {
-			return md5buf, 0, err
-		}
-
 		var size int64 // declare early to avoid shadowing err
 		switch file.Type {
-		case "ghost":
+		case files.TypeRPMGhost:
 			// skip ghost files in deb
 			continue
-		case "dir":
-			// already handled above
-			continue
-		case "symlink":
-			err = createSymlinkInsideTar(file, tw)
+		case files.TypeDir, files.TypeImplicitDir:
+			err = tw.WriteHeader(&tar.Header{
+				Name:     files.AsExplicitRelativePath(file.Destination),
+				Mode:     int64(file.FileInfo.Mode),
+				Typeflag: tar.TypeDir,
+				Format:   tar.FormatGNU,
+				Uname:    file.FileInfo.Owner,
+				Gname:    file.FileInfo.Group,
+				ModTime:  file.FileInfo.MTime,
+			})
+		case files.TypeSymlink:
+			err = newItemInsideTar(tw, []byte{}, &tar.Header{
+				Name:     files.AsExplicitRelativePath(file.Destination),
+				Linkname: file.Source,
+				Typeflag: tar.TypeSymlink,
+				ModTime:  file.FileInfo.MTime,
+				Format:   tar.FormatGNU,
+			})
+		case files.TypeDebChangelog:
+			size, err = createChangelogInsideDataTar(tw, &md5buf, info, file.Destination)
 		default:
 			size, err = copyToTarAndDigest(file, tw, &md5buf)
 		}
 		if err != nil {
 			return md5buf, 0, err
 		}
-		instSize += size
-	}
-
-	if info.Changelog != "" {
-		size, err := createChangelogInsideDataTar(tw, &md5buf, created, info)
-		if err != nil {
-			return md5buf, 0, err
-		}
-
 		instSize += size
 	}
 
@@ -472,7 +423,7 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 	// 0o777 which we don't want because we want to be able to set the suid bit.
 	header.Mode = int64(file.Mode())
 	header.Format = tar.FormatGNU
-	header.Name = normalizePath(file.Destination)
+	header.Name = files.AsExplicitRelativePath(file.Destination)
 	header.Uname = file.FileInfo.Owner
 	header.Gname = file.FileInfo.Group
 	if err := tw.WriteHeader(header); err != nil {
@@ -488,8 +439,21 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 	return file.Size(), nil
 }
 
-func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
-	created map[string]bool, info *nfpm.Info,
+func withChangelogIfRequested(info *nfpm.Info) *nfpm.Info {
+	if info.Changelog != "" {
+		// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
+		// https://lintian.debian.org/tags/debian-changelog-file-missing-or-wrong-name
+		info.Contents = append(info.Contents, &files.Content{
+			Destination: fmt.Sprintf("/usr/share/doc/%s/changelog.Debian.gz", info.Name),
+			Type:        files.TypeDebChangelog, // this type is handeled in createDataTarball
+		})
+	}
+
+	return info
+}
+
+func createChangelogInsideDataTar(tarw *tar.Writer, g io.Writer, info *nfpm.Info,
+	fileName string,
 ) (int64, error) {
 	var buf bytes.Buffer
 	out, err := gzip.NewWriterLevel(&buf, gzip.BestCompression)
@@ -510,28 +474,21 @@ func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
 	}
 
 	if err = out.Close(); err != nil {
-		return 0, fmt.Errorf("closing changelog.Debian.gz: %w", err)
+		return 0, fmt.Errorf("closing %s: %w", filepath.Base(fileName), err)
 	}
 
 	changelogData := buf.Bytes()
-
-	// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
-	// https://lintian.debian.org/tags/debian-changelog-file-missing-or-wrong-name
-	changelogName := normalizePath(fmt.Sprintf("/usr/share/doc/%s/changelog.Debian.gz", info.Name))
-	if err = createTree(tarw, changelogName, created); err != nil {
-		return 0, err
-	}
 
 	digest := md5.New() // nolint:gas
 	if _, err = digest.Write(changelogData); err != nil {
 		return 0, err
 	}
 
-	if _, err = fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), changelogName); err != nil {
+	if _, err = fmt.Fprintf(g, "%x  %s\n", digest.Sum(nil), fileName); err != nil {
 		return 0, err
 	}
 
-	if err = newFileInsideTar(tarw, changelogName, changelogData); err != nil {
+	if err = newFileInsideTar(tarw, fileName, changelogData); err != nil {
 		return 0, err
 	}
 
@@ -576,14 +533,14 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 	}
 
 	filesToCreate := map[string][]byte{
-		"control":   body.Bytes(),
-		"md5sums":   md5sums,
-		"conffiles": conffiles(info),
+		"./control":   body.Bytes(),
+		"./md5sums":   md5sums,
+		"./conffiles": conffiles(info),
 	}
 
 	triggers := createTriggers(info)
 	if len(triggers) > 0 {
-		filesToCreate["triggers"] = triggers
+		filesToCreate["./triggers"] = triggers
 	}
 
 	for name, content := range filesToCreate {
@@ -656,7 +613,7 @@ func newItemInsideTar(out *tar.Writer, content []byte, header *tar.Header) error
 
 func newFileInsideTar(out *tar.Writer, name string, content []byte) error {
 	return newItemInsideTar(out, content, &tar.Header{
-		Name:     normalizePath(name),
+		Name:     files.AsExplicitRelativePath(name),
 		Size:     int64(len(content)),
 		Mode:     0o644,
 		ModTime:  time.Now(),
@@ -675,7 +632,7 @@ func newFilePathInsideTar(out *tar.Writer, path, dest string, mode int64) error 
 		return err
 	}
 	return newItemInsideTar(out, content, &tar.Header{
-		Name:     normalizePath(dest),
+		Name:     files.AsExplicitRelativePath(dest),
 		Size:     int64(len(content)),
 		Mode:     mode,
 		ModTime:  time.Now(),
@@ -684,69 +641,13 @@ func newFilePathInsideTar(out *tar.Writer, path, dest string, mode int64) error 
 	})
 }
 
-// normalizePath returns a path separated by slashes, all relative path items
-// resolved and relative to the current directory (so it starts with "./").
-func normalizePath(src string) string {
-	return "." + files.ToNixPath(filepath.Join("/", src))
-}
-
-// this is needed because the data.tar.gz file should have the empty folders
-// as well, so we walk through the dst and create all subfolders.
-func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
-	for _, path := range pathsToCreate(dst) {
-		path = normalizePath(path) + "/"
-
-		if created[path] {
-			// skipping dir that was previously created inside the archive
-			// (eg: usr/)
-			continue
-		}
-
-		if err := tarw.WriteHeader(&tar.Header{
-			Name:     path,
-			Mode:     0o755,
-			Typeflag: tar.TypeDir,
-			Format:   tar.FormatGNU,
-			ModTime:  time.Now(),
-			Uname:    "root",
-			Gname:    "root",
-		}); err != nil {
-			return fmt.Errorf("failed to create folder: %w", err)
-		}
-		created[path] = true
-	}
-	return nil
-}
-
-func pathsToCreate(dst string) []string {
-	paths := []string{}
-	base := strings.Trim(dst, "/")
-	for {
-		base = filepath.Dir(base)
-		if base == "." {
-			break
-		}
-		paths = append(paths, files.ToNixPath(base))
-	}
-	// we don't really need to create those things in order apparently, but,
-	// it looks really weird if we don't.
-	result := []string{}
-	for i := len(paths) - 1; i >= 0; i-- {
-		result = append(result, paths[i])
-	}
-	return result
-}
-
 func conffiles(info *nfpm.Info) []byte {
 	// nolint: prealloc
 	var confs []string
 	for _, file := range info.Contents {
-		if file.Packager != "" && file.Packager != packagerName {
-			continue
-		}
 		switch file.Type {
-		case "config", "config|noreplace":
-			confs = append(confs, file.Destination)
+		case files.TypeConfig, files.TypeConfigNoReplace:
+			confs = append(confs, filepath.Join("/", file.Destination))
 		}
 	}
 	return []byte(strings.Join(confs, "\n") + "\n")

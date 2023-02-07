@@ -9,9 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -119,7 +117,9 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 		return fmt.Errorf("invalid platform: %s", info.Platform)
 	}
 	info = ensureValidArch(info)
-	if err := info.Validate(); err != nil {
+
+	err := nfpm.PrepareForPackager(info, packagerName)
+	if err != nil {
 		return err
 	}
 
@@ -138,12 +138,12 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 
 	entries, totalSize, err := createFilesInTar(info, tw)
 	if err != nil {
-		return err
+		return fmt.Errorf("create files in tar: %w", err)
 	}
 
 	pkginfoEntry, err := createPkginfo(info, tw, totalSize)
 	if err != nil {
-		return err
+		return fmt.Errorf("create pkg info: %w", err)
 	}
 
 	// .PKGINFO must be the first entry in .MTREE
@@ -151,7 +151,7 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 
 	err = createMtree(info, tw, entries)
 	if err != nil {
-		return err
+		return fmt.Errorf("create mtree: %w", err)
 	}
 
 	return createScripts(info, tw)
@@ -164,101 +164,28 @@ func (ArchLinux) ConventionalExtension() string {
 
 // createFilesInTar adds the files described in the given info to the given tar writer
 func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, error) {
-	created := map[string]struct{}{}
-	var entries []MtreeEntry
+	entries := make([]MtreeEntry, 0, len(info.Contents))
 	var totalSize int64
 
-	var contents []*files.Content
-
 	for _, content := range info.Contents {
-		if content.Packager != "" && content.Packager != packagerName {
-			continue
-		}
+		content.Destination = files.AsRelativePath(content.Destination)
 
 		switch content.Type {
-		case "dir", "symlink":
-			contents = append(contents, content)
-			continue
-		}
-
-		fi, err := os.Stat(content.Source)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		if fi.IsDir() {
-			err = filepath.WalkDir(content.Source, func(path string, d fs.DirEntry, err error) error {
-				if err != nil {
-					return err
-				}
-
-				relPath := strings.TrimPrefix(path, content.Source)
-
-				if d.IsDir() {
-					return nil
-				}
-
-				c := &files.Content{
-					Source:      path,
-					Destination: filepath.Join(content.Destination, relPath),
-					FileInfo: &files.ContentFileInfo{
-						Mode: d.Type(),
-					},
-				}
-
-				if d.Type()&os.ModeSymlink != 0 {
-					c.Type = "symlink"
-				}
-
-				contents = append(contents, c)
-				return nil
-			})
-			if err != nil {
-				return nil, 0, err
-			}
-		} else {
-			contents = append(contents, content)
-		}
-	}
-
-	for _, content := range contents {
-		path := normalizePath(content.Destination)
-
-		switch content.Type {
-		case "ghost":
-			// Ignore ghost files
-		case "dir":
-			err := createDirs(content.Destination, tw, created)
-			if err != nil {
-				return nil, 0, err
-			}
-
-			modtime := time.Now()
-			// If the time is given, use it
-			if content.FileInfo != nil && !content.ModTime().IsZero() {
-				modtime = content.ModTime()
-			}
-
+		case files.TypeDir, files.TypeImplicitDir:
 			entries = append(entries, MtreeEntry{
-				Destination: path,
-				Time:        modtime.Unix(),
-				Type:        content.Type,
+				Destination: content.Destination,
+				Time:        content.ModTime().Unix(),
+				Type:        files.TypeDir,
 			})
-		case "symlink":
-			dir := filepath.Dir(path)
-			err := createDirs(dir, tw, created)
-			if err != nil {
-				return nil, 0, err
-			}
-
+		case files.TypeSymlink:
 			modtime := time.Now()
 			// If the time is given, use it
 			if content.FileInfo != nil && !content.ModTime().IsZero() {
 				modtime = content.ModTime()
 			}
 
-			err = tw.WriteHeader(&tar.Header{
-				Name:     normalizePath(content.Destination),
+			err := tw.WriteHeader(&tar.Header{
+				Name:     content.Destination,
 				Linkname: content.Source,
 				ModTime:  modtime,
 				Typeflag: tar.TypeSymlink,
@@ -269,18 +196,12 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 
 			entries = append(entries, MtreeEntry{
 				LinkSource:  content.Source,
-				Destination: path,
+				Destination: content.Destination,
 				Time:        modtime.Unix(),
 				Mode:        0o777,
 				Type:        content.Type,
 			})
 		default:
-			dir := filepath.Dir(path)
-			err := createDirs(dir, tw, created)
-			if err != nil {
-				return nil, 0, err
-			}
-
 			src, err := os.Open(content.Source)
 			if err != nil {
 				return nil, 0, err
@@ -292,7 +213,7 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 			}
 
 			header := &tar.Header{
-				Name:     path,
+				Name:     content.Destination,
 				Mode:     int64(srcFi.Mode()),
 				Typeflag: tar.TypeReg,
 				Size:     srcFi.Size(),
@@ -327,7 +248,7 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 			}
 
 			entries = append(entries, MtreeEntry{
-				Destination: path,
+				Destination: content.Destination,
 				Time:        srcFi.ModTime().Unix(),
 				Mode:        int64(srcFi.Mode()),
 				Size:        srcFi.Size(),
@@ -343,58 +264,11 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 	return entries, totalSize, nil
 }
 
-func createDirs(dst string, tw *tar.Writer, created map[string]struct{}) error {
-	for _, path := range neededPaths(dst) {
-		path = normalizePath(path) + "/"
-
-		if _, ok := created[path]; ok {
-			continue
-		}
-
-		err := tw.WriteHeader(&tar.Header{
-			Name:     path,
-			Mode:     0o755,
-			Typeflag: tar.TypeDir,
-			ModTime:  time.Now(),
-			Uname:    "root",
-			Gname:    "root",
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create folder: %w", err)
-		}
-
-		created[path] = struct{}{}
-	}
-
-	return nil
-}
-
 func defaultStr(s, def string) string {
 	if s == "" {
 		return def
 	}
 	return s
-}
-
-func neededPaths(dst string) []string {
-	dst = files.ToNixPath(dst)
-	split := strings.Split(strings.Trim(dst, "/."), "/")
-
-	var sb strings.Builder
-	var paths []string
-	for index, elem := range split {
-		if index != 0 {
-			sb.WriteRune('/')
-		}
-		sb.WriteString(elem)
-		paths = append(paths, sb.String())
-	}
-
-	return paths
-}
-
-func normalizePath(src string) string {
-	return files.ToNixPath(strings.TrimPrefix(src, "/"))
 }
 
 func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntry, error) {
@@ -481,9 +355,8 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	}
 
 	for _, content := range info.Contents {
-		if content.Type == "config" || content.Type == "config|noreplace" {
-			path := normalizePath(content.Destination)
-			path = strings.TrimPrefix(path, "./")
+		if content.Type == files.TypeConfig || content.Type == files.TypeConfigNoReplace {
+			path := files.AsRelativePath(content.Destination)
 
 			err = writeKVPair(buf, "backup", path)
 			if err != nil {
@@ -521,7 +394,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		Time:        time.Now().Unix(),
 		Mode:        0o644,
 		Size:        int64(size),
-		Type:        "file",
+		Type:        files.TypeFile,
 		MD5:         md5Hash.Sum(nil),
 		SHA256:      sha256Hash.Sum(nil),
 	}, nil
@@ -574,19 +447,19 @@ type MtreeEntry struct {
 
 func (me *MtreeEntry) WriteTo(w io.Writer) (int64, error) {
 	switch me.Type {
-	case "dir":
+	case files.TypeDir:
 		n, err := fmt.Fprintf(
 			w,
 			"./%s time=%d.0 type=dir\n",
-			normalizePath(me.Destination),
+			me.Destination,
 			me.Time,
 		)
 		return int64(n), err
-	case "symlink":
+	case files.TypeSymlink:
 		n, err := fmt.Fprintf(
 			w,
 			"./%s time=%d.0 mode=%o type=link link=%s\n",
-			normalizePath(me.Destination),
+			me.Destination,
 			me.Time,
 			me.Mode,
 			me.LinkSource,
@@ -596,7 +469,7 @@ func (me *MtreeEntry) WriteTo(w io.Writer) (int64, error) {
 		n, err := fmt.Fprintf(
 			w,
 			"./%s time=%d.0 mode=%o size=%d type=file md5digest=%x sha256digest=%x\n",
-			normalizePath(me.Destination),
+			me.Destination,
 			me.Time,
 			me.Mode,
 			me.Size,
@@ -612,24 +485,12 @@ func createMtree(info *nfpm.Info, tw *tar.Writer, entries []MtreeEntry) error {
 	gw := pgzip.NewWriter(buf)
 	defer gw.Close()
 
-	created := map[string]struct{}{}
-
 	_, err := io.WriteString(gw, "#mtree\n")
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range entries {
-		destDir := filepath.Dir(entry.Destination)
-
-		dirs := createDirsMtree(destDir, created)
-		for _, dir := range dirs {
-			_, err = dir.WriteTo(gw)
-			if err != nil {
-				return err
-			}
-		}
-
 		_, err = entry.WriteTo(gw)
 		if err != nil {
 			return err
@@ -651,31 +512,6 @@ func createMtree(info *nfpm.Info, tw *tar.Writer, entries []MtreeEntry) error {
 
 	_, err = io.Copy(tw, buf)
 	return err
-}
-
-func createDirsMtree(dst string, created map[string]struct{}) []MtreeEntry {
-	var out []MtreeEntry
-	for _, path := range neededPaths(dst) {
-		path = normalizePath(path) + "/"
-
-		if path == "./" {
-			continue
-		}
-
-		if _, ok := created[path]; ok {
-			continue
-		}
-
-		out = append(out, MtreeEntry{
-			Destination: path,
-			Time:        time.Now().Unix(),
-			Mode:        0o755,
-			Type:        "dir",
-		})
-
-		created[path] = struct{}{}
-	}
-	return out
 }
 
 func createScripts(info *nfpm.Info, tw *tar.Writer) error {

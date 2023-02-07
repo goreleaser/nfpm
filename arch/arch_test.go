@@ -48,20 +48,20 @@ func exampleInfo() *nfpm.Info {
 				{
 					Source:      "../testdata/whatever.conf",
 					Destination: "/etc/fake/fake.conf",
-					Type:        "config",
+					Type:        files.TypeConfig,
 				},
 				{
 					Destination: "/var/log/whatever",
-					Type:        "dir",
+					Type:        files.TypeDir,
 				},
 				{
 					Destination: "/usr/share/whatever",
-					Type:        "dir",
+					Type:        files.TypeDir,
 				},
 				{
 					Source:      "/etc/fake/fake.conf",
 					Destination: "/etc/fake/fake-link.conf",
-					Type:        "symlink",
+					Type:        files.TypeSymlink,
 				},
 				{
 					Source:      "../testdata/something",
@@ -139,7 +139,8 @@ func TestArchConventionalFileName(t *testing.T) {
 }
 
 func TestArchPkginfo(t *testing.T) {
-	pkginfoData, err := makeTestPkginfo(t, exampleInfo())
+	info := exampleInfo()
+	pkginfoData, err := makeTestPkginfo(t, info)
 	require.NoError(t, err)
 	fields := extractPkginfoFields(pkginfoData)
 	require.Equal(t, "foo-test", fields["pkgname"])
@@ -206,6 +207,8 @@ func TestArchOverrideArchitecture(t *testing.T) {
 func makeTestPkginfo(t *testing.T, info *nfpm.Info) ([]byte, error) {
 	t.Helper()
 
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
 	buf := &bytes.Buffer{}
 	tw := tar.NewWriter(buf)
 
@@ -253,31 +256,32 @@ const correctMtree = `#mtree
 
 func TestArchMtree(t *testing.T) {
 	info := exampleInfo()
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
 
 	buf := &bytes.Buffer{}
 	tw := tar.NewWriter(buf)
 
 	err := createMtree(info, tw, []MtreeEntry{
 		{
-			Destination: "/foo",
+			Destination: "foo",
 			Time:        1234,
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 		{
-			Destination: "/3",
+			Destination: "3",
 			Time:        12345,
 			Mode:        0o644,
 			Size:        100,
-			Type:        "file",
+			Type:        files.TypeFile,
 			MD5:         []byte{0xAB, 0xCD},
 			SHA256:      []byte{0xEF, 0x12},
 		},
 		{
 			LinkSource:  "/bin/bash",
-			Destination: "/sh",
+			Destination: "sh",
 			Time:        123456,
 			Mode:        0o777,
-			Type:        "symlink",
+			Type:        files.TypeSymlink,
 		},
 	})
 	require.NoError(t, err)
@@ -295,7 +299,7 @@ func TestArchMtree(t *testing.T) {
 	mtree, err := io.ReadAll(gr)
 	require.NoError(t, err)
 
-	require.InDeltaSlice(t, []byte(correctMtree), mtree, 0)
+	require.Equal(t, correctMtree, string(mtree))
 }
 
 func TestGlob(t *testing.T) {

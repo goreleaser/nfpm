@@ -74,20 +74,20 @@ func exampleInfo() *nfpm.Info {
 				{
 					Source:      "../testdata/whatever.conf",
 					Destination: "/etc/fake/fake.conf",
-					Type:        "config",
+					Type:        files.TypeConfig,
 				},
 				{
 					Source:      "../testdata/whatever.conf",
 					Destination: "/etc/fake/fake2.conf",
-					Type:        "config|noreplace",
+					Type:        files.TypeConfigNoReplace,
 				},
 				{
 					Destination: "/var/log/whatever",
-					Type:        "dir",
+					Type:        files.TypeDir,
 				},
 				{
 					Destination: "/usr/share/whatever",
-					Type:        "dir",
+					Type:        files.TypeDir,
 				},
 			},
 		},
@@ -100,8 +100,7 @@ func TestConventionalExtension(t *testing.T) {
 
 func TestCreateBuilderData(t *testing.T) {
 	info := exampleInfo()
-	err := info.Validate()
-	require.NoError(t, err)
+	require.NoError(t, nfpm.PrepareForPackager(info, "apk"))
 	size := int64(0)
 	builderData := createBuilderData(info, &size)
 
@@ -110,7 +109,7 @@ func TestCreateBuilderData(t *testing.T) {
 
 	require.NoError(t, builderData(tw))
 
-	require.Equal(t, 13320, buf.Len())
+	require.Equal(t, 13824, buf.Len(), buf.String())
 }
 
 func TestCombineToApk(t *testing.T) {
@@ -124,20 +123,6 @@ func TestCombineToApk(t *testing.T) {
 
 	require.NoError(t, combineToApk(&bufTarget, &bufData, &bufControl))
 	require.Equal(t, 2, bufTarget.Len())
-}
-
-func TestPathsToCreate(t *testing.T) {
-	for pathToTest, parts := range map[string][]string{
-		"/usr/share/doc/whatever/foo.md": {"usr", "usr/share", "usr/share/doc", "usr/share/doc/whatever"},
-		"/var/moises":                    {"var"},
-		"/":                              {},
-	} {
-		parts := parts
-		pathToTest := pathToTest
-		t.Run(fmt.Sprintf("pathToTest: '%s'", pathToTest), func(t *testing.T) {
-			require.Equal(t, parts, pathsToCreate(pathToTest))
-		})
-	}
 }
 
 func TestDefaultWithArch(t *testing.T) {
@@ -214,7 +199,7 @@ func TestFileDoesNotExist(t *testing.T) {
 					{
 						Source:      "../testdata/whatever.confzzz",
 						Destination: "/etc/fake/fake.conf",
-						Type:        "config",
+						Type:        files.TypeConfig,
 					},
 				},
 			},
@@ -250,7 +235,7 @@ func TestNoFiles(t *testing.T) {
 func TestCreateBuilderControl(t *testing.T) {
 	info := exampleInfo()
 	size := int64(12345)
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(info, "apk")
 	require.NoError(t, err)
 	builderControl := createBuilderControl(info, size, sha256.New().Sum(nil))
 
@@ -280,7 +265,7 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 		PreUpgrade:  "../testdata/scripts/preupgrade.sh",
 		PostUpgrade: "../testdata/scripts/postupgrade.sh",
 	}
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(info, "apk")
 	require.NoError(t, err)
 
 	size := int64(12345)
@@ -334,7 +319,7 @@ func TestSignature(t *testing.T) {
 	info.APK.Signature.KeyFile = "../internal/sign/testdata/rsa.priv"
 	info.APK.Signature.KeyName = "testkey.rsa.pub"
 	info.APK.Signature.KeyPassphrase = "hunter2"
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(info, "apk")
 	require.NoError(t, err)
 
 	digest := sha1.New().Sum(nil) // nolint:gosec
@@ -356,7 +341,7 @@ func TestSignatureError(t *testing.T) {
 	info.APK.Signature.KeyFile = "../internal/sign/testdata/rsa.priv"
 	info.APK.Signature.KeyName = "testkey.rsa.pub"
 	info.APK.Signature.KeyPassphrase = "hunter2"
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(info, "apk")
 	require.NoError(t, err)
 
 	// wrong hash format
@@ -386,7 +371,7 @@ func TestDisableGlobbing(t *testing.T) {
 			Destination: "/test/{file}[",
 		},
 	}
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(info, "apk")
 	require.NoError(t, err)
 
 	size := int64(0)
@@ -500,7 +485,7 @@ func TestPackageSymlinks(t *testing.T) {
 		{
 			Source:      "../testdata/fake",
 			Destination: "fake",
-			Type:        "symlink",
+			Type:        files.TypeSymlink,
 		},
 	}
 	require.NoError(t, Default.Package(info, io.Discard))
@@ -519,7 +504,7 @@ func TestDirectories(t *testing.T) {
 		},
 		{
 			Destination: "/etc/bar",
-			Type:        "dir",
+			Type:        files.TypeDir,
 			FileInfo: &files.ContentFileInfo{
 				Owner: "test",
 				Mode:  0o700,
@@ -527,15 +512,15 @@ func TestDirectories(t *testing.T) {
 		},
 		{
 			Destination: "/etc/baz",
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 		{
 			Destination: "/usr/lib/something/somethingelse",
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 	}
 
-	require.NoError(t, info.Validate())
+	require.NoError(t, nfpm.PrepareForPackager(info, "apk"))
 
 	var buf bytes.Buffer
 	size := int64(0)
@@ -545,14 +530,14 @@ func TestDirectories(t *testing.T) {
 	require.Equal(t, []string{
 		"etc/",
 		"etc/bar/",
+		"etc/bar/file",
 		"etc/baz/",
+		"etc/foo/",
+		"etc/foo/file",
 		"usr/",
 		"usr/lib/",
 		"usr/lib/something/",
 		"usr/lib/something/somethingelse/",
-		"etc/bar/file",
-		"etc/foo/",
-		"etc/foo/file",
 	}, getTree(t, buf.Bytes()))
 
 	// for apks all implicit or explicit directories are created in the tarball
@@ -577,11 +562,11 @@ func TestNoDuplicateAutocreatedDirectories(t *testing.T) {
 			Destination: "/etc/foo/bar",
 		},
 		{
-			Type:        "dir",
+			Type:        files.TypeDir,
 			Destination: "/etc/foo",
 		},
 	}
-	require.NoError(t, info.Validate())
+	require.NoError(t, nfpm.PrepareForPackager(info, "apk"))
 
 	expected := map[string]bool{
 		"etc/":        true,
@@ -612,20 +597,15 @@ func TestNoDuplicateDirectories(t *testing.T) {
 	info.DisableGlobbing = true
 	info.Contents = []*files.Content{
 		{
-			Type:        "dir",
+			Type:        files.TypeDir,
 			Destination: "/etc/foo",
 		},
 		{
-			Type:        "dir",
+			Type:        files.TypeDir,
 			Destination: "/etc/foo/",
 		},
 	}
-	require.NoError(t, info.Validate())
-
-	var buf bytes.Buffer
-	size := int64(0)
-	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
-	require.Error(t, err)
+	require.Error(t, nfpm.PrepareForPackager(info, "apk"))
 }
 
 func TestNoDuplicateContents(t *testing.T) {
@@ -641,7 +621,7 @@ func TestNoDuplicateContents(t *testing.T) {
 		},
 		{
 			Destination: "/etc/bar",
-			Type:        "dir",
+			Type:        files.TypeDir,
 			FileInfo: &files.ContentFileInfo{
 				Owner: "test",
 				Mode:  0o700,
@@ -649,11 +629,11 @@ func TestNoDuplicateContents(t *testing.T) {
 		},
 		{
 			Destination: "/etc/baz",
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 	}
 
-	require.NoError(t, info.Validate())
+	require.NoError(t, nfpm.PrepareForPackager(info, "apk"))
 
 	var buf bytes.Buffer
 	size := int64(0)

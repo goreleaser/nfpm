@@ -134,6 +134,7 @@ func (c *Config) Get(format string) (info *Info, err error) {
 	if err = mergo.Merge(&info.Overridables, override, mergo.WithOverride); err != nil {
 		return nil, fmt.Errorf("failed to merge overrides into info: %w", err)
 	}
+
 	var contents []*files.Content
 	for _, f := range info.Contents {
 		if f.Packager == format || f.Packager == "" {
@@ -423,7 +424,33 @@ func (e ErrFieldEmpty) Error() string {
 	return fmt.Sprintf("package %s must be provided", e.field)
 }
 
-// Validate the given Info and returns an error if it is invalid.
+// PrepareForPackager validates the configuration for the given packager and
+// prepares the contents for said packager.
+func PrepareForPackager(info *Info, packager string) (err error) {
+	if info.Name == "" {
+		return ErrFieldEmpty{"name"}
+	}
+
+	if info.Arch == "" &&
+		((packager == "deb" && info.Deb.Arch == "") ||
+			(packager == "rpm" && info.RPM.Arch == "") ||
+			(packager == "apk" && info.APK.Arch == "")) {
+		return ErrFieldEmpty{"arch"}
+	}
+	if info.Version == "" {
+		return ErrFieldEmpty{"version"}
+	}
+
+	info.Contents, err = files.PrepareForPackager(info.Contents, packager, info.DisableGlobbing)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Validate the given Info and returns an error if it is invalid. Validate will
+// no change the info's contents.
 func Validate(info *Info) (err error) {
 	if info.Name == "" {
 		return ErrFieldEmpty{"name"}
@@ -435,12 +462,13 @@ func Validate(info *Info) (err error) {
 		return ErrFieldEmpty{"version"}
 	}
 
-	contents, err := files.ExpandContentGlobs(info.Contents, info.DisableGlobbing)
-	if err != nil {
-		return err
+	for packager := range packagers {
+		_, err := files.PrepareForPackager(info.Contents, packager, info.DisableGlobbing)
+		if err != nil {
+			return err
+		}
 	}
 
-	info.Contents = contents
 	return nil
 }
 

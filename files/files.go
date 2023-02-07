@@ -2,13 +2,54 @@ package files
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/internal/glob"
+)
+
+const (
+	// TypeFile is the type of a regular file. This is also the type that is
+	// implied when no type is specified.
+	TypeFile = "file"
+	// TypeDir is the type of a directory that is explicitly added in order to
+	// declare ownership or non-standard permission.
+	TypeDir = "dir"
+	/// TypeImplicitDir is the type of a directory that is implicitly added as a
+	//parent of a file.
+	TypeImplicitDir = "implicit dir"
+	// TypeTree is the type of a whole directory tree structure.
+	TypeTree = "tree"
+	// TypeSymlink is the type of a symlink that is created at the destination
+	// path and points to the source path.
+	TypeSymlink = "symlink"
+	// TypeConfig is the type of a configuration file that may be changed by the
+	// user of the package.
+	TypeConfig = "config"
+	// TypeConfigNoReplace is like TypeConfig with an added noreplace directive
+	// that is respected by RPM-based distributions. For all other packages it
+	// is handled exactly like TypeConfig.
+	TypeConfigNoReplace = "config|noreplace"
+	// TypeGhost is the type of an RPM ghost file which is ignored by other packagers.
+	TypeRPMGhost = "ghost"
+	// TypeRPMDoc is the type of an RPM doc file which is ignored by other packagers.
+	TypeRPMDoc = "doc"
+	// TypeRPMLicence is the type of an RPM licence file which is ignored by other packagers.
+	TypeRPMLicence = "licence"
+	// TypeRPMLicense a different spelling of TypeRPMLicence.
+	TypeRPMLicense = "license"
+	// TypeRPMReadme is the type of an RPM readme file which is ignored by other packagers.
+	TypeRPMReadme = "readme"
+	// TypeDebChangelog is the type of a Debian changelog archive file which is
+	// ignored by other packagers. This type should never be set for a content
+	// entry as it is automatically added when a changelog is configred.
+	TypeDebChangelog = "debian changelog"
 )
 
 // Content describes the source and destination
@@ -16,7 +57,7 @@ import (
 type Content struct {
 	Source      string           `yaml:"src,omitempty" json:"src,omitempty"`
 	Destination string           `yaml:"dst" json:"dst"`
-	Type        string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=dir,enum=,default="`
+	Type        string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=dir,enum=tree,enum=,default="`
 	Packager    string           `yaml:"packager,omitempty" json:"packager,omitempty"`
 	FileInfo    *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
 }
@@ -72,6 +113,9 @@ func (c *Content) WithFileInfoDefaults() *Content {
 		Packager:    c.Packager,
 		FileInfo:    c.FileInfo,
 	}
+	if cc.Type == "" {
+		cc.Type = TypeFile
+	}
 	if cc.FileInfo == nil {
 		cc.FileInfo = &ContentFileInfo{}
 	}
@@ -81,14 +125,14 @@ func (c *Content) WithFileInfoDefaults() *Content {
 	if cc.FileInfo.Group == "" {
 		cc.FileInfo.Group = "root"
 	}
-	if cc.Type == "dir" && cc.FileInfo.Mode == 0 {
+	if (cc.Type == TypeDir || cc.Type == TypeImplicitDir) && cc.FileInfo.Mode == 0 {
 		cc.FileInfo.Mode = 0o755
 	}
 
 	// determine if we still need info
 	fileInfoAlreadyComplete := (!cc.FileInfo.MTime.IsZero() &&
 		cc.FileInfo.Mode != 0 &&
-		(cc.FileInfo.Size != 0 || cc.Type == "dir"))
+		(cc.FileInfo.Size != 0 || cc.Type == TypeDir))
 
 	// only stat source when we actually need more information
 	if cc.Source != "" && !fileInfoAlreadyComplete {
@@ -140,25 +184,83 @@ func (c *Content) Sys() interface{} {
 	return nil
 }
 
-// ExpandContentGlobs gathers all of the real files to be copied into the package.
+func (c *Content) String() string {
+	var properties []string
+	if c.Source != "" {
+		properties = append(properties, "src="+c.Source)
+	}
+	if c.Destination != "" {
+		properties = append(properties, "dst="+c.Destination)
+	}
+	if c.Type != "" {
+		properties = append(properties, "type="+c.Type)
+	}
+	if c.Packager != "" {
+		properties = append(properties, "packager="+c.Packager)
+	}
+	if c.FileInfo != nil {
+		if c.FileInfo.Owner != "" {
+			properties = append(properties, "owner="+c.FileInfo.Owner)
+		}
+		if c.FileInfo.Group != "" {
+			properties = append(properties, "group="+c.FileInfo.Group)
+		}
+		if c.Mode() != 0 {
+			properties = append(properties, "mode="+c.Mode().String())
+		}
+		if !c.ModTime().IsZero() {
+			properties = append(properties, "modtime="+c.ModTime().String())
+		}
+		properties = append(properties, "size="+strconv.Itoa(int(c.FileInfo.Size)))
+	}
+
+	return fmt.Sprintf("Content(%s)", strings.Join(properties, ","))
+}
+
+// ExpandContentGlobs gathers all of the real files to be copied into the
+// package.
+//
+// Deprecated: ExpandContentGlobs is deprecated in favor of PrepareForPackager
+// which also expands implicit directories and takes the packager into account.
 func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents, err error) {
+	deprecation.Println("files.ExpandContentGlobs is deprecated in favor of files.PrepareForPackager")
+
 	for _, f := range contents {
 		var globbed map[string]string
 
 		switch f.Type {
-		case "ghost", "symlink", "dir":
+		case TypeImplicitDir:
+		case TypeRPMGhost, TypeSymlink, TypeDir:
 			// Ghost, symlinks and dirs need to be in the list, but dont glob
 			// them because they do not really exist
 			files = append(files, f.WithFileInfoDefaults())
-		case "config", "config|noreplace", "file", "":
+		case TypeConfig, TypeConfigNoReplace, TypeFile, "":
 			globbed, err = glob.Glob(f.Source, f.Destination, disableGlobbing)
 			if err != nil {
 				return nil, err
 			}
 
-			files, err = appendGlobbedFiles(files, globbed, f)
-			if err != nil {
-				return nil, err
+			for src, dst := range globbed {
+				// if the file has a FileInfo, we need to copy it but recalculate its size
+				newFileInfo := f.FileInfo
+				if newFileInfo != nil {
+					newFileInfoVal := *newFileInfo
+					newFileInfoVal.Size = 0
+					newFileInfo = &newFileInfoVal
+				}
+				newFile := (&Content{
+					Destination: ToNixPath(dst),
+					Source:      ToNixPath(src),
+					Type:        f.Type,
+					FileInfo:    newFileInfo,
+					Packager:    f.Packager,
+				}).WithFileInfoDefaults()
+				if dst, err := os.Readlink(src); err == nil {
+					newFile.Source = dst
+					newFile.Type = TypeSymlink
+				}
+
+				files = append(files, newFile)
 			}
 		default:
 			return files, fmt.Errorf("invalid file type: %s", f.Type)
@@ -166,9 +268,22 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 
 	}
 
-	err = checkNoCollisions(files)
-	if err != nil {
-		return nil, err
+	alreadyPresent := map[string]*Content{}
+
+	for _, elem := range files {
+		present, ok := alreadyPresent[elem.Destination]
+		if ok && (present.Packager == "" || elem.Packager == "" || present.Packager == elem.Packager) {
+			if elem.Type == TypeDir {
+				return nil, fmt.Errorf("cannot add directory %q because it is already present: %w",
+					elem.Destination, ErrContentCollision)
+			}
+
+			return nil, fmt.Errorf(
+				"cannot add %q because %q is already present at the same destination (%s): %w",
+				elem.Source, present.Source, present.Destination, ErrContentCollision)
+		}
+
+		alreadyPresent[elem.Destination] = elem
 	}
 
 	// sort the files for reproducibility and general cleanliness
@@ -177,8 +292,198 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 	return files, nil
 }
 
-func appendGlobbedFiles(all Contents, globbed map[string]string, origFile *Content) (Contents, error) {
+// PrepareForPackager performs the following steps to prepare the contents for
+// the provided packager:
+//
+//   - It filters out content that is irrelevant for the specified packager
+//   - It expands globs (if enabled) and file trees
+//   - It adds implicit directories (parent directories of files)
+//   - It adds ownership and other file information if not specified directly
+//   - It normalizes content source paths to be unix style paths
+//   - It normalizes content destination paths to be absolute paths with a trailing
+//     slash if the entry is a directory
+//
+// If no packager is specified, only the files that are relevant for any
+// packager are considered.
+func PrepareForPackager(rawContents Contents, packager string, disableGlobbing bool) (Contents, error) {
+	contentMap := make(map[string]*Content)
+
+	for _, content := range rawContents {
+		// remove this whole block at some point
+		if packager == "arch" && content.Type != TypeDir &&
+			content.Type != TypeSymlink && content.Type != TypeTree {
+			stat, err := os.Stat(content.Source)
+			if err != nil && stat.IsDir() {
+				content.Type = TypeTree
+				deprecation.Printf("adding directory tree %s: adding a whole directory "+
+					"tree without specifying the type to be \"tree\" is deprecated may "+
+					"cause an error in a future version", content.Source)
+			}
+		}
+
+		if !isRelevantForPackager(packager, content) {
+			continue
+		}
+
+		switch content.Type {
+		case TypeDir:
+			// implicit directories at the same destination can just be overwritten
+			presentContent, destinationOccupied := contentMap[NormalizeAbsoluteDirPath(content.Destination)]
+			if destinationOccupied && presentContent.Type != TypeImplicitDir {
+				return nil, contentCollisionError(content, presentContent)
+			}
+
+			err := addParents(contentMap, content.Destination)
+			if err != nil {
+				return nil, err
+			}
+
+			cc := content.WithFileInfoDefaults()
+			cc.Source = ToNixPath(cc.Source)
+			cc.Destination = NormalizeAbsoluteDirPath(cc.Destination)
+			contentMap[cc.Destination] = cc
+		case TypeImplicitDir:
+			// if theres an implicit directory, the contents probably already
+			// have been expanend so we can just ignore it, it will be created
+			// by another content element again anyway
+		case TypeRPMGhost, TypeSymlink, TypeRPMDoc, TypeRPMLicence, TypeRPMLicense, TypeRPMReadme, TypeDebChangelog:
+			presentContent, destinationOccupied := contentMap[NormalizeAbsoluteFilePath(content.Destination)]
+			if destinationOccupied {
+				return nil, contentCollisionError(content, presentContent)
+			}
+
+			err := addParents(contentMap, content.Destination)
+			if err != nil {
+				return nil, err
+			}
+
+			cc := content.WithFileInfoDefaults()
+			cc.Source = ToNixPath(cc.Source)
+			cc.Destination = NormalizeAbsoluteFilePath(cc.Destination)
+			contentMap[cc.Destination] = cc
+		case TypeTree:
+			err := addTree(contentMap, content)
+			if err != nil {
+				return nil, fmt.Errorf("add tree: %w", err)
+			}
+		case TypeConfig, TypeConfigNoReplace, TypeFile, "":
+			globbed, err := glob.Glob(content.Source, content.Destination, disableGlobbing)
+			if err != nil {
+				return nil, err
+			}
+
+			err = addGlobbedFiles(contentMap, globbed, content)
+			if err != nil {
+				return nil, fmt.Errorf("add globbed files from %q: %w", content.Source, err)
+			}
+		default:
+			return nil, fmt.Errorf("invalid content type: %s", content.Type)
+		}
+	}
+
+	res := make(Contents, 0, len(contentMap))
+
+	for _, content := range contentMap {
+		res = append(res, content)
+	}
+
+	sort.Sort(res)
+
+	return res, nil
+}
+
+func isRelevantForPackager(packager string, content *Content) bool {
+	if packager == "" {
+		return true
+	}
+
+	if content.Packager != "" && content.Packager != packager {
+		return false
+	}
+
+	if packager != "rpm" &&
+		(content.Type == TypeRPMDoc || content.Type == TypeRPMLicence ||
+			content.Type == TypeRPMLicense || content.Type == TypeRPMReadme ||
+			content.Type == TypeRPMGhost) {
+		return false
+	}
+
+	if packager != "deb" && content.Type == TypeDebChangelog {
+		return false
+	}
+
+	return true
+}
+
+func addParents(contentMap map[string]*Content, path string) error {
+	for _, parent := range sortedParents(path) {
+		parent = NormalizeAbsoluteDirPath(parent)
+		// check for content collision and just overwrite previously created
+		// implicit directories
+		c, ok := contentMap[parent]
+		if ok {
+			// either we already created this directory as an explicit directory
+			// or as an implict directory of another file
+			if c.Type == TypeDir || c.Type == TypeImplicitDir {
+				continue
+			}
+
+			return contentCollisionError(&Content{
+				Type:        "parent directory for " + path,
+				Destination: parent,
+			}, c)
+		}
+
+		contentMap[parent] = &Content{
+			Destination: parent,
+			Type:        TypeImplicitDir,
+			FileInfo: &ContentFileInfo{
+				Owner: "root",
+				Group: "root",
+				Mode:  0o755,
+				MTime: time.Now(),
+			},
+		}
+	}
+
+	return nil
+}
+
+func sortedParents(dst string) []string {
+	paths := []string{}
+	base := strings.Trim(dst, "/")
+	for {
+		base = filepath.Dir(base)
+		if base == "." {
+			break
+		}
+		paths = append(paths, ToNixPath(base))
+	}
+
+	// reverse in place
+	for i := len(paths)/2 - 1; i >= 0; i-- {
+		oppositeIndex := len(paths) - 1 - i
+		paths[i], paths[oppositeIndex] = paths[oppositeIndex], paths[i]
+	}
+
+	return paths
+}
+
+func addGlobbedFiles(all map[string]*Content, globbed map[string]string, origFile *Content) error {
 	for src, dst := range globbed {
+		dst = NormalizeAbsoluteFilePath(dst)
+		presentContent, destinationOccupied := all[dst]
+		if destinationOccupied {
+			c := *origFile
+			c.Destination = dst
+			return contentCollisionError(&c, presentContent)
+		}
+
+		err := addParents(all, dst)
+		if err != nil {
+			return err
+		}
+
 		// if the file has a FileInfo, we need to copy it but recalculate its size
 		newFileInfo := origFile.FileInfo
 		if newFileInfo != nil {
@@ -186,8 +491,9 @@ func appendGlobbedFiles(all Contents, globbed map[string]string, origFile *Conte
 			newFileInfoVal.Size = 0
 			newFileInfo = &newFileInfoVal
 		}
+
 		newFile := (&Content{
-			Destination: ToNixPath(dst),
+			Destination: NormalizeAbsoluteFilePath(dst),
 			Source:      ToNixPath(src),
 			Type:        origFile.Type,
 			FileInfo:    newFileInfo,
@@ -195,37 +501,83 @@ func appendGlobbedFiles(all Contents, globbed map[string]string, origFile *Conte
 		}).WithFileInfoDefaults()
 		if dst, err := os.Readlink(src); err == nil {
 			newFile.Source = dst
-			newFile.Type = "symlink"
+			newFile.Type = TypeSymlink
 		}
 
-		all = append(all, newFile)
+		all[dst] = newFile
 	}
 
-	return all, nil
+	return nil
+}
+
+func addTree(all map[string]*Content, tree *Content) error {
+	if tree.Destination != "/" && tree.Destination != "" {
+		presentContent, destinationOccupied := all[NormalizeAbsoluteDirPath(tree.Destination)]
+		if destinationOccupied && presentContent.Type != TypeImplicitDir {
+			return contentCollisionError(tree, presentContent)
+		}
+	}
+
+	err := addParents(all, tree.Destination)
+	if err != nil {
+		return err
+	}
+
+	return filepath.WalkDir(tree.Source, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(tree.Source, path)
+		if err != nil {
+			return err
+		}
+
+		destination := filepath.Join(tree.Destination, relPath)
+
+		c := &Content{}
+
+		switch {
+		case d.IsDir():
+			c.Type = TypeDir
+			c.Destination = NormalizeAbsoluteDirPath(destination)
+		case d.Type()&os.ModeSymlink != 0:
+			linkDestination, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+
+			c.Source = linkDestination
+			c.Destination = NormalizeAbsoluteFilePath(destination)
+			c.Type = TypeSymlink
+		default:
+			c.Source = path
+			c.Destination = NormalizeAbsoluteFilePath(destination)
+			c.Type = TypeFile
+		}
+
+		c.FileInfo = &ContentFileInfo{
+			Mode: d.Type(),
+		}
+
+		all[c.Destination] = c.WithFileInfoDefaults()
+
+		return nil
+	})
 }
 
 var ErrContentCollision = fmt.Errorf("content collision")
 
-func checkNoCollisions(contents Contents) error {
-	alreadyPresent := map[string]*Content{}
-
-	for _, elem := range contents {
-		present, ok := alreadyPresent[elem.Destination]
-		if ok && (present.Packager == "" || elem.Packager == "" || present.Packager == elem.Packager) {
-			if elem.Type == "dir" {
-				return fmt.Errorf("cannot add directory %q because it is already present: %w",
-					elem.Destination, ErrContentCollision)
-			}
-
-			return fmt.Errorf(
-				"cannot add %q because %q is already present at the same destination (%s): %w",
-				elem.Source, present.Source, present.Destination, ErrContentCollision)
-		}
-
-		alreadyPresent[elem.Destination] = elem
+func contentCollisionError(new *Content, present *Content) error {
+	var presentSource string
+	if present.Source != "" {
+		presentSource = " with source " + present.Source
 	}
 
-	return nil
+	return fmt.Errorf("adding %s at destination %s: "+
+		"%s%s is already present at this destination: %w",
+		new.Type, new.Destination, present.Type, presentSource, ErrContentCollision,
+	)
 }
 
 // ToNixPath converts the given path to a nix-style path.
@@ -234,4 +586,54 @@ func checkNoCollisions(contents Contents) error {
 // characters by some libraries, which can cause issues.
 func ToNixPath(path string) string {
 	return filepath.ToSlash(filepath.Clean(path))
+}
+
+// As relative path converts a path to an explicitly relative path starting with
+// a dot (e.g. it converts /foo -> ./foo).
+func AsExplicitRelativePath(path string) string {
+	if path == "/" {
+		return "./"
+	}
+
+	cleanedPath := filepath.Clean(path)
+
+	end := ""
+	if len(cleanedPath) > 1 && strings.HasSuffix(path, "/") {
+		end = "/"
+	}
+
+	if !filepath.IsAbs(cleanedPath) {
+		cleanedPath = filepath.Join("/", cleanedPath)
+	}
+
+	return "." + cleanedPath + end
+}
+
+// AsRelativePath converts a path to a relative path without a "./" prefix. This
+// function leaves trailing slashes to indicate that the path refers to a
+// directory.
+func AsRelativePath(path string) string {
+	cleanedPath := filepath.Clean(path)
+
+	end := ""
+	if len(cleanedPath) > 1 && strings.HasSuffix(path, "/") {
+		end = "/"
+	}
+
+	if filepath.IsAbs(cleanedPath) {
+		return strings.TrimLeft(cleanedPath, "/") + end
+	}
+
+	return cleanedPath + end
+}
+
+// NormalizeAbsoluteFilePath returns an absolute cleaned path separated by
+// slashes.
+func NormalizeAbsoluteFilePath(src string) string {
+	return ToNixPath(filepath.Join("/", src))
+}
+
+// normalizeFirPath is linke NormalizeAbsoluteFilePath with a trailing slash.
+func NormalizeAbsoluteDirPath(path string) string {
+	return NormalizeAbsoluteFilePath(strings.TrimRight(path, "/")) + "/"
 }
