@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/internal/glob"
 )
 
@@ -218,81 +217,6 @@ func (c *Content) String() string {
 	}
 
 	return fmt.Sprintf("Content(%s)", strings.Join(properties, ","))
-}
-
-// ExpandContentGlobs gathers all of the real files to be copied into the
-// package.
-//
-// Deprecated: ExpandContentGlobs is deprecated in favor of PrepareForPackager
-// which also expands implicit directories and takes the packager into account.
-func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents, err error) {
-	deprecation.Println("files.ExpandContentGlobs is deprecated in favor of files.PrepareForPackager")
-
-	for _, f := range contents {
-		var globbed map[string]string
-
-		switch f.Type {
-		case TypeImplicitDir:
-		case TypeRPMGhost, TypeSymlink, TypeDir:
-			// Ghost, symlinks and dirs need to be in the list, but dont glob
-			// them because they do not really exist
-			files = append(files, f.WithFileInfoDefaults())
-		case TypeConfig, TypeConfigNoReplace, TypeFile, "":
-			globbed, err = glob.Glob(f.Source, f.Destination, disableGlobbing)
-			if err != nil {
-				return nil, err
-			}
-
-			for src, dst := range globbed {
-				// if the file has a FileInfo, we need to copy it but recalculate its size
-				newFileInfo := f.FileInfo
-				if newFileInfo != nil {
-					newFileInfoVal := *newFileInfo
-					newFileInfoVal.Size = 0
-					newFileInfo = &newFileInfoVal
-				}
-				newFile := (&Content{
-					Destination: ToNixPath(dst),
-					Source:      ToNixPath(src),
-					Type:        f.Type,
-					FileInfo:    newFileInfo,
-					Packager:    f.Packager,
-				}).WithFileInfoDefaults()
-				if dst, err := os.Readlink(src); err == nil {
-					newFile.Source = dst
-					newFile.Type = TypeSymlink
-				}
-
-				files = append(files, newFile)
-			}
-		default:
-			return files, fmt.Errorf("invalid file type: %s", f.Type)
-		}
-
-	}
-
-	alreadyPresent := map[string]*Content{}
-
-	for _, elem := range files {
-		present, ok := alreadyPresent[elem.Destination]
-		if ok && (present.Packager == "" || elem.Packager == "" || present.Packager == elem.Packager) {
-			if elem.Type == TypeDir {
-				return nil, fmt.Errorf("cannot add directory %q because it is already present: %w",
-					elem.Destination, ErrContentCollision)
-			}
-
-			return nil, fmt.Errorf(
-				"cannot add %q because %q is already present at the same destination (%s): %w",
-				elem.Source, present.Source, present.Destination, ErrContentCollision)
-		}
-
-		alreadyPresent[elem.Destination] = elem
-	}
-
-	// sort the files for reproducibility and general cleanliness
-	sort.Sort(files)
-
-	return files, nil
 }
 
 // PrepareForPackager performs the following steps to prepare the contents for
