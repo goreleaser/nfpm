@@ -440,14 +440,16 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 }
 
 func withChangelogIfRequested(info *nfpm.Info) *nfpm.Info {
-	if info.Changelog != "" {
-		// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
-		// https://lintian.debian.org/tags/debian-changelog-file-missing-or-wrong-name
-		info.Contents = append(info.Contents, &files.Content{
-			Destination: fmt.Sprintf("/usr/share/doc/%s/changelog.Debian.gz", info.Name),
-			Type:        files.TypeDebChangelog, // this type is handeled in createDataTarball
-		})
+	if info.Changelog == "" {
+		return info
 	}
+
+	// https://www.debian.org/doc/manuals/developers-reference/pkgs.de.html#recording-changes-in-the-package
+	// https://lintian.debian.org/tags/debian-changelog-file-missing-or-wrong-name
+	info.Contents = append(info.Contents, &files.Content{
+		Destination: fmt.Sprintf("/usr/share/doc/%s/changelog.Debian.gz", info.Name),
+		Type:        files.TypeDebChangelog, // this type is handeled in createDataTarball
+	})
 
 	return info
 }
