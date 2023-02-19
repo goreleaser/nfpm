@@ -38,7 +38,6 @@ import (
 	"io"
 	"net/mail"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"text/template"
@@ -112,7 +111,9 @@ func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 		return fmt.Errorf("invalid platform: %s", info.Platform)
 	}
 	info = ensureValidArch(info)
-	if err = info.Validate(); err != nil {
+
+	err = nfpm.PrepareForPackager(info, packagerName)
+	if err != nil {
 		return err
 	}
 
@@ -402,64 +403,28 @@ func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error
 }
 
 func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool, sizep *int64) (err error) {
-	// create explicit directories first
 	for _, file := range info.Contents {
-		// at this point, we don't care about other types yet
-		if file.Type != "dir" {
-			continue
-		}
-
-		// only consider contents for this packager
-		if file.Packager != "" && file.Packager != packagerName {
-			continue
-		}
-
-		if err := createTree(tw, file.Destination, created); err != nil {
-			return err
-		}
-
-		normalizedName := normalizePath(strings.Trim(file.Destination, "/")) + "/"
-
-		if created[normalizedName] {
-			return fmt.Errorf("duplicate directory: %q", normalizedName)
-		}
-
-		err = tw.WriteHeader(&tar.Header{
-			Name:     normalizedName,
-			Mode:     int64(file.FileInfo.Mode),
-			Typeflag: tar.TypeDir,
-			Format:   tar.FormatGNU,
-			Uname:    file.FileInfo.Owner,
-			Gname:    file.FileInfo.Group,
-			ModTime:  file.FileInfo.MTime,
-		})
-		if err != nil {
-			return err
-		}
-
-		created[normalizedName] = true
-	}
-
-	for _, file := range info.Contents {
-		// only consider contents for this packager
-		if file.Packager != "" && file.Packager != packagerName {
-			continue
-		}
-
-		// create implicit directory structure below the current content
-		if err = createTree(tw, file.Destination, created); err != nil {
-			return err
-		}
+		file.Destination = strings.TrimPrefix(file.Destination, "./")
 
 		switch file.Type {
-		case "ghost":
-			// skip ghost files in apk
-			continue
-		case "dir":
-			// already handled above
-			continue
-		case "symlink":
-			err = createSymlinkInsideTarGz(file, tw)
+		case files.TypeDir, files.TypeImplicitDir:
+			err = tw.WriteHeader(&tar.Header{
+				Name:     files.AsRelativePath(file.Destination),
+				Mode:     int64(file.FileInfo.Mode),
+				Typeflag: tar.TypeDir,
+				Format:   tar.FormatGNU,
+				Uname:    file.FileInfo.Owner,
+				Gname:    file.FileInfo.Group,
+				ModTime:  file.FileInfo.MTime,
+			})
+		case files.TypeSymlink:
+			err = newItemInsideTarGz(tw, []byte{}, &tar.Header{
+				Name:     files.AsRelativePath(file.Destination),
+				Linkname: file.Source,
+				Typeflag: tar.TypeSymlink,
+				ModTime:  file.FileInfo.MTime,
+				Format:   tar.FormatGNU,
+			})
 		default:
 			err = copyToTarAndDigest(file, tw, sizep)
 		}
@@ -469,15 +434,6 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 	}
 
 	return nil
-}
-
-func createSymlinkInsideTarGz(file *files.Content, out *tar.Writer) error {
-	return newItemInsideTarGz(out, []byte{}, &tar.Header{
-		Name:     strings.TrimLeft(file.Destination, "/"),
-		Linkname: file.Source,
-		Typeflag: tar.TypeSymlink,
-		ModTime:  file.FileInfo.MTime,
-	})
 }
 
 func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error {
@@ -493,7 +449,7 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	// tar.FileInfoHeader only uses file.Mode().Perm() which masks the mode with
 	// 0o777 which we don't want because we want to be able to set the suid bit.
 	header.Mode = int64(file.Mode())
-	header.Name = normalizePath(file.Destination)
+	header.Name = files.AsRelativePath(file.Destination)
 	header.Uname = file.FileInfo.Owner
 	header.Gname = file.FileInfo.Group
 	if err = newItemInsideTarGz(tw, contents, header); err != nil {
@@ -502,57 +458,6 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 
 	*sizep += file.Size()
 	return nil
-}
-
-// normalizePath returns a path separated by slashes without a leading slash.
-func normalizePath(src string) string {
-	return files.ToNixPath(strings.TrimLeft(src, "/"))
-}
-
-// this is needed because the data.tar.gz file should have the empty folders
-// as well, so we walk through the dst and create all subfolders.
-func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
-	for _, path := range pathsToCreate(dst) {
-		path = normalizePath(path) + "/"
-
-		if created[path] {
-			// skipping dir that was previously created inside the archive
-			// (eg: usr/)
-			continue
-		}
-
-		if err := tarw.WriteHeader(&tar.Header{
-			Name:     path,
-			Mode:     0o755,
-			Typeflag: tar.TypeDir,
-			Format:   tar.FormatGNU,
-			Uname:    "root",
-			Gname:    "root",
-		}); err != nil {
-			return fmt.Errorf("failed to create folder %s: %w", path, err)
-		}
-		created[path] = true
-	}
-	return nil
-}
-
-func pathsToCreate(dst string) []string {
-	paths := []string{}
-	base := strings.Trim(dst, "/")
-	for {
-		base = filepath.Dir(base)
-		if base == "." {
-			break
-		}
-		paths = append(paths, files.ToNixPath(base))
-	}
-	// we don't really need to create those things in order apparently, but,
-	// it looks really weird if we don't.
-	result := []string{}
-	for i := len(paths) - 1; i >= 0; i-- {
-		result = append(result, paths[i])
-	}
-	return result
 }
 
 // reference: https://wiki.adelielinux.org/wiki/APK_internals#.PKGINFO

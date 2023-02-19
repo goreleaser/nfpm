@@ -59,15 +59,15 @@ func exampleInfo() *nfpm.Info {
 				{
 					Source:      "../testdata/whatever.conf",
 					Destination: "/etc/fake/fake.conf",
-					Type:        "config",
+					Type:        files.TypeConfig,
 				},
 				{
 					Destination: "/var/log/whatever",
-					Type:        "dir",
+					Type:        files.TypeDir,
 				},
 				{
 					Destination: "/usr/share/whatever",
-					Type:        "dir",
+					Type:        files.TypeDir,
 				},
 			},
 			Scripts: nfpm.Scripts{
@@ -487,7 +487,7 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 		{
 			Source:      "../testdata/whatever.confzzz",
 			Destination: "/etc/fake/fake.conf",
-			Type:        "config",
+			Type:        files.TypeConfig,
 		},
 	}
 	abs, err := filepath.Abs("../testdata/whatever.confzzz")
@@ -525,12 +525,13 @@ func TestConfigNoReplace(t *testing.T) {
 		Arch:        "amd64",
 		Description: "This package's config references a file via symlink.",
 		Version:     "1.0.0",
+		Maintainer:  "maintainer",
 		Overridables: nfpm.Overridables{
 			Contents: []*files.Content{
 				{
 					Source:      buildConfigFile,
 					Destination: packageConfigFile,
-					Type:        "config|noreplace",
+					Type:        files.TypeConfigNoReplace,
 				},
 			},
 		},
@@ -551,8 +552,9 @@ func TestConfigNoReplace(t *testing.T) {
 
 func TestRPMConventionalFileName(t *testing.T) {
 	info := &nfpm.Info{
-		Name: "testpkg",
-		Arch: "noarch",
+		Name:       "testpkg",
+		Arch:       "noarch",
+		Maintainer: "maintainer",
 	}
 
 	testCases := []struct {
@@ -674,6 +676,7 @@ func TestSymlink(t *testing.T) {
 		Arch:        "amd64",
 		Description: "This package's config references a file via symlink.",
 		Version:     "1.0.0",
+		Maintainer:  "maintainer",
 		Overridables: nfpm.Overridables{
 			Contents: []*files.Content{
 				{
@@ -683,7 +686,7 @@ func TestSymlink(t *testing.T) {
 				{
 					Source:      symlinkTarget,
 					Destination: symlink,
-					Type:        "symlink",
+					Type:        files.TypeSymlink,
 				},
 			},
 		},
@@ -746,11 +749,12 @@ func TestRPMGhostFiles(t *testing.T) {
 		Arch:        "amd64",
 		Description: "This RPM contains ghost files.",
 		Version:     "1.0.0",
+		Maintainer:  "maintainer",
 		Overridables: nfpm.Overridables{
 			Contents: []*files.Content{
 				{
 					Destination: filename,
-					Type:        "ghost",
+					Type:        files.TypeRPMGhost,
 				},
 			},
 		},
@@ -820,11 +824,11 @@ func TestDirectories(t *testing.T) {
 		},
 		{
 			Destination: "/etc/bar",
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 		{
 			Destination: "/etc/baz",
-			Type:        "dir",
+			Type:        files.TypeDir,
 			FileInfo: &files.ContentFileInfo{
 				Owner: "test",
 				Mode:  0o700,
@@ -832,7 +836,7 @@ func TestDirectories(t *testing.T) {
 		},
 		{
 			Destination: "/usr/lib/something/somethingelse",
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 	}
 
@@ -879,6 +883,23 @@ func TestGlob(t *testing.T) {
 			},
 		},
 	}), io.Discard))
+}
+
+func TestIgnoreUnrelatedFiles(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = files.Contents{
+		{
+			Source:      "../testdata/fake",
+			Destination: "/some/file",
+			Type:        files.TypeDebChangelog,
+		},
+	}
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	require.NoError(t, err)
+
+	require.Len(t, getTree(t, rpmFileBuffer.Bytes()), 0)
 }
 
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {

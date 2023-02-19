@@ -72,20 +72,20 @@ func exampleInfo() *nfpm.Info {
 				{
 					Source:      "../testdata/whatever.conf",
 					Destination: "/etc/fake/fake.conf",
-					Type:        "config",
+					Type:        files.TypeConfig,
 				},
 				{
 					Source:      "../testdata/whatever.conf",
 					Destination: "/etc/fake/fake2.conf",
-					Type:        "config|noreplace",
+					Type:        files.TypeConfigNoReplace,
 				},
 				{
 					Destination: "/var/log/whatever",
-					Type:        "dir",
+					Type:        files.TypeDir,
 				},
 				{
 					Destination: "/usr/share/whatever",
-					Type:        "dir",
+					Type:        files.TypeDir,
 				},
 			},
 		},
@@ -376,7 +376,7 @@ func TestDebFileDoesNotExist(t *testing.T) {
 					{
 						Source:      "../testdata/whatever.confzzz",
 						Destination: "/etc/fake/fake.conf",
-						Type:        "config",
+						Type:        files.TypeConfig,
 					},
 				},
 			},
@@ -422,34 +422,21 @@ func TestConffiles(t *testing.T) {
 		Priority:    "extra",
 		Version:     "1.0.0",
 		Section:     "default",
+		Maintainer:  "maintainer",
 		Overridables: nfpm.Overridables{
 			Contents: []*files.Content{
 				{
 					Source:      "../testdata/fake",
 					Destination: "/etc/fake",
-					Type:        "config",
+					Type:        files.TypeConfig,
 				},
 			},
 		},
 	})
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
 	require.NoError(t, err)
 	out := conffiles(info)
 	require.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
-}
-
-func TestPathsToCreate(t *testing.T) {
-	for filePath, parts := range map[string][]string{
-		"/usr/share/doc/whatever/foo.md": {"usr", "usr/share", "usr/share/doc", "usr/share/doc/whatever"},
-		"/var/moises":                    {"var"},
-		"/":                              {},
-	} {
-		parts := parts
-		filePath := filePath
-		t.Run(fmt.Sprintf("path: '%s'", filePath), func(t *testing.T) {
-			require.Equal(t, parts, pathsToCreate(filePath))
-		})
-	}
 }
 
 func TestMinimalFields(t *testing.T) {
@@ -461,6 +448,7 @@ func TestMinimalFields(t *testing.T) {
 			Description: "Minimal does nothing",
 			Priority:    "extra",
 			Version:     "1.0.0",
+			Maintainer:  "maintainer",
 			Section:     "default",
 		}),
 	}))
@@ -506,6 +494,7 @@ func TestDebRules(t *testing.T) {
 			Epoch:       "2",
 			Version:     "1.2.0",
 			Section:     "default",
+			Maintainer:  "maintainer",
 			Overridables: nfpm.Overridables{
 				Deb: nfpm.Deb{
 					Scripts: nfpm.DebScripts{
@@ -547,8 +536,9 @@ func TestMultilineFields(t *testing.T) {
 
 func TestDEBConventionalFileName(t *testing.T) {
 	info := &nfpm.Info{
-		Name: "testpkg",
-		Arch: "all",
+		Name:       "testpkg",
+		Arch:       "all",
+		Maintainer: "maintainer",
 	}
 
 	testCases := []struct {
@@ -597,8 +587,9 @@ func TestDebChangelogData(t *testing.T) {
 		Description: "This package has changelogs.",
 		Version:     "1.0.0",
 		Changelog:   "../testdata/changelog.yaml",
+		Maintainer:  "maintainer",
 	}
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
 	require.NoError(t, err)
 
 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
@@ -620,8 +611,9 @@ func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
 		Arch:        "amd64",
 		Description: "This package has explicitly no changelog.",
 		Version:     "1.0.0",
+		Maintainer:  "maintainer",
 	}
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
 	require.NoError(t, err)
 
 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
@@ -638,6 +630,7 @@ func TestDebTriggers(t *testing.T) {
 		Arch:        "amd64",
 		Description: "This package has multiple triggers.",
 		Version:     "1.0.0",
+		Maintainer:  "maintainer",
 		Overridables: nfpm.Overridables{
 			Deb: nfpm.Deb{
 				Triggers: nfpm.DebTriggers{
@@ -651,7 +644,7 @@ func TestDebTriggers(t *testing.T) {
 			},
 		},
 	}
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
 	require.NoError(t, err)
 
 	controlTarGz, err := createControl(0, []byte{}, info)
@@ -689,8 +682,9 @@ func TestDebNoTriggersInControlIfNoneProvided(t *testing.T) {
 		Arch:        "amd64",
 		Description: "This package has explicitly no triggers.",
 		Version:     "1.0.0",
+		Maintainer:  "maintainer",
 	}
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
 	require.NoError(t, err)
 
 	controlTarGz, err := createControl(0, []byte{}, info)
@@ -711,6 +705,7 @@ func TestSymlink(t *testing.T) {
 		Arch:        "amd64",
 		Description: "This package's config references a file via symlink.",
 		Version:     "1.0.0",
+		Maintainer:  "maintainer",
 		Overridables: nfpm.Overridables{
 			Contents: []*files.Content{
 				{
@@ -720,12 +715,12 @@ func TestSymlink(t *testing.T) {
 				{
 					Source:      symlinkTarget,
 					Destination: symlink,
-					Type:        "symlink",
+					Type:        files.TypeSymlink,
 				},
 			},
 		},
 	}
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
 	require.NoError(t, err)
 
 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
@@ -745,11 +740,11 @@ func TestEnsureRelativePrefixInTarballs(t *testing.T) {
 		{
 			Source:      "/symlink/to/fake.txt",
 			Destination: "/usr/share/doc/fake/fake.txt",
-			Type:        "symlink",
+			Type:        files.TypeSymlink,
 		},
 	}
 	info.Changelog = "../testdata/changelog.yaml"
-	err := info.Validate()
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
 	require.NoError(t, err)
 
 	dataTarball, md5sums, instSize, tarballName, err := createDataTarball(info)
@@ -764,15 +759,16 @@ func TestEnsureRelativePrefixInTarballs(t *testing.T) {
 func TestMD5Sums(t *testing.T) {
 	info := exampleInfo()
 	info.Changelog = "../testdata/changelog.yaml"
-	err := info.Validate()
-	require.NoError(t, err)
 
 	nFiles := 1
 	for _, f := range info.Contents {
-		if (f.Packager == "" || f.Packager == "deb") && f.Type != "dir" {
+		if f.Type != files.TypeDir {
 			nFiles++
 		}
 	}
+
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
+	require.NoError(t, err)
 
 	dataTarball, md5sums, instSize, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
@@ -783,7 +779,7 @@ func TestMD5Sums(t *testing.T) {
 	md5sumsFile := extractFileFromTar(t, inflate(t, "gz", controlTarGz), "./md5sums")
 
 	lines := strings.Split(strings.TrimRight(string(md5sumsFile), "\n"), "\n")
-	require.Equal(t, nFiles, len(lines))
+	require.Equal(t, nFiles, len(lines), string(md5sumsFile))
 
 	dataTar := inflate(t, tarballName, dataTarball)
 
@@ -813,7 +809,7 @@ func TestDirectories(t *testing.T) {
 		},
 		{
 			Destination: "/etc/bar",
-			Type:        "dir",
+			Type:        files.TypeDir,
 			FileInfo: &files.ContentFileInfo{
 				Owner: "test",
 				Mode:  0o700,
@@ -821,15 +817,15 @@ func TestDirectories(t *testing.T) {
 		},
 		{
 			Destination: "/etc/baz",
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 		{
 			Destination: "/usr/lib/something/somethingelse",
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 	}
 
-	require.NoError(t, info.Validate())
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	deflatedDataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
@@ -838,14 +834,14 @@ func TestDirectories(t *testing.T) {
 	require.Equal(t, []string{
 		"./etc/",
 		"./etc/bar/",
+		"./etc/bar/file",
 		"./etc/baz/",
+		"./etc/foo/",
+		"./etc/foo/file",
 		"./usr/",
 		"./usr/lib/",
 		"./usr/lib/something/",
 		"./usr/lib/something/somethingelse/",
-		"./etc/bar/file",
-		"./etc/foo/",
-		"./etc/foo/file",
 	}, getTree(t, dataTarball))
 
 	// for debs all implicit or explicit directories are created in the tarball
@@ -883,15 +879,15 @@ func TestNoDuplicateContents(t *testing.T) {
 		},
 		{
 			Destination: "/etc/foo",
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 		{
 			Destination: "/etc/baz",
-			Type:        "dir",
+			Type:        files.TypeDir,
 		},
 	}
 
-	require.NoError(t, info.Validate())
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	deflatedDataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
@@ -926,7 +922,6 @@ func testRelativePathPrefixInTar(tb testing.TB, tarFile []byte) {
 			break // End of archive
 		}
 		require.NoError(tb, err)
-
 		require.True(tb, strings.HasPrefix(hdr.Name, "./"), "%s does not start with './'", hdr.Name)
 	}
 }
@@ -1003,7 +998,7 @@ func TestDisableGlobbing(t *testing.T) {
 			Destination: "/test/{file}[",
 		},
 	}
-	require.NoError(t, info.Validate())
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	dataTarball, _, _, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
@@ -1025,11 +1020,11 @@ func TestNoDuplicateAutocreatedDirectories(t *testing.T) {
 			Destination: "/etc/foo/bar",
 		},
 		{
-			Type:        "dir",
+			Type:        files.TypeDir,
 			Destination: "/etc/foo",
 		},
 	}
-	require.NoError(t, info.Validate())
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	expected := map[string]bool{
 		"./etc/":        true,
@@ -1058,18 +1053,15 @@ func TestNoDuplicateDirectories(t *testing.T) {
 	info.DisableGlobbing = true
 	info.Contents = []*files.Content{
 		{
-			Type:        "dir",
+			Type:        files.TypeDir,
 			Destination: "/etc/foo",
 		},
 		{
-			Type:        "dir",
+			Type:        files.TypeDir,
 			Destination: "/etc/foo/",
 		},
 	}
-	require.NoError(t, info.Validate())
-
-	_, _, _, _, err := createDataTarball(info)
-	require.Error(t, err)
+	require.Error(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 }
 
 func TestCompressionAlgorithms(t *testing.T) {
@@ -1107,6 +1099,44 @@ func TestCompressionAlgorithms(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIgnoreUnrelatedFiles(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = files.Contents{
+		{
+			Source:      "../testdata/fake",
+			Destination: "/usr/bin/fake",
+			Packager:    "rpm",
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/usr/share/doc/fake/fake.txt",
+			Type:        files.TypeRPMLicence,
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/fake/fake.conf",
+			Type:        files.TypeRPMLicense,
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/fake/fake2.conf",
+			Type:        files.TypeRPMReadme,
+		},
+		{
+			Destination: "/var/log/whatever",
+			Type:        files.TypeRPMDoc,
+		},
+	}
+
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
+
+	dataTarball, _, _, tarballName, err := createDataTarball(info)
+	require.NoError(t, err)
+
+	contents := tarContents(t, inflate(t, tarballName, dataTarball))
+	require.Len(t, contents, 0)
 }
 
 func extractFileFromTar(tb testing.TB, tarFile []byte, filename string) []byte {

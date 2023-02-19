@@ -3,5 +3,6 @@ Version: 2:1.2.0
 Section: default
 Priority: extra
 Architecture: arm64
+Maintainer: maintainer
 Installed-Size: 0
 Description: Has rules script

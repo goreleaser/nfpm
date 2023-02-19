@@ -105,6 +105,69 @@ func TestDefaults(t *testing.T) {
 	require.Equal(t, info, got)
 }
 
+func TestPrepareForPackager(t *testing.T) {
+	t.Run("dirs", func(t *testing.T) {
+		info := nfpm.Info{
+			Name:    "as",
+			Arch:    "asd",
+			Version: "1.2.3",
+			Overridables: nfpm.Overridables{
+				Contents: []*files.Content{
+					{
+						Destination: "/usr/share/test",
+						Type:        files.TypeDir,
+					},
+					{
+						Source:      "./testdata/contents.yaml",
+						Destination: "asd",
+					},
+					{
+						Destination: "/usr/a",
+						Type:        files.TypeDir,
+					},
+				},
+			},
+		}
+		require.NoError(t, nfpm.PrepareForPackager(&info, ""))
+		require.Len(t, info.Overridables.Contents, 5)
+		asdFile := info.Overridables.Contents[0]
+		require.Equal(t, "/asd", asdFile.Destination)
+		require.Equal(t, files.TypeFile, asdFile.Type)
+		require.Equal(t, "-rw-r--r--", asdFile.FileInfo.Mode.String())
+		require.Equal(t, "root", asdFile.FileInfo.Owner)
+		require.Equal(t, "root", asdFile.FileInfo.Group)
+		usrDir := info.Overridables.Contents[1]
+		require.Equal(t, "/usr/", usrDir.Destination)
+		require.Equal(t, files.TypeImplicitDir, usrDir.Type)
+		require.Equal(t, "-rwxr-xr-x", usrDir.FileInfo.Mode.String())
+		require.Equal(t, "root", usrDir.FileInfo.Owner)
+		require.Equal(t, "root", usrDir.FileInfo.Group)
+		aDir := info.Overridables.Contents[2]
+		require.Equal(t, "/usr/a/", aDir.Destination)
+		require.Equal(t, files.TypeDir, aDir.Type)
+		require.Equal(t, "-rwxr-xr-x", aDir.FileInfo.Mode.String())
+		require.Equal(t, "root", aDir.FileInfo.Owner)
+		require.Equal(t, "root", aDir.FileInfo.Group)
+	})
+
+	t.Run("config", func(t *testing.T) {
+		require.NoError(t, nfpm.PrepareForPackager(&nfpm.Info{
+			Name:    "as",
+			Arch:    "asd",
+			Version: "1.2.3",
+			Overridables: nfpm.Overridables{
+				Contents: []*files.Content{
+					{
+						Source:      "./testdata/contents.yaml",
+						Destination: "asd",
+						Type:        files.TypeConfig,
+					},
+				},
+			},
+		}, ""))
+	})
+}
+
 func TestValidate(t *testing.T) {
 	t.Run("dirs", func(t *testing.T) {
 		info := nfpm.Info{
@@ -115,7 +178,7 @@ func TestValidate(t *testing.T) {
 				Contents: []*files.Content{
 					{
 						Destination: "/usr/share/test",
-						Type:        "dir",
+						Type:        files.TypeDir,
 					},
 					{
 						Source:      "./testdata/contents.yaml",
@@ -126,12 +189,6 @@ func TestValidate(t *testing.T) {
 		}
 		require.NoError(t, nfpm.Validate(&info))
 		require.Len(t, info.Overridables.Contents, 2)
-		dir := info.Overridables.Contents[0]
-		require.Equal(t, "/usr/share/test", dir.Destination)
-		require.Equal(t, "dir", dir.Type)
-		require.Equal(t, "-rwxr-xr-x", dir.FileInfo.Mode.String())
-		require.Equal(t, "root", dir.FileInfo.Owner)
-		require.Equal(t, "root", dir.FileInfo.Group)
 	})
 
 	t.Run("config", func(t *testing.T) {
@@ -144,7 +201,7 @@ func TestValidate(t *testing.T) {
 					{
 						Source:      "./testdata/contents.yaml",
 						Destination: "asd",
-						Type:        "config",
+						Type:        files.TypeConfig,
 					},
 				},
 			},
@@ -173,11 +230,21 @@ func TestValidateError(t *testing.T) {
 
 func parseAndValidate(filename string) (nfpm.Config, error) {
 	config, err := nfpm.ParseFile(filename)
-	if err == nil {
-		err = config.Validate()
+	if err != nil {
+		return config, fmt.Errorf("parse file: %w", err)
 	}
 
-	return config, err
+	err = config.Validate()
+	if err != nil {
+		return config, fmt.Errorf("validate: %w", err)
+	}
+
+	err = nfpm.PrepareForPackager(&config.Info, "")
+	if err != nil {
+		return config, fmt.Errorf("prepare for packager: %w", err)
+	}
+
+	return config, nil
 }
 
 func TestParseFile(t *testing.T) {
@@ -208,34 +275,43 @@ func TestParseEnhancedFile(t *testing.T) {
 	config, err := parseAndValidate("./testdata/contents.yaml")
 	require.NoError(t, err)
 	require.Equal(t, "contents foo", config.Name)
-	shouldFind := 5
+	shouldFind := 10
 	require.Len(t, config.Contents, shouldFind)
 }
 
 func TestParseEnhancedNestedGlobFile(t *testing.T) {
 	config, err := parseAndValidate("./testdata/contents_glob.yaml")
 	require.NoError(t, err)
-	shouldFind := 3
+	shouldFind := 5
 	require.Len(t, config.Contents, shouldFind)
 }
 
 func TestParseEnhancedNestedNoGlob(t *testing.T) {
 	config, err := parseAndValidate("./testdata/contents_directory.yaml")
 	require.NoError(t, err)
-	shouldFind := 3
+	shouldFind := 8
 	require.Len(t, config.Contents, shouldFind)
+	tested := 0
 	for _, f := range config.Contents {
+		if f.Type == files.TypeImplicitDir {
+			continue
+		}
+
 		switch f.Source {
 		case "testdata/globtest/nested/b.txt":
+			tested += 1
 			require.Equal(t, "/etc/foo/nested/b.txt", f.Destination)
 		case "testdata/globtest/multi-nested/subdir/c.txt":
+			tested += 1
 			require.Equal(t, "/etc/foo/multi-nested/subdir/c.txt", f.Destination)
 		case "testdata/globtest/a.txt":
+			tested += 1
 			require.Equal(t, "/etc/foo/a.txt", f.Destination)
 		default:
-			t.Errorf("unknown source %s", f.Source)
+			t.Errorf("unknown source %q", f.Source)
 		}
 	}
+	require.Equal(t, 3, tested)
 }
 
 func TestOptionsFromEnvironment(t *testing.T) {

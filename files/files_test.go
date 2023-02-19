@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
@@ -56,14 +57,14 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 	require.Len(t, config.Contents, 1)
-	parsedContents, err := files.ExpandContentGlobs(config.Contents, false)
+	parsedContents, err := files.PrepareForPackager(config.Contents, "", false)
 	require.NoError(t, err)
-	for _, f := range parsedContents {
-		switch f.Source {
+	for _, c := range parsedContents {
+		switch c.Source {
 		case "testdata/globtest/nested/b.txt":
-			require.Equal(t, "/bla/nested/b.txt", f.Destination)
+			require.Equal(t, "/bla/nested/b.txt", c.Destination)
 		case "testdata/globtest/multi-nested/subdir/c.txt":
-			require.Equal(t, "/bla/multi-nested/subdir/c.txt", f.Destination)
+			require.Equal(t, "/bla/multi-nested/subdir/c.txt", c.Destination)
 		}
 	}
 }
@@ -79,16 +80,23 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 	require.Len(t, config.Contents, 1)
-	parsedContents, err := files.ExpandContentGlobs(config.Contents, true)
+	parsedContents, err := files.PrepareForPackager(config.Contents, "", true)
 	require.NoError(t, err)
+	present := false
+
 	for _, f := range parsedContents {
 		switch f.Source {
 		case "testdata/deep-paths/nested1/nested2/a.txt":
+			present = true
 			require.Equal(t, "/bla/nested1/nested2/a.txt", f.Destination)
+		case "":
+			continue
 		default:
-			t.Errorf("unknown source %s", f.Source)
+			t.Errorf("unknown source %s for content %#v", f.Source, f)
 		}
 	}
+
+	require.True(t, present)
 }
 
 func TestFileInfoDefault(t *testing.T) {
@@ -102,7 +110,7 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 
-	config.Contents, err = files.ExpandContentGlobs(config.Contents, true)
+	config.Contents, err = files.PrepareForPackager(config.Contents, "", true)
 	require.NoError(t, err)
 	require.Len(t, config.Contents, 1)
 
@@ -111,7 +119,7 @@ contents:
 
 	f := config.Contents[0]
 	require.Equal(t, f.Source, "files_test.go")
-	require.Equal(t, f.Destination, "b")
+	require.Equal(t, f.Destination, "/b")
 	require.Equal(t, f.FileInfo.Mode, fi.Mode())
 	require.Equal(t, f.FileInfo.MTime, fi.ModTime())
 }
@@ -132,7 +140,7 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 
-	config.Contents, err = files.ExpandContentGlobs(config.Contents, true)
+	config.Contents, err = files.PrepareForPackager(config.Contents, "rpm", true)
 	require.NoError(t, err)
 	require.Len(t, config.Contents, 1)
 
@@ -141,7 +149,7 @@ contents:
 
 	f := config.Contents[0]
 	require.Equal(t, f.Source, "files_test.go")
-	require.Equal(t, f.Destination, "b")
+	require.Equal(t, f.Destination, "/b")
 	require.Equal(t, f.FileInfo.Mode, os.FileMode(0o123))
 	require.Equal(t, f.FileInfo.MTime, ct)
 }
@@ -164,47 +172,48 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 
-	config.Contents, err = files.ExpandContentGlobs(config.Contents, true)
+	config.Contents, err = files.PrepareForPackager(config.Contents, "", true)
 	require.NoError(t, err)
-	require.Len(t, config.Contents, 6)
-
-	// Nulling FileInfo to check equality between expected and result
-	for _, c := range config.Contents {
-		c.FileInfo = nil
-	}
+	config.Contents = withoutFileInfo(config.Contents)
 
 	expected := files.Contents{
 		{
+			Source:      "",
+			Destination: "/bla/",
+			Type:        files.TypeImplicitDir,
+		},
+		{
 			Source:      "testdata/symlinks/subdir/existent",
 			Destination: "/bla/existent",
-			Type:        "",
+			Type:        files.TypeFile,
 		},
 		{
 			Source:      "non-existent",
 			Destination: "/bla/link-1",
-			Type:        "symlink",
+			Type:        files.TypeSymlink,
 		},
 		{
 			Source:      "existent",
 			Destination: "/bla/link-2",
-			Type:        "symlink",
+			Type:        files.TypeSymlink,
 		},
 		{
 			Source:      "existent",
 			Destination: "/bla/link-3",
-			Type:        "symlink",
+			Type:        files.TypeSymlink,
 		},
 		{
 			Source:      "broken",
 			Destination: "/link-1",
-			Type:        "symlink",
+			Type:        files.TypeSymlink,
 		},
 		{
 			Source:      "bla",
 			Destination: "/link-2",
-			Type:        "symlink",
+			Type:        files.TypeSymlink,
 		},
 	}
+
 	require.Equal(t, expected, config.Contents)
 }
 
@@ -223,7 +232,7 @@ contents:
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, err := files.ExpandContentGlobs(config.Contents, false)
+			_, err := files.PrepareForPackager(config.Contents, "", false)
 			require.NoError(t, err)
 		}()
 	}
@@ -237,7 +246,7 @@ func TestCollision(t *testing.T) {
 			{Source: "../testdata/whatever2.conf", Destination: "/samedestination"},
 		}
 
-		_, err := files.ExpandContentGlobs(configuredFiles, true)
+		_, err := files.PrepareForPackager(configuredFiles, "", true)
 		require.ErrorIs(t, err, files.ErrContentCollision)
 	})
 
@@ -247,7 +256,7 @@ func TestCollision(t *testing.T) {
 			{Source: "../testdata/whatever2.conf", Destination: "/samedestination", Packager: "bar"},
 		}
 
-		_, err := files.ExpandContentGlobs(configuredFiles, true)
+		_, err := files.PrepareForPackager(configuredFiles, "foo", true)
 		require.NoError(t, err)
 	})
 
@@ -257,7 +266,7 @@ func TestCollision(t *testing.T) {
 			{Source: "../testdata/whatever2.conf", Destination: "/samedestination", Packager: ""},
 		}
 
-		_, err := files.ExpandContentGlobs(configuredFiles, true)
+		_, err := files.PrepareForPackager(configuredFiles, "foo", true)
 		require.ErrorIs(t, err, files.ErrContentCollision)
 	})
 }
@@ -288,10 +297,12 @@ func TestDisableGlobbing(t *testing.T) {
 		content := testCase
 
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			result, err := files.ExpandContentGlobs(files.Contents{&content}, disableGlobbing)
+			result, err := files.PrepareForPackager(files.Contents{&content}, "", disableGlobbing)
 			if err != nil {
 				t.Fatalf("expand content globs: %v", err)
 			}
+
+			result = withoutImplicitDirs(result)
 
 			if len(result) != 1 {
 				t.Fatalf("unexpected result length: %d, expected one", len(result))
@@ -304,20 +315,33 @@ func TestDisableGlobbing(t *testing.T) {
 				t.Fatalf("unexpected content source: %q, expected %q", actualContent.Source, content.Source)
 			}
 
-			if actualContent.Destination != content.Destination {
-				t.Fatalf("unexpected content destination: %q, expected %q", actualContent.Destination, content.Destination)
+			if strings.TrimLeft(actualContent.Destination, "./") != strings.TrimLeft(content.Destination, "/") {
+				t.Fatalf("unexpected content destination: %q, expected %q",
+					strings.TrimLeft(actualContent.Destination, "./"), strings.TrimLeft(content.Destination, "/"))
 			}
 		})
 	}
 }
 
+func withoutImplicitDirs(contents files.Contents) files.Contents {
+	filtered := make(files.Contents, 0, len(contents))
+
+	for _, c := range contents {
+		if c.Type != files.TypeImplicitDir {
+			filtered = append(filtered, c)
+		}
+	}
+
+	return filtered
+}
+
 func TestGlobbingWhenFilesHaveBrackets(t *testing.T) {
-	result, err := files.ExpandContentGlobs(files.Contents{
+	result, err := files.PrepareForPackager(files.Contents{
 		{
 			Source:      "./testdata/\\{test\\}/",
 			Destination: ".",
 		},
-	}, false)
+	}, "", false)
 	if err != nil {
 		t.Fatalf("expand content globs: %v", err)
 	}
@@ -325,11 +349,11 @@ func TestGlobbingWhenFilesHaveBrackets(t *testing.T) {
 	expected := files.Contents{
 		{
 			Source:      "testdata/{test}/[f]oo",
-			Destination: "[f]oo",
+			Destination: "/[f]oo",
 		},
 		{
 			Source:      "testdata/{test}/bar",
-			Destination: "bar",
+			Destination: "/bar",
 		},
 	}
 
@@ -343,13 +367,14 @@ func TestGlobbingWhenFilesHaveBrackets(t *testing.T) {
 			t.Fatalf("unexpected content source: %q, expected %q", r.Source, ex.Source)
 		}
 		if ex.Destination != r.Destination {
-			t.Fatalf("unexpected content destination: %q, expected %q", r.Destination, ex.Destination)
+			t.Fatalf("unexpected content destination: %q, expected %q",
+				ex.Destination, r.Destination)
 		}
 	}
 }
 
 func TestGlobbingFilesWithDifferentSizesWithFileInfo(t *testing.T) {
-	result, err := files.ExpandContentGlobs(files.Contents{
+	result, err := files.PrepareForPackager(files.Contents{
 		{
 			Source:      "./testdata/globtest/different-sizes/**/*",
 			Destination: ".",
@@ -357,10 +382,12 @@ func TestGlobbingFilesWithDifferentSizesWithFileInfo(t *testing.T) {
 				Mode: 0o777,
 			},
 		},
-	}, false)
+	}, "", false)
 	if err != nil {
 		t.Fatalf("expand content globs: %v", err)
 	}
+
+	result = withoutImplicitDirs(result)
 
 	if len(result) != 2 {
 		t.Fatalf("unexpected result length: %d, expected 2", len(result))
@@ -372,15 +399,16 @@ func TestGlobbingFilesWithDifferentSizesWithFileInfo(t *testing.T) {
 }
 
 func TestDestEndsWithSlash(t *testing.T) {
-	result, err := files.ExpandContentGlobs(files.Contents{
+	result, err := files.PrepareForPackager(files.Contents{
 		{
 			Source:      "./testdata/globtest/a.txt",
 			Destination: "./foo/",
 		},
-	}, false)
+	}, "", false)
+	result = withoutImplicitDirs(result)
 	require.NoError(t, err)
 	require.Len(t, result, 1)
-	require.Equal(t, "foo/a.txt", result[0].Destination)
+	require.Equal(t, "/foo/a.txt", result[0].Destination)
 }
 
 func TestInvalidFileType(t *testing.T) {
@@ -393,8 +421,8 @@ contents:
 `))
 	dec.KnownFields(true)
 	require.NoError(t, dec.Decode(&config))
-	_, err := files.ExpandContentGlobs(config.Contents, false)
-	require.EqualError(t, err, "invalid file type: filr")
+	_, err := files.PrepareForPackager(config.Contents, "", false)
+	require.EqualError(t, err, "invalid content type: filr")
 }
 
 func TestValidFileTypes(t *testing.T) {
@@ -424,6 +452,255 @@ contents:
 `))
 	dec.KnownFields(true)
 	require.NoError(t, dec.Decode(&config))
-	_, err := files.ExpandContentGlobs(config.Contents, false)
+	_, err := files.PrepareForPackager(config.Contents, "", false)
 	require.NoError(t, err)
+}
+
+func TestImplicitDirectories(t *testing.T) {
+	results, err := files.PrepareForPackager(files.Contents{
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "./foo/bar/baz",
+		},
+	}, "", false)
+	require.NoError(t, err)
+
+	expected := files.Contents{
+		{
+			Source:      "",
+			Destination: "/foo/",
+			Type:        files.TypeImplicitDir,
+		},
+		{
+			Source:      "",
+			Destination: "/foo/bar/",
+			Type:        files.TypeImplicitDir,
+		},
+		{
+			Source:      "testdata/globtest/a.txt",
+			Destination: "/foo/bar/baz",
+			Type:        files.TypeFile,
+		},
+	}
+
+	require.Equal(t, withoutFileInfo(results), expected)
+}
+
+func TestRelevantFiles(t *testing.T) {
+	contents := files.Contents{
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "/1allpackagers",
+		},
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "/2onlyrpm",
+			Packager:    "rpm",
+		},
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "/3onlydeb",
+			Packager:    "deb",
+		},
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "/4debchangelog",
+			Type:        files.TypeDebChangelog,
+		},
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "/5ghost",
+			Type:        files.TypeRPMGhost,
+		},
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "/6doc",
+			Type:        files.TypeRPMDoc,
+		},
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "/7licence",
+			Type:        files.TypeRPMLicence,
+		},
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "/8license",
+			Type:        files.TypeRPMLicense,
+		},
+		{
+			Source:      "./testdata/globtest/a.txt",
+			Destination: "/9readme",
+			Type:        files.TypeRPMReadme,
+		},
+	}
+
+	t.Run("deb", func(t *testing.T) {
+		results, err := files.PrepareForPackager(contents, "deb", false)
+		require.NoError(t, err)
+		require.Equal(t, files.Contents{
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/1allpackagers",
+				Type:        files.TypeFile,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/3onlydeb",
+				Packager:    "deb",
+				Type:        files.TypeFile,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/4debchangelog",
+				Type:        files.TypeDebChangelog,
+			},
+		}, withoutFileInfo(results))
+	})
+
+	t.Run("rpm", func(t *testing.T) {
+		results, err := files.PrepareForPackager(contents, "rpm", false)
+		require.NoError(t, err)
+		require.Equal(t, files.Contents{
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/1allpackagers",
+				Type:        files.TypeFile,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/2onlyrpm",
+				Packager:    "rpm",
+				Type:        files.TypeFile,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/5ghost",
+				Type:        files.TypeRPMGhost,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/6doc",
+				Type:        files.TypeRPMDoc,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/7licence",
+				Type:        files.TypeRPMLicence,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/8license",
+				Type:        files.TypeRPMLicense,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/9readme",
+				Type:        files.TypeRPMReadme,
+			},
+		}, withoutFileInfo(results))
+	})
+
+	t.Run("apk", func(t *testing.T) {
+		results, err := files.PrepareForPackager(contents, "apk", false)
+		require.NoError(t, err)
+		require.Equal(t, files.Contents{
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/1allpackagers",
+				Type:        files.TypeFile,
+			},
+		}, withoutFileInfo(results))
+	})
+}
+
+func TestTree(t *testing.T) {
+	results, err := files.PrepareForPackager(files.Contents{
+		{
+			Source:      "testdata/tree",
+			Destination: "/base",
+			Type:        files.TypeTree,
+		},
+	}, "", false)
+	require.NoError(t, err)
+
+	require.Equal(t, files.Contents{
+		{
+			Source:      "",
+			Destination: "/base/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      "",
+			Destination: "/base/files/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      "testdata/tree/files/a",
+			Destination: "/base/files/a",
+			Type:        files.TypeFile,
+		},
+		{
+			Source:      "",
+			Destination: "/base/files/b/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      "testdata/tree/files/b/c",
+			Destination: "/base/files/b/c",
+			Type:        files.TypeFile,
+		},
+		{
+			Source:      "",
+			Destination: "/base/symlinks/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      "/etc/foo",
+			Destination: "/base/symlinks/link1",
+			Type:        files.TypeSymlink,
+		},
+		{
+			Source:      "../files/a",
+			Destination: "/base/symlinks/link2",
+			Type:        files.TypeSymlink,
+		},
+	}, withoutFileInfo(results))
+}
+
+func withoutFileInfo(contents files.Contents) files.Contents {
+	filtered := make(files.Contents, 0, len(contents))
+
+	for _, c := range contents {
+		cc := *c
+		cc.FileInfo = nil
+		filtered = append(filtered, &cc)
+	}
+
+	return filtered
+}
+
+func TestAsRelativePath(t *testing.T) {
+	testCases := map[string]string{
+		"/etc/foo/":         "etc/foo/",
+		"./etc/foo":         "etc/foo",
+		"./././foo/../bar/": "bar/",
+		"/":                 "",
+	}
+
+	for input, expected := range testCases {
+		assert.Equal(t, expected, files.AsRelativePath(input))
+	}
+}
+
+func TestAsExplicitRelativePath(t *testing.T) {
+	testCases := map[string]string{
+		"/etc/foo/":         "./etc/foo/",
+		"./etc/foo":         "./etc/foo",
+		"./././foo/../bar/": "./bar/",
+		"/":                 "./",
+	}
+
+	for input, expected := range testCases {
+		assert.Equal(t, expected, files.AsExplicitRelativePath(input))
+	}
 }

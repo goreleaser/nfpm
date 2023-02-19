@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -105,7 +106,9 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 		rpm  *rpmpack.RPM
 	)
 	info = ensureValidArch(info)
-	if err = info.Validate(); err != nil {
+
+	err = nfpm.PrepareForPackager(info, packagerName)
+	if err != nil {
 		return err
 	}
 
@@ -341,26 +344,29 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 		var file *rpmpack.RPMFile
 
 		switch content.Type {
-		case "config":
+		case files.TypeConfig:
 			file, err = asRPMFile(content, rpmpack.ConfigFile)
-		case "config|noreplace":
+		case files.TypeConfigNoReplace:
 			file, err = asRPMFile(content, rpmpack.ConfigFile|rpmpack.NoReplaceFile)
-		case "ghost":
+		case files.TypeRPMGhost:
 			if content.FileInfo.Mode == 0 {
 				content.FileInfo.Mode = os.FileMode(0o644)
 			}
 
 			file, err = asRPMFile(content, rpmpack.GhostFile)
-		case "doc":
+		case files.TypeRPMDoc:
 			file, err = asRPMFile(content, rpmpack.DocFile)
-		case "licence", "license":
+		case files.TypeRPMLicence, files.TypeRPMLicense:
 			file, err = asRPMFile(content, rpmpack.LicenceFile)
-		case "readme":
+		case files.TypeRPMReadme:
 			file, err = asRPMFile(content, rpmpack.ReadmeFile)
-		case "symlink":
+		case files.TypeSymlink:
 			file = asRPMSymlink(content)
-		case "dir":
+		case files.TypeDir:
 			file, err = asRPMDirectory(content)
+		case files.TypeImplicitDir:
+			// we don't need to add imlicit directories to RPMs
+			continue
 		default:
 			file, err = asRPMFile(content, rpmpack.GenericFile)
 		}
@@ -369,7 +375,10 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 			return err
 		}
 
+		// clean assures that even folders do not have a trailing slash
+		file.Name = filepath.Clean(file.Name)
 		rpm.AddFile(*file)
+
 	}
 
 	return nil
@@ -398,7 +407,7 @@ func asRPMSymlink(content *files.Content) *rpmpack.RPMFile {
 
 func asRPMFile(content *files.Content, fileType rpmpack.FileType) (*rpmpack.RPMFile, error) {
 	data, err := os.ReadFile(content.Source)
-	if err != nil && content.Type != "ghost" {
+	if err != nil && content.Type != files.TypeRPMGhost {
 		return nil, err
 	}
 
