@@ -20,6 +20,7 @@ package rpmpack
 import (
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -31,7 +32,6 @@ import (
 	"github.com/cavaliergopher/cpio"
 	"github.com/klauspost/compress/zstd"
 	gzip "github.com/klauspost/pgzip"
-	"github.com/pkg/errors"
 	"github.com/ulikunitz/xz"
 	"github.com/ulikunitz/xz/lzma"
 )
@@ -243,18 +243,18 @@ func (r *RPM) Write(w io.Writer) error {
 	sort.Strings(fnames)
 	for _, fn := range fnames {
 		if err := r.writeFile(r.files[fn]); err != nil {
-			return errors.Wrapf(err, "failed to write file %q", fn)
+			return fmt.Errorf("failed to write file %q: %w", fn, err)
 		}
 	}
 	if err := r.cpio.Close(); err != nil {
-		return errors.Wrap(err, "failed to close cpio payload")
+		return fmt.Errorf("failed to close cpio payload: %w", err)
 	}
 	if err := r.compressedPayload.Close(); err != nil {
-		return errors.Wrap(err, "failed to close gzip payload")
+		return fmt.Errorf("failed to close gzip payload: %w", err)
 	}
 
 	if _, err := w.Write(lead(r.Name, r.FullVersion())); err != nil {
-		return errors.Wrap(err, "failed to write lead")
+		return fmt.Errorf("failed to write lead: %w", err)
 	}
 	// Write the regular header.
 	h := newIndex(immutable)
@@ -273,32 +273,34 @@ func (r *RPM) Write(w io.Writer) error {
 	h.AddEntries(r.customTags)
 	hb, err := h.Bytes()
 	if err != nil {
-		return errors.Wrap(err, "failed to retrieve header")
+		return fmt.Errorf("failed to retrieve header: %w", err)
 	}
 	// Write the signatures
 	s := newIndex(signatures)
 	if err := r.writeSignatures(s, hb); err != nil {
-		return errors.Wrap(err, "failed to create signatures")
+		return fmt.Errorf("failed to create signatures: %w", err)
 	}
 
 	s.AddEntries(r.customSigs)
 	sb, err := s.Bytes()
 	if err != nil {
-		return errors.Wrap(err, "failed to retrieve signatures header")
+		return fmt.Errorf("failed to retrieve signatures header: %w", err)
 	}
 
 	if _, err := w.Write(sb); err != nil {
-		return errors.Wrap(err, "failed to write signature bytes")
+		return fmt.Errorf("failed to write signature bytes: %w", err)
 	}
 	// Signatures are padded to 8-byte boundaries
 	if _, err := w.Write(make([]byte, (8-len(sb)%8)%8)); err != nil {
-		return errors.Wrap(err, "failed to write signature padding")
+		return fmt.Errorf("failed to write signature padding: %w", err)
 	}
 	if _, err := w.Write(hb); err != nil {
-		return errors.Wrap(err, "failed to write header body")
+		return fmt.Errorf("failed to write header body: %w", err)
 	}
-	_, err = w.Write(r.payload.Bytes())
-	return errors.Wrap(err, "failed to write payload")
+	if _, err := w.Write(r.payload.Bytes()); err != nil {
+		return fmt.Errorf("failed to write payload: %w", err)
+	}
+	return nil
 }
 
 // SetPGPSigner registers a function that will accept the header and payload as bytes,
@@ -318,14 +320,14 @@ func (r *RPM) writeSignatures(sigHeader *index, regHeader []byte) error {
 		header := append([]byte{}, regHeader...)
 		headerSig, err := r.pgpSigner(header)
 		if err != nil {
-			return errors.Wrap(err, "call to signer failed")
+			return fmt.Errorf("call to signer failed: %w", err)
 		}
 		sigHeader.Add(sigRSA, EntryBytes(headerSig))
 
 		body := append(header, r.payload.Bytes()...)
 		bodySig, err := r.pgpSigner(body)
 		if err != nil {
-			return errors.Wrap(err, "call to signer failed")
+			return fmt.Errorf("call to signer failed: %w", err)
 		}
 		sigHeader.Add(sigPGP, EntryBytes(bodySig))
 	}
@@ -335,22 +337,22 @@ func (r *RPM) writeSignatures(sigHeader *index, regHeader []byte) error {
 func (r *RPM) writeRelationIndexes(h *index) error {
 	// add all relation categories
 	if err := r.Provides.AddToIndex(h, tagProvides, tagProvideVersion, tagProvideFlags); err != nil {
-		return errors.Wrap(err, "failed to add provides")
+		return fmt.Errorf("failed to add provides: %w", err)
 	}
 	if err := r.Obsoletes.AddToIndex(h, tagObsoletes, tagObsoleteVersion, tagObsoleteFlags); err != nil {
-		return errors.Wrap(err, "failed to add obsoletes")
+		return fmt.Errorf("failed to add obsoletes: %w", err)
 	}
 	if err := r.Suggests.AddToIndex(h, tagSuggests, tagSuggestVersion, tagSuggestFlags); err != nil {
-		return errors.Wrap(err, "failed to add suggests")
+		return fmt.Errorf("failed to add suggests: %w", err)
 	}
 	if err := r.Recommends.AddToIndex(h, tagRecommends, tagRecommendVersion, tagRecommendFlags); err != nil {
-		return errors.Wrap(err, "failed to add recommends")
+		return fmt.Errorf("failed to add recommends: %w", err)
 	}
 	if err := r.Requires.AddToIndex(h, tagRequires, tagRequireVersion, tagRequireFlags); err != nil {
-		return errors.Wrap(err, "failed to add requires")
+		return fmt.Errorf("failed to add requires: %w", err)
 	}
 	if err := r.Conflicts.AddToIndex(h, tagConflicts, tagConflictVersion, tagConflictFlags); err != nil {
-		return errors.Wrap(err, "failed to add conflicts")
+		return fmt.Errorf("failed to add conflicts: %w", err)
 	}
 
 	return nil
@@ -540,10 +542,10 @@ func (r *RPM) writePayload(f RPMFile, links int) error {
 		Links: links,
 	}
 	if err := r.cpio.WriteHeader(hdr); err != nil {
-		return errors.Wrap(err, "failed to write payload file header")
+		return fmt.Errorf("failed to write payload file header: %w", err)
 	}
 	if _, err := r.cpio.Write(f.Body); err != nil {
-		return errors.Wrap(err, "failed to write payload file content")
+		return fmt.Errorf("failed to write payload file content: %w", err)
 	}
 	r.payloadSize += uint(len(f.Body))
 	return nil

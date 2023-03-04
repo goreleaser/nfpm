@@ -133,7 +133,7 @@ func TestPrepareForPackager(t *testing.T) {
 		asdFile := info.Overridables.Contents[0]
 		require.Equal(t, "/asd", asdFile.Destination)
 		require.Equal(t, files.TypeFile, asdFile.Type)
-		require.Equal(t, "-rw-r--r--", asdFile.FileInfo.Mode.String())
+		require.Equal(t, "-rw-rw-r--", asdFile.FileInfo.Mode.String())
 		require.Equal(t, "root", asdFile.FileInfo.Owner)
 		require.Equal(t, "root", asdFile.FileInfo.Group)
 		usrDir := info.Overridables.Contents[1]

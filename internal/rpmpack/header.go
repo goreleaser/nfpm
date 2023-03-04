@@ -19,8 +19,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"sort"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -160,7 +158,7 @@ func (i *index) Bytes() ([]byte, error) {
 	// 4 count and 4 size
 	// We add the pseudo-entry "eigenHeader" to count.
 	if err := binary.Write(w, binary.BigEndian, []int32{int32(len(i.entries)) + 1, int32(entryData.Len())}); err != nil {
-		return nil, errors.Wrap(err, "failed to write eigenHeader")
+		return nil, fmt.Errorf("failed to write eigenHeader: %w", err)
 	}
 	// Write the eigenHeader index entry
 	w.Write(i.eigenHeader().indexBytes(i.h, entryData.Len()-0x10))
