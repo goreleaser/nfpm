@@ -33,6 +33,8 @@ func init() {
 // nolint: gochecknoglobals
 var Default = ArchLinux{}
 
+// ArchLinux packager.
+// nolint: revive
 type ArchLinux struct{}
 
 // nolint: gochecknoglobals
@@ -149,7 +151,7 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 	// .PKGINFO must be the first entry in .MTREE
 	entries = append([]MtreeEntry{*pkginfoEntry}, entries...)
 
-	err = createMtree(info, tw, entries)
+	err = createMtree(tw, entries)
 	if err != nil {
 		return fmt.Errorf("create mtree: %w", err)
 	}
@@ -483,7 +485,7 @@ func (me *MtreeEntry) WriteTo(w io.Writer) (int64, error) {
 	}
 }
 
-func createMtree(info *nfpm.Info, tw *tar.Writer, entries []MtreeEntry) error {
+func createMtree(tw *tar.Writer, entries []MtreeEntry) error {
 	buf := &bytes.Buffer{}
 	gw := pgzip.NewWriter(buf)
 	defer gw.Close()

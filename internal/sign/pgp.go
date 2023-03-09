@@ -24,11 +24,11 @@ func PGPSigner(keyFile, passphrase string) func([]byte) ([]byte, error) {
 
 // PGPSignerWithKeyID returns a PGP signer that creates a detached non-ASCII-armored
 // signature and is compatible with rpmpack's signature API.
-func PGPSignerWithKeyID(keyFile, passphrase string, hexKeyId *string) func([]byte) ([]byte, error) {
+func PGPSignerWithKeyID(keyFile, passphrase string, hexKeyID *string) func([]byte) ([]byte, error) {
 	return func(data []byte) ([]byte, error) {
-		keyId, err := parseKeyID(hexKeyId)
+		keyID, err := parseKeyID(hexKeyID)
 		if err != nil {
-			return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyId, err)
+			return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyID, err)
 		}
 
 		key, err := readSigningKey(keyFile, passphrase)
@@ -39,7 +39,7 @@ func PGPSignerWithKeyID(keyFile, passphrase string, hexKeyId *string) func([]byt
 		var signature bytes.Buffer
 
 		err = openpgp.DetachSign(&signature, key, bytes.NewReader(data), &packet.Config{
-			SigningKeyId: keyId,
+			SigningKeyId: keyID,
 			DefaultHash:  crypto.SHA256,
 		})
 		if err != nil {
@@ -56,10 +56,10 @@ func PGPArmoredDetachSign(message io.Reader, keyFile, passphrase string) ([]byte
 }
 
 // PGPArmoredDetachSignWithKeyID creates an ASCII-armored detached signature.
-func PGPArmoredDetachSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKeyId *string) ([]byte, error) {
-	keyId, err := parseKeyID(hexKeyId)
+func PGPArmoredDetachSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKeyID *string) ([]byte, error) {
+	keyID, err := parseKeyID(hexKeyID)
 	if err != nil {
-		return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyId, err)
+		return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyID, err)
 	}
 
 	key, err := readSigningKey(keyFile, passphrase)
@@ -70,7 +70,7 @@ func PGPArmoredDetachSignWithKeyID(message io.Reader, keyFile, passphrase string
 	var signature bytes.Buffer
 
 	err = openpgp.ArmoredDetachSign(&signature, key, message, &packet.Config{
-		SigningKeyId: keyId,
+		SigningKeyId: keyID,
 		DefaultHash:  crypto.SHA256,
 	})
 	if err != nil {
@@ -80,10 +80,10 @@ func PGPArmoredDetachSignWithKeyID(message io.Reader, keyFile, passphrase string
 	return signature.Bytes(), nil
 }
 
-func PGPClearSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKeyId *string) ([]byte, error) {
-	keyId, err := parseKeyID(hexKeyId)
+func PGPClearSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKeyID *string) ([]byte, error) {
+	keyID, err := parseKeyID(hexKeyID)
 	if err != nil {
-		return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyId, err)
+		return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyID, err)
 	}
 
 	key, err := readSigningKey(keyFile, passphrase)
@@ -94,7 +94,7 @@ func PGPClearSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKey
 	var signature bytes.Buffer
 
 	writeCloser, err := clearsign.Encode(&signature, key.PrivateKey, &packet.Config{
-		SigningKeyId: keyId,
+		SigningKeyId: keyID,
 		DefaultHash:  crypto.SHA256,
 	})
 	if err != nil {
@@ -171,12 +171,12 @@ func PGPReadMessage(message []byte, armoredPubKeyFile string) error {
 	return err
 }
 
-func parseKeyID(hexKeyId *string) (uint64, error) {
-	if hexKeyId == nil || *hexKeyId == "" {
+func parseKeyID(hexKeyID *string) (uint64, error) {
+	if hexKeyID == nil || *hexKeyID == "" {
 		return 0, nil
 	}
 
-	result, err := strconv.ParseUint(*hexKeyId, 16, 64)
+	result, err := strconv.ParseUint(*hexKeyID, 16, 64)
 	if err != nil {
 		return 0, err
 	}

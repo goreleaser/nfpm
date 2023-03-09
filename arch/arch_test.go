@@ -261,7 +261,7 @@ func TestArchMtree(t *testing.T) {
 	buf := &bytes.Buffer{}
 	tw := tar.NewWriter(buf)
 
-	err := createMtree(info, tw, []MtreeEntry{
+	err := createMtree(tw, []MtreeEntry{
 		{
 			Destination: "foo",
 			Time:        1234,

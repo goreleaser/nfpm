@@ -395,14 +395,12 @@ func newItemInsideTarGz(out *tar.Writer, content []byte, header *tar.Header) err
 }
 
 func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error {
-	created := map[string]bool{}
-
 	return func(tw *tar.Writer) error {
-		return createFilesInsideTarGz(info, tw, created, sizep)
+		return createFilesInsideTarGz(info, tw, sizep)
 	}
 }
 
-func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]bool, sizep *int64) (err error) {
+func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, sizep *int64) (err error) {
 	for _, file := range info.Contents {
 		file.Destination = strings.TrimPrefix(file.Destination, "./")
 

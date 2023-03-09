@@ -338,7 +338,7 @@ func addParents(contentMap map[string]*Content, path string) error {
 		c, ok := contentMap[parent]
 		if ok {
 			// either we already created this directory as an explicit directory
-			// or as an implict directory of another file
+			// or as an implicit directory of another file
 			if c.Type == TypeDir || c.Type == TypeImplicitDir {
 				continue
 			}
