@@ -112,8 +112,7 @@ func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 	}
 	info = ensureValidArch(info)
 
-	err = nfpm.PrepareForPackager(info, packagerName)
-	if err != nil {
+	if err := nfpm.PrepareForPackager(info, packagerName); err != nil {
 		return err
 	}
 
