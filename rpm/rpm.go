@@ -363,7 +363,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 		case files.TypeSymlink:
 			file = asRPMSymlink(content)
 		case files.TypeDir:
-			file, err = asRPMDirectory(content)
+			file = asRPMDirectory(content)
 		case files.TypeImplicitDir:
 			// we don't need to add imlicit directories to RPMs
 			continue
@@ -384,14 +384,14 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 	return nil
 }
 
-func asRPMDirectory(content *files.Content) (*rpmpack.RPMFile, error) {
+func asRPMDirectory(content *files.Content) *rpmpack.RPMFile {
 	return &rpmpack.RPMFile{
 		Name:  content.Destination,
 		Mode:  uint(content.Mode()) | tagDirectory,
 		MTime: uint32(time.Now().Unix()),
 		Owner: content.FileInfo.Owner,
 		Group: content.FileInfo.Group,
-	}, nil
+	}
 }
 
 func asRPMSymlink(content *files.Content) *rpmpack.RPMFile {

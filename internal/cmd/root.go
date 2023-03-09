@@ -3,10 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	_ "github.com/goreleaser/nfpm/v2/apk"
-	_ "github.com/goreleaser/nfpm/v2/arch"
-	_ "github.com/goreleaser/nfpm/v2/deb"
-	_ "github.com/goreleaser/nfpm/v2/rpm"
+	_ "github.com/goreleaser/nfpm/v2/apk"  // apk packager
+	_ "github.com/goreleaser/nfpm/v2/arch" // archlinux packager
+	_ "github.com/goreleaser/nfpm/v2/deb"  // deb packager
+	_ "github.com/goreleaser/nfpm/v2/rpm"  // rpm packager
 	"github.com/spf13/cobra"
 )
 

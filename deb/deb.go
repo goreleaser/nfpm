@@ -350,9 +350,7 @@ func fillDataTar(info *nfpm.Info, w io.Writer) (md5sums []byte, instSize int64, 
 	// an error in another part of the code.
 	defer out.Close() // nolint: errcheck
 
-	created := map[string]bool{}
-
-	md5buf, instSize, err := createFilesInsideDataTar(info, out, created)
+	md5buf, instSize, err := createFilesInsideDataTar(info, out)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -364,9 +362,7 @@ func fillDataTar(info *nfpm.Info, w io.Writer) (md5sums []byte, instSize int64, 
 	return md5buf.Bytes(), instSize, nil
 }
 
-func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
-	created map[string]bool,
-) (md5buf bytes.Buffer, instSize int64, err error) {
+func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer) (md5buf bytes.Buffer, instSize int64, err error) {
 	// create files and implicit directories
 	for _, file := range info.Contents {
 		var size int64 // declare early to avoid shadowing err

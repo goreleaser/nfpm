@@ -524,7 +524,7 @@ func TestDirectories(t *testing.T) {
 
 	var buf bytes.Buffer
 	size := int64(0)
-	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
+	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), &size)
 	require.NoError(t, err)
 
 	require.Equal(t, []string{
@@ -576,7 +576,7 @@ func TestNoDuplicateAutocreatedDirectories(t *testing.T) {
 
 	var buf bytes.Buffer
 	size := int64(0)
-	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
+	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), &size)
 	require.NoError(t, err)
 
 	contents := tarContents(t, buf.Bytes())
@@ -637,7 +637,7 @@ func TestNoDuplicateContents(t *testing.T) {
 
 	var buf bytes.Buffer
 	size := int64(0)
-	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), make(map[string]bool), &size)
+	err := createFilesInsideTarGz(info, tar.NewWriter(&buf), &size)
 	require.NoError(t, err)
 
 	exists := map[string]bool{}

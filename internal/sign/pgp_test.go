@@ -20,7 +20,7 @@ var testCases = []struct {
 	privKeyFile string
 	pubKeyFile  string
 	pass        string
-	keyId       *string
+	keyID       *string
 }{
 	{"protected", "testdata/privkey.gpg", "testdata/pubkey", pass, nil},
 	{"unprotected", "testdata/privkey_unprotected.gpg", "testdata/pubkey", "", nil},
@@ -41,7 +41,7 @@ func TestPGPSignerAndVerify(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			armoredPublicKey := fmt.Sprintf("%s.asc", testCase.pubKeyFile)
 			gpgPublicKey := fmt.Sprintf("%s.gpg", testCase.pubKeyFile)
-			sig, err := PGPSignerWithKeyID(testCase.privKeyFile, testCase.pass, testCase.keyId)(data)
+			sig, err := PGPSignerWithKeyID(testCase.privKeyFile, testCase.pass, testCase.keyID)(data)
 			require.NoError(t, err)
 
 			err = PGPVerify(bytes.NewReader(data), sig, armoredPublicKey)
@@ -49,7 +49,7 @@ func TestPGPSignerAndVerify(t *testing.T) {
 
 			err = PGPVerify(bytes.NewReader(data), sig, gpgPublicKey)
 			require.NoError(t, err)
-			if testCase.keyId != nil {
+			if testCase.keyID != nil {
 				var pgpSignature *crypto.PGPSignature
 				if isASCII(sig) {
 					pgpSignature, err = crypto.NewPGPSignatureFromArmored(string(sig))
@@ -59,7 +59,7 @@ func TestPGPSignerAndVerify(t *testing.T) {
 				}
 				sigID, _ := pgpSignature.GetSignatureKeyIDs()
 				require.Len(t, sigID, 1)
-				require.Equal(t, *testCase.keyId, fmt.Sprintf("%x", sigID[0]))
+				require.Equal(t, *testCase.keyID, fmt.Sprintf("%x", sigID[0]))
 			}
 		})
 	}
@@ -76,7 +76,7 @@ func TestArmoredDetachSignAndVerify(t *testing.T) {
 				bytes.NewReader(data),
 				testCase.privKeyFile,
 				testCase.pass,
-				testCase.keyId,
+				testCase.keyID,
 			)
 			require.NoError(t, err)
 
@@ -85,7 +85,7 @@ func TestArmoredDetachSignAndVerify(t *testing.T) {
 
 			err = PGPVerify(bytes.NewReader(data), sig, gpgPublicKey)
 			require.NoError(t, err)
-			if testCase.keyId != nil {
+			if testCase.keyID != nil {
 				var pgpSignature *crypto.PGPSignature
 				if isASCII(sig) {
 					pgpSignature, err = crypto.NewPGPSignatureFromArmored(string(sig))
@@ -95,7 +95,7 @@ func TestArmoredDetachSignAndVerify(t *testing.T) {
 				}
 				sigID, _ := pgpSignature.GetSignatureKeyIDs()
 				require.Len(t, sigID, 1)
-				require.Equal(t, *testCase.keyId, fmt.Sprintf("%x", sigID[0]))
+				require.Equal(t, *testCase.keyID, fmt.Sprintf("%x", sigID[0]))
 			}
 		})
 	}

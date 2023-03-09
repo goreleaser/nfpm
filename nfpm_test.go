@@ -299,13 +299,13 @@ func TestParseEnhancedNestedNoGlob(t *testing.T) {
 
 		switch f.Source {
 		case "testdata/globtest/nested/b.txt":
-			tested += 1
+			tested++
 			require.Equal(t, "/etc/foo/nested/b.txt", f.Destination)
 		case "testdata/globtest/multi-nested/subdir/c.txt":
-			tested += 1
+			tested++
 			require.Equal(t, "/etc/foo/multi-nested/subdir/c.txt", f.Destination)
 		case "testdata/globtest/a.txt":
-			tested += 1
+			tested++
 			require.Equal(t, "/etc/foo/a.txt", f.Destination)
 		default:
 			t.Errorf("unknown source %q", f.Source)
