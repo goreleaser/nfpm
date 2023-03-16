@@ -15,7 +15,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/goreleaser/chglog v0.4.2
 	github.com/goreleaser/fileglob v1.3.0
-	github.com/imdario/mergo v0.3.13
+	github.com/imdario/mergo v0.3.14
 	github.com/invopop/jsonschema v0.7.0
 	github.com/klauspost/compress v1.16.0
 	github.com/klauspost/pgzip v1.2.5
