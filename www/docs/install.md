@@ -76,13 +76,26 @@ All artifacts are checksummed, and the checksum is signed with [cosign][].
 	```sh
 	wget https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt
 	wget https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sig
+	wget https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.pem
 	```
 
 1. Verify the signature:
 	```sh
-	COSIGN_EXPERIMENTAL=1 cosign verify-blob \
+	cat checksums.txt.pem | base64 -d | openssl x509 -text -noout
+	...
+	            X509v3 Subject Alternative Name: critical
+                URI:https://github.com/goreleaser/nfpm/.github/workflows/release.yml@refs/tags/v2.26.0
+            1.3.6.1.4.1.57264.1.1:
+                https://token.actions.githubusercontent.com
+
+	...
+	cosign verify-blob \
+		--certificate checksum.txt.pem \
 		--signature checksums.txt.sig \
+		--certificate-identity https://github.com/goreleaser/nfpm/.github/workflows/release.yml@refs/tags/v2.26.0 \
+		--certificate-oidc-issuer https://token.actions.githubusercontent.com \
 		checksums.txt
+	Verfied OK
 	```
 1. If the signature is valid, you can then verify the SHA256 sums match with the
    downloaded binary:
