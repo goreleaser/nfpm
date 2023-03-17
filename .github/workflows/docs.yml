@@ -21,8 +21,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
-          cache: true
+          go-version: stable
       - run: task docs:build
       - uses: wjdp/htmltest-action@master
         with:
