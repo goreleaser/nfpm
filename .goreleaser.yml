@@ -189,10 +189,9 @@ furies:
 
 sboms:
 - artifacts: archive
+
 signs:
 - cmd: cosign
-  env:
-  - COSIGN_EXPERIMENTAL=1
   certificate: '${artifact}.pem'
   output: true
   artifacts: checksum
@@ -201,15 +200,16 @@ signs:
     - '--output-certificate=${certificate}'
     - '--output-signature=${signature}'
     - '${artifact}'
+    - --yes
+
 docker_signs:
 - cmd: cosign
-  env:
-  - COSIGN_EXPERIMENTAL=1
   artifacts: manifests
   output: true
   args:
   - 'sign'
   - '${artifact}'
+  - --yes
 
 changelog:
   sort: asc
@@ -249,7 +249,7 @@ milestones:
 
 announce:
   twitter:
-    enabled: true
+    enabled: false
     message_template: "nFPM {{ .Tag }} was just released! See what's new: https://github.com/goreleaser/nfpm/releases/tag/{{ .Tag }}"
   discord:
     enabled: true
