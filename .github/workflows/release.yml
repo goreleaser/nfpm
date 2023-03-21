@@ -35,7 +35,7 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: sigstore/cosign-installer@v3.0.1
-      - uses: anchore/sbom-action/download-syft@v0.13.3
+      - uses: anchore/sbom-action/download-syft@v0.13.4
       - uses: docker/setup-qemu-action@v2
       - uses: docker/setup-buildx-action@v2
       - run: task setup
