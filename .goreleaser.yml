@@ -114,6 +114,7 @@ scoop:
     owner: goreleaser
     name: scoop-bucket
   homepage: https://nfpm.goreleaser.com
+  folder: bucket
   description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
   license: MIT
 
