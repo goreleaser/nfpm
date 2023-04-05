@@ -497,11 +497,37 @@ func createMtree(tw *tar.Writer, entries []MtreeEntry) error {
 		return err
 	}
 
+	cache := map[string]bool{}
+	cache[""] = true
+
 	for _, entry := range entries {
+		parts := strings.Split(entry.Destination, "/")
+		for i := range parts {
+			path := strings.Join(parts[0:i], "/")
+			if cache[path] {
+				continue
+			}
+			ee := MtreeEntry{
+				Destination: path,
+				Time:        entry.Time,
+				Mode:        entry.Mode,
+				Size:        0,
+				Type:        "dir",
+			}
+			_, err = ee.WriteTo(gw)
+			if err != nil {
+				return err
+			}
+			cache[path] = true
+		}
+		if cache[entry.Destination] {
+			continue
+		}
 		_, err = entry.WriteTo(gw)
 		if err != nil {
 			return err
 		}
+		cache[entry.Destination] = true
 	}
 
 	gw.Close()
