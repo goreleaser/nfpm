@@ -10,6 +10,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
 	"github.com/stretchr/testify/require"
 )
@@ -249,7 +250,6 @@ func extractPkginfoFields(data []byte) map[string]string {
 }
 
 const correctMtree = `#mtree
-./foo time=1234.0 mode=755 type=dir
 ./foo/bar time=1234.0 mode=755 type=dir
 ./foo/bar/file time=1234.0 mode=600 size=143 type=file md5digest=abcd sha256digest=ef12
 ./3 time=12345.0 mode=644 size=100 type=file md5digest=abcd sha256digest=ef12
@@ -315,6 +315,7 @@ func TestArchMtree(t *testing.T) {
 }
 
 func TestGlob(t *testing.T) {
+	var pkg bytes.Buffer
 	require.NoError(t, Default.Package(nfpm.WithDefaults(&nfpm.Info{
 		Name:       "nfpm-repro",
 		Version:    "1.0.0",
@@ -324,9 +325,42 @@ func TestGlob(t *testing.T) {
 			Contents: files.Contents{
 				{
 					Destination: "/usr/share/nfpm-repro",
-					Source:      "../files/*",
+					Source:      "../files/*.go",
 				},
 			},
 		},
-	}), io.Discard))
+	}), &pkg))
+
+	z, err := zstd.NewReader(&pkg)
+	require.NoError(t, err)
+	ta := tar.NewReader(z)
+	for {
+		f, err := ta.Next()
+		if err == io.EOF || f == nil {
+			break
+		}
+
+		if f.Name == ".MTREE" {
+			break
+		}
+	}
+
+	mtree, err := io.ReadAll(ta)
+	require.NoError(t, err)
+
+	mr, err := pgzip.NewReader(bytes.NewReader(mtree))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, mr.Close()) })
+
+	mtreetxt, err := io.ReadAll(mr)
+	require.NoError(t, err)
+	require.Equal(t, expectedGlobMtree, string(mtreetxt))
+	// TODO: PKGINFO time always changes
 }
+
+const expectedGlobMtree = `#mtree
+./.PKGINFO time=1680724091.0 mode=644 size=188 type=file md5digest=dccaf85f1e076b599193e3176674eedc sha256digest=0dc9585f3001d76f1d2b7ba0144c241028796bc42aaab42e8bf893670f26d6e3
+./usr/share/nfpm-repro/files.go time=1678366949.0 mode=664 size=15688 type=file md5digest=e4c9ce32dba277aae42fb8ec59e29a3a sha256digest=7946f60272c8f42c87cd3a3832d80f0b57ed9406aa1db6b96e5df6003922060b
+./usr/share/nfpm-repro/files_test.go time=1676812631.0 mode=664 size=16947 type=file md5digest=4824b1a82a0f694a976345fff8a6aa1f sha256digest=3cb4b25fe2343bf509a2d82ece2881ec92ecd4962e50bc855f27d621a5613d47
+
+`
