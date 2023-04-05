@@ -249,7 +249,7 @@ func extractPkginfoFields(data []byte) map[string]string {
 }
 
 const correctMtree = `#mtree
-./foo time=1234.0 type=dir
+./foo time=1234.0 mode=755 type=dir
 ./3 time=12345.0 mode=644 size=100 type=file md5digest=abcd sha256digest=ef12
 ./sh time=123456.0 mode=777 type=link link=/bin/bash
 `
@@ -266,6 +266,7 @@ func TestArchMtree(t *testing.T) {
 			Destination: "foo",
 			Time:        1234,
 			Type:        files.TypeDir,
+			Mode:        0o755,
 		},
 		{
 			Destination: "3",
