@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
 	"github.com/stretchr/testify/require"
 )
@@ -249,7 +251,8 @@ func extractPkginfoFields(data []byte) map[string]string {
 }
 
 const correctMtree = `#mtree
-./foo time=1234.0 mode=755 type=dir
+./foo/bar time=1234.0 mode=755 type=dir
+./foo/bar/file time=1234.0 mode=600 size=143 type=file md5digest=abcd sha256digest=ef12
 ./3 time=12345.0 mode=644 size=100 type=file md5digest=abcd sha256digest=ef12
 ./sh time=123456.0 mode=777 type=link link=/bin/bash
 `
@@ -263,10 +266,19 @@ func TestArchMtree(t *testing.T) {
 
 	err := createMtree(tw, []MtreeEntry{
 		{
-			Destination: "foo",
+			Destination: "foo/bar",
 			Time:        1234,
 			Type:        files.TypeDir,
 			Mode:        0o755,
+		},
+		{
+			Destination: "foo/bar/file",
+			Time:        1234,
+			Type:        files.TypeFile,
+			Mode:        0o600,
+			Size:        143,
+			MD5:         []byte{0xAB, 0xCD},
+			SHA256:      []byte{0xEF, 0x12},
 		},
 		{
 			Destination: "3",
@@ -304,6 +316,7 @@ func TestArchMtree(t *testing.T) {
 }
 
 func TestGlob(t *testing.T) {
+	var pkg bytes.Buffer
 	require.NoError(t, Default.Package(nfpm.WithDefaults(&nfpm.Info{
 		Name:       "nfpm-repro",
 		Version:    "1.0.0",
@@ -313,9 +326,55 @@ func TestGlob(t *testing.T) {
 			Contents: files.Contents{
 				{
 					Destination: "/usr/share/nfpm-repro",
-					Source:      "../files/*",
+					Source:      "../files/*.go",
 				},
 			},
 		},
-	}), io.Discard))
+	}), &pkg))
+
+	pkgZstd, err := zstd.NewReader(&pkg)
+	require.NoError(t, err)
+	t.Cleanup(func() { pkgZstd.Close() })
+	pkgTar := tar.NewReader(pkgZstd)
+	for {
+		f, err := pkgTar.Next()
+		if err == io.EOF || f == nil {
+			break
+		}
+
+		if f.Name == ".MTREE" {
+			break
+		}
+	}
+
+	mtreeTarBts, err := io.ReadAll(pkgTar)
+	require.NoError(t, err)
+
+	mtreeGzip, err := pgzip.NewReader(bytes.NewReader(mtreeTarBts))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, mtreeGzip.Close()) })
+
+	mtreeContentBts, err := io.ReadAll(mtreeGzip)
+	require.NoError(t, err)
+
+	expected := map[string][]string{
+		"./.PKGINFO":                           {"mode=644", "size=188", "type=file"},
+		"./usr/":                               {"mode=755", "type=dir"},
+		"./usr/share/":                         {"mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/":              {"mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/files.go":      {"mode=644", "size=15688", "type=file", "md5digest=e4c9ce32dba277aae42fb8ec59e29a3a", "sha256digest=7946f60272c8f42c87cd3a3832d80f0b57ed9406aa1db6b96e5df6003922060b"},
+		"./usr/share/nfpm-repro/files_test.go": {"mode=644", "size=16947", "type=file", "md5digest=4824b1a82a0f694a976345fff8a6aa1f", "sha256digest=3cb4b25fe2343bf509a2d82ece2881ec92ecd4962e50bc855f27d621a5613d47"},
+	}
+
+	for _, line := range strings.Split(string(mtreeContentBts), "\n") {
+		if line == "#mtree" || line == "" {
+			continue
+		}
+		parts := strings.Fields(line)
+		filename := parts[0]
+		expect := expected[filename]
+		modTime := parts[1]
+		require.Regexp(t, regexp.MustCompile(`time=\d+\.\d`), modTime)
+		require.Equal(t, expect, parts[2:len(expect)+2], filename)
+	}
 }
