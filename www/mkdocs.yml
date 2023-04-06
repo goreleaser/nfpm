@@ -30,6 +30,10 @@ theme:
     - search.suggest
     - search.highlight
     - search.share
+    - content.code.copy
+    - content.action.edit
+    - navigation.footer
+
 
 plugins:
   - search
