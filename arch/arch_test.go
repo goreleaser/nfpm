@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -331,11 +332,12 @@ func TestGlob(t *testing.T) {
 		},
 	}), &pkg))
 
-	z, err := zstd.NewReader(&pkg)
+	pkgZstd, err := zstd.NewReader(&pkg)
 	require.NoError(t, err)
-	ta := tar.NewReader(z)
+	t.Cleanup(func() { pkgZstd.Close() })
+	pkgTar := tar.NewReader(pkgZstd)
 	for {
-		f, err := ta.Next()
+		f, err := pkgTar.Next()
 		if err == io.EOF || f == nil {
 			break
 		}
@@ -345,22 +347,34 @@ func TestGlob(t *testing.T) {
 		}
 	}
 
-	mtree, err := io.ReadAll(ta)
+	mtreeTarBts, err := io.ReadAll(pkgTar)
 	require.NoError(t, err)
 
-	mr, err := pgzip.NewReader(bytes.NewReader(mtree))
+	mtreeGzip, err := pgzip.NewReader(bytes.NewReader(mtreeTarBts))
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, mr.Close()) })
+	t.Cleanup(func() { require.NoError(t, mtreeGzip.Close()) })
 
-	mtreetxt, err := io.ReadAll(mr)
+	mtreeContentBts, err := io.ReadAll(mtreeGzip)
 	require.NoError(t, err)
-	require.Equal(t, expectedGlobMtree, string(mtreetxt))
-	// TODO: PKGINFO time always changes
+
+	expected := map[string][]string{
+		"./.PKGINFO":                           {"mode=644", "size=188", "type=file"},
+		"./usr/":                               {"mode=755", "type=dir"},
+		"./usr/share/":                         {"mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/":              {"mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/files.go":      {"mode=664", "size=15688", "type=file", "md5digest=e4c9ce32dba277aae42fb8ec59e29a3a", "sha256digest=7946f60272c8f42c87cd3a3832d80f0b57ed9406aa1db6b96e5df6003922060b"},
+		"./usr/share/nfpm-repro/files_test.go": {"mode=664", "size=16947", "type=file", "md5digest=4824b1a82a0f694a976345fff8a6aa1f", "sha256digest=3cb4b25fe2343bf509a2d82ece2881ec92ecd4962e50bc855f27d621a5613d47"},
+	}
+
+	for _, line := range strings.Split(string(mtreeContentBts), "\n") {
+		if line == "#mtree" || line == "" {
+			continue
+		}
+		parts := strings.Fields(line)
+		filename := parts[0]
+		expect := expected[filename]
+		modTime := parts[1]
+		require.Regexp(t, regexp.MustCompile(`time=\d+\.\d`), modTime)
+		require.Equal(t, expect, parts[2:len(expect)+2], filename)
+	}
 }
-
-const expectedGlobMtree = `#mtree
-./.PKGINFO time=1680724091.0 mode=644 size=188 type=file md5digest=dccaf85f1e076b599193e3176674eedc sha256digest=0dc9585f3001d76f1d2b7ba0144c241028796bc42aaab42e8bf893670f26d6e3
-./usr/share/nfpm-repro/files.go time=1678366949.0 mode=664 size=15688 type=file md5digest=e4c9ce32dba277aae42fb8ec59e29a3a sha256digest=7946f60272c8f42c87cd3a3832d80f0b57ed9406aa1db6b96e5df6003922060b
-./usr/share/nfpm-repro/files_test.go time=1676812631.0 mode=664 size=16947 type=file md5digest=4824b1a82a0f694a976345fff8a6aa1f sha256digest=3cb4b25fe2343bf509a2d82ece2881ec92ecd4962e50bc855f27d621a5613d47
-
-`
