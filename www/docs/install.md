@@ -82,7 +82,7 @@ All artifacts are checksummed, and the checksum is signed with [cosign][].
 	cosign verify-blob \
 		--certificate-identity 'https://github.com/goreleaser/nfpm/.github/workflows/release.yml@refs/tags/__VERSION__' \
         --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-		--signature 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt' \
+		--signature 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sig' \
 		--cert 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.pem' \
 		checksums.txt
 	```
@@ -154,3 +154,5 @@ go build -o nfpm ./cmd/nfpm
 ```
 
 [releases]: https://github.com/goreleaser/nfpm/releases
+[cosign]: https://github.com/sigstore/cosign
+
