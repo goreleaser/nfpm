@@ -99,7 +99,7 @@ Our Docker images are signed with [cosign][].
 Verify the signature:
 
 ```bash
-cosign verify	goreleaser/nfpm
+cosign verify goreleaser/nfpm
 cosign verify ghcr.io/goreleaser/nfpm
 ```
 
