@@ -137,11 +137,7 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 		}
 	}
 
-	if err = rpm.Write(w); err != nil {
-		return err
-	}
-
-	return nil
+	return rpm.Write(w)
 }
 
 func addChangeLog(info *nfpm.Info, rpm *rpmpack.RPM) error {

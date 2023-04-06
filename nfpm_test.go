@@ -489,10 +489,10 @@ func TestOverrides(t *testing.T) {
 
 type fakePackager struct{}
 
-func (*fakePackager) ConventionalFileName(info *nfpm.Info) string {
+func (*fakePackager) ConventionalFileName(_ *nfpm.Info) string {
 	return ""
 }
 
-func (*fakePackager) Package(info *nfpm.Info, w io.Writer) error {
+func (*fakePackager) Package(_ *nfpm.Info, _ io.Writer) error {
 	return nil
 }
