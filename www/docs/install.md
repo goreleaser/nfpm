@@ -9,13 +9,13 @@ Bellow you can find the steps for each of them.
 
 ### homebrew tap
 
-```sh
+```bash
 brew install goreleaser/tap/nfpm
 ```
 
 ### homebrew
 
-```sh
+```bash
 brew install nfpm
 ```
 
@@ -25,14 +25,14 @@ brew install nfpm
 
 ### scoop
 
-```sh
+```bash
 scoop bucket add goreleaser https://github.com/goreleaser/scoop-bucket.git
 scoop install nfpm
 ```
 
 ### apt
 
-```sh
+```bash
 echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
 sudo apt update
 sudo apt install nfpm
@@ -40,7 +40,7 @@ sudo apt install nfpm
 
 ### yum
 
-```sh
+```bash
 echo '[goreleaser]
 name=GoReleaser
 baseurl=https://repo.goreleaser.com/yum/
@@ -56,7 +56,7 @@ install them with the appropriate tools.
 
 ### go install
 
-```sh
+```bash
 go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 ```
 
@@ -73,20 +73,22 @@ All artifacts are checksummed, and the checksum is signed with [cosign][].
 
 1. Download the files you want, the `checksums.txt` and `checksums.txt.sig`
    files from the [releases][releases] page:
-	```sh
-	wget https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt
-	wget https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sig
+	```bash
+	wget 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt'
 	```
 
 1. Verify the signature:
-	```sh
-	COSIGN_EXPERIMENTAL=1 cosign verify-blob \
-		--signature checksums.txt.sig \
+	```bash
+	cosign verify-blob \
+		--certificate-identity 'https://github.com/goreleaser/nfpm/.github/workflows/release.yml@refs/tags/__VERSION__' \
+        --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+		--signature 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sig' \
+		--cert 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.pem' \
 		checksums.txt
 	```
 1. If the signature is valid, you can then verify the SHA256 sums match with the
    downloaded binary:
-	```sh
+	```bash
 	sha256sum --ignore-missing -c checksums.txt
 	```
 
@@ -96,9 +98,9 @@ Our Docker images are signed with [cosign][].
 
 Verify the signature:
 
-```sh
-COSIGN_EXPERIMENTAL=1 cosign verify	goreleaser/nfpm
-COSIGN_EXPERIMENTAL=1 cosign verify ghcr.io/goreleaser/nfpm
+```bash
+cosign verify goreleaser/nfpm
+cosign verify ghcr.io/goreleaser/nfpm
 ```
 
 ## Running with Docker
@@ -106,7 +108,7 @@ COSIGN_EXPERIMENTAL=1 cosign verify ghcr.io/goreleaser/nfpm
 You can also use it within a Docker container. To do that, you'll need to
 execute something more-or-less like the following:
 
-```sh
+```bash
 docker run --rm -v $PWD:/tmp -w /tmp goreleaser/nfpm package \
 	--config /tmp/pkg/foo.yml \
 	--target /tmp \
@@ -128,27 +130,29 @@ If you just want to build from source for whatever reason, follow these steps:
 
 **clone:**
 
-```sh
+```bash
 git clone https://github.com/goreleaser/nfpm
 cd nfpm
 ```
 
 **get the dependencies:**
 
-```sh
+```bash
 go mod tidy
 ```
 
 **build:**
 
-```sh
+```bash
 go build -o nfpm ./cmd/nfpm
 ```
 
 **verify it works:**
 
-```sh
+```bash
 ./nfpm --version
 ```
 
 [releases]: https://github.com/goreleaser/nfpm/releases
+[cosign]: https://github.com/sigstore/cosign
+
