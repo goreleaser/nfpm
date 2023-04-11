@@ -7,7 +7,7 @@ require github.com/ProtonMail/go-crypto v0.0.0-20210512092938-c05353c2d58c
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/Masterminds/semver/v3 v3.2.0
+	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/ProtonMail/gopenpgp/v2 v2.2.2
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
