@@ -440,7 +440,7 @@ nFPM also has a [jsonschema][] file which you can use to have better editor
 support:
 
 ```
-https://nfpm.goreleaser.com/schema.json
+https://nfpm.goreleaser.com/static/schema.json
 ```
 
 You can also generate it for your specific version using the
