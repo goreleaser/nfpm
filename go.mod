@@ -18,7 +18,7 @@ require (
 	github.com/imdario/mergo v0.3.15
 	github.com/invopop/jsonschema v0.7.0
 	github.com/klauspost/compress v1.16.5
-	github.com/klauspost/pgzip v1.2.5
+	github.com/klauspost/pgzip v1.2.6
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/roff v0.1.0
 	github.com/spf13/cobra v1.7.0
