@@ -4,6 +4,7 @@ package deb
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"crypto/md5" // nolint:gas
 	"crypto/sha1"
 	"errors"
@@ -22,7 +23,6 @@ import (
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
-	gzip "github.com/klauspost/pgzip"
 	"github.com/ulikunitz/xz"
 )
 
@@ -454,6 +454,9 @@ func createChangelogInsideDataTar(tarw *tar.Writer, g io.Writer, info *nfpm.Info
 	fileName string,
 ) (int64, error) {
 	var buf bytes.Buffer
+	// we need here a non timestamped compression -> https://github.com/klauspost/pgzip doesn't support that
+	// https://github.com/klauspost/pgzip/blob/v1.2.6/gzip.go#L322 vs.
+	// https://cs.opensource.google/go/go/+/refs/tags/go1.20.4:src/compress/gzip/gzip.go;l=157
 	out, err := gzip.NewWriterLevel(&buf, gzip.BestCompression)
 	if err != nil {
 		return 0, fmt.Errorf("could not create gzip writer: %w", err)
@@ -482,7 +485,7 @@ func createChangelogInsideDataTar(tarw *tar.Writer, g io.Writer, info *nfpm.Info
 		return 0, err
 	}
 
-	if _, err = fmt.Fprintf(g, "%x  %s\n", digest.Sum(nil), fileName); err != nil {
+	if _, err = fmt.Fprintf(g, "%x  %s\n", digest.Sum(nil), files.AsExplicitRelativePath(fileName)); err != nil {
 		return 0, err
 	}
 
