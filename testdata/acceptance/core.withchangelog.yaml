@@ -4,16 +4,25 @@ platform: "linux"
 changelog: "./testdata/changelog.yaml"
 version: "v1.2.3"
 release: "simple"
-maintainer: "Foo Bar"
+maintainer: "Foo Bar <foo@example.org>"
 description: |
-  Foo bar
-    Multiple lines
+  Program foo bar
+  Multiple lines
 vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
+section: misc
 contents:
 - src: ./testdata/fake
   dst: /usr/bin/fake
+  file_info:
+    mode: 0755
 - src: ./testdata/whatever.conf
   dst: /etc/foo/whatever.conf
   type: config
+  file_info:
+    mode: 0644
+- src: ./testdata/copyright
+  dst: /usr/share/doc/foo/
+  file_info:
+    mode: 0644

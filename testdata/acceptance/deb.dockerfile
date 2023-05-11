@@ -140,8 +140,20 @@ RUN lintian /tmp/foo.deb > lintian.out
 RUN test $(grep -c 'debian-changelog-file-missing-or-wrong-name' lintian.out) = 0
 RUN test $(grep -c 'changelog-not-compressed-with-max-compression' lintian.out) = 0
 RUN test $(grep -c 'unknown-control-file' lintian.out) = 0
-# TODO: RUN test $(grep -c 'package-contains-timestamped-gzip' lintian.out) = 0
-# TODO: RUN test $(grep -c 'syntax-error-in-debian-changelog' lintian.out) = 0
+RUN test $(grep -c 'package-contains-timestamped-gzip' lintian.out) = 0
+RUN test $(grep -c 'md5sums-lists-nonexistent-file' lintian.out) = 0
+RUN test $(grep -c 'file-missing-in-md5sums' lintian.out) = 0
+RUN test $(grep -c 'syntax-error-in-debian-changelog' lintian.out) = 0
+RUN test $(grep -c 'no-copyright-file' lintian.out) = 0
+RUN test $(grep -c 'executable-is-not-world-readable' lintian.out) = 0
+RUN test $(grep -c 'non-standard-executable-perm' lintian.out) = 0
+RUN test $(grep -c 'non-standard-file-perm' lintian.out) = 0
+RUN test $(grep -c 'unknown-section' lintian.out) = 0
+RUN test $(grep -c 'empty-field' lintian.out) = 0
+RUN test $(grep -c 'syntax-error-in-debian-changelog' lintian.out) = 0
+RUN test $(grep -c 'malformed-contact' lintian.out) = 0
+RUN test $(grep -c 'description-starts-with-package-name' lintian.out) = 0
+RUN test $(grep -c 'description-starts-with-leading-spaces' lintian.out) = 0
 
 # ---- rules test ----
 FROM min AS rules
