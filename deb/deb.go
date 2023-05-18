@@ -39,8 +39,8 @@ var archToDebian = map[string]string{
 	"arm5":     "armel",
 	"arm6":     "armhf",
 	"arm7":     "armhf",
-	"mipsle":   "mipsel",
 	"mips64le": "mips64el",
+	"mipsle":   "mipsel",
 	"ppc64le":  "ppc64el",
 	"s390":     "s390x",
 }
