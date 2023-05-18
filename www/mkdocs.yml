@@ -63,6 +63,7 @@ nav:
       - nfpm jsonschema: cmd/nfpm_jsonschema.md
   - configuration.md
   - tips.md
+  - goarch-to-pkg.md
   - contributing.md
   - sponsors.md
 
