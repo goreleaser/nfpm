@@ -1376,13 +1376,14 @@ func TestArches(t *testing.T) {
 			info = ensureValidArch(info)
 			require.Equal(t, archToDebian[k], info.Arch)
 		})
-		t.Run("mips64lesoftfloat", func(t *testing.T) {
-			info := exampleInfo()
-			info.Arch = "mips64le"
-			info = ensureValidArch(info)
-			require.Equal(t, "mips64el", info.Arch)
-		})
 	}
+
+	t.Run("mips64lesoftfloat", func(t *testing.T) {
+		info := exampleInfo()
+		info.Arch = "mips64le"
+		info = ensureValidArch(info)
+		require.Equal(t, "mips64el", info.Arch)
+	})
 
 	t.Run("override", func(t *testing.T) {
 		info := exampleInfo()
