@@ -2,6 +2,7 @@ package files_test
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,6 +45,10 @@ contents:
 }
 
 func TestDeepPathsWithGlobAndUmask(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "foo", "bar", "zaz", "file.txt")
+	// create a bunch of files with bad permissions
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o777))
+	require.NoError(t, os.WriteFile(path, nil, 0o777))
 	var config testStruct
 	dec := yaml.NewDecoder(strings.NewReader(`---
 contents:
@@ -53,12 +58,14 @@ contents:
     mode: 0644
     mtime: 2008-01-02T15:04:05Z
 - src: testdata/deep-paths/
-  dst: /bla
+  dst: /bar
+- src: ` + path + `
+  dst: /foo/file.txt
 `))
 	dec.KnownFields(true)
 	err := dec.Decode(&config)
 	require.NoError(t, err)
-	require.Len(t, config.Contents, 2)
+	require.Len(t, config.Contents, 3)
 	parsedContents, err := files.PrepareForPackager(config.Contents, 0o113, "", false)
 	require.NoError(t, err)
 	for _, c := range parsedContents {
@@ -70,7 +77,10 @@ contents:
 			require.Equal(t, "/bla/multi-nested/subdir/c.txt", c.Destination)
 			require.Equal(t, "-rw-r--r--", c.Mode().String())
 		case "testdata/deep-paths/nested1/nested2/a.txt":
-			require.Equal(t, "/bla/nested1/nested2/a.txt", c.Destination)
+			require.Equal(t, "/bar/nested1/nested2/a.txt", c.Destination)
+			require.Equal(t, "-rw-rw-r--", c.Mode().String())
+		case path:
+			require.Equal(t, "/foo/file.txt", c.Destination)
 			require.Equal(t, "-rw-rw-r--", c.Mode().String())
 		}
 	}
