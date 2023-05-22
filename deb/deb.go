@@ -36,6 +36,7 @@ func init() {
 // nolint: gochecknoglobals
 var archToDebian = map[string]string{
 	"386":      "i386",
+	"arm64":    "arm64",
 	"arm5":     "armel",
 	"arm6":     "armhf",
 	"arm7":     "armhf",
