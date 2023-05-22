@@ -144,7 +144,6 @@ func (c *Content) WithFileInfoDefaults(umask fs.FileMode) *Content {
 				cc.FileInfo.MTime = info.ModTime()
 			}
 			if cc.FileInfo.Mode == 0 {
-				fmt.Println("files.go:147", info.Mode().String(), (info.Mode() & ^umask).String())
 				cc.FileInfo.Mode = info.Mode() &^ umask
 			}
 			cc.FileInfo.Size = info.Size()
@@ -463,7 +462,6 @@ func addTree(all map[string]*Content, tree *Content, umask os.FileMode) error {
 
 			c.Type = TypeDir
 			c.Destination = NormalizeAbsoluteDirPath(destination)
-			fmt.Println("files.go:446", info.Mode().String(), (info.Mode() &^ umask).String())
 			c.FileInfo = &ContentFileInfo{
 				Owner: "root",
 				Group: "root",
@@ -483,7 +481,6 @@ func addTree(all map[string]*Content, tree *Content, umask os.FileMode) error {
 			c.Source = path
 			c.Destination = NormalizeAbsoluteFilePath(destination)
 			c.Type = TypeFile
-			fmt.Println("files.go:486", d.Type().String(), (d.Type() &^ umask).String())
 			c.FileInfo = &ContentFileInfo{
 				Mode: d.Type() &^ umask,
 			}
