@@ -147,6 +147,13 @@
 						"$ref": "#/$defs/Contents",
 						"title": "files to add to the package"
 					},
+					"umask": {
+						"type": "integer",
+						"title": "umask for file contents",
+						"examples": [
+							2
+						]
+					},
 					"scripts": {
 						"$ref": "#/$defs/Scripts",
 						"title": "scripts to execute"
@@ -571,6 +578,13 @@
 					"contents": {
 						"$ref": "#/$defs/Contents",
 						"title": "files to add to the package"
+					},
+					"umask": {
+						"type": "integer",
+						"title": "umask for file contents",
+						"examples": [
+							2
+						]
 					},
 					"scripts": {
 						"$ref": "#/$defs/Scripts",
