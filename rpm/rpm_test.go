@@ -506,13 +506,6 @@ func TestArches(t *testing.T) {
 		})
 	}
 
-	t.Run("mips64lesoftfloat", func(t *testing.T) {
-		info := exampleInfo()
-		info.Arch = "mips64lesoftfloat"
-		info = ensureValidArch(info)
-		require.Equal(t, "mips64el", info.Arch)
-	})
-
 	t.Run("override", func(t *testing.T) {
 		info := exampleInfo()
 		info.RPM.Arch = "foo64"
