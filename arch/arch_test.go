@@ -363,7 +363,7 @@ func TestGlob(t *testing.T) {
 		"./usr/share/":                         {"mode=755", "type=dir"},
 		"./usr/share/nfpm-repro/":              {"mode=755", "type=dir"},
 		"./usr/share/nfpm-repro/files.go":      {"mode=664", "size=15900", "type=file", "md5digest=0c4e339bc678ab6b2b291ec3088e32a2", "sha256digest=27614421b69216e9d8ddd177210f2c9a71d8ff9d76cc2b1654276eccd04e84c2"},
-		"./usr/share/nfpm-repro/files_test.go": {"mode=664", "size=17741", "type=file", "md5digest=8a42e91db704f97ceb1d24d63ab3780e", "sha256digest=5a02a196b845a52122c8c0ded24d34aeaa44617a4199ff3407d390c5d507bb33"},
+		"./usr/share/nfpm-repro/files_test.go": {"mode=664", "size=17741", "type=file", "md5digest=52818697d19e885bc2e5b37f2dc4a7fb", "sha256digest=fdbb35f8c11e118508ddd526c0a7797171ea100aa14337caddd7ab249ee91272"},
 	}
 
 	for _, line := range strings.Split(string(mtreeContentBts), "\n") {
