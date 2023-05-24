@@ -43,7 +43,7 @@ contents:
 	}
 }
 
-func TestDeepPathsWithGlob(t *testing.T) {
+func TestDeepPathsWithGlobAndUmask(t *testing.T) {
 	var config testStruct
 	dec := yaml.NewDecoder(strings.NewReader(`---
 contents:
@@ -52,19 +52,26 @@ contents:
   file_info:
     mode: 0644
     mtime: 2008-01-02T15:04:05Z
+- src: testdata/deep-paths/
+  dst: /bla
 `))
 	dec.KnownFields(true)
 	err := dec.Decode(&config)
 	require.NoError(t, err)
-	require.Len(t, config.Contents, 1)
-	parsedContents, err := files.PrepareForPackager(config.Contents, "", false)
+	require.Len(t, config.Contents, 2)
+	parsedContents, err := files.PrepareForPackager(config.Contents, 0o113, "", false)
 	require.NoError(t, err)
 	for _, c := range parsedContents {
 		switch c.Source {
 		case "testdata/globtest/nested/b.txt":
 			require.Equal(t, "/bla/nested/b.txt", c.Destination)
+			require.Equal(t, "-rw-r--r--", c.Mode().String())
 		case "testdata/globtest/multi-nested/subdir/c.txt":
 			require.Equal(t, "/bla/multi-nested/subdir/c.txt", c.Destination)
+			require.Equal(t, "-rw-r--r--", c.Mode().String())
+		case "testdata/deep-paths/nested1/nested2/a.txt":
+			require.Equal(t, "/bla/nested1/nested2/a.txt", c.Destination)
+			require.Equal(t, "-rw-rw-r--", c.Mode().String())
 		}
 	}
 }
@@ -80,7 +87,7 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 	require.Len(t, config.Contents, 1)
-	parsedContents, err := files.PrepareForPackager(config.Contents, "", true)
+	parsedContents, err := files.PrepareForPackager(config.Contents, 0, "", true)
 	require.NoError(t, err)
 	present := false
 
@@ -110,7 +117,7 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 
-	config.Contents, err = files.PrepareForPackager(config.Contents, "", true)
+	config.Contents, err = files.PrepareForPackager(config.Contents, 0, "", true)
 	require.NoError(t, err)
 	require.Len(t, config.Contents, 1)
 
@@ -140,7 +147,7 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 
-	config.Contents, err = files.PrepareForPackager(config.Contents, "rpm", true)
+	config.Contents, err = files.PrepareForPackager(config.Contents, 0, "rpm", true)
 	require.NoError(t, err)
 	require.Len(t, config.Contents, 1)
 
@@ -172,7 +179,7 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 
-	config.Contents, err = files.PrepareForPackager(config.Contents, "", true)
+	config.Contents, err = files.PrepareForPackager(config.Contents, 0, "", true)
 	require.NoError(t, err)
 	config.Contents = withoutFileInfo(config.Contents)
 
@@ -232,7 +239,7 @@ contents:
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, err := files.PrepareForPackager(config.Contents, "", false)
+			_, err := files.PrepareForPackager(config.Contents, 0, "", false)
 			require.NoError(t, err)
 		}()
 	}
@@ -246,7 +253,7 @@ func TestCollision(t *testing.T) {
 			{Source: "../testdata/whatever2.conf", Destination: "/samedestination"},
 		}
 
-		_, err := files.PrepareForPackager(configuredFiles, "", true)
+		_, err := files.PrepareForPackager(configuredFiles, 0, "", true)
 		require.ErrorIs(t, err, files.ErrContentCollision)
 	})
 
@@ -256,7 +263,7 @@ func TestCollision(t *testing.T) {
 			{Source: "../testdata/whatever2.conf", Destination: "/samedestination", Packager: "bar"},
 		}
 
-		_, err := files.PrepareForPackager(configuredFiles, "foo", true)
+		_, err := files.PrepareForPackager(configuredFiles, 0, "foo", true)
 		require.NoError(t, err)
 	})
 
@@ -266,7 +273,7 @@ func TestCollision(t *testing.T) {
 			{Source: "../testdata/whatever2.conf", Destination: "/samedestination", Packager: ""},
 		}
 
-		_, err := files.PrepareForPackager(configuredFiles, "foo", true)
+		_, err := files.PrepareForPackager(configuredFiles, 0, "foo", true)
 		require.ErrorIs(t, err, files.ErrContentCollision)
 	})
 }
@@ -297,7 +304,7 @@ func TestDisableGlobbing(t *testing.T) {
 		content := testCase
 
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			result, err := files.PrepareForPackager(files.Contents{&content}, "", disableGlobbing)
+			result, err := files.PrepareForPackager(files.Contents{&content}, 0, "", disableGlobbing)
 			if err != nil {
 				t.Fatalf("expand content globs: %v", err)
 			}
@@ -341,7 +348,7 @@ func TestGlobbingWhenFilesHaveBrackets(t *testing.T) {
 			Source:      "./testdata/\\{test\\}/",
 			Destination: ".",
 		},
-	}, "", false)
+	}, 0, "", false)
 	if err != nil {
 		t.Fatalf("expand content globs: %v", err)
 	}
@@ -382,7 +389,7 @@ func TestGlobbingFilesWithDifferentSizesWithFileInfo(t *testing.T) {
 				Mode: 0o777,
 			},
 		},
-	}, "", false)
+	}, 0, "", false)
 	if err != nil {
 		t.Fatalf("expand content globs: %v", err)
 	}
@@ -404,7 +411,7 @@ func TestDestEndsWithSlash(t *testing.T) {
 			Source:      "./testdata/globtest/a.txt",
 			Destination: "./foo/",
 		},
-	}, "", false)
+	}, 0, "", false)
 	result = withoutImplicitDirs(result)
 	require.NoError(t, err)
 	require.Len(t, result, 1)
@@ -421,7 +428,7 @@ contents:
 `))
 	dec.KnownFields(true)
 	require.NoError(t, dec.Decode(&config))
-	_, err := files.PrepareForPackager(config.Contents, "", false)
+	_, err := files.PrepareForPackager(config.Contents, 0, "", false)
 	require.EqualError(t, err, "invalid content type: filr")
 }
 
@@ -452,7 +459,7 @@ contents:
 `))
 	dec.KnownFields(true)
 	require.NoError(t, dec.Decode(&config))
-	_, err := files.PrepareForPackager(config.Contents, "", false)
+	_, err := files.PrepareForPackager(config.Contents, 0, "", false)
 	require.NoError(t, err)
 }
 
@@ -462,7 +469,7 @@ func TestImplicitDirectories(t *testing.T) {
 			Source:      "./testdata/globtest/a.txt",
 			Destination: "./foo/bar/baz",
 		},
-	}, "", false)
+	}, 0, "", false)
 	require.NoError(t, err)
 
 	expected := files.Contents{
@@ -535,7 +542,7 @@ func TestRelevantFiles(t *testing.T) {
 	}
 
 	t.Run("deb", func(t *testing.T) {
-		results, err := files.PrepareForPackager(contents, "deb", false)
+		results, err := files.PrepareForPackager(contents, 0, "deb", false)
 		require.NoError(t, err)
 		require.Equal(t, files.Contents{
 			{
@@ -558,7 +565,7 @@ func TestRelevantFiles(t *testing.T) {
 	})
 
 	t.Run("rpm", func(t *testing.T) {
-		results, err := files.PrepareForPackager(contents, "rpm", false)
+		results, err := files.PrepareForPackager(contents, 0, "rpm", false)
 		require.NoError(t, err)
 		require.Equal(t, files.Contents{
 			{
@@ -601,7 +608,7 @@ func TestRelevantFiles(t *testing.T) {
 	})
 
 	t.Run("apk", func(t *testing.T) {
-		results, err := files.PrepareForPackager(contents, "apk", false)
+		results, err := files.PrepareForPackager(contents, 0, "apk", false)
 		require.NoError(t, err)
 		require.Equal(t, files.Contents{
 			{
@@ -620,7 +627,7 @@ func TestTree(t *testing.T) {
 			Destination: "/base",
 			Type:        files.TypeTree,
 		},
-	}, "", false)
+	}, 0, "", false)
 	require.NoError(t, err)
 
 	require.Equal(t, files.Contents{

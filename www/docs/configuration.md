@@ -195,6 +195,15 @@ contents:
     dst: /etc/bar.conf
     type: config|noreplace
 
+# Umask to be used on files without explicit mode set.
+#
+# By default, nFPM will use the mode of the original file in the file system.
+# This may lead to issues if these files are checkout out in Git, for example,
+# as it won't keep all the permissions on fresh checkouts.
+#
+# 0o002 would remove the world-writable permission, for example.
+umask: 0o002
+
   # These files are not actually present in the package, but the file names
   # are added to the package header. From the RPM directives documentation:
   #

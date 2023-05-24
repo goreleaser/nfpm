@@ -104,7 +104,7 @@ func (c Contents) ContainsDestination(dst string) bool {
 	return false
 }
 
-func (c *Content) WithFileInfoDefaults() *Content {
+func (c *Content) WithFileInfoDefaults(umask fs.FileMode) *Content {
 	cc := &Content{
 		Source:      c.Source,
 		Destination: c.Destination,
@@ -144,7 +144,8 @@ func (c *Content) WithFileInfoDefaults() *Content {
 				cc.FileInfo.MTime = info.ModTime()
 			}
 			if cc.FileInfo.Mode == 0 {
-				cc.FileInfo.Mode = info.Mode()
+				fmt.Println("files.go:147", info.Mode().String(), (info.Mode() & ^umask).String())
+				cc.FileInfo.Mode = info.Mode() &^ umask
 			}
 			cc.FileInfo.Size = info.Size()
 		}
@@ -226,13 +227,14 @@ func (c *Content) String() string {
 //   - It expands globs (if enabled) and file trees
 //   - It adds implicit directories (parent directories of files)
 //   - It adds ownership and other file information if not specified directly
+//   - It applies the given umask if the file does not have a specific mode
 //   - It normalizes content source paths to be unix style paths
 //   - It normalizes content destination paths to be absolute paths with a trailing
 //     slash if the entry is a directory
 //
 // If no packager is specified, only the files that are relevant for any
 // packager are considered.
-func PrepareForPackager(rawContents Contents, packager string, disableGlobbing bool) (Contents, error) {
+func PrepareForPackager(rawContents Contents, umask fs.FileMode, packager string, disableGlobbing bool) (Contents, error) {
 	contentMap := make(map[string]*Content)
 
 	for _, content := range rawContents {
@@ -253,13 +255,13 @@ func PrepareForPackager(rawContents Contents, packager string, disableGlobbing b
 				return nil, err
 			}
 
-			cc := content.WithFileInfoDefaults()
+			cc := content.WithFileInfoDefaults(umask)
 			cc.Source = ToNixPath(cc.Source)
 			cc.Destination = NormalizeAbsoluteDirPath(cc.Destination)
 			contentMap[cc.Destination] = cc
 		case TypeImplicitDir:
-			// if theres an implicit directory, the contents probably already
-			// have been expanend so we can just ignore it, it will be created
+			// if there's an implicit directory, the contents probably already
+			// have been expanded so we can just ignore it, it will be created
 			// by another content element again anyway
 		case TypeRPMGhost, TypeSymlink, TypeRPMDoc, TypeRPMLicence, TypeRPMLicense, TypeRPMReadme, TypeDebChangelog:
 			presentContent, destinationOccupied := contentMap[NormalizeAbsoluteFilePath(content.Destination)]
@@ -272,12 +274,12 @@ func PrepareForPackager(rawContents Contents, packager string, disableGlobbing b
 				return nil, err
 			}
 
-			cc := content.WithFileInfoDefaults()
+			cc := content.WithFileInfoDefaults(umask)
 			cc.Source = ToNixPath(cc.Source)
 			cc.Destination = NormalizeAbsoluteFilePath(cc.Destination)
 			contentMap[cc.Destination] = cc
 		case TypeTree:
-			err := addTree(contentMap, content)
+			err := addTree(contentMap, content, umask)
 			if err != nil {
 				return nil, fmt.Errorf("add tree: %w", err)
 			}
@@ -287,7 +289,7 @@ func PrepareForPackager(rawContents Contents, packager string, disableGlobbing b
 				return nil, err
 			}
 
-			err = addGlobbedFiles(contentMap, globbed, content)
+			err = addGlobbedFiles(contentMap, globbed, content, umask)
 			if err != nil {
 				return nil, fmt.Errorf("add globbed files from %q: %w", content.Source, err)
 			}
@@ -384,7 +386,7 @@ func sortedParents(dst string) []string {
 	return paths
 }
 
-func addGlobbedFiles(all map[string]*Content, globbed map[string]string, origFile *Content) error {
+func addGlobbedFiles(all map[string]*Content, globbed map[string]string, origFile *Content, umask fs.FileMode) error {
 	for src, dst := range globbed {
 		dst = NormalizeAbsoluteFilePath(dst)
 		presentContent, destinationOccupied := all[dst]
@@ -413,7 +415,7 @@ func addGlobbedFiles(all map[string]*Content, globbed map[string]string, origFil
 			Type:        origFile.Type,
 			FileInfo:    newFileInfo,
 			Packager:    origFile.Packager,
-		}).WithFileInfoDefaults()
+		}).WithFileInfoDefaults(umask)
 		if dst, err := os.Readlink(src); err == nil {
 			newFile.Source = dst
 			newFile.Type = TypeSymlink
@@ -425,7 +427,7 @@ func addGlobbedFiles(all map[string]*Content, globbed map[string]string, origFil
 	return nil
 }
 
-func addTree(all map[string]*Content, tree *Content) error {
+func addTree(all map[string]*Content, tree *Content, umask os.FileMode) error {
 	if tree.Destination != "/" && tree.Destination != "" {
 		presentContent, destinationOccupied := all[NormalizeAbsoluteDirPath(tree.Destination)]
 		if destinationOccupied && presentContent.Type != TypeImplicitDir {
@@ -461,10 +463,11 @@ func addTree(all map[string]*Content, tree *Content) error {
 
 			c.Type = TypeDir
 			c.Destination = NormalizeAbsoluteDirPath(destination)
+			fmt.Println("files.go:446", info.Mode().String(), (info.Mode() &^ umask).String())
 			c.FileInfo = &ContentFileInfo{
 				Owner: "root",
 				Group: "root",
-				Mode:  info.Mode(),
+				Mode:  info.Mode() &^ umask,
 				MTime: info.ModTime(),
 			}
 		case d.Type()&os.ModeSymlink != 0:
@@ -480,12 +483,13 @@ func addTree(all map[string]*Content, tree *Content) error {
 			c.Source = path
 			c.Destination = NormalizeAbsoluteFilePath(destination)
 			c.Type = TypeFile
+			fmt.Println("files.go:486", d.Type().String(), (d.Type() &^ umask).String())
 			c.FileInfo = &ContentFileInfo{
-				Mode: d.Type(),
+				Mode: d.Type() &^ umask,
 			}
 		}
 
-		all[c.Destination] = c.WithFileInfoDefaults()
+		all[c.Destination] = c.WithFileInfoDefaults(umask)
 
 		return nil
 	})
