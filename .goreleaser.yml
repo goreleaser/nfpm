@@ -265,7 +265,7 @@ release:
     ## Where to go next?
 
     * nFPM is a satellite project from GoReleaser. [Check it out](https://goreleaser.com)!
-    * Find examples and commented usage of all options in our [website](https://nfpm.goreleaser.com/intro/).
+    * Find examples and commented usage of all options in our [website](https://nfpm.goreleaser.com/).
     * Reach out on [Discord](https://discord.gg/RGEBtg8vQ6) and [Twitter](https://twitter.com/goreleaser)!
 
     <a href="https://goreleaser.com"><img src="https://raw.githubusercontent.com/goreleaser/artwork/master/opencollective-header.png" with="100%" alt="GoReleaser logo"></a>
