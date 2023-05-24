@@ -66,7 +66,7 @@ contents:
 	err := dec.Decode(&config)
 	require.NoError(t, err)
 	require.Len(t, config.Contents, 3)
-	parsedContents, err := files.PrepareForPackager(config.Contents, 0o113, "", false)
+	parsedContents, err := files.PrepareForPackager(config.Contents, 0o133, "", false)
 	require.NoError(t, err)
 	for _, c := range parsedContents {
 		switch c.Source {
@@ -78,10 +78,10 @@ contents:
 			require.Equal(t, "-rw-r--r--", c.Mode().String())
 		case "testdata/deep-paths/nested1/nested2/a.txt":
 			require.Equal(t, "/bar/nested1/nested2/a.txt", c.Destination)
-			require.Equal(t, "-rw-rw-r--", c.Mode().String())
+			require.Equal(t, "-rw-r--r--", c.Mode().String())
 		case path:
 			require.Equal(t, "/foo/file.txt", c.Destination)
-			require.Equal(t, "-rw-rw-r--", c.Mode().String())
+			require.Equal(t, "-rw-r--r--", c.Mode().String())
 		}
 	}
 }
