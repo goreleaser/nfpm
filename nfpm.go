@@ -479,6 +479,12 @@ func WithDefaults(info *Info) *Info {
 	if info.Arch == "" {
 		info.Arch = "amd64"
 	}
+	if strings.HasPrefix(info.Arch, "mips") {
+		info.Arch = strings.NewReplacer(
+			"softfloat", "",
+			"hardfloat", "",
+		).Replace(info.Arch)
+	}
 	if info.Version == "" {
 		info.Version = "v0.0.0-rc0"
 	}

@@ -119,6 +119,28 @@ func TestDefaults(t *testing.T) {
 			},
 		}, *got)
 	})
+	t.Run("mips softfloat", func(t *testing.T) {
+		makeinfo := func() nfpm.Info {
+			return nfpm.Info{
+				Platform: "linux",
+				Arch:     "mips64softfloat",
+			}
+		}
+		info := makeinfo()
+		nfpm.WithDefaults(&info)
+		require.Equal(t, "mips64", info.Arch)
+	})
+	t.Run("mips softfloat", func(t *testing.T) {
+		makeinfo := func() nfpm.Info {
+			return nfpm.Info{
+				Platform: "linux",
+				Arch:     "mips64hardfloat",
+			}
+		}
+		info := makeinfo()
+		nfpm.WithDefaults(&info)
+		require.Equal(t, "mips64", info.Arch)
+	})
 }
 
 func TestPrepareForPackager(t *testing.T) {

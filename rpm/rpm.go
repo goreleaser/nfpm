@@ -75,13 +75,6 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 		info.Arch = info.RPM.Arch
 	} else if arch, ok := archToRPM[info.Arch]; ok {
 		info.Arch = arch
-	} else {
-		for k, v := range archToRPM {
-			if strings.HasPrefix(info.Arch, k) {
-				info.Arch = v
-				break
-			}
-		}
 	}
 
 	return info
