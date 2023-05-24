@@ -241,9 +241,21 @@ release:
   footer: |
     **Full Changelog**: https://github.com/goreleaser/nfpm/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-    ---
+    ## Helping out
 
-    - Check out [GoReleaser](https://goreleaser.com): it integrates nFPM to the release pipeline of your Go projects.
+    This release is only possible thanks to **all** the support of **awesome people**!
+
+    Want to be one of them?
+    You can [sponsor](https://goreleaser.com/sponsors/) or [contribute with code](https://goreleaser.com/contributing).
+
+    ## Where to go next?
+
+    * nFPM is a satellite project from GoReleaser. [Check it out](https://goreleaser.com)!
+    * Find examples and commented usage of all options in our [website](https://nfpm.goreleaser.com/intro/).
+    * Reach out on [Discord](https://discord.gg/RGEBtg8vQ6) and [Twitter](https://twitter.com/goreleaser)!
+
+    <a href="https://goreleaser.com"><img src="https://raw.githubusercontent.com/goreleaser/artwork/master/opencollective-header.png" with="100%" alt="GoReleaser logo"></a>
+
 
 milestones:
   - close: true
