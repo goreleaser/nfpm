@@ -75,7 +75,7 @@ func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Conf
 	}
 
 	config.expandEnvVars()
-	config.Info = WithDefaults(config.Info)
+	WithDefaults(&config.Info)
 	return config, nil
 }
 
@@ -469,7 +469,7 @@ func Validate(info *Info) (err error) {
 }
 
 // WithDefaults set some sane defaults into the given Info.
-func WithDefaults(info Info) Info {
+func WithDefaults(info *Info) *Info {
 	if info.Platform == "" {
 		info.Platform = "linux"
 	}

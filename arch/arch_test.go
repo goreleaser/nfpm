@@ -362,8 +362,8 @@ func TestGlob(t *testing.T) {
 		"./usr/":                               {"mode=755", "type=dir"},
 		"./usr/share/":                         {"mode=755", "type=dir"},
 		"./usr/share/nfpm-repro/":              {"mode=755", "type=dir"},
-		"./usr/share/nfpm-repro/files.go":      {"mode=644", "size=15688", "type=file", "md5digest=e4c9ce32dba277aae42fb8ec59e29a3a", "sha256digest=7946f60272c8f42c87cd3a3832d80f0b57ed9406aa1db6b96e5df6003922060b"},
-		"./usr/share/nfpm-repro/files_test.go": {"mode=644", "size=16947", "type=file", "md5digest=4824b1a82a0f694a976345fff8a6aa1f", "sha256digest=3cb4b25fe2343bf509a2d82ece2881ec92ecd4962e50bc855f27d621a5613d47"},
+		"./usr/share/nfpm-repro/files.go":      {"mode=664", "size=15900", "type=file", "md5digest=0c4e339bc678ab6b2b291ec3088e32a2", "sha256digest=27614421b69216e9d8ddd177210f2c9a71d8ff9d76cc2b1654276eccd04e84c2"},
+		"./usr/share/nfpm-repro/files_test.go": {"mode=664", "size=17741", "type=file", "md5digest=8a42e91db704f97ceb1d24d63ab3780e", "sha256digest=5a02a196b845a52122c8c0ded24d34aeaa44617a4199ff3407d390c5d507bb33"},
 	}
 
 	for _, line := range strings.Split(string(mtreeContentBts), "\n") {

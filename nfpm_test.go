@@ -37,7 +37,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestDefaultsVersion(t *testing.T) {
-	info := nfpm.WithDefaults(nfpm.Info{
+	info := nfpm.WithDefaults(&nfpm.Info{
 		Version:       "v1.0.0",
 		VersionSchema: "semver",
 	})
@@ -46,21 +46,21 @@ func TestDefaultsVersion(t *testing.T) {
 	require.Equal(t, "", info.Release)
 	require.Equal(t, "", info.Prerelease)
 
-	info = nfpm.WithDefaults(nfpm.Info{
+	info = nfpm.WithDefaults(&nfpm.Info{
 		Version: "v1.0.0-rc1",
 	})
 	require.Equal(t, "1.0.0", info.Version)
 	require.Equal(t, "", info.Release)
 	require.Equal(t, "rc1", info.Prerelease)
 
-	info = nfpm.WithDefaults(nfpm.Info{
+	info = nfpm.WithDefaults(&nfpm.Info{
 		Version: "v1.0.0-beta1",
 	})
 	require.Equal(t, "1.0.0", info.Version)
 	require.Equal(t, "", info.Release)
 	require.Equal(t, "beta1", info.Prerelease)
 
-	info = nfpm.WithDefaults(nfpm.Info{
+	info = nfpm.WithDefaults(&nfpm.Info{
 		Version:    "v1.0.0-1",
 		Release:    "2",
 		Prerelease: "beta1",
@@ -69,7 +69,7 @@ func TestDefaultsVersion(t *testing.T) {
 	require.Equal(t, "2", info.Release)
 	require.Equal(t, "beta1", info.Prerelease)
 
-	info = nfpm.WithDefaults(nfpm.Info{
+	info = nfpm.WithDefaults(&nfpm.Info{
 		Version:    "v1.0.0-1+xdg2",
 		Release:    "2",
 		Prerelease: "beta1",
@@ -78,7 +78,7 @@ func TestDefaultsVersion(t *testing.T) {
 	require.Equal(t, "2", info.Release)
 	require.Equal(t, "beta1", info.Prerelease)
 
-	info = nfpm.WithDefaults(nfpm.Info{
+	info = nfpm.WithDefaults(&nfpm.Info{
 		Version:       "this.is.my.version",
 		VersionSchema: "none",
 		Release:       "2",
@@ -91,20 +91,23 @@ func TestDefaultsVersion(t *testing.T) {
 
 func TestDefaults(t *testing.T) {
 	t.Run("all given", func(t *testing.T) {
-		info := nfpm.Info{
-			Platform:    "darwin",
-			Version:     "2.4.1",
-			Description: "no description given",
-			Arch:        "arm64",
-			Overridables: nfpm.Overridables{
-				Umask: 0o112,
-			},
+		makeinfo := func() nfpm.Info {
+			return nfpm.Info{
+				Platform:    "darwin",
+				Version:     "2.4.1",
+				Description: "no description given",
+				Arch:        "arm64",
+				Overridables: nfpm.Overridables{
+					Umask: 0o112,
+				},
+			}
 		}
-		got := nfpm.WithDefaults(info)
-		require.Equal(t, info, got)
+		info := makeinfo()
+		nfpm.WithDefaults(&info)
+		require.Equal(t, makeinfo(), info)
 	})
 	t.Run("none given", func(t *testing.T) {
-		got := nfpm.WithDefaults(nfpm.Info{})
+		got := nfpm.WithDefaults(&nfpm.Info{})
 		require.Equal(t, nfpm.Info{
 			Platform:    "linux",
 			Arch:        "amd64",
@@ -114,13 +117,13 @@ func TestDefaults(t *testing.T) {
 			Overridables: nfpm.Overridables{
 				Umask: 0o002,
 			},
-		}, got)
+		}, *got)
 	})
 }
 
 func TestPrepareForPackager(t *testing.T) {
 	t.Run("dirs", func(t *testing.T) {
-		info := nfpm.WithDefaults(nfpm.Info{
+		info := nfpm.WithDefaults(&nfpm.Info{
 			Name:    "as",
 			Arch:    "asd",
 			Version: "1.2.3",
@@ -142,7 +145,7 @@ func TestPrepareForPackager(t *testing.T) {
 				},
 			},
 		})
-		require.NoError(t, nfpm.PrepareForPackager(&info, ""))
+		require.NoError(t, nfpm.PrepareForPackager(info, ""))
 		require.Len(t, info.Overridables.Contents, 5)
 		asdFile := info.Overridables.Contents[0]
 		require.Equal(t, "/asd", asdFile.Destination)
