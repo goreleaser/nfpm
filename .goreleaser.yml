@@ -217,22 +217,34 @@ changelog:
   use: github
   filters:
     exclude:
-    - '^docs:'
     - '^test:'
     - '^chore'
+    - 'merge conflict'
     - Merge pull request
     - Merge remote-tracking branch
     - Merge branch
     - go mod tidy
   groups:
+    - title: Dependency updates
+      regexp: '^.*?(feat|fix)\(deps\)!?:.+$'
+      order: 300
     - title: 'New Features'
-      regexp: "^.*feat[(\\w)]*:+.*$"
-      order: 0
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 100
+    - title: 'Security updates'
+      regexp: '^.*?sec(\([[:word:]]+\))??!?:.+$'
+      order: 150
     - title: 'Bug fixes'
-      regexp: "^.*fix[(\\w)]*:+.*$"
-      order: 10
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 200
+    - title: 'Documentation updates'
+      regexp: ^.*?doc(\([[:word:]]+\))??!?:.+$
+      order: 400
+    - title: 'Build process updates'
+      regexp: ^.*?build(\([[:word:]]+\))??!?:.+$
+      order: 400
     - title: Other work
-      order: 999
+      order: 9999
 
 checksum:
   name_template: 'checksums.txt'
