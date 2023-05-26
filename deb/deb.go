@@ -428,10 +428,10 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 	}
 	digest := md5.New() // nolint:gas
 	if _, err := io.Copy(tw, io.TeeReader(tarFile, digest)); err != nil {
-		return 0, fmt.Errorf("failed to copy: %w", err)
+		return 0, fmt.Errorf("%s: failed to copy: %w", file.Source, err)
 	}
 	if _, err := fmt.Fprintf(md5w, "%x  %s\n", digest.Sum(nil), header.Name); err != nil {
-		return 0, fmt.Errorf("failed to write md5: %w", err)
+		return 0, fmt.Errorf("%s: failed to write md5: %w", file.Source, err)
 	}
 	return file.Size(), nil
 }
