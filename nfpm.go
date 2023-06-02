@@ -229,6 +229,11 @@ func (c *Config) expandEnvVars() {
 
 	// RPM specific
 	c.Info.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
+
+	// Deb specific
+	for k, v := range c.Info.Deb.Fields {
+		c.Info.Deb.Fields[k] = os.Expand(v, c.envMappingFunc)
+	}
 }
 
 // Info contains information about a single package.
