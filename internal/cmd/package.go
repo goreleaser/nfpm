@@ -21,12 +21,13 @@ type packageCmd struct {
 func newPackageCmd() *packageCmd {
 	root := &packageCmd{}
 	cmd := &cobra.Command{
-		Use:           "package",
-		Aliases:       []string{"pkg", "p"},
-		Short:         "Creates a package based on the given config file and flags",
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		Args:          cobra.NoArgs,
+		Use:               "package",
+		Aliases:           []string{"pkg", "p"},
+		Short:             "Creates a package based on the given config file and flags",
+		SilenceUsage:      true,
+		SilenceErrors:     true,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return doPackage(root.config, root.target, root.packager)
 		},

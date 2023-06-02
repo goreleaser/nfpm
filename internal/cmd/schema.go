@@ -19,12 +19,13 @@ type schemaCmd struct {
 func newSchemaCmd() *schemaCmd {
 	root := &schemaCmd{}
 	cmd := &cobra.Command{
-		Use:           "jsonschema",
-		Aliases:       []string{"schema"},
-		Short:         "Outputs nFPM's JSON schema",
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		Args:          cobra.NoArgs,
+		Use:               "jsonschema",
+		Aliases:           []string{"schema"},
+		Short:             "Outputs nFPM's JSON schema",
+		SilenceUsage:      true,
+		SilenceErrors:     true,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			schema := jsonschema.Reflect(&nfpm.Config{})
 			schema.Description = "nFPM configuration definition file"
