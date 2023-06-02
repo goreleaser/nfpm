@@ -30,6 +30,9 @@ func newInitCmd() *initCmd {
 	}
 
 	cmd.Flags().StringVarP(&root.config, "config", "f", "nfpm.yaml", "path to the to-be-created config file")
+	if err := cmd.MarkFlagFilename("config", "yaml", "yml"); err != nil {
+		panic(err)
+	}
 
 	root.cmd = cmd
 	return root

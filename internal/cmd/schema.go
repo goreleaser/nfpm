@@ -47,6 +47,9 @@ func newSchemaCmd() *schemaCmd {
 	}
 
 	cmd.Flags().StringVarP(&root.output, "output", "o", "-", "where to save the json schema")
+	if err := cmd.MarkFlagFilename("output", "json"); err != nil {
+		panic(err)
+	}
 
 	root.cmd = cmd
 	return root

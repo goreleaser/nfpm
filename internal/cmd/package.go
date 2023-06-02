@@ -33,8 +33,17 @@ func newPackageCmd() *packageCmd {
 	}
 
 	cmd.Flags().StringVarP(&root.config, "config", "f", "nfpm.yaml", "config file to be used")
+	if err := cmd.MarkFlagFilename("config", "yaml", "yml"); err != nil {
+		panic(err)
+	}
 	cmd.Flags().StringVarP(&root.target, "target", "t", "", "where to save the generated package (filename, folder or empty for current folder)")
+	if err := cmd.MarkFlagFilename("target"); err != nil {
+		panic(err)
+	}
 	cmd.Flags().StringVarP(&root.packager, "packager", "p", "", "which packager implementation to use [apk|deb|rpm|archlinux]")
+	if err := cmd.RegisterFlagCompletionFunc("packager", cobra.FixedCompletions([]string{"apk", "deb", "rpm", "archlinux"}, cobra.ShellCompDirectiveNoFileComp)); err != nil {
+		panic(err)
+	}
 
 	root.cmd = cmd
 	return root
