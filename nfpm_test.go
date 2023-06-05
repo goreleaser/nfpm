@@ -366,6 +366,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		vendor          = "GoReleaser"
 		packager        = "nope"
 		maintainerEmail = "nope@example.com"
+		vcsURL          = "https://github.com/goreleaser/nfpm.git"
 	)
 
 	t.Run("platform", func(t *testing.T) {
@@ -485,6 +486,18 @@ overrides:
 		require.Equal(t, "package (= 1.0.0)", info.Overrides["deb"].Depends[0])
 		require.Len(t, info.Overrides["rpm"].Depends, 1)
 		require.Equal(t, "package = 1.0.0", info.Overrides["rpm"].Depends[0])
+	})
+
+	t.Run("deb fields", func(t *testing.T) {
+		t.Setenv("CI_REPOSITORY_URL", vcsURL)
+		info, err := nfpm.Parse(strings.NewReader(`
+name: foo
+deb:
+  fields:
+    Vcs-Git: ${CI_REPOSITORY_URL}
+`))
+		require.NoError(t, err)
+		require.Equal(t, vcsURL, info.Deb.Fields["Vcs-Git"])
 	})
 }
 
