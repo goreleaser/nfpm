@@ -15,12 +15,13 @@ type initCmd struct {
 func newInitCmd() *initCmd {
 	root := &initCmd{}
 	cmd := &cobra.Command{
-		Use:           "init",
-		Aliases:       []string{"i"},
-		Short:         "Creates a sample nfpm.yaml configuration file",
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		Args:          cobra.NoArgs,
+		Use:               "init",
+		Aliases:           []string{"i"},
+		Short:             "Creates a sample nfpm.yaml configuration file",
+		SilenceUsage:      true,
+		SilenceErrors:     true,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := os.WriteFile(root.config, []byte(example), 0o666); err != nil {
 				return fmt.Errorf("failed to create example file: %w", err)
@@ -30,6 +31,9 @@ func newInitCmd() *initCmd {
 	}
 
 	cmd.Flags().StringVarP(&root.config, "config", "f", "nfpm.yaml", "path to the to-be-created config file")
+	if err := cmd.MarkFlagFilename("config", "yaml", "yml"); err != nil {
+		panic(err)
+	}
 
 	root.cmd = cmd
 	return root

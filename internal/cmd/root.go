@@ -33,13 +33,14 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 		exit: exit,
 	}
 	cmd := &cobra.Command{
-		Use:           "nfpm",
-		Short:         "Packages apps on RPM, Deb and APK formats based on a YAML configuration file",
-		Long:          `nFPM is a simple, 0-dependencies, deb, rpm and apk packager.`,
-		Version:       version,
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		Args:          cobra.NoArgs,
+		Use:               "nfpm",
+		Short:             "Packages apps on RPM, Deb and APK formats based on a YAML configuration file",
+		Long:              `nFPM is a simple, 0-dependencies, deb, rpm and apk packager.`,
+		Version:           version,
+		SilenceUsage:      true,
+		SilenceErrors:     true,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
 	}
 
 	cmd.AddCommand(
