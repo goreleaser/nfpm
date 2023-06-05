@@ -26,6 +26,8 @@ linters-settings:
         yaml: snake
         json: snake
   depguard:
-     list-type: 'denylist'
-     packages-with-error-message:
-       - 'github.com/pkg/errors': 'use stdlib instead'
+    rules:
+      main:
+        deny:
+          - pkg: 'github.com/pkg/errors'
+            desc: 'use stdlib instead'
