@@ -250,7 +250,7 @@ type Info struct {
 	VersionMetadata string `yaml:"version_metadata,omitempty" json:"version_metadata,omitempty" jsonschema:"title=version metadata,example=git"`
 	Section         string `yaml:"section,omitempty" json:"section,omitempty" jsonschema:"title=package section,example=default"`
 	Priority        string `yaml:"priority,omitempty" json:"priority,omitempty" jsonschema:"title=package priority,example=extra"`
-	Maintainer      string `yaml:"maintainer,omitempty" json:"maintainer,omitempty" jsonschema:"title=package maintainer,example=me@example.com"`
+	Maintainer      string `yaml:"maintainer" json:"maintainer" jsonschema:"title=package maintainer,example=me@example.com"`
 	Description     string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"title=package description"`
 	Vendor          string `yaml:"vendor,omitempty" json:"vendor,omitempty" jsonschema:"title=package vendor,example=MyCorp"`
 	Homepage        string `yaml:"homepage,omitempty" json:"homepage,omitempty" jsonschema:"title=package homepage,example=https://example.com"`

@@ -19,7 +19,6 @@ import (
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
-	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
@@ -105,7 +104,9 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 	}
 
 	// Set up some deb specific defaults
-	d.SetPackagerDefaults(info)
+	if err := d.setPackagerDefaults(info); err != nil {
+		return err
+	}
 
 	dataTarball, md5sums, instSize, dataTarballName, err := createDataTarball(info)
 	if err != nil {
@@ -260,7 +261,7 @@ func readDpkgSigData(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []
 	return buf, nil
 }
 
-func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
+func (*Deb) setPackagerDefaults(info *nfpm.Info) error {
 	// Priority should be set on all packages per:
 	//   https://www.debian.org/doc/debian-policy/ch-archive.html#priorities
 	// "optional" seems to be the safe/sane default here
@@ -268,14 +269,10 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 		info.Priority = "optional"
 	}
 
-	// The safe thing here feels like defaulting to something like below.
-	// That will prevent existing configs from breaking anyway...  Wondering
-	// if in the long run we should be more strict about this and error when
-	// not set?
 	if info.Maintainer == "" {
-		deprecation.Println("Leaving the 'maintainer' field unset will not be allowed in a future version")
-		info.Maintainer = "Unset Maintainer <unset@localhost>"
+		return fmt.Errorf("maintainer is required")
 	}
+	return nil
 }
 
 func addArFile(w *ar.Writer, name string, body []byte) error {
