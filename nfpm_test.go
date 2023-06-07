@@ -366,6 +366,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		vendor          = "GoReleaser"
 		packager        = "nope"
 		maintainerEmail = "nope@example.com"
+		homepage        = "https://nfpm.goreleaser.com"
 		vcsURL          = "https://github.com/goreleaser/nfpm.git"
 	)
 
@@ -417,6 +418,13 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nvendor: $VENDOR"))
 		require.NoError(t, err)
 		require.Equal(t, vendor, info.Vendor)
+	})
+
+	t.Run("homepage", func(t *testing.T) {
+		t.Setenv("CI_PROJECT_URL", homepage)
+		info, err := nfpm.Parse(strings.NewReader("name: foo\nhomepage: $CI_PROJECT_URL"))
+		require.NoError(t, err)
+		require.Equal(t, homepage, info.Homepage)
 	})
 
 	t.Run("global passphrase", func(t *testing.T) {
