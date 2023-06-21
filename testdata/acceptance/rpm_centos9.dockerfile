@@ -1,9 +1,7 @@
-FROM dokken/centos-7 AS test_base
+FROM dokken/centos-stream-9 AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.rpm
-
-
 
 # ---- signed test ----
 FROM test_base AS signed

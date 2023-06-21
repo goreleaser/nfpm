@@ -258,7 +258,7 @@ func TestDebSpecific(t *testing.T) {
 
 func TestRpmCentosSign(t *testing.T) {
 	t.Parallel()
-	for _, os := range []string{"centos7", "centos8"} {
+	for _, os := range []string{"centos9", "centos8"} {
 		os := os
 		t.Run(fmt.Sprintf("rpm/signed/amd64/%s", os), func(t *testing.T) {
 			t.Parallel()
