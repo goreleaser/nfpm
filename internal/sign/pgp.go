@@ -13,41 +13,12 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
-	"github.com/goreleaser/nfpm/v2"
 )
 
 // PGPSigner returns a PGP signer that creates a detached non-ASCII-armored
 // signature and is compatible with rpmpack's signature API.
 func PGPSigner(keyFile, passphrase string) func([]byte) ([]byte, error) {
 	return PGPSignerWithKeyID(keyFile, passphrase, nil)
-}
-
-// PGPSignerWithKeyID returns a PGP signer that creates a detached non-ASCII-armored
-// signature and is compatible with rpmpack's signature API.
-func PGPSignerWithKeyID(keyFile, passphrase string, hexKeyID *string) func([]byte) ([]byte, error) {
-	return func(data []byte) ([]byte, error) {
-		keyID, err := parseKeyID(hexKeyID)
-		if err != nil {
-			return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyID, err)
-		}
-
-		key, err := readSigningKey(keyFile, passphrase)
-		if err != nil {
-			return nil, &nfpm.ErrSigningFailure{Err: err}
-		}
-
-		var signature bytes.Buffer
-
-		err = openpgp.DetachSign(&signature, key, bytes.NewReader(data), &packet.Config{
-			SigningKeyId: keyID,
-			DefaultHash:  crypto.SHA256,
-		})
-		if err != nil {
-			return nil, &nfpm.ErrSigningFailure{Err: err}
-		}
-
-		return signature.Bytes(), nil
-	}
 }
 
 // PGPArmoredDetachSign creates an ASCII-armored detached signature.
