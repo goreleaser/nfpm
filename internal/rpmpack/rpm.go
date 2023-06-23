@@ -20,6 +20,7 @@ package rpmpack
 import (
 	"bytes"
 	"crypto/sha256"
+	"crypto/sha512"
 	"errors"
 	"fmt"
 	"io"
@@ -393,8 +394,8 @@ func (r *RPM) writeGenIndexes(h *index) {
 	h.Add(tagPackager, EntryString(r.Packager))
 	h.Add(tagGroup, EntryString(r.Group))
 	h.Add(tagURL, EntryString(r.URL))
-	h.Add(tagPayloadDigest, EntryStringSlice([]string{fmt.Sprintf("%x", sha256.Sum256(r.payload.Bytes()))}))
-	h.Add(tagPayloadDigestAlgo, EntryInt32([]int32{hashAlgoSHA256}))
+	h.Add(tagPayloadDigest, EntryStringSlice([]string{fmt.Sprintf("%x", sha512.Sum512(r.payload.Bytes()))}))
+	h.Add(tagPayloadDigestAlgo, EntryInt32([]int32{hashAlgoSHA512}))
 
 	// rpm utilities look for the sourcerpm tag to deduce if this is not a source rpm (if it has a sourcerpm,
 	// it is NOT a source rpm).
@@ -448,7 +449,7 @@ func (r *RPM) writeFileIndexes(h *index) {
 	for ii := range inodes {
 		// is inodes just a range from 1..len(dirindexes)? maybe different with hard links
 		inodes[ii] = int32(ii + 1)
-		digestAlgo[ii] = hashAlgoSHA256
+		digestAlgo[ii] = hashAlgoSHA512
 		// With regular files, it seems like we can always enable all of the verify flags
 		verifyFlags[ii] = int32(-1)
 		fileRDevs[ii] = int16(1)

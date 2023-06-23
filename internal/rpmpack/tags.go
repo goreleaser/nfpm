@@ -26,7 +26,7 @@ const (
 	sigPayloadSize = 0x03ef // 1007
 
 	// https://github.com/rpm-software-management/rpm/blob/92eadae94c48928bca90693ad63c46ceda37d81f/rpmio/rpmpgp.h#L258
-	hashAlgoSHA256 = 0x0008 // 8
+	hashAlgoSHA512 = 0x0010 // 10
 
 	tagName        = 0x03e8 // 1000
 	tagVersion     = 0x03e9 // 1001
