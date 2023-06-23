@@ -259,11 +259,11 @@ func TestDebSpecific(t *testing.T) {
 	}
 }
 
-func TestRpmCentosSign(t *testing.T) {
+func TestRPMCentosSign(t *testing.T) {
 	t.Parallel()
 	for _, os := range []string{"centos9", "centos8"} {
 		os := os
-		t.Run(fmt.Sprintf("rpm/signed/amd64/%s", os), func(t *testing.T) {
+		t.Run(fmt.Sprintf("rpm/amd64/sign/%s", os), func(t *testing.T) {
 			t.Parallel()
 			target := "signed"
 			accept(t, acceptParms{
@@ -285,7 +285,7 @@ func TestDebSign(t *testing.T) {
 	for _, arch := range formatArchs["deb"] {
 		for _, sigtype := range []string{"dpkg-sig", "debsign"} {
 			func(t *testing.T, testSigtype, testArch string) {
-				t.Run(fmt.Sprintf("%s/%s", testArch, testSigtype), func(t *testing.T) {
+				t.Run(fmt.Sprintf("deb/%s/%s", testArch, testSigtype), func(t *testing.T) {
 					t.Parallel()
 					target := "signed"
 					if testSigtype == "dpkg-sig" {
