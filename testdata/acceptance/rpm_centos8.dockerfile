@@ -1,4 +1,4 @@
-FROM dokken/centos-8 AS test_base
+FROM quay.io/centos/centos:stream8 AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.rpm
