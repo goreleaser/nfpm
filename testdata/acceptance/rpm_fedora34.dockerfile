@@ -1,4 +1,4 @@
-FROM quay.io/centos/centos:stream9 AS test_base
+FROM fedora:34 AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.rpm
