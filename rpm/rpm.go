@@ -121,13 +121,14 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 	}
 
 	if info.RPM.Signature.KeyFile != "" {
-		if info.RPM.Signature.KeyID == nil || strings.TrimSpace(*info.RPM.Signature.KeyID) == "" {
-			rpm.SetPGPSigner(sign.PGPSigner(
+		switch info.RPM.Signature.Format {
+		case "legacy":
+			rpm.SetPGPSigner(sign.LegacyPGPSigner(
 				info.RPM.Signature.KeyFile,
 				info.RPM.Signature.KeyPassphrase,
 			))
-		} else {
-			rpm.SetPGPSigner(sign.PGPSignerWithKeyID(
+		default:
+			rpm.SetPGPSigner(sign.PGPSigner(
 				info.RPM.Signature.KeyFile,
 				info.RPM.Signature.KeyPassphrase,
 				info.RPM.Signature.KeyID,

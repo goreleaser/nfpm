@@ -261,8 +261,14 @@ func TestDebSpecific(t *testing.T) {
 
 func TestRPMSign(t *testing.T) {
 	t.Parallel()
-	for _, os := range []string{"centos9", "centos8", "fedora34", "fedora36"} {
+	for os, sigformat := range map[string]string{
+		"centos9":  "legacy",
+		"centos8":  "legacy",
+		"fedora34": "legacy",
+		"fedora36": "modern",
+	} {
 		os := os
+		sigformat := sigformat
 		t.Run(fmt.Sprintf("rpm/amd64/sign/%s", os), func(t *testing.T) {
 			t.Parallel()
 			target := "signed"
@@ -270,6 +276,7 @@ func TestRPMSign(t *testing.T) {
 				Name:   fmt.Sprintf("sign_%s_amd64", os),
 				Conf:   "core.signed.yaml",
 				Format: "rpm",
+				Env:    map[string]string{"TEST_RPM_SIGN_FORMAT": sigformat},
 				Docker: dockerParams{
 					File:   fmt.Sprintf("rpm_%s.dockerfile", os),
 					Target: target,
@@ -315,6 +322,7 @@ type acceptParms struct {
 	Conf   string
 	Format string
 	Docker dockerParams
+	Env    map[string]string
 }
 
 type dockerParams struct {
@@ -342,6 +350,9 @@ func accept(t *testing.T, params acceptParms) {
 		case "SEMVER":
 			return "v1.0.0-0.1.b1+git.abcdefgh"
 		default:
+			if v, ok := params.Env[s]; ok {
+				return v
+			}
 			return os.Getenv(s)
 		}
 	}

@@ -15,7 +15,8 @@ deb:
 rpm:
   signature:
     key_file: ./internal/sign/testdata/privkey_unprotected.asc
-    # key_id: bc8acdd415bd80b3
+    key_id: bc8acdd415bd80b3
+    format: ${TEST_RPM_SIGN_FORMAT}
 apk:
   signature:
     key_file: ./internal/sign/testdata/rsa_unprotected.priv
