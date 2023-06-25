@@ -173,11 +173,11 @@ func (c *Config) expandEnvVarsStringSlice(items []string) []string {
 
 func (c *Config) expandEnvVars() {
 	// Version related fields
-	c.Release = os.Expand(c.Release, c.envMappingFunc)
-	c.Version = os.Expand(c.Version, c.envMappingFunc)
-	c.Prerelease = os.Expand(c.Prerelease, c.envMappingFunc)
-	c.Platform = os.Expand(c.Platform, c.envMappingFunc)
-	c.Arch = os.Expand(c.Arch, c.envMappingFunc)
+	c.Info.Release = os.Expand(c.Info.Release, c.envMappingFunc)
+	c.Info.Version = os.Expand(c.Info.Version, c.envMappingFunc)
+	c.Info.Prerelease = os.Expand(c.Info.Prerelease, c.envMappingFunc)
+	c.Info.Platform = os.Expand(c.Info.Platform, c.envMappingFunc)
+	c.Info.Arch = os.Expand(c.Info.Arch, c.envMappingFunc)
 	for or := range c.Overrides {
 		c.Overrides[or].Conflicts = c.expandEnvVarsStringSlice(c.Overrides[or].Conflicts)
 		c.Overrides[or].Depends = c.expandEnvVarsStringSlice(c.Overrides[or].Depends)
@@ -186,51 +186,53 @@ func (c *Config) expandEnvVars() {
 		c.Overrides[or].Provides = c.expandEnvVarsStringSlice(c.Overrides[or].Provides)
 		c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
 	}
-	c.Conflicts = c.expandEnvVarsStringSlice(c.Conflicts)
-	c.Depends = c.expandEnvVarsStringSlice(c.Depends)
-	c.Replaces = c.expandEnvVarsStringSlice(c.Replaces)
-	c.Recommends = c.expandEnvVarsStringSlice(c.Recommends)
-	c.Provides = c.expandEnvVarsStringSlice(c.Provides)
-	c.Suggests = c.expandEnvVarsStringSlice(c.Suggests)
+	c.Info.Conflicts = c.expandEnvVarsStringSlice(c.Info.Conflicts)
+	c.Info.Depends = c.expandEnvVarsStringSlice(c.Info.Depends)
+	c.Info.Replaces = c.expandEnvVarsStringSlice(c.Info.Replaces)
+	c.Info.Recommends = c.expandEnvVarsStringSlice(c.Info.Recommends)
+	c.Info.Provides = c.expandEnvVarsStringSlice(c.Info.Provides)
+	c.Info.Suggests = c.expandEnvVarsStringSlice(c.Info.Suggests)
 
 	// Maintainer and vendor fields
-	c.Name = os.Expand(c.Name, c.envMappingFunc)
-	c.Maintainer = os.Expand(c.Maintainer, c.envMappingFunc)
-	c.Vendor = os.Expand(c.Vendor, c.envMappingFunc)
+	c.Info.Name = os.Expand(c.Info.Name, c.envMappingFunc)
+	c.Info.Maintainer = os.Expand(c.Info.Maintainer, c.envMappingFunc)
+	c.Info.Vendor = os.Expand(c.Info.Vendor, c.envMappingFunc)
 
 	// Package signing related fields
-	c.Deb.Signature.KeyFile = os.Expand(c.Deb.Signature.KeyFile, c.envMappingFunc)
-	c.RPM.Signature.KeyFile = os.Expand(c.RPM.Signature.KeyFile, c.envMappingFunc)
-	c.APK.Signature.KeyFile = os.Expand(c.APK.Signature.KeyFile, c.envMappingFunc)
-	c.Deb.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.Deb.Signature.KeyID), c.envMappingFunc))
-	c.RPM.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.RPM.Signature.KeyID), c.envMappingFunc))
-	c.APK.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.APK.Signature.KeyID), c.envMappingFunc))
+	c.Info.Deb.Signature.KeyFile = os.Expand(c.Deb.Signature.KeyFile, c.envMappingFunc)
+	c.Info.RPM.Signature.KeyFile = os.Expand(c.RPM.Signature.KeyFile, c.envMappingFunc)
+	c.Info.APK.Signature.KeyFile = os.Expand(c.APK.Signature.KeyFile, c.envMappingFunc)
+	c.Info.Deb.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.Deb.Signature.KeyID), c.envMappingFunc))
+	c.Info.RPM.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.RPM.Signature.KeyID), c.envMappingFunc))
+	c.Info.APK.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.APK.Signature.KeyID), c.envMappingFunc))
 
 	// Package signing passphrase
 	generalPassphrase := os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
-	c.Deb.Signature.KeyPassphrase = generalPassphrase
-	c.RPM.Signature.KeyPassphrase = generalPassphrase
-	c.APK.Signature.KeyPassphrase = generalPassphrase
+	c.Info.Deb.Signature.KeyPassphrase = generalPassphrase
+	c.Info.RPM.Signature.KeyPassphrase = generalPassphrase
+	c.Info.APK.Signature.KeyPassphrase = generalPassphrase
 
-	if pwd := os.Expand("$NFPM_DEB_PASSPHRASE", c.envMappingFunc); pwd != "" {
-		c.Deb.Signature.KeyPassphrase = pwd
+	debPassphrase := os.Expand("$NFPM_DEB_PASSPHRASE", c.envMappingFunc)
+	if debPassphrase != "" {
+		c.Info.Deb.Signature.KeyPassphrase = debPassphrase
 	}
 
-	if pwd := os.Expand("$NFPM_RPM_PASSPHRASE", c.envMappingFunc); pwd != "" {
-		c.RPM.Signature.KeyPassphrase = pwd
+	rpmPassphrase := os.Expand("$NFPM_RPM_PASSPHRASE", c.envMappingFunc)
+	if rpmPassphrase != "" {
+		c.Info.RPM.Signature.KeyPassphrase = rpmPassphrase
 	}
 
-	if pwd := os.Expand("$NFPM_APK_PASSPHRASE", c.envMappingFunc); pwd != "" {
-		c.APK.Signature.KeyPassphrase = pwd
+	apkPassphrase := os.Expand("$NFPM_APK_PASSPHRASE", c.envMappingFunc)
+	if apkPassphrase != "" {
+		c.Info.APK.Signature.KeyPassphrase = apkPassphrase
 	}
 
 	// RPM specific
-	c.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
-	c.RPM.Signature.Format = os.Expand(c.RPM.Signature.Format, c.envMappingFunc)
+	c.Info.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
 
 	// Deb specific
-	for k, v := range c.Deb.Fields {
-		c.Deb.Fields[k] = os.Expand(v, c.envMappingFunc)
+	for k, v := range c.Info.Deb.Fields {
+		c.Info.Deb.Fields[k] = os.Expand(v, c.envMappingFunc)
 	}
 }
 
@@ -347,7 +349,6 @@ type PackageSignature struct {
 	KeyFile       string  `yaml:"key_file,omitempty" json:"key_file,omitempty" jsonschema:"title=key file,example=key.gpg"`
 	KeyID         *string `yaml:"key_id,omitempty" json:"key_id,omitempty" jsonschema:"title=key id,example=bc8acdd415bd80b3"`
 	KeyPassphrase string  `yaml:"-" json:"-"` // populated from environment variable
-	Format        string  `yaml:"format,omitempty" json:"format,omitempty" jsonschema:"enum=legacy,enum=modern"`
 }
 
 type RPMSignature struct {

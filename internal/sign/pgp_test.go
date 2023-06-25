@@ -41,7 +41,7 @@ func TestPGPSignerAndVerify(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			armoredPublicKey := fmt.Sprintf("%s.asc", testCase.pubKeyFile)
 			gpgPublicKey := fmt.Sprintf("%s.gpg", testCase.pubKeyFile)
-			sig, err := PGPSigner(testCase.privKeyFile, testCase.pass, testCase.keyID)(data)
+			sig, err := PGPSignerWithKeyID(testCase.privKeyFile, testCase.pass, testCase.keyID)(data)
 			require.NoError(t, err)
 
 			err = PGPVerify(bytes.NewReader(data), sig, armoredPublicKey)
@@ -102,15 +102,7 @@ func TestArmoredDetachSignAndVerify(t *testing.T) {
 }
 
 func TestPGPSignerError(t *testing.T) {
-	_, err := PGPSigner("/does/not/exist", "", nil)([]byte("data"))
-	require.Error(t, err)
-
-	var expectedError *nfpm.ErrSigningFailure
-	require.True(t, errors.As(err, &expectedError))
-}
-
-func TestLegacyPGPSignerError(t *testing.T) {
-	_, err := LegacyPGPSigner("/does/not/exist", "")([]byte("data"))
+	_, err := PGPSigner("/does/not/exist", "")([]byte("data"))
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure

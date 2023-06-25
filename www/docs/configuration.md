@@ -340,13 +340,6 @@ rpm:
     # This will expand any env var you set in the field, e.g. key_id: ${RPM_SIGNING_KEY_ID}
     key_id: bc8acdd415bd80b3
 
-    # Format of the PGP signature.
-    # Valid options:
-    # - legacy: works until RPM 4.16 (centos stream 9, fedora 34).
-    #   Ignores key_id.
-    # - modern: works on RPM 4.17+ (fedora 35 and above)
-    format: legacy
-
 # Custom configuration applied only to the Deb packager.
 deb:
   # deb specific architecture name that overrides "arch" without performing any replacements.
