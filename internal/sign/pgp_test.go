@@ -102,7 +102,7 @@ func TestArmoredDetachSignAndVerify(t *testing.T) {
 }
 
 func TestPGPSignerError(t *testing.T) {
-	_, err := PGPSigner("/does/not/exist", "")([]byte("data"))
+	_, err := PGPSignerWithKeyID("/does/not/exist", "", nil)([]byte("data"))
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
