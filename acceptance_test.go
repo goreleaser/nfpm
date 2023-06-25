@@ -270,8 +270,9 @@ func TestRPMSign(t *testing.T) {
 				Conf:   "core.signed.yaml",
 				Format: "rpm",
 				Docker: dockerParams{
-					File: fmt.Sprintf("rpm_%s.dockerfile", os),
-					Arch: "amd64",
+					File:   fmt.Sprintf("rpm_%s.dockerfile", os),
+					Target: "signed",
+					Arch:   "amd64",
 				},
 			})
 		})
@@ -357,13 +358,11 @@ func accept(t *testing.T, params acceptParms) {
 		"build", "--rm", "--force-rm",
 		"--platform", fmt.Sprintf("linux/%s", arch),
 		"-f", params.Docker.File,
+		"--target", params.Docker.Target,
 		"--build-arg", "package=" + filepath.Join("tmp", packageName),
 	}
 	for _, arg := range params.Docker.BuildArgs {
 		cmdArgs = append(cmdArgs, "--build-arg", arg)
-	}
-	if params.Docker.Target != "" {
-		cmdArgs = append(cmdArgs, "--target", params.Docker.Target)
 	}
 	cmdArgs = append(cmdArgs, ".")
 

@@ -1,9 +1,10 @@
-FROM fedora:38
+FROM fedora:38 AS test_base
 RUN yum install -y createrepo yum-utils
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.rpm
 
+FROM test_base AS signed
 COPY keys/pubkey.asc /tmp/pubkey.asc
 RUN rpm --import /tmp/pubkey.asc
 RUN rpm -q gpg-pubkey --qf '%{NAME}-%{VERSION}-%{RELEASE}\t%{SUMMARY}\n'

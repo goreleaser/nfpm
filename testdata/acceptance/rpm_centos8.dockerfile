@@ -1,9 +1,10 @@
-FROM quay.io/centos/centos:stream8
+FROM quay.io/centos/centos:stream8 AS test_base
 ARG package
 RUN yum install -y createrepo yum-utils
 RUN echo "${package}"
 COPY ${package} /tmp/foo.rpm
 
+FROM test_base AS signed
 COPY keys/pubkey.asc /tmp/pubkey.asc
 RUN rpm --import /tmp/pubkey.asc
 RUN rpm -q gpg-pubkey --qf '%{NAME}-%{VERSION}-%{RELEASE}\t%{SUMMARY}\n'

@@ -1,12 +1,11 @@
-FROM fedora AS fedora_test_base
+FROM fedora AS test_base
 ARG package
-RUN yum install -y createrepo yum-utils
 RUN echo "${package}"
 COPY ${package} /tmp/foo.rpm
 
 
 # ---- minimal test ----
-FROM fedora_test_base AS min
+FROM test_base AS min
 RUN rpm -ivh /tmp/foo.rpm
 
 
@@ -76,7 +75,7 @@ RUN test ! -d /usr/foo/bar/something
 
 
 # ---- signed test ----
-FROM fedora_test_base AS signed
+FROM test_base AS signed
 COPY keys/pubkey.asc /tmp/pubkey.asc
 RUN rpm --import /tmp/pubkey.asc
 RUN rpm -q gpg-pubkey --qf '%{NAME}-%{VERSION}-%{RELEASE}\t%{SUMMARY}\n'
@@ -86,6 +85,7 @@ RUN rpm -vK /tmp/foo.rpm
 RUN rpm -vK /tmp/foo.rpm | grep "RSA/SHA256 Signature, key ID 15bd80b3: OK"
 
 # Test with a repo
+RUN yum install -y createrepo yum-utils
 RUN rm -rf /etc/yum.repos.d/*.repo
 COPY keys/test.rpm.repo /etc/yum.repos.d/test.rpm.repo
 RUN createrepo /tmp
@@ -115,7 +115,7 @@ RUN test -f /tmp/postremove-proof
 
 
 # ---- meta test ----
-FROM fedora_test_base AS meta
+FROM test_base AS meta
 RUN dnf install -y /tmp/foo.rpm
 RUN command -v zsh
 
@@ -158,7 +158,7 @@ RUN test -f /etc/foo/whatever.conf.rpmsave
 RUN test ! -f /usr/bin/fake
 
 # ---- upgrade test ----
-FROM fedora_test_base AS upgrade
+FROM test_base AS upgrade
 ARG oldpackage
 RUN echo "${oldpackage}"
 COPY ${oldpackage} /tmp/old_foo.rpm
@@ -205,7 +205,7 @@ RUN test -f /etc/foo/whatever.conf.rpmsave
 RUN test ! -f /usr/bin/fake
 
 # ---- directories test ----
-FROM fedora_test_base AS directories
+FROM test_base AS directories
 RUN groupadd test
 RUN rpm -ivh /tmp/foo.rpm
 RUN test -f /etc/foo/file
