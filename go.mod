@@ -2,12 +2,10 @@ module github.com/goreleaser/nfpm/v2
 
 go 1.19
 
-// DO NOT UPDATE THIS!! needs to be v0.0.0-20210512092938-c05353c2d58c
-require github.com/ProtonMail/go-crypto v0.0.0-20230619160724-3fbb1f12458c
-
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Masterminds/semver/v3 v3.2.1
+	github.com/ProtonMail/go-crypto v0.0.0-20230619160724-3fbb1f12458c
 	github.com/ProtonMail/gopenpgp/v2 v2.7.1
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
@@ -25,7 +23,6 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/ulikunitz/xz v0.5.11
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
-	golang.org/x/crypto v0.7.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -62,8 +59,11 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
+	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace github.com/ProtonMail/go-crypto => github.com/caarlos0/go-crypto v0.0.0-20230625151349-436f6a85f771
