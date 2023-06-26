@@ -7,8 +7,8 @@ description: This package is signed
 vendor: "FooBarCorp"
 homepage: "http://example.com"
 contents:
-- src: ./testdata/fake
-  dst: /usr/bin/fake
+  - src: ./testdata/fake
+    dst: /usr/bin/fake
 deb:
   signature:
     key_file: ./internal/sign/testdata/privkey_unprotected.asc

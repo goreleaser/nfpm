@@ -261,18 +261,17 @@ func TestDebSpecific(t *testing.T) {
 
 func TestRPMSign(t *testing.T) {
 	t.Parallel()
-	for _, os := range []string{"centos9", "centos8", "fedora34", "fedora36"} {
+	for _, os := range []string{"centos9", "centos8", "fedora34", "fedora36", "fedora38"} {
 		os := os
 		t.Run(fmt.Sprintf("rpm/amd64/sign/%s", os), func(t *testing.T) {
 			t.Parallel()
-			target := "signed"
 			accept(t, acceptParms{
 				Name:   fmt.Sprintf("sign_%s_amd64", os),
 				Conf:   "core.signed.yaml",
 				Format: "rpm",
 				Docker: dockerParams{
 					File:   fmt.Sprintf("rpm_%s.dockerfile", os),
-					Target: target,
+					Target: "signed",
 					Arch:   "amd64",
 				},
 			})

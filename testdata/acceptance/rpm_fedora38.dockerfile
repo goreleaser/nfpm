@@ -1,4 +1,4 @@
-FROM quay.io/centos/centos:stream9 AS test_base
+FROM fedora:38 AS test_base
 RUN yum install -y createrepo yum-utils
 ARG package
 RUN echo "${package}"

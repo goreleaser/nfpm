@@ -16,12 +16,6 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 )
 
-// PGPSigner returns a PGP signer that creates a detached non-ASCII-armored
-// signature and is compatible with rpmpack's signature API.
-func PGPSigner(keyFile, passphrase string) func([]byte) ([]byte, error) {
-	return PGPSignerWithKeyID(keyFile, passphrase, nil)
-}
-
 // PGPSignerWithKeyID returns a PGP signer that creates a detached non-ASCII-armored
 // signature and is compatible with rpmpack's signature API.
 func PGPSignerWithKeyID(keyFile, passphrase string, hexKeyID *string) func([]byte) ([]byte, error) {
@@ -38,11 +32,15 @@ func PGPSignerWithKeyID(keyFile, passphrase string, hexKeyID *string) func([]byt
 
 		var signature bytes.Buffer
 
-		err = openpgp.DetachSign(&signature, key, bytes.NewReader(data), &packet.Config{
-			SigningKeyId: keyID,
-			DefaultHash:  crypto.SHA256,
-		})
-		if err != nil {
+		if err := openpgp.DetachSign(
+			&signature,
+			key,
+			bytes.NewReader(data),
+			&packet.Config{
+				SigningKeyId: keyID,
+				DefaultHash:  crypto.SHA256,
+			},
+		); err != nil {
 			return nil, &nfpm.ErrSigningFailure{Err: err}
 		}
 
