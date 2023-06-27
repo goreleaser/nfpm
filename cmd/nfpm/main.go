@@ -1,42 +1,56 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"runtime/debug"
 
+	_ "embed"
+
+	goversion "github.com/caarlos0/go-version"
 	"github.com/goreleaser/nfpm/v2/internal/cmd"
 )
 
 // nolint: gochecknoglobals
 var (
-	version = "dev"
-	commit  = ""
-	date    = ""
-	builtBy = ""
+	version   = "dev"
+	treeState = ""
+	commit    = ""
+	date      = ""
+	builtBy   = ""
 )
+
+const website = "https://nfpm.goreleaser.com"
+
+//go:embed art.txt
+var asciiArt string
 
 func main() {
 	cmd.Execute(
-		buildVersion(version, commit, date, builtBy),
+		buildVersion(version, commit, date, builtBy, treeState),
 		os.Exit,
 		os.Args[1:],
 	)
 }
 
-func buildVersion(version, commit, date, builtBy string) string {
-	result := version
-	if commit != "" {
-		result = fmt.Sprintf("%s\ncommit: %s", result, commit)
-	}
-	if date != "" {
-		result = fmt.Sprintf("%s\nbuilt at: %s", result, date)
-	}
-	if builtBy != "" {
-		result = fmt.Sprintf("%s\nbuilt by: %s", result, builtBy)
-	}
-	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Sum != "" {
-		result = fmt.Sprintf("%s\nmodule version: %s, checksum: %s", result, info.Main.Version, info.Main.Sum)
-	}
-	return result
+func buildVersion(version, commit, date, builtBy, treeState string) goversion.Info {
+	return goversion.GetVersionInfo(
+		goversion.WithAppDetails("nfpm", "a simple and 0-dependencies deb, rpm, apk and arch linux packager written in Go", website),
+		goversion.WithASCIIName(asciiArt),
+		func(i *goversion.Info) {
+			if commit != "" {
+				i.GitCommit = commit
+			}
+			if treeState != "" {
+				i.GitTreeState = treeState
+			}
+			if date != "" {
+				i.BuildDate = date
+			}
+			if version != "" {
+				i.GitVersion = version
+			}
+			if builtBy != "" {
+				i.BuiltBy = builtBy
+			}
+		},
+	)
 }
