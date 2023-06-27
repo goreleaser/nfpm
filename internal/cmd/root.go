@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	goversion "github.com/caarlos0/go-version"
 	_ "github.com/goreleaser/nfpm/v2/apk"  // apk packager
 	_ "github.com/goreleaser/nfpm/v2/arch" // archlinux packager
 	_ "github.com/goreleaser/nfpm/v2/deb"  // deb packager
@@ -10,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Execute(version string, exit func(int), args []string) {
+func Execute(version goversion.Info, exit func(int), args []string) {
 	newRootCmd(version, exit).Execute(args)
 }
 
@@ -28,20 +29,21 @@ func (cmd *rootCmd) Execute(args []string) {
 	}
 }
 
-func newRootCmd(version string, exit func(int)) *rootCmd {
+func newRootCmd(version goversion.Info, exit func(int)) *rootCmd {
 	root := &rootCmd{
 		exit: exit,
 	}
 	cmd := &cobra.Command{
 		Use:               "nfpm",
-		Short:             "Packages apps on RPM, Deb and APK formats based on a YAML configuration file",
-		Long:              `nFPM is a simple, 0-dependencies, deb, rpm and apk packager.`,
-		Version:           version,
+		Short:             "Packages apps on RPM, Deb, APK and Arch Linux formats based on a YAML configuration file",
+		Long:              `nFPM is a simple and 0-dependencies deb, rpm, apk and arch linux packager written in Go.`,
+		Version:           version.String(),
 		SilenceUsage:      true,
 		SilenceErrors:     true,
 		Args:              cobra.NoArgs,
 		ValidArgsFunction: cobra.NoFileCompletions,
 	}
+	cmd.SetVersionTemplate("{{.Version}}")
 
 	cmd.AddCommand(
 		newInitCmd().cmd,

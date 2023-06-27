@@ -9,6 +9,7 @@ require (
 	github.com/ProtonMail/gopenpgp/v2 v2.7.1
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
+	github.com/caarlos0/go-version v0.1.1
 	github.com/cavaliergopher/cpio v1.0.1
 	github.com/google/go-cmp v0.5.9
 	github.com/goreleaser/chglog v0.5.0
