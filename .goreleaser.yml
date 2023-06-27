@@ -13,26 +13,26 @@ gomod:
   proxy: true
 
 builds:
-- main: ./cmd/nfpm
-  env:
-  - CGO_ENABLED=0
-  goos:
-  - linux
-  - darwin
-  - windows
-  goarch:
-  - amd64
-  - arm64
-  mod_timestamp: '{{ .CommitTimestamp }}'
-  flags:
-    - -trimpath
-  ldflags:
-    - -s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }} -X main.date={{ .CommitDate }} -X main.builtBy=goreleaser
+  - main: ./cmd/nfpm
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }} -X main.date={{ .CommitDate }} -X main.builtBy=goreleaser
 
 dockers:
   - image_templates:
-      - 'goreleaser/nfpm:{{ .Tag }}-amd64'
-      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
+      - "goreleaser/nfpm:{{ .Tag }}-amd64"
+      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64"
     dockerfile: Dockerfile
     use: buildx
     build_flag_templates:
@@ -44,8 +44,8 @@ dockers:
       - "--label=org.opencontainers.image.source={{.GitURL}}"
       - "--platform=linux/amd64"
   - image_templates:
-      - 'goreleaser/nfpm:{{ .Tag }}-arm64v8'
-      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
+      - "goreleaser/nfpm:{{ .Tag }}-arm64v8"
+      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8"
     dockerfile: Dockerfile
     use: buildx
     build_flag_templates:
@@ -59,119 +59,119 @@ dockers:
     goarch: arm64
 
 docker_manifests:
-  - name_template: 'goreleaser/nfpm:{{ .Tag }}'
+  - name_template: "goreleaser/nfpm:{{ .Tag }}"
     image_templates:
-      - 'goreleaser/nfpm:{{ .Tag }}-amd64'
-      - 'goreleaser/nfpm:{{ .Tag }}-arm64v8'
-  - name_template: 'ghcr.io/goreleaser/nfpm:{{ .Tag }}'
+      - "goreleaser/nfpm:{{ .Tag }}-amd64"
+      - "goreleaser/nfpm:{{ .Tag }}-arm64v8"
+  - name_template: "ghcr.io/goreleaser/nfpm:{{ .Tag }}"
     image_templates:
-      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
-      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
-  - name_template: 'goreleaser/nfpm:latest'
+      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64"
+      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8"
+  - name_template: "goreleaser/nfpm:latest"
     image_templates:
-      - 'goreleaser/nfpm:{{ .Tag }}-amd64'
-      - 'goreleaser/nfpm:{{ .Tag }}-arm64v8'
-  - name_template: 'ghcr.io/goreleaser/nfpm:latest'
+      - "goreleaser/nfpm:{{ .Tag }}-amd64"
+      - "goreleaser/nfpm:{{ .Tag }}-arm64v8"
+  - name_template: "ghcr.io/goreleaser/nfpm:latest"
     image_templates:
-      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64'
-      - 'ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8'
+      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64"
+      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8"
 
 archives:
-- rlcp: true
-  name_template: >-
+  - rlcp: true
+    name_template: >-
       {{ .ProjectName }}_
       {{- .Version }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
-  format_overrides:
-    - goos: windows
-      format: zip
-  files:
-    - README.md
-    - LICENSE.md
-    - completions/*
-    - manpages/*
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE.md
+      - completions/*
+      - manpages/*
 
 brews:
-- tap:
-    owner: goreleaser
-    name: homebrew-tap
-  folder: Formula
-  homepage: https://nfpm.goreleaser.com
-  description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
-  license: MIT
-  test: |
-    system "#{bin}/nfpm -v"
-  install: |-
-    bin.install "nfpm"
-    bash_completion.install "completions/nfpm.bash" => "nfpm"
-    zsh_completion.install "completions/nfpm.zsh" => "_nfpm"
-    fish_completion.install "completions/nfpm.fish"
-    man1.install "manpages/nfpm.1.gz"
+  - tap:
+      owner: goreleaser
+      name: homebrew-tap
+    folder: Formula
+    homepage: https://nfpm.goreleaser.com
+    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+    license: MIT
+    test: |
+      system "#{bin}/nfpm -v"
+    install: |-
+      bin.install "nfpm"
+      bash_completion.install "completions/nfpm.bash" => "nfpm"
+      zsh_completion.install "completions/nfpm.zsh" => "_nfpm"
+      fish_completion.install "completions/nfpm.fish"
+      man1.install "manpages/nfpm.1.gz"
 
 scoops:
-- bucket:
-    owner: goreleaser
-    name: scoop-bucket
-  homepage: https://nfpm.goreleaser.com
-  folder: bucket
-  description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
-  license: MIT
+  - bucket:
+      owner: goreleaser
+      name: scoop-bucket
+    homepage: https://nfpm.goreleaser.com
+    folder: bucket
+    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+    license: MIT
 
 nfpms:
-- file_name_template: '{{ .ConventionalFileName }}'
-  homepage: https://nfpm.goreleaser.com
-  description: |-
-    Simple, 0-dependencies, deb, rpm and apk packager.
-    nFPM (not FPM) is configurable via YAML and does not need any
-    packaging software installed.
-  maintainer: Carlos Alexandro Becker <carlos@becker.software>
-  license: MIT
-  vendor: GoReleaser
-  formats:
-  - apk
-  - deb
-  - rpm
-  bindir: /usr/bin
-  section: utils
-  contents:
-    - src: ./completions/nfpm.bash
-      dst: /usr/share/bash-completion/completions/nfpm
-      file_info:
-        mode: 0644
-    - src: ./completions/nfpm.fish
-      dst: /usr/share/fish/vendor_completions.d/nfpm.fish
-      file_info:
-        mode: 0644
-    - src: ./completions/nfpm.zsh
-      dst:  /usr/share/zsh/vendor-completions/_nfpm
-      file_info:
-        mode: 0644
-    - src: ./manpages/nfpm.1.gz
-      dst: /usr/share/man/man1/nfpm.1.gz
-      file_info:
-        mode: 0644
-    - src: ./LICENSE.md
-      dst: /usr/share/doc/nfpm/copyright
-      file_info:
-        mode: 0644
-    - src: .lintian-overrides
-      dst: ./usr/share/lintian/overrides/nfpm
-      packager: deb
-      file_info:
-        mode: 0644
+  - file_name_template: "{{ .ConventionalFileName }}"
+    homepage: https://nfpm.goreleaser.com
+    description: |-
+      Simple, 0-dependencies, deb, rpm and apk packager.
+      nFPM (not FPM) is configurable via YAML and does not need any
+      packaging software installed.
+    maintainer: Carlos Alexandro Becker <carlos@becker.software>
+    license: MIT
+    vendor: GoReleaser
+    formats:
+      - apk
+      - deb
+      - rpm
+    bindir: /usr/bin
+    section: utils
+    contents:
+      - src: ./completions/nfpm.bash
+        dst: /usr/share/bash-completion/completions/nfpm
+        file_info:
+          mode: 0644
+      - src: ./completions/nfpm.fish
+        dst: /usr/share/fish/vendor_completions.d/nfpm.fish
+        file_info:
+          mode: 0644
+      - src: ./completions/nfpm.zsh
+        dst: /usr/share/zsh/vendor-completions/_nfpm
+        file_info:
+          mode: 0644
+      - src: ./manpages/nfpm.1.gz
+        dst: /usr/share/man/man1/nfpm.1.gz
+        file_info:
+          mode: 0644
+      - src: ./LICENSE.md
+        dst: /usr/share/doc/nfpm/copyright
+        file_info:
+          mode: 0644
+      - src: .lintian-overrides
+        dst: ./usr/share/lintian/overrides/nfpm
+        packager: deb
+        file_info:
+          mode: 0644
 
 aurs:
-  - homepage:  https://nfpm.goreleaser.com
+  - homepage: https://nfpm.goreleaser.com
     description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
     maintainers:
-      - 'Fernandez Ludovic <lfernandez dot dev at gmail dot com>'
-      - 'Carlos Alexandro Becker <carlos at becker dot software>'
+      - "Fernandez Ludovic <lfernandez dot dev at gmail dot com>"
+      - "Carlos Alexandro Becker <carlos at becker dot software>"
     license: MIT
-    private_key: '{{ .Env.AUR_KEY }}'
-    git_url: 'ssh://aur@aur.archlinux.org/nfpm-bin.git'
+    private_key: "{{ .Env.AUR_KEY }}"
+    git_url: "ssh://aur@aur.archlinux.org/nfpm-bin.git"
     package: |-
       # bin
       install -Dm755 "./nfpm" "${pkgdir}/usr/bin/nfpm"
@@ -191,65 +191,65 @@ furies:
   - account: goreleaser
 
 sboms:
-- artifacts: archive
+  - artifacts: archive
 
 signs:
-- cmd: cosign
-  certificate: '${artifact}.pem'
-  output: true
-  artifacts: checksum
-  args:
-    - sign-blob
-    - '--output-certificate=${certificate}'
-    - '--output-signature=${signature}'
-    - '${artifact}'
-    - --yes
+  - cmd: cosign
+    certificate: "${artifact}.pem"
+    output: true
+    artifacts: checksum
+    args:
+      - sign-blob
+      - "--output-certificate=${certificate}"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+      - --yes
 
 docker_signs:
-- cmd: cosign
-  artifacts: manifests
-  output: true
-  args:
-  - 'sign'
-  - '${artifact}'
-  - --yes
+  - cmd: cosign
+    artifacts: manifests
+    output: true
+    args:
+      - "sign"
+      - "${artifact}"
+      - --yes
 
 changelog:
   sort: asc
   use: github
   filters:
     exclude:
-    - '^test:'
-    - '^chore'
-    - 'merge conflict'
-    - Merge pull request
-    - Merge remote-tracking branch
-    - Merge branch
-    - go mod tidy
+      - "^test:"
+      - "^chore"
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+      - go mod tidy
   groups:
     - title: Dependency updates
       regexp: '^.*?(feat|fix)\(deps\)!?:.+$'
       order: 300
-    - title: 'New Features'
+    - title: "New Features"
       regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
       order: 100
-    - title: 'Security updates'
+    - title: "Security updates"
       regexp: '^.*?sec(\([[:word:]]+\))??!?:.+$'
       order: 150
-    - title: 'Bug fixes'
+    - title: "Bug fixes"
       regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 200
-    - title: 'Documentation updates'
+    - title: "Documentation updates"
       regexp: ^.*?doc(\([[:word:]]+\))??!?:.+$
       order: 400
-    - title: 'Build process updates'
+    - title: "Build process updates"
       regexp: ^.*?build(\([[:word:]]+\))??!?:.+$
       order: 400
     - title: Other work
       order: 9999
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 
 release:
   footer: |
@@ -269,7 +269,6 @@ release:
     * Reach out on [Discord](https://discord.gg/RGEBtg8vQ6) and [Twitter](https://twitter.com/goreleaser)!
 
     <a href="https://goreleaser.com"><img src="https://raw.githubusercontent.com/goreleaser/artwork/master/opencollective-header.png" with="100%" alt="GoReleaser logo"></a>
-
 
 milestones:
   - close: true
