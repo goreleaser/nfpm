@@ -1,10 +1,10 @@
 # nfpm
 
-Packages apps on RPM, Deb and APK formats based on a YAML configuration file
+Packages apps on RPM, Deb, APK and Arch Linux formats based on a YAML configuration file
 
 ## Synopsis
 
-nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+nFPM is a simple and 0-dependencies deb, rpm, apk and arch linux packager written in Go.
 
 ## Options
 

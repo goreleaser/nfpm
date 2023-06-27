@@ -17,5 +17,5 @@ nfpm package [flags]
 
 ## See also
 
-* [nfpm](/cmd/nfpm/)	 - Packages apps on RPM, Deb and APK formats based on a YAML configuration file
+* [nfpm](/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK and Arch Linux formats based on a YAML configuration file
 

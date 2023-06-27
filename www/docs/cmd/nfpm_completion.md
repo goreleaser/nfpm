@@ -16,7 +16,7 @@ See each sub-command's help for details on how to use the generated script.
 
 ## See also
 
-* [nfpm](/cmd/nfpm/)	 - Packages apps on RPM, Deb and APK formats based on a YAML configuration file
+* [nfpm](/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK and Arch Linux formats based on a YAML configuration file
 * [nfpm completion bash](/cmd/nfpm_completion_bash/)	 - Generate the autocompletion script for bash
 * [nfpm completion fish](/cmd/nfpm_completion_fish/)	 - Generate the autocompletion script for fish
 * [nfpm completion powershell](/cmd/nfpm_completion_powershell/)	 - Generate the autocompletion script for powershell
