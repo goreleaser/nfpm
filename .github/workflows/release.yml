@@ -34,7 +34,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: sigstore/cosign-installer@v3.1.0
+      - uses: sigstore/cosign-installer@v3.1.1
       - uses: anchore/sbom-action/download-syft@v0.14.3
       - uses: docker/setup-qemu-action@v2
       - uses: docker/setup-buildx-action@v2
