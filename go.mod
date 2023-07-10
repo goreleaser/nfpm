@@ -10,13 +10,12 @@ require (
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
 	github.com/caarlos0/go-version v0.1.1
-	github.com/cavaliergopher/cpio v1.0.1
-	github.com/google/go-cmp v0.5.9
+	github.com/google/rpmpack v0.5.0
 	github.com/goreleaser/chglog v0.5.0
 	github.com/goreleaser/fileglob v1.3.0
 	github.com/imdario/mergo v0.3.16
 	github.com/invopop/jsonschema v0.7.0
-	github.com/klauspost/compress v1.16.7
+	github.com/klauspost/compress v1.16.6
 	github.com/klauspost/pgzip v1.2.6
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/roff v0.1.0
@@ -34,6 +33,7 @@ require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/ProtonMail/go-mime v0.0.0-20230322103455-7d82a3887f2f // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
+	github.com/cavaliergopher/cpio v1.0.1 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
