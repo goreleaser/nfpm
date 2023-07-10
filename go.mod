@@ -15,7 +15,7 @@ require (
 	github.com/goreleaser/fileglob v1.3.0
 	github.com/imdario/mergo v0.3.16
 	github.com/invopop/jsonschema v0.7.0
-	github.com/klauspost/compress v1.16.6
+	github.com/klauspost/compress v1.16.7
 	github.com/klauspost/pgzip v1.2.6
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/roff v0.1.0
