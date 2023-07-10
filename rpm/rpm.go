@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/rpmpack"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
-	"github.com/goreleaser/nfpm/v2/internal/rpmpack"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 )
 
