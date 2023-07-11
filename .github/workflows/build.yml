@@ -7,20 +7,20 @@ on:
     branches:
       - main
     paths:
-      - 'go.*'
-      - '**/*.go'
-      - 'Taskfile.yml'
-      - 'Dockerfile'
-      - '.github/workflows/build.yml'
-      - 'testdata/**'
+      - "go.*"
+      - "**/*.go"
+      - "Taskfile.yml"
+      - "Dockerfile"
+      - ".github/workflows/build.yml"
+      - "testdata/**"
   pull_request:
     paths:
-      - 'go.*'
-      - '**/*.go'
-      - 'Taskfile.yml'
-      - 'Dockerfile'
-      - '.github/workflows/build.yml'
-      - 'testdata/'
+      - "go.*"
+      - "**/*.go"
+      - "Taskfile.yml"
+      - "Dockerfile"
+      - ".github/workflows/build.yml"
+      - "testdata/"
 
 permissions:
   contents: read
@@ -36,11 +36,11 @@ jobs:
     uses: caarlos0/meta/.github/workflows/ruleguard.yml@main
     with:
       go-version: stable
-      args: '-disable largeloopcopy'
+      args: "-disable largeloopcopy"
   unit-tests:
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -60,11 +60,39 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
+  build-pkgs-on-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: stable
+      - run: mkdir ./tmp
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/core.simple.yml -p deb -t ./tmp/
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/core.simple.yml -p rpm -t ./tmp/
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/core.simple.yml -p apk -t ./tmp/
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/core.simple.yml -p archlinux -t ./tmp/
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
+        with:
+          path: ./tmp/
+          key: ${{ github.ref }}
+  install-pkgs-built-on-windows:
+    runs-on: ubuntu-latest
+    needs: [build-pkgs-on-windows]
+    steps:
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
+        with:
+          path: ./tmp/
+          key: ${{ github.ref }}
+      - uses: docker/setup-qemu-action@v2
+      - run: docker run --rm --workdir /tmp -v $PWD/./tmp:/tmp fedora rpm -ivh *.rpm
+      - run: docker run --rm --workdir /tmp -v $PWD/./tmp:/tmp ubuntu dpkg -i *.deb
+
   acceptance-tests:
     strategy:
       matrix:
-        pkgFormat: [ deb, rpm, apk, archlinux ]
-        pkgPlatform: [ amd64, arm64, 386, ppc64le, armv6, armv7, s390x ]
+        pkgFormat: [deb, rpm, apk, archlinux]
+        pkgPlatform: [amd64, arm64, 386, ppc64le, armv6, armv7, s390x]
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: "enabled"
