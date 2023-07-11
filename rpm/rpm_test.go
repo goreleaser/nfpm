@@ -77,6 +77,7 @@ func exampleInfo() *nfpm.Info {
 				PostRemove:  "../testdata/scripts/postremove.sh",
 			},
 			RPM: nfpm.RPM{
+				Prefixes: []string{"/opt"},
 				Scripts: nfpm.RPMScripts{
 					PreTrans:  "../testdata/scripts/pretrans.sh",
 					PostTrans: "../testdata/scripts/posttrans.sh",

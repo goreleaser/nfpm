@@ -35,11 +35,12 @@ RUN test -f /usr/share/whatever/folder2/file2
 
 
 # ---- complex test ----
-FROM min AS complex
+FROM test_base AS complex
+RUN rpm --prefix=/opt -ivh /tmp/foo.rpm
 RUN test "$(rpm -qp --recommends /tmp/foo.rpm)" = "fish"
 RUN test "$(rpm -qp --suggests /tmp/foo.rpm)" = "zsh"
 RUN test "$(rpm -qp --requires /tmp/foo.rpm)" = "bash"
-RUN test -e /usr/bin/fake
+RUN test -e /opt/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /usr/share/whatever/folder
 RUN test -f /usr/share/whatever/folder/file1
@@ -55,7 +56,7 @@ RUN test -f /etc/something/a
 RUN test -f /etc/something/b
 RUN test -d /etc/something/c
 RUN test -f /etc/something/c/d
-RUN test $(stat -c %a /usr/bin/fake2) -eq 4755
+RUN test $(stat -c %a /opt/fake2) -eq 4755
 RUN test -f /tmp/preinstall-proof
 RUN test -f /tmp/postinstall-proof
 RUN test -f /tmp/pretrans-proof
@@ -65,8 +66,8 @@ RUN test ! -f /tmp/postremove-proof
 RUN echo wat >> /etc/foo/whatever.conf
 RUN rpm -e foo
 RUN test -f /etc/foo/whatever.conf.rpmsave
-RUN test ! -f /usr/bin/fake
-RUN test ! -f /usr/bin/fake2
+RUN test ! -f /opt/fake
+RUN test ! -f /opt/fake2
 RUN test -f /tmp/preremove-proof
 RUN test -f /tmp/postremove-proof
 RUN test ! -d /var/log/whatever
