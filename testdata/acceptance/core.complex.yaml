@@ -4,15 +4,15 @@ platform: "linux"
 version: "v1.2.3-beta"
 maintainer: "Foo Bar"
 depends:
-- bash
+  - bash
 provides:
-- fake
+  - fake
 recommends:
-- fish
+  - fish
 replaces:
-- foo
+  - foo
 suggests:
-- zsh
+  - zsh
 description: |
   Foo bar
     Multiple lines
@@ -20,47 +20,47 @@ vendor: "foobar"
 homepage: "https://foobar.org"
 license: "MIT"
 contents:
-- src: ./testdata/fake
-  dst: /usr/bin/fake
-- src: ./testdata/acceptance/folder/*
-  dst: /usr/share/whatever/folder
-- src: ./testdata/whatever.conf
-  dst: /etc/foo/whatever.conf
-  type: config
-- src: ./testdata/something
-  dst: /etc/something
-- dst: /usr/foo/bar/something
-  type: dir
-- dst: /var/log/whatever
-  type: dir
-- dst: /usr/share/foo
-  type: dir
+  - src: ./testdata/fake
+    dst: /usr/bin/fake
+  - src: ./testdata/acceptance/folder/*
+    dst: /usr/share/whatever/folder
+  - src: ./testdata/whatever.conf
+    dst: /etc/foo/whatever.conf
+    type: config
+  - src: ./testdata/something
+    dst: /etc/something
+  - dst: /usr/foo/bar/something
+    type: dir
+  - dst: /var/log/whatever
+    type: dir
+  - dst: /usr/share/foo
+    type: dir
 
-# Packager specifics:
+  # Packager specifics:
 
-- packager: deb
-  src: ./testdata/fake
-  dst: /usr/bin/fake2
-  file_info:
-    mode: 04755
+  - packager: deb
+    src: ./testdata/fake
+    dst: /usr/bin/fake2
+    file_info:
+      mode: 04755
 
-- packager: rpm
-  src: ./testdata/fake
-  dst: /usr/bin/fake2
-  file_info:
-    mode: 04755
+  - packager: rpm
+    src: ./testdata/fake
+    dst: /usr/bin/fake2
+    file_info:
+      mode: 04755
 
-- packager: apk
-  src: ./testdata/fake
-  dst: /usr/bin/fake2
-  file_info:
-    mode: 04755
+  - packager: apk
+    src: ./testdata/fake
+    dst: /usr/bin/fake2
+    file_info:
+      mode: 04755
 
-- packager: archlinux
-  src: ./testdata/fake
-  dst: /usr/bin/fake2
-  file_info:
-    mode: 04755
+  - packager: archlinux
+    src: ./testdata/fake
+    dst: /usr/bin/fake2
+    file_info:
+      mode: 04755
 
 scripts:
   preinstall: ./testdata/acceptance/scripts/preinstall.sh
@@ -68,6 +68,7 @@ scripts:
   preremove: ./testdata/acceptance/scripts/preremove.sh
   postremove: ./testdata/acceptance/scripts/postremove.sh
 rpm:
+  prefixes: ["/usr/bin"]
   scripts:
     pretrans: ./testdata/acceptance/scripts/pretrans.sh
     posttrans: ./testdata/acceptance/scripts/posttrans.sh

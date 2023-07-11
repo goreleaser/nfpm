@@ -326,6 +326,10 @@ rpm:
   # Compression algorithm (gzip (default), zstd, lzma or xz).
   compression: zstd
 
+  # Prefixes for relocatable packages.
+  prefixes:
+    - /usr/bin
+
   # The package is signed if a key_file is set
   signature:
     # PGP secret key (can also be ASCII-armored), the passphrase is taken
