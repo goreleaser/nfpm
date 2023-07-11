@@ -7,20 +7,20 @@ on:
     branches:
       - main
     paths:
-      - 'go.*'
-      - '**/*.go'
-      - 'Taskfile.yml'
-      - 'Dockerfile'
-      - '.github/workflows/build.yml'
-      - 'testdata/**'
+      - "go.*"
+      - "**/*.go"
+      - "Taskfile.yml"
+      - "Dockerfile"
+      - ".github/workflows/build.yml"
+      - "testdata/**"
   pull_request:
     paths:
-      - 'go.*'
-      - '**/*.go'
-      - 'Taskfile.yml'
-      - 'Dockerfile'
-      - '.github/workflows/build.yml'
-      - 'testdata/'
+      - "go.*"
+      - "**/*.go"
+      - "Taskfile.yml"
+      - "Dockerfile"
+      - ".github/workflows/build.yml"
+      - "testdata/"
 
 permissions:
   contents: read
@@ -36,11 +36,11 @@ jobs:
     uses: caarlos0/meta/.github/workflows/ruleguard.yml@main
     with:
       go-version: stable
-      args: '-disable largeloopcopy'
+      args: "-disable largeloopcopy"
   unit-tests:
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -60,11 +60,50 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
+  build-pkgs-on-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: stable
+      - run: mkdir dist
+      - shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
+        with:
+          path: dist/
+          key: ${{ env.sha_short }}
+          enableCrossOsArchive: true
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p deb -t ./dist/foo.deb
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p rpm -t ./dist/foo.rpm
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p apk -t ./dist/foo.apk
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p archlinux -t ./dist/foo.pkg.tar.zst
+  install-pkgs-built-on-windows:
+    runs-on: ubuntu-latest
+    needs: [build-pkgs-on-windows]
+    steps:
+      - uses: docker/setup-qemu-action@v2
+      - uses: actions/checkout@v3
+      - shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
+        with:
+          path: dist/
+          key: ${{ env.sha_short }}
+          enableCrossOsArchive: true
+      - run: ls -lha dist
+      - run: docker run --rm --workdir /tmp -v $PWD/dist:/tmp fedora rpm -ivh foo.rpm
+      - run: docker run --rm --workdir /tmp -v $PWD/dist:/tmp ubuntu dpkg -i foo.deb
+      - run: docker run --rm --workdir /tmp -v $PWD/dist:/tmp archlinux pacman --noconfirm -U foo.pkg.tar.zst
+      - run: docker run --rm --workdir /tmp -v $PWD/dist:/tmp alpine apk add --allow-untrusted foo.apk
   acceptance-tests:
     strategy:
       matrix:
-        pkgFormat: [ deb, rpm, apk, archlinux ]
-        pkgPlatform: [ amd64, arm64, 386, ppc64le, armv6, armv7, s390x ]
+        pkgFormat: [deb, rpm, apk, archlinux]
+        pkgPlatform: [amd64, arm64, 386, ppc64le, armv6, armv7, s390x]
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: "enabled"
