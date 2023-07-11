@@ -67,24 +67,27 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: stable
-      - run: mkdir ./tmp
+      - run: mkdir dist
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
+        with:
+          path: dist/
+          key: ${{ github.ref }}
+          enableCrossOsArchive: true
       - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p deb -t ./tmp/
       - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p rpm -t ./tmp/
       - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p apk -t ./tmp/
       - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p archlinux -t ./tmp/
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
-        with:
-          path: ./tmp/
-          key: ${{ github.ref }}
   install-pkgs-built-on-windows:
     runs-on: ubuntu-latest
     needs: [build-pkgs-on-windows]
     steps:
+      - uses: docker/setup-qemu-action@v2
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
         with:
-          path: ./tmp/
+          path: dist/
           key: ${{ github.ref }}
-      - uses: docker/setup-qemu-action@v2
+          enableCrossOsArchive: true
+      - run: ls -lha dist
       - run: docker run --rm --workdir /tmp -v $PWD/./tmp:/tmp fedora rpm -ivh *.rpm
       - run: docker run --rm --workdir /tmp -v $PWD/./tmp:/tmp ubuntu dpkg -i *.deb
 
