@@ -68,10 +68,13 @@ jobs:
         with:
           go-version: stable
       - run: mkdir dist
+      - shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
         with:
           path: dist/
-          key: ${{ github.ref }}
+          key: ${{ env.sha_short }}
           enableCrossOsArchive: true
       - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p deb -t ./dist/foo.deb
       - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p rpm -t ./dist/foo.rpm
@@ -82,10 +85,14 @@ jobs:
     needs: [build-pkgs-on-windows]
     steps:
       - uses: docker/setup-qemu-action@v2
+      - uses: actions/checkout@v3
+      - shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
         with:
           path: dist/
-          key: ${{ github.ref }}
+          key: ${{ env.sha_short }}
           enableCrossOsArchive: true
       - run: ls -lha dist
       - run: docker run --rm --workdir /tmp -v $PWD/dist:/tmp fedora rpm -ivh foo.rpm
