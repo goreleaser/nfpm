@@ -68,10 +68,10 @@ jobs:
         with:
           go-version: stable
       - run: mkdir ./tmp
-      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yml -p deb -t ./tmp/
-      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yml -p rpm -t ./tmp/
-      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yml -p apk -t ./tmp/
-      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yml -p archlinux -t ./tmp/
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p deb -t ./tmp/
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p rpm -t ./tmp/
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p apk -t ./tmp/
+      - run: go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/core.complex.yaml -p archlinux -t ./tmp/
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
         with:
           path: ./tmp/
