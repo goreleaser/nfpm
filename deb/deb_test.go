@@ -111,6 +111,7 @@ func TestDeb(t *testing.T) {
 func TestDebPlatform(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test*.deb")
 	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, f.Close()) })
 	info := exampleInfo()
 	info.Platform = "darwin"
 	err = Default.Package(info, f)

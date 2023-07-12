@@ -105,6 +105,7 @@ func TestArch(t *testing.T) {
 func TestArchPlatform(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test*.pkg.tar.zstd")
 	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, f.Close()) })
 	info := exampleInfo()
 	info.Platform = "darwin"
 	err = Default.Package(info, f)

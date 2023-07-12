@@ -146,6 +146,7 @@ func TestRPM(t *testing.T) {
 func TestRPMPlatform(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test*.rpm")
 	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, f.Close()) })
 	info := exampleInfo()
 	info.Platform = "darwin"
 	require.NoError(t, Default.Package(info, f))
