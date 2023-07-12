@@ -1,6 +1,6 @@
 # https://taskfile.dev
 
-version: '3'
+version: "3"
 
 env:
   GO111MODULE: on
@@ -29,6 +29,25 @@ tasks:
       - ./nfpm
     cmds:
       - go build ./cmd/nfpm
+
+  acceptance:windows:package:
+    desc: Build packages for testing
+    vars:
+      SRC: "./testdata/acceptance/core.complex.yaml"
+    cmds:
+      - mkdir -p ./dist
+      - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p deb -t ./dist/foo.deb
+      - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p rpm -t ./dist/foo.rpm
+      - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p apk -t ./dist/foo.apk
+      - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p archlinux -t ./dist/foo.pkg.tar.zst
+
+  acceptance:windows:install:
+    desc: Install packages built with package
+    cmds:
+      - docker run --rm --workdir /tmp -v $PWD/dist:/tmp fedora rpm -ivh foo.rpm
+      - docker run --rm --workdir /tmp -v $PWD/dist:/tmp ubuntu dpkg -i foo.deb
+      - docker run --rm --workdir /tmp -v $PWD/dist:/tmp archlinux pacman --noconfirm -U foo.pkg.tar.zst
+      - docker run --rm --workdir /tmp -v $PWD/dist:/tmp alpine apk add --allow-untrusted foo.apk
 
   acceptance:pull:
     desc: Pull acceptance test images
@@ -116,13 +135,13 @@ tasks:
     desc: Start documentation server
     cmds:
       - task: docs:generate
-      - '{{.DOCKER}} run --rm -it -p 8000:8000 -v ${PWD}/www:/docs docker.io/squidfunk/mkdocs-material'
+      - "{{.DOCKER}} run --rm -it -p 8000:8000 -v ${PWD}/www:/docs docker.io/squidfunk/mkdocs-material"
 
   docs:build:
     desc: Build docs
     cmds:
       - task: docs:generate
-      - '{{.DOCKER}} run --rm -v ${PWD}/www:/docs docker.io/squidfunk/mkdocs-material build'
+      - "{{.DOCKER}} run --rm -v ${PWD}/www:/docs docker.io/squidfunk/mkdocs-material build"
 
   release:
     desc: Create a new tag
