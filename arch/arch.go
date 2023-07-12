@@ -586,7 +586,7 @@ func writeScripts(w io.Writer, scripts map[string]string) error {
 			return err
 		}
 
-		fl.Close()
+		_ = fl.Close()
 
 		_, err = io.WriteString(w, "\n}\n\n")
 		if err != nil {

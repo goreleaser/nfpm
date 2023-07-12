@@ -1,8 +1,10 @@
 package files_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -353,6 +355,9 @@ func withoutImplicitDirs(contents files.Contents) files.Contents {
 }
 
 func TestGlobbingWhenFilesHaveBrackets(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("doesn't work on windows")
+	}
 	result, err := files.PrepareForPackager(files.Contents{
 		{
 			Source:      "./testdata/\\{test\\}/",
@@ -633,7 +638,7 @@ func TestRelevantFiles(t *testing.T) {
 func TestTree(t *testing.T) {
 	results, err := files.PrepareForPackager(files.Contents{
 		{
-			Source:      "testdata/tree",
+			Source:      filepath.Join("testdata", "tree"),
 			Destination: "/base",
 			Type:        files.TypeTree,
 		},
@@ -652,7 +657,7 @@ func TestTree(t *testing.T) {
 			Type:        files.TypeDir,
 		},
 		{
-			Source:      "testdata/tree/files/a",
+			Source:      filepath.Join("testdata", "tree", "files", "a"),
 			Destination: "/base/files/a",
 			Type:        files.TypeFile,
 		},
@@ -662,7 +667,7 @@ func TestTree(t *testing.T) {
 			Type:        files.TypeDir,
 		},
 		{
-			Source:      "testdata/tree/files/b/c",
+			Source:      filepath.Join("testdata", "tree", "files", "b", "c"),
 			Destination: "/base/files/b/c",
 			Type:        files.TypeFile,
 		},
@@ -697,11 +702,14 @@ func withoutFileInfo(contents files.Contents) files.Contents {
 }
 
 func TestAsRelativePath(t *testing.T) {
+	sep := fmt.Sprintf("%c", filepath.Separator)
 	testCases := map[string]string{
 		"/etc/foo/":         "etc/foo/",
 		"./etc/foo":         "etc/foo",
 		"./././foo/../bar/": "bar/",
-		"/":                 "",
+		sep:                 "",
+		sep + sep:           "",
+		sep + strings.Join([]string{"foo", "bar", "zazz"}, sep): "foo/bar/zazz",
 	}
 
 	for input, expected := range testCases {
@@ -710,11 +718,14 @@ func TestAsRelativePath(t *testing.T) {
 }
 
 func TestAsExplicitRelativePath(t *testing.T) {
+	sep := fmt.Sprintf("%c", filepath.Separator)
 	testCases := map[string]string{
 		"/etc/foo/":         "./etc/foo/",
 		"./etc/foo":         "./etc/foo",
 		"./././foo/../bar/": "./bar/",
-		"/":                 "./",
+		sep:                 "./",
+		sep:                 "./",
+		sep + strings.Join([]string{"foo", "bar", "zazz"}, sep): "./foo/bar/zazz",
 	}
 
 	for input, expected := range testCases {

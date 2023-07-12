@@ -401,26 +401,24 @@ func createBuilderData(info *nfpm.Info, sizep *int64) func(tw *tar.Writer) error
 
 func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, sizep *int64) (err error) {
 	for _, file := range info.Contents {
-		file.Destination = strings.TrimPrefix(file.Destination, "./")
+		file.Destination = files.AsRelativePath(file.Destination)
 
 		switch file.Type {
 		case files.TypeDir, files.TypeImplicitDir:
 			err = tw.WriteHeader(&tar.Header{
-				Name:     files.AsRelativePath(file.Destination),
+				Name:     file.Destination,
 				Mode:     int64(file.FileInfo.Mode),
 				Typeflag: tar.TypeDir,
-				Format:   tar.FormatGNU,
 				Uname:    file.FileInfo.Owner,
 				Gname:    file.FileInfo.Group,
 				ModTime:  file.FileInfo.MTime,
 			})
 		case files.TypeSymlink:
 			err = newItemInsideTarGz(tw, []byte{}, &tar.Header{
-				Name:     files.AsRelativePath(file.Destination),
+				Name:     file.Destination,
 				Linkname: file.Source,
 				Typeflag: tar.TypeSymlink,
 				ModTime:  file.FileInfo.MTime,
-				Format:   tar.FormatGNU,
 			})
 		default:
 			err = copyToTarAndDigest(file, tw, sizep)

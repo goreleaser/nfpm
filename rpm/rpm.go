@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -378,7 +377,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 		}
 
 		// clean assures that even folders do not have a trailing slash
-		file.Name = filepath.Clean(file.Name)
+		file.Name = files.ToNixPath(file.Name)
 		rpm.AddFile(*file)
 
 	}
