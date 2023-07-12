@@ -327,7 +327,7 @@ func TestGlob(t *testing.T) {
 			Contents: files.Contents{
 				{
 					Destination: "/usr/share/nfpm-repro",
-					Source:      "../files/*.go",
+					Source:      "../files/testdata/globtest/different-sizes/*/*.txt",
 					FileInfo: &files.ContentFileInfo{
 						Mode: 0o644,
 					},
@@ -362,12 +362,14 @@ func TestGlob(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := map[string][]string{
-		"./.PKGINFO":                           {"mode=644", "size=188", "type=file"},
-		"./usr/":                               {"mode=755", "type=dir"},
-		"./usr/share/":                         {"mode=755", "type=dir"},
-		"./usr/share/nfpm-repro/":              {"mode=755", "type=dir"},
-		"./usr/share/nfpm-repro/files.go":      {"mode=644", "size=15900", "type=file", "md5digest=0c4e339bc678ab6b2b291ec3088e32a2", "sha256digest=27614421b69216e9d8ddd177210f2c9a71d8ff9d76cc2b1654276eccd04e84c2"},
-		"./usr/share/nfpm-repro/files_test.go": {"mode=644", "size=17741", "type=file", "md5digest=52818697d19e885bc2e5b37f2dc4a7fb", "sha256digest=fdbb35f8c11e118508ddd526c0a7797171ea100aa14337caddd7ab249ee91272"},
+		"./.PKGINFO":                     {"mode=644", "size=185", "type=file"},
+		"./usr/":                         {"mode=755", "type=dir"},
+		"./usr/share/":                   {"mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/":        {"mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/a/":      {"mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/a/a.txt": {"mode=644", "size=4", "type=file", "md5digest=d3b07384d113edec49eaa6238ad5ff00", "sha256digest=b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"},
+		"./usr/share/nfpm-repro/b/":      {"mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/b/b.txt": {"mode=644", "size=7", "type=file", "md5digest=551a67cc6e06de1910061fe318d28f72", "sha256digest=73a2c64f9545172c1195efb6616ca5f7afd1df6f245407cafb90de3998a1c97f"},
 	}
 
 	for _, line := range strings.Split(string(mtreeContentBts), "\n") {
