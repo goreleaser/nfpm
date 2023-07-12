@@ -1,0 +1,77 @@
+name: windows
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+    paths:
+      - "go.*"
+      - "**/*.go"
+      - "Taskfile.yml"
+      - ".github/workflows/windows.yml"
+  pull_request:
+    paths:
+      - "go.*"
+      - "**/*.go"
+      - "Taskfile.yml"
+      - ".github/workflows/windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: stable
+      - uses: arduino/setup-task@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: setup-tparse
+        run: go install github.com/mfridman/tparse@latest
+      - run: task setup
+      - name: test
+        shell: bash
+        run: ./scripts/test.sh test windows-latest
+  build-pkgs:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: stable
+      - uses: arduino/setup-task@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
+        with:
+          path: dist/
+          key: ${{ env.sha_short }}
+          enableCrossOsArchive: true
+      - run: task acceptance:windows:package
+  install-pkgs:
+    runs-on: ubuntu-latest
+    needs: [build-pkgs]
+    steps:
+      - uses: docker/setup-qemu-action@v2
+      - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3
+        with:
+          path: dist/
+          key: ${{ env.sha_short }}
+          enableCrossOsArchive: true
+      - run: task acceptance:windows:install
