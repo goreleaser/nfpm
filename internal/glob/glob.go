@@ -20,7 +20,10 @@ func longestCommonPrefix(strs []string) string {
 	}
 	lcp := strs[0]
 	for _, str := range strs {
-		lcp = strlcp(lcp, str)
+		lcp = strlcp(
+			filepath.ToSlash(lcp),
+			filepath.ToSlash(str),
+		)
 	}
 	return lcp
 }

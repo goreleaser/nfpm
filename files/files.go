@@ -283,7 +283,11 @@ func PrepareForPackager(rawContents Contents, umask fs.FileMode, packager string
 				return nil, fmt.Errorf("add tree: %w", err)
 			}
 		case TypeConfig, TypeConfigNoReplace, TypeFile, "":
-			globbed, err := glob.Glob(content.Source, content.Destination, disableGlobbing)
+			globbed, err := glob.Glob(
+				filepath.ToSlash(content.Source),
+				filepath.ToSlash(content.Destination),
+				disableGlobbing,
+			)
 			if err != nil {
 				return nil, err
 			}
@@ -474,7 +478,7 @@ func addTree(all map[string]*Content, tree *Content, umask os.FileMode) error {
 				return err
 			}
 
-			c.Source = linkDestination
+			c.Source = filepath.ToSlash(strings.TrimPrefix(linkDestination, filepath.VolumeName(linkDestination)))
 			c.Destination = NormalizeAbsoluteFilePath(destination)
 			c.Type = TypeSymlink
 		default:
@@ -515,42 +519,20 @@ func ToNixPath(path string) string {
 }
 
 // As relative path converts a path to an explicitly relative path starting with
-// a dot (e.g. it converts /foo -> ./foo).
+// a dot (e.g. it converts /foo -> ./foo and foo -> ./foo).
 func AsExplicitRelativePath(path string) string {
-	if path == "/" {
-		return "./"
-	}
-
-	cleanedPath := filepath.Clean(path)
-
-	end := ""
-	if len(cleanedPath) > 1 && strings.HasSuffix(path, "/") {
-		end = "/"
-	}
-
-	if !filepath.IsAbs(cleanedPath) {
-		cleanedPath = filepath.Join("/", cleanedPath)
-	}
-
-	return "." + cleanedPath + end
+	return "./" + AsRelativePath(path)
 }
 
 // AsRelativePath converts a path to a relative path without a "./" prefix. This
 // function leaves trailing slashes to indicate that the path refers to a
-// directory.
+// directory, and converts the path to Unix path.
 func AsRelativePath(path string) string {
-	cleanedPath := filepath.Clean(path)
-
-	end := ""
+	cleanedPath := strings.TrimLeft(ToNixPath(path), "/")
 	if len(cleanedPath) > 1 && strings.HasSuffix(path, "/") {
-		end = "/"
+		return cleanedPath + "/"
 	}
-
-	if filepath.IsAbs(cleanedPath) {
-		return strings.TrimLeft(cleanedPath, "/") + end
-	}
-
-	return cleanedPath + end
+	return cleanedPath
 }
 
 // NormalizeAbsoluteFilePath returns an absolute cleaned path separated by

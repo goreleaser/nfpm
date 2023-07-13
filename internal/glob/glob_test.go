@@ -51,7 +51,7 @@ func TestGlob(t *testing.T) {
 		files, err := Glob("./testdata/dir_a/dir_b/test_b.txt", "/foo/bar/", false)
 		require.NoError(t, err)
 		require.Len(t, files, 1)
-		require.Equal(t, "/foo/bar/test_b.txt", files["testdata/dir_a/dir_b/test_b.txt"])
+		require.Equal(t, "/foo/bar/test_b.txt", filepath.ToSlash(files["testdata/dir_a/dir_b/test_b.txt"]))
 	})
 
 	t.Run("to parent", func(t *testing.T) {
