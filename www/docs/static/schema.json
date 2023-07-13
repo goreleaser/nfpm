@@ -648,6 +648,13 @@
 					"packager": {
 						"type": "string",
 						"title": "organization that actually packaged the software"
+					},
+					"prefixes": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"title": "Prefixes for relocatable packages"
 					}
 				},
 				"additionalProperties": false,
