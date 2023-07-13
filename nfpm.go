@@ -193,8 +193,9 @@ func (c *Config) expandEnvVars() {
 	c.Info.Provides = c.expandEnvVarsStringSlice(c.Info.Provides)
 	c.Info.Suggests = c.expandEnvVarsStringSlice(c.Info.Suggests)
 
-	// Maintainer and vendor fields
+	// Basic metadata fields
 	c.Info.Name = os.Expand(c.Info.Name, c.envMappingFunc)
+	c.Info.Homepage = os.Expand(c.Info.Homepage, c.envMappingFunc)
 	c.Info.Maintainer = os.Expand(c.Info.Maintainer, c.envMappingFunc)
 	c.Info.Vendor = os.Expand(c.Info.Vendor, c.envMappingFunc)
 

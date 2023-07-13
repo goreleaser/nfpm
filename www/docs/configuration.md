@@ -94,6 +94,7 @@ description: Sample package
 vendor: GoReleaser
 
 # Package's homepage.
+# This will expand any env var you set in the field, e.g. homepage: ${CI_PROJECT_URL}
 homepage: https://nfpm.goreleaser.com
 
 # License.
