@@ -404,7 +404,7 @@ deb:
     key_id: bc8acdd415bd80b3
 
   # Additional fields for the control file. Empty fields are ignored.
-  # This will expand any env vars you set in the field values, e.g. Vcs-Git: ${CI_REPOSITORY_URL}
+  # This will expand any env vars you set in the field values, e.g. Vcs-Browser: ${CI_PROJECT_URL}
   fields:
     Bugs: https://github.com/goreleaser/nfpm/issues
 

@@ -367,7 +367,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		packager        = "nope"
 		maintainerEmail = "nope@example.com"
 		homepage        = "https://nfpm.goreleaser.com"
-		vcsURL          = "https://github.com/goreleaser/nfpm.git"
+		vcsBrowser      = "https://github.com/goreleaser/nfpm"
 	)
 
 	t.Run("platform", func(t *testing.T) {
@@ -497,15 +497,15 @@ overrides:
 	})
 
 	t.Run("deb fields", func(t *testing.T) {
-		t.Setenv("CI_REPOSITORY_URL", vcsURL)
+		t.Setenv("CI_PROJECT_URL", vcsBrowser)
 		info, err := nfpm.Parse(strings.NewReader(`
 name: foo
 deb:
   fields:
-    Vcs-Git: ${CI_REPOSITORY_URL}
+    Vcs-Browser: ${CI_PROJECT_URL}
 `))
 		require.NoError(t, err)
-		require.Equal(t, vcsURL, info.Deb.Fields["Vcs-Git"])
+		require.Equal(t, vcsBrowser, info.Deb.Fields["Vcs-Browser"])
 	})
 }
 
