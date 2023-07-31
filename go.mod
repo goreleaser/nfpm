@@ -3,6 +3,7 @@ module github.com/goreleaser/nfpm/v2
 go 1.19
 
 require (
+	dario.cat/mergo v1.0.0
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/ProtonMail/go-crypto v0.0.0-20230626094100-7e9e0395ebec
@@ -13,7 +14,6 @@ require (
 	github.com/google/rpmpack v0.5.0
 	github.com/goreleaser/chglog v0.5.0
 	github.com/goreleaser/fileglob v1.3.0
-	github.com/imdario/mergo v0.3.16
 	github.com/invopop/jsonschema v0.7.0
 	github.com/klauspost/compress v1.16.7
 	github.com/klauspost/pgzip v1.2.6
@@ -46,6 +46,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
+	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
