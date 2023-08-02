@@ -960,6 +960,28 @@ func TestDebsigsSignatureError(t *testing.T) {
 	require.True(t, errors.As(err, &expectedError))
 }
 
+func TestDebsigsSignatureCallback(t *testing.T) {
+	info := exampleInfo()
+	info.Deb.Signature.SignFn = func(r io.Reader) ([]byte, error) {
+		return sign.PGPArmoredDetachSignWithKeyID(r, "../internal/sign/testdata/privkey.asc", "hunter2", nil)
+	}
+
+	var deb bytes.Buffer
+	err := Default.Package(info, &deb)
+	require.NoError(t, err)
+
+	debBinary := extractFileFromAr(t, deb.Bytes(), "debian-binary")
+	controlTarGz := extractFileFromAr(t, deb.Bytes(), "control.tar.gz")
+	dataTarball := extractFileFromAr(t, deb.Bytes(), findDataTarball(t, deb.Bytes()))
+	signature := extractFileFromAr(t, deb.Bytes(), "_gpgorigin")
+
+	message := io.MultiReader(bytes.NewReader(debBinary),
+		bytes.NewReader(controlTarGz), bytes.NewReader(dataTarball))
+
+	err = sign.PGPVerify(message, signature, "../internal/sign/testdata/pubkey.asc")
+	require.NoError(t, err)
+}
+
 func TestDpkgSigSignature(t *testing.T) {
 	info := exampleInfo()
 	info.Deb.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
@@ -988,6 +1010,24 @@ func TestDpkgSigSignatureError(t *testing.T) {
 
 	var expectedError *nfpm.ErrSigningFailure
 	require.True(t, errors.As(err, &expectedError))
+}
+
+func TestDpkgSigSignatureCallback(t *testing.T) {
+	info := exampleInfo()
+	info.Deb.Signature.SignFn = func(r io.Reader) ([]byte, error) {
+		return sign.PGPClearSignWithKeyID(r, "../internal/sign/testdata/privkey.asc", "hunter2", nil)
+	}
+	info.Deb.Signature.Method = "dpkg-sig"
+	info.Deb.Signature.Signer = "bob McRobert"
+
+	var deb bytes.Buffer
+	err := Default.Package(info, &deb)
+	require.NoError(t, err)
+
+	signature := extractFileFromAr(t, deb.Bytes(), "_gpgbuilder")
+
+	err = sign.PGPReadMessage(signature, "../internal/sign/testdata/pubkey.asc")
+	require.NoError(t, err)
 }
 
 func TestDisableGlobbing(t *testing.T) {
