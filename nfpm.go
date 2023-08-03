@@ -109,6 +109,11 @@ type PackagerWithExtension interface {
 	ConventionalExtension() string
 }
 
+type PackagerWithMetadata interface {
+	PackageMetadata(info *MetaInfo, w io.Writer) error
+	ConventionalMetadataFileName(info *Info) string
+}
+
 // Config contains the top level configuration for packages.
 type Config struct {
 	Info           `yaml:",inline" json:",inline"`
@@ -259,6 +264,13 @@ type Info struct {
 	Changelog       string `yaml:"changelog,omitempty" json:"changelog,omitempty" jsonschema:"title=package changelog,example=changelog.yaml,description=see https://github.com/goreleaser/chglog for more details"`
 	DisableGlobbing bool   `yaml:"disable_globbing,omitempty" json:"disable_globbing,omitempty" jsonschema:"title=whether to disable file globbing,default=false"`
 	Target          string `yaml:"-" json:"-"`
+	EnableMetadata  bool   `yaml:"enable_metadata,omitempty" json:"enable_metadata,omitempty" jsonschema:"title=enable_metadata"`
+}
+
+// MetaInfo is a wrapper around information about single package and generated package data
+type MetaInfo struct {
+	Info    *Info
+	Package io.ReadSeeker
 }
 
 func (i *Info) Validate() error {
@@ -390,6 +402,16 @@ type Deb struct {
 	Signature   DebSignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=signature"`
 	Compression string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
 	Fields      map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
+	Metadata    DebMetadata       `yaml:"metadata,omitempty" json:"metadata,omitempty" jsonschema:"title=metadata"`
+}
+
+// DebMetadata is custom configs for generating .changes file that are only available on deb packages.
+type DebMetadata struct {
+	Binary       string            `yaml:"binary" json:"binary" jsonschema:"title=binary"`
+	Distribution string            `yaml:"distribution" json:"distribution" jsonschema:"title=distribution"`
+	Urgency      string            `yaml:"urgency" json:"urgency" jsonschema:"title=urgency"`
+	ChangedBy    string            `yaml:"changed_by" json:"changed_by" jsonschema:"title=changed_by"`
+	Fields       map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
 }
 
 type DebSignature struct {
