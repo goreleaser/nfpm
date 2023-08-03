@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -748,7 +747,7 @@ func TestRPMSignatureError(t *testing.T) {
 func TestRPMSignatureCallback(t *testing.T) {
 	info := exampleInfo()
 	info.RPM.Signature.SignFn = func(r io.Reader) ([]byte, error) {
-		data, err := ioutil.ReadAll(r)
+		data, err := io.ReadAll(r)
 		if err != nil {
 			return nil, err
 		}

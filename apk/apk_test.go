@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -367,7 +366,7 @@ func TestSignatureError(t *testing.T) {
 func TestSignatureCallback(t *testing.T) {
 	info := exampleInfo()
 	info.APK.Signature.SignFn = func(r io.Reader) ([]byte, error) {
-		digest, err := ioutil.ReadAll(r)
+		digest, err := io.ReadAll(r)
 		if err != nil {
 			return nil, err
 		}
