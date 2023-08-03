@@ -126,6 +126,11 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 			info.RPM.Signature.KeyID,
 		))
 	}
+	if signFn := info.RPM.Signature.SignFn; signFn != nil {
+		rpm.SetPGPSigner(func(data []byte) ([]byte, error) {
+			return signFn(bytes.NewReader(data))
+		})
+	}
 
 	if err = createFilesInsideRPM(info, rpm); err != nil {
 		return err

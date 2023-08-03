@@ -17,6 +17,7 @@ import (
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/stretchr/testify/require"
 )
 
@@ -741,6 +742,32 @@ func TestRPMSignatureError(t *testing.T) {
 
 	var expectedError *nfpm.ErrSigningFailure
 	require.True(t, errors.As(err, &expectedError))
+}
+
+func TestRPMSignatureCallback(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.Signature.SignFn = func(r io.Reader) ([]byte, error) {
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		return sign.PGPSignerWithKeyID("../internal/sign/testdata/privkey.asc", "hunter2", nil)(data)
+	}
+
+	pubkeyFileContent, err := os.ReadFile("../internal/sign/testdata/pubkey.gpg")
+	require.NoError(t, err)
+
+	keyring, err := openpgp.ReadKeyRing(bytes.NewReader(pubkeyFileContent))
+	require.NoError(t, err)
+	require.NotNil(t, keyring, "cannot verify sigs with an empty keyring")
+
+	var rpmBuffer bytes.Buffer
+	err = Default.Package(info, &rpmBuffer)
+	require.NoError(t, err)
+
+	_, sigs, err := rpmutils.Verify(bytes.NewReader(rpmBuffer.Bytes()), keyring)
+	require.NoError(t, err)
+	require.Len(t, sigs, 2)
 }
 
 func TestRPMGhostFiles(t *testing.T) {

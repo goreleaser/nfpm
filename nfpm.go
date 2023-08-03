@@ -351,6 +351,13 @@ type PackageSignature struct {
 	KeyFile       string  `yaml:"key_file,omitempty" json:"key_file,omitempty" jsonschema:"title=key file,example=key.gpg"`
 	KeyID         *string `yaml:"key_id,omitempty" json:"key_id,omitempty" jsonschema:"title=key id,example=bc8acdd415bd80b3"`
 	KeyPassphrase string  `yaml:"-" json:"-"` // populated from environment variable
+	// SignFn, if set, will be called with the package-specific data to sign.
+	// For deb and rpm packages, data is the full package content.
+	// For apk packages, data is the SHA1 digest of control tgz.
+	//
+	// This allows for signing implementations other than using a local file
+	// (for example using a remote signer like KMS).
+	SignFn func(data io.Reader) ([]byte, error) `yaml:"-" json:"-"` // populated when used as a library
 }
 
 type RPMSignature struct {

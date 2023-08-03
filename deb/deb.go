@@ -136,7 +136,7 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 		return fmt.Errorf("cannot add data.tar.gz to deb: %w", err)
 	}
 
-	if info.Deb.Signature.KeyFile != "" {
+	if info.Deb.Signature.KeyFile != "" || info.Deb.Signature.SignFn != nil {
 		sig, sigType, err := doSign(info, debianBinary, controlTarGz, dataTarball)
 		if err != nil {
 			return err
@@ -172,7 +172,12 @@ func dpkgSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) (
 		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
 	}
 
-	sig, err := sign.PGPClearSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
+	var sig []byte
+	if signFn := info.Deb.Signature.SignFn; signFn != nil {
+		sig, err = signFn(data)
+	} else {
+		sig, err = sign.PGPClearSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
+	}
 	if err != nil {
 		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
 	}
@@ -193,7 +198,13 @@ func debSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([
 		}
 	}
 
-	sig, err := sign.PGPArmoredDetachSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
+	var sig []byte
+	var err error
+	if signFn := info.Deb.Signature.SignFn; signFn != nil {
+		sig, err = signFn(data)
+	} else {
+		sig, err = sign.PGPArmoredDetachSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
+	}
 	if err != nil {
 		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
 	}

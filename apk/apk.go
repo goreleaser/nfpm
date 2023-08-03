@@ -132,7 +132,7 @@ func (*Apk) Package(info *nfpm.Info, apk io.Writer) (err error) {
 		return err
 	}
 
-	if info.APK.Signature.KeyFile == "" {
+	if info.APK.Signature.KeyFile == "" && info.APK.Signature.SignFn == nil {
 		return combineToApk(apk, &bufControl, &bufData)
 	}
 
@@ -267,8 +267,14 @@ var errNoKeyAddress = errors.New("key name not set and maintainer mail address e
 
 func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) error {
 	return func(tw *tar.Writer) error {
-		signature, err := sign.RSASignSHA1Digest(digest,
-			info.APK.Signature.KeyFile, info.APK.Signature.KeyPassphrase)
+		var signature []byte
+		var err error
+		if signFn := info.APK.Signature.SignFn; signFn != nil {
+			signature, err = signFn(bytes.NewReader(digest))
+		} else {
+			signature, err = sign.RSASignSHA1Digest(digest,
+				info.APK.Signature.KeyFile, info.APK.Signature.KeyPassphrase)
+		}
 		if err != nil {
 			return err
 		}

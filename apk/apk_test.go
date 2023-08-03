@@ -363,6 +363,33 @@ func TestSignatureError(t *testing.T) {
 	require.True(t, errors.As(err, &expectedError))
 }
 
+func TestSignatureCallback(t *testing.T) {
+	info := exampleInfo()
+	info.APK.Signature.SignFn = func(r io.Reader) ([]byte, error) {
+		digest, err := io.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		return sign.RSASignSHA1Digest(digest, "../internal/sign/testdata/rsa.priv", "hunter2")
+	}
+	info.APK.Signature.KeyName = "testkey.rsa.pub"
+	err := nfpm.PrepareForPackager(info, "apk")
+	require.NoError(t, err)
+
+	digest := sha1.New().Sum(nil) // nolint:gosec
+
+	var signatureTarGz bytes.Buffer
+	tw := tar.NewWriter(&signatureTarGz)
+	require.NoError(t, createSignatureBuilder(digest, info)(tw))
+
+	signature := extractFromTar(t, signatureTarGz.Bytes(), ".SIGN.RSA.testkey.rsa.pub")
+	err = sign.RSAVerifySHA1Digest(digest, signature, "../internal/sign/testdata/rsa.pub")
+	require.NoError(t, err)
+
+	err = Default.Package(info, io.Discard)
+	require.NoError(t, err)
+}
+
 func TestDisableGlobbing(t *testing.T) {
 	info := exampleInfo()
 	info.DisableGlobbing = true
