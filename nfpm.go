@@ -180,6 +180,7 @@ func (c *Config) expandEnvVars() {
 	c.Info.Arch = os.Expand(c.Info.Arch, c.envMappingFunc)
 	for or := range c.Overrides {
 		c.Overrides[or].Conflicts = c.expandEnvVarsStringSlice(c.Overrides[or].Conflicts)
+		c.Overrides[or].Predepends = c.expandEnvVarsStringSlice(c.Overrides[or].Predepends)
 		c.Overrides[or].Depends = c.expandEnvVarsStringSlice(c.Overrides[or].Depends)
 		c.Overrides[or].Replaces = c.expandEnvVarsStringSlice(c.Overrides[or].Replaces)
 		c.Overrides[or].Recommends = c.expandEnvVarsStringSlice(c.Overrides[or].Recommends)
@@ -187,6 +188,7 @@ func (c *Config) expandEnvVars() {
 		c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
 	}
 	c.Info.Conflicts = c.expandEnvVarsStringSlice(c.Info.Conflicts)
+	c.Info.Predepends = c.expandEnvVarsStringSlice(c.Info.Predepends)
 	c.Info.Depends = c.expandEnvVarsStringSlice(c.Info.Depends)
 	c.Info.Replaces = c.expandEnvVarsStringSlice(c.Info.Replaces)
 	c.Info.Recommends = c.expandEnvVarsStringSlice(c.Info.Recommends)
@@ -303,6 +305,7 @@ func (i *Info) parseSemver() {
 type Overridables struct {
 	Replaces   []string       `yaml:"replaces,omitempty" json:"replaces,omitempty" jsonschema:"title=replaces directive,example=nfpm"`
 	Provides   []string       `yaml:"provides,omitempty" json:"provides,omitempty" jsonschema:"title=provides directive,example=nfpm"`
+	Predepends []string       `yaml:"predepends,omitempty" json:"predepends,omitempty" jsonschema:"title=predepends directive,example=nfpm"`
 	Depends    []string       `yaml:"depends,omitempty" json:"depends,omitempty" jsonschema:"title=depends directive,example=nfpm"`
 	Recommends []string       `yaml:"recommends,omitempty" json:"recommends,omitempty" jsonschema:"title=recommends directive,example=nfpm"`
 	Suggests   []string       `yaml:"suggests,omitempty" json:"suggests,omitempty" jsonschema:"title=suggests directive,example=nfpm"`
