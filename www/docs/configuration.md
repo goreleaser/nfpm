@@ -408,6 +408,12 @@ deb:
   fields:
     Bugs: https://github.com/goreleaser/nfpm/issues
 
+  # The Debian-specific "predepends" field can be used to ensure the complete installation of a list of
+  # packages (including unpacking, pre- and post installation scripts) prior to the installation of the
+  # built package.
+  predepends:
+    - baz (>= 1.2.3-0)
+
 apk:
   # apk specific architecture name that overrides "arch" without performing any replacements.
   apk_arch: armhf

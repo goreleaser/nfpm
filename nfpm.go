@@ -235,6 +235,7 @@ func (c *Config) expandEnvVars() {
 	for k, v := range c.Info.Deb.Fields {
 		c.Info.Deb.Fields[k] = os.Expand(v, c.envMappingFunc)
 	}
+	c.Info.Deb.Predepends = c.expandEnvVarsStringSlice(c.Info.Deb.Predepends)
 }
 
 // Info contains information about a single package.
@@ -390,6 +391,7 @@ type Deb struct {
 	Signature   DebSignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=signature"`
 	Compression string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
 	Fields      map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
+	Predepends  []string          `yaml:"predepends,omitempty" json:"predepends,omitempty" jsonschema:"title=predepends directive,example=nfpm"`
 }
 
 type DebSignature struct {

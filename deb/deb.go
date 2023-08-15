@@ -720,6 +720,9 @@ Replaces: {{join .}}
 {{- with nonEmpty .Info.Provides}}
 Provides: {{join .}}
 {{- end }}
+{{- with .Info.Deb.Predepends}}
+Pre-Depends: {{join .}}
+{{- end }}
 {{- with .Info.Depends}}
 Depends: {{join .}}
 {{- end }}
