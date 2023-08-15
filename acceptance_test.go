@@ -234,6 +234,7 @@ func TestDebSpecific(t *testing.T) {
 		"rules",
 		"triggers",
 		"breaks",
+		"predepends",
 	}
 	for _, name := range testNames {
 		for _, arch := range formatArchs[format] {
