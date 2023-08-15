@@ -88,6 +88,9 @@ func exampleInfo() *nfpm.Info {
 					Type:        files.TypeDir,
 				},
 			},
+			Deb: nfpm.Deb{
+				Predepends: []string{"less"},
+			},
 		},
 	})
 }

@@ -6,6 +6,7 @@ Architecture: amd64
 Maintainer: Carlos A Becker <pkg@carlosbecker.com>
 Installed-Size: 0
 Replaces: svn
+Pre-Depends: less
 Depends: bash
 Recommends: git
 Suggests: bash
