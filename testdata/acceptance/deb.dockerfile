@@ -177,6 +177,13 @@ RUN dpkg -i /tmp/foo.deb 2>&1 | grep "foo breaks dummy"
 RUN dpkg -r dummy
 RUN dpkg -i /tmp/foo.deb
 
+
+# ---- predepends test ----
+FROM test_base AS predepends
+COPY dummy.deb /tmp/dummy.deb
+# install dummy package
+RUN dpkg --info /tmp/foo.deb | grep "Pre-Depends: less"
+
 # ---- compression test ----
 FROM min AS compression
 RUN test -e /usr/bin/fake
