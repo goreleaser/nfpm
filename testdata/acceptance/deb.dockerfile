@@ -182,7 +182,7 @@ RUN dpkg -i /tmp/foo.deb
 FROM test_base AS predepends
 COPY dummy.deb /tmp/dummy.deb
 # install dummy package
-RUN dpkg --info /tmp/foo.deb | grep "Pre-depends: less"
+RUN dpkg --info /tmp/foo.deb | grep "Pre-Depends: less"
 
 # ---- compression test ----
 FROM min AS compression
