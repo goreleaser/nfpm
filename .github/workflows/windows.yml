@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-pkgs]
     steps:
-      - uses: docker/setup-qemu-action@v2
+      - uses: docker/setup-qemu-action@v3
       - uses: actions/checkout@v4
       - uses: arduino/setup-task@v1
         with:
