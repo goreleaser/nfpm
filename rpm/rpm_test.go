@@ -22,7 +22,7 @@ import (
 )
 
 func exampleInfo() *nfpm.Info {
-	return nfpm.WithDefaults(&nfpm.Info{
+	return setDefaults(nfpm.WithDefaults(&nfpm.Info{
 		Name:        "foo",
 		Arch:        "amd64",
 		Description: "Foo does things",
@@ -85,7 +85,7 @@ func exampleInfo() *nfpm.Info {
 				},
 			},
 		},
-	})
+	}))
 }
 
 func TestConventionalExtension(t *testing.T) {
@@ -118,7 +118,7 @@ func TestRPM(t *testing.T) {
 
 	version, err := rpm.Header.GetString(rpmutils.VERSION)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0", version)
+	require.Equal(t, "1.0.0-1", version)
 
 	release, err := rpm.Header.GetString(rpmutils.RELEASE)
 	require.NoError(t, err)
@@ -298,7 +298,7 @@ func TestWithRPMTags(t *testing.T) {
 
 	version, err := rpm.Header.GetString(rpmutils.VERSION)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0", version)
+	require.Equal(t, "1.0.0-3", version)
 
 	release, err := rpm.Header.GetString(rpmutils.RELEASE)
 	require.NoError(t, err)
@@ -329,7 +329,7 @@ func TestRPMVersion(t *testing.T) {
 	info.Version = "1.0.0" //nolint:golint,goconst
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0", meta.Version)
+	require.Equal(t, "1.0.0-1", meta.Version)
 	require.Equal(t, "1", meta.Release)
 }
 
@@ -339,7 +339,7 @@ func TestRPMVersionWithRelease(t *testing.T) {
 	info.Release = "2"
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0", meta.Version)
+	require.Equal(t, "1.0.0-2", meta.Version)
 	require.Equal(t, "2", meta.Release)
 }
 
@@ -351,14 +351,14 @@ func TestRPMVersionWithPrerelease(t *testing.T) {
 	info.Prerelease = "rc1" // nolint:goconst
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1", meta.Version)
+	require.Equal(t, "1.0.0~rc1-1", meta.Version)
 	require.Equal(t, "1", meta.Release)
 
 	info.Version = "1.0.0~rc1"
 	info.Prerelease = ""
 	meta, err = buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1", meta.Version)
+	require.Equal(t, "1.0.0~rc1-1", meta.Version)
 	require.Equal(t, "1", meta.Release)
 }
 
@@ -367,20 +367,20 @@ func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	info := exampleInfo()
 
 	info.Version = "1.0.0"
-	info.Release = "0.2"
+	info.Release = "2"
 	info.Prerelease = "rc1"
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1", meta.Version)
-	require.Equal(t, "0.2", meta.Release)
+	require.Equal(t, "1.0.0~rc1-2", meta.Version)
+	require.Equal(t, "2", meta.Release)
 
 	info.Version = "1.0.0~rc1"
-	info.Release = "0.2"
+	info.Release = "3"
 	info.Prerelease = ""
 	meta, err = buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1", meta.Version)
-	require.Equal(t, "0.2", meta.Release)
+	require.Equal(t, "1.0.0~rc1-3", meta.Version)
+	require.Equal(t, "3", meta.Release)
 }
 
 func TestRPMVersionWithVersionMetadata(t *testing.T) {
@@ -389,15 +389,16 @@ func TestRPMVersionWithVersionMetadata(t *testing.T) {
 
 	info.Version = "1.0.0+meta"
 	info.VersionMetadata = ""
-	meta, err := buildRPMMeta(nfpm.WithDefaults(info))
+	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0+meta", meta.Version)
+	require.Equal(t, "1.0.0+meta-1", meta.Version)
 
 	info.Version = "1.0.0"
 	info.VersionMetadata = "meta"
+	info.Release = "10"
 	meta, err = buildRPMMeta(nfpm.WithDefaults(info))
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0+meta", meta.Version)
+	require.Equal(t, "1.0.0+meta-10", meta.Version)
 }
 
 func TestWithInvalidEpoch(t *testing.T) {
@@ -504,7 +505,7 @@ func TestArches(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = k
-			info = ensureValidArch(info)
+			info = setDefaults(info)
 			require.Equal(t, archToRPM[k], info.Arch)
 		})
 	}
@@ -512,7 +513,7 @@ func TestArches(t *testing.T) {
 	t.Run("override", func(t *testing.T) {
 		info := exampleInfo()
 		info.RPM.Arch = "foo64"
-		info = ensureValidArch(info)
+		info = setDefaults(info)
 		require.Equal(t, "foo64", info.Arch)
 	})
 }
@@ -569,7 +570,7 @@ func TestRPMConventionalFileName(t *testing.T) {
 	}{
 		{
 			Version: "1.2.3", Release: "", Prerelease: "", Metadata: "",
-			Expected: fmt.Sprintf("%s-1.2.3.%s.rpm", info.Name, info.Arch),
+			Expected: fmt.Sprintf("%s-1.2.3-1.%s.rpm", info.Name, info.Arch),
 		},
 		{
 			Version: "1.2.3", Release: "4", Prerelease: "", Metadata: "",
@@ -581,7 +582,7 @@ func TestRPMConventionalFileName(t *testing.T) {
 		},
 		{
 			Version: "1.2.3", Release: "", Prerelease: "5", Metadata: "",
-			Expected: fmt.Sprintf("%s-1.2.3~5.%s.rpm", info.Name, info.Arch),
+			Expected: fmt.Sprintf("%s-1.2.3~5-1.%s.rpm", info.Name, info.Arch),
 		},
 		{
 			Version: "1.2.3", Release: "1", Prerelease: "5", Metadata: "git",
