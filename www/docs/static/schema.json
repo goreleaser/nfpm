@@ -297,10 +297,8 @@
 						"default": false
 					},
 					"overrides": {
-						"patternProperties": {
-							".*": {
-								"$ref": "#/$defs/Overridables"
-							}
+						"additionalProperties": {
+							"$ref": "#/$defs/Overridables"
 						},
 						"type": "object",
 						"title": "overrides",
@@ -410,13 +408,18 @@
 						"default": "gzip"
 					},
 					"fields": {
-						"patternProperties": {
-							".*": {
-								"type": "string"
-							}
+						"additionalProperties": {
+							"type": "string"
 						},
 						"type": "object",
 						"title": "fields"
+					},
+					"predepends": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"title": "predepends directive"
 					}
 				},
 				"additionalProperties": false,
