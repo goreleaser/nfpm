@@ -88,7 +88,13 @@ func (*RPM) ConventionalFileName(info *nfpm.Info) string {
 	info = setDefaults(info)
 
 	// name-version-release.architecture.rpm
-	return fmt.Sprintf("%s-%s.%s.rpm", info.Name, formatVersion(info), info.Arch)
+	return fmt.Sprintf(
+		"%s-%s-%s.%s.rpm",
+		info.Name,
+		formatVersion(info),
+		defaultTo(info.Release, "1"),
+		info.Arch,
+	)
 }
 
 // ConventionalExtension returns the file name conventionally used for RPM packages
@@ -266,7 +272,7 @@ func formatVersion(info *nfpm.Info) string {
 		version += "+" + info.VersionMetadata
 	}
 
-	return version + "-" + info.Release
+	return version
 }
 
 func defaultTo(in, def string) string {

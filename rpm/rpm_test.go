@@ -118,7 +118,7 @@ func TestRPM(t *testing.T) {
 
 	version, err := rpm.Header.GetString(rpmutils.VERSION)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0-1", version)
+	require.Equal(t, "1.0.0", version)
 
 	release, err := rpm.Header.GetString(rpmutils.RELEASE)
 	require.NoError(t, err)
@@ -298,7 +298,7 @@ func TestWithRPMTags(t *testing.T) {
 
 	version, err := rpm.Header.GetString(rpmutils.VERSION)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0-3", version)
+	require.Equal(t, "1.0.0", version)
 
 	release, err := rpm.Header.GetString(rpmutils.RELEASE)
 	require.NoError(t, err)
@@ -329,7 +329,7 @@ func TestRPMVersion(t *testing.T) {
 	info.Version = "1.0.0" //nolint:golint,goconst
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0-1", meta.Version)
+	require.Equal(t, "1.0.0", meta.Version)
 	require.Equal(t, "1", meta.Release)
 }
 
@@ -339,7 +339,7 @@ func TestRPMVersionWithRelease(t *testing.T) {
 	info.Release = "2"
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0-2", meta.Version)
+	require.Equal(t, "1.0.0", meta.Version)
 	require.Equal(t, "2", meta.Release)
 }
 
@@ -351,14 +351,14 @@ func TestRPMVersionWithPrerelease(t *testing.T) {
 	info.Prerelease = "rc1" // nolint:goconst
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1-1", meta.Version)
+	require.Equal(t, "1.0.0~rc1", meta.Version)
 	require.Equal(t, "1", meta.Release)
 
 	info.Version = "1.0.0~rc1"
 	info.Prerelease = ""
 	meta, err = buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1-1", meta.Version)
+	require.Equal(t, "1.0.0~rc1", meta.Version)
 	require.Equal(t, "1", meta.Release)
 }
 
@@ -371,7 +371,7 @@ func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	info.Prerelease = "rc1"
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1-2", meta.Version)
+	require.Equal(t, "1.0.0~rc1", meta.Version)
 	require.Equal(t, "2", meta.Release)
 
 	info.Version = "1.0.0~rc1"
@@ -379,7 +379,7 @@ func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	info.Prerelease = ""
 	meta, err = buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1-3", meta.Version)
+	require.Equal(t, "1.0.0~rc1", meta.Version)
 	require.Equal(t, "3", meta.Release)
 }
 
@@ -391,14 +391,16 @@ func TestRPMVersionWithVersionMetadata(t *testing.T) {
 	info.VersionMetadata = ""
 	meta, err := buildRPMMeta(info)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0+meta-1", meta.Version)
+	require.Equal(t, "1.0.0+meta", meta.Version)
+	require.Equal(t, "1", meta.Release)
 
 	info.Version = "1.0.0"
 	info.VersionMetadata = "meta"
 	info.Release = "10"
 	meta, err = buildRPMMeta(nfpm.WithDefaults(info))
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0+meta-10", meta.Version)
+	require.Equal(t, "1.0.0+meta", meta.Version)
+	require.Equal(t, "10", meta.Release)
 }
 
 func TestWithInvalidEpoch(t *testing.T) {

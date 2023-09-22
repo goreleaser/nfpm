@@ -123,7 +123,7 @@ RUN command -v zsh
 
 # ---- env-var-version test ----
 FROM min AS env-var-version
-ENV EXPECTVER="Version : 1.0.0~0.1.b1+git.abcdefgh-1" \
+ENV EXPECTVER="Version : 1.0.0~0.1.b1+git.abcdefgh" \
   EXPECTREL="Release : 1"
 RUN rpm -qpi /tmp/foo.rpm | sed -e 's/ \+/ /g' | grep "Version" > found.ver
 RUN rpm -qpi /tmp/foo.rpm | sed -e 's/ \+/ /g' | grep "Release" > found.rel
