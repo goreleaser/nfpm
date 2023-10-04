@@ -507,6 +507,31 @@ deb:
 		require.NoError(t, err)
 		require.Equal(t, vcsBrowser, info.Deb.Fields["Vcs-Browser"])
 	})
+
+	t.Run("contents", func(t *testing.T) {
+		t.Setenv("ARCH", "amd64")
+		t.Setenv("NAME", "foo")
+		info, err := nfpm.Parse(strings.NewReader(`
+name: foo
+contents:
+- src: '${NAME}_${ARCH}'
+  dst: /usr/bin/${NAME}
+
+overrides:
+  deb:
+    contents:
+    - src: '${NAME}_${ARCH}'
+      dst: /debian/usr/bin/${NAME}
+`))
+		require.NoError(t, err)
+		require.Equal(t, 1, info.Contents.Len())
+		contentq := info.Contents[0]
+		require.Equal(t, "/usr/bin/foo", contentq.Destination)
+		require.Equal(t, "foo_amd64", contentq.Source)
+		content2 := info.Overrides["deb"].Contents[0]
+		require.Equal(t, "/debian/usr/bin/foo", content2.Destination)
+		require.Equal(t, "foo_amd64", content2.Source)
+	})
 }
 
 func TestOverrides(t *testing.T) {
