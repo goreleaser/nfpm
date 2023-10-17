@@ -90,11 +90,11 @@ func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 	version := info.Version
 
 	if info.Prerelease != "" {
-		version += "" + info.Prerelease
+		version += "_" + info.Prerelease
 	}
 
 	if info.Release != "" {
-		version += "-" + info.Release
+		version += "_p" + info.Release
 	}
 
 	return fmt.Sprintf("%s_%s_%s.apk", info.Name, version, info.Arch)

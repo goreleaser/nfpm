@@ -478,19 +478,19 @@ func TestAPKConventionalFileName(t *testing.T) {
 		},
 		{
 			Arch: "386", Version: "1.2.3", Prerelease: "git",
-			Expect: "default_1.2.3git_x86.apk",
+			Expect: "default_1.2.3_git_x86.apk",
 		},
 		{
 			Arch: "386", Version: "1.2.3", Prerelease: "git", Release: "1",
-			Expect: "default_1.2.3git-1_x86.apk",
+			Expect: "default_1.2.3_git_p1_x86.apk",
 		},
 		{
 			Arch: "all", Version: "1.2.3",
 			Expect: "default_1.2.3_all.apk",
 		},
 		{
-			Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "beta",
-			Expect: "default_1.2.3beta-1_x86.apk",
+			Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "beta1",
+			Expect: "default_1.2.3_beta1_p1_x86.apk",
 		},
 	}
 
