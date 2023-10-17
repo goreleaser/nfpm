@@ -174,6 +174,9 @@ func (c *Config) expandEnvVarsStringSlice(items []string) []string {
 func (c *Config) expandEnvVarsContents(contents files.Contents) files.Contents {
 	for i := range contents {
 		f := contents[i]
+		if !f.Expand {
+			continue
+		}
 		f.Destination = strings.TrimSpace(os.Expand(f.Destination, c.envMappingFunc))
 		f.Source = strings.TrimSpace(os.Expand(f.Source, c.envMappingFunc))
 	}

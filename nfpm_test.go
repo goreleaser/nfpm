@@ -516,21 +516,28 @@ name: foo
 contents:
 - src: '${NAME}_${ARCH}'
   dst: /usr/bin/${NAME}
+  expand: true
+- src: '${NAME}'
+  dst: /usr/bin/bar
 
 overrides:
   deb:
     contents:
     - src: '${NAME}_${ARCH}'
       dst: /debian/usr/bin/${NAME}
+      expand: true
 `))
 		require.NoError(t, err)
-		require.Equal(t, 1, info.Contents.Len())
-		contentq := info.Contents[0]
-		require.Equal(t, "/usr/bin/foo", contentq.Destination)
-		require.Equal(t, "foo_amd64", contentq.Source)
-		content2 := info.Overrides["deb"].Contents[0]
-		require.Equal(t, "/debian/usr/bin/foo", content2.Destination)
-		require.Equal(t, "foo_amd64", content2.Source)
+		require.Equal(t, 2, info.Contents.Len())
+		content1 := info.Contents[0]
+		require.Equal(t, "/usr/bin/foo", content1.Destination)
+		require.Equal(t, "foo_amd64", content1.Source)
+		content2 := info.Contents[1]
+		require.Equal(t, "/usr/bin/bar", content2.Destination)
+		require.Equal(t, "${NAME}", content2.Source)
+		content3 := info.Overrides["deb"].Contents[0]
+		require.Equal(t, "/debian/usr/bin/foo", content3.Destination)
+		require.Equal(t, "foo_amd64", content3.Source)
 	})
 }
 

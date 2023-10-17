@@ -59,6 +59,7 @@ type Content struct {
 	Type        string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=dir,enum=tree,enum=,default="`
 	Packager    string           `yaml:"packager,omitempty" json:"packager,omitempty"`
 	FileInfo    *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
+	Expand      bool             `yaml:"expand,omitempty" json:"expand,omitempty"`
 }
 
 type ContentFileInfo struct {
