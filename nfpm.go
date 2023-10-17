@@ -171,6 +171,18 @@ func (c *Config) expandEnvVarsStringSlice(items []string) []string {
 	return items
 }
 
+func (c *Config) expandEnvVarsContents(contents files.Contents) files.Contents {
+	for i := range contents {
+		f := contents[i]
+		if !f.Expand {
+			continue
+		}
+		f.Destination = strings.TrimSpace(os.Expand(f.Destination, c.envMappingFunc))
+		f.Source = strings.TrimSpace(os.Expand(f.Source, c.envMappingFunc))
+	}
+	return contents
+}
+
 func (c *Config) expandEnvVars() {
 	// Version related fields
 	c.Info.Release = os.Expand(c.Info.Release, c.envMappingFunc)
@@ -185,6 +197,7 @@ func (c *Config) expandEnvVars() {
 		c.Overrides[or].Recommends = c.expandEnvVarsStringSlice(c.Overrides[or].Recommends)
 		c.Overrides[or].Provides = c.expandEnvVarsStringSlice(c.Overrides[or].Provides)
 		c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
+		c.Overrides[or].Contents = c.expandEnvVarsContents(c.Overrides[or].Contents)
 	}
 	c.Info.Conflicts = c.expandEnvVarsStringSlice(c.Info.Conflicts)
 	c.Info.Depends = c.expandEnvVarsStringSlice(c.Info.Depends)
@@ -192,6 +205,7 @@ func (c *Config) expandEnvVars() {
 	c.Info.Recommends = c.expandEnvVarsStringSlice(c.Info.Recommends)
 	c.Info.Provides = c.expandEnvVarsStringSlice(c.Info.Provides)
 	c.Info.Suggests = c.expandEnvVarsStringSlice(c.Info.Suggests)
+	c.Info.Contents = c.expandEnvVarsContents(c.Info.Contents)
 
 	// Basic metadata fields
 	c.Info.Name = os.Expand(c.Info.Name, c.envMappingFunc)

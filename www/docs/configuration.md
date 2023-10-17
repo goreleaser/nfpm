@@ -253,6 +253,12 @@ contents:
     file_info:
       mode: 0700
 
+  # Using `expand: true`, environment variables will be expanded in both
+  # src and dst.
+  - dst: /usr/local/bin/${NAME}
+    src: "${NAME}"
+    expand: true
+
 # Umask to be used on files without explicit mode set.
 #
 # By default, nFPM will inherit the mode of the original file that's being
