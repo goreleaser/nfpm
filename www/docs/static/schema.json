@@ -103,42 +103,60 @@
 				"properties": {
 					"replaces": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "replaces directive"
 					},
 					"provides": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "provides directive"
 					},
 					"depends": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "depends directive"
 					},
 					"recommends": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "recommends directive"
 					},
 					"suggests": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "suggests directive"
 					},
 					"conflicts": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "conflicts directive"
@@ -151,7 +169,7 @@
 						"type": "integer",
 						"title": "umask for file contents",
 						"examples": [
-							2
+							112
 						]
 					},
 					"scripts": {
@@ -339,6 +357,9 @@
 					},
 					"file_info": {
 						"$ref": "#/$defs/ContentFileInfo"
+					},
+					"expand": {
+						"type": "boolean"
 					}
 				},
 				"additionalProperties": false,
@@ -416,7 +437,10 @@
 					},
 					"predepends": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "predepends directive"
@@ -538,42 +562,60 @@
 				"properties": {
 					"replaces": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "replaces directive"
 					},
 					"provides": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "provides directive"
 					},
 					"depends": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "depends directive"
 					},
 					"recommends": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "recommends directive"
 					},
 					"suggests": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "suggests directive"
 					},
 					"conflicts": {
 						"items": {
-							"type": "string"
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
 						},
 						"type": "array",
 						"title": "conflicts directive"
@@ -586,7 +628,7 @@
 						"type": "integer",
 						"title": "umask for file contents",
 						"examples": [
-							2
+							112
 						]
 					},
 					"scripts": {

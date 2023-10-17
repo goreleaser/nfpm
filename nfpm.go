@@ -323,7 +323,7 @@ type Overridables struct {
 	Suggests   []string       `yaml:"suggests,omitempty" json:"suggests,omitempty" jsonschema:"title=suggests directive,example=nfpm"`
 	Conflicts  []string       `yaml:"conflicts,omitempty" json:"conflicts,omitempty" jsonschema:"title=conflicts directive,example=nfpm"`
 	Contents   files.Contents `yaml:"contents,omitempty" json:"contents,omitempty" jsonschema:"title=files to add to the package"`
-	Umask      os.FileMode    `yaml:"umask,omitempty" json:"umask,omitempty" jsonschema:"title=umask for file contents,example=002"`
+	Umask      os.FileMode    `yaml:"umask,omitempty" json:"umask,omitempty" jsonschema:"title=umask for file contents,example=112"`
 	Scripts    Scripts        `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=scripts to execute"`
 	RPM        RPM            `yaml:"rpm,omitempty" json:"rpm,omitempty" jsonschema:"title=rpm-specific settings"`
 	Deb        Deb            `yaml:"deb,omitempty" json:"deb,omitempty" jsonschema:"title=deb-specific settings"`
