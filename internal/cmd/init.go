@@ -44,7 +44,7 @@ const example = `# nfpm example configuration file
 name: "foo"
 arch: "amd64"
 platform: "linux"
-version: "v1.0.0"
+version: "1.0.0"
 section: "default"
 priority: "extra"
 replaces:
