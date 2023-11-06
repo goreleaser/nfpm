@@ -21,9 +21,9 @@ Thank you!
 | `386` | `i386` |
 | `amd64` | `x86_64` |
 | `arm64` | `arm64` |
-| `armv5` | `armel` |
-| `armv6` | `armhf` |
-| `armv7` | `armhf` |
+| `arm5` | `armel` |
+| `arm6` | `armhf` |
+| `arm7` | `armhf` |
 | `mips64le` | `mips64el` |
 | `mips` | `mips` |
 | `mipsle` | `mipsel` |
@@ -37,9 +37,9 @@ Thank you!
 | `386` | `i386` |
 | `amd64` | `x86_64` |
 | `arm64` | `aarch64` |
-| `armv5` | `armv5tel` |
-| `armv6` | `armv6hl` |
-| `armv7` | `armv7hl` |
+| `arm5` | `armv5tel` |
+| `arm6` | `armv6hl` |
+| `arm7` | `armv7hl` |
 | `mips64le` | `mips64el` |
 | `mips` | `mips` |
 | `mipsle` | `mipsel` |
@@ -51,8 +51,8 @@ Thank you!
 | `386` | `x86` |
 | `amd64` | `x86_64` |
 | `arm64` | `aarch64` |
-| `armv6` | `armhf` |
-| `armv7` | `armv7` |
+| `arm6` | `armhf` |
+| `arm7` | `armv7` |
 | `ppc64le` | `ppc64le` |
 | `s390` | `s390x` |
 
@@ -63,7 +63,7 @@ Thank you!
 | `386` | `i686` |
 | `amd64` | `x86_64` |
 | `arm64` | `aarch64` |
-| `armv5` | `arm` |
-| `armv6` | `arm6h` |
-| `armv7` | `armv7h` |
+| `arm5` | `arm` |
+| `arm6` | `arm6h` |
+| `arm7` | `armv7h` |
 
