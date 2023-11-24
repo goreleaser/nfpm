@@ -523,7 +523,7 @@ func TestMultilineFields(t *testing.T) {
 		Info: nfpm.WithDefaults(&nfpm.Info{
 			Name:        "multiline",
 			Arch:        "riscv64",
-			Description: "This field is a\nmultiline field\nthat should work.",
+			Description: "This field is a\nmultiline field\n\nthat should work.",
 			Priority:    "extra",
 			Version:     "1.0.0",
 			Section:     "default",
