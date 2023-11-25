@@ -3,6 +3,7 @@ package deb
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"crypto/md5" // nolint:gas
@@ -762,8 +763,20 @@ func writeControl(w io.Writer, data controlData) error {
 			return strings.Trim(strings.Join(strs, ", "), " ")
 		},
 		"multiline": func(strs string) string {
-			ret := strings.ReplaceAll(strs, "\n", "\n ")
-			return strings.Trim(ret, " \n")
+			var b strings.Builder
+			s := bufio.NewScanner(strings.NewReader(strings.TrimSpace(strs)))
+			s.Scan()
+			b.Write(bytes.TrimSpace(s.Bytes()))
+			for s.Scan() {
+				b.WriteString("\n ")
+				l := bytes.TrimSpace(s.Bytes())
+				if len(l) == 0 {
+					b.WriteByte('.')
+				} else {
+					b.Write(l)
+				}
+			}
+			return b.String()
 		},
 		"nonEmpty": func(strs []string) []string {
 			var result []string
