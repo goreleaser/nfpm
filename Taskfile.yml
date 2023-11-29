@@ -5,10 +5,6 @@ version: "3"
 env:
   GO111MODULE: on
   GOPROXY: https://proxy.golang.org,direct
-  DOCKER_BUILDKIT: 1
-
-vars:
-  DOCKER: '{{default "docker" .DOCKER}}'
 
 tasks:
   dev:
@@ -135,13 +131,13 @@ tasks:
     desc: Start documentation server
     cmds:
       - task: docs:generate
-      - "{{.DOCKER}} run --rm -it -p 8000:8000 -v ${PWD}/www:/docs docker.io/squidfunk/mkdocs-material"
+      - "mkdocs serve -f www/mkdocs.yml -a 0.0.0.0:8000"
 
   docs:build:
     desc: Build docs
     cmds:
       - task: docs:generate
-      - "{{.DOCKER}} run --rm -v ${PWD}/www:/docs docker.io/squidfunk/mkdocs-material build"
+      - "mkdocs build -f www/mkdocs.yml"
 
   release:
     desc: Create a new tag
