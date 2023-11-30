@@ -391,14 +391,14 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer) (md5buf bytes.Buf
 				Format:   tar.FormatGNU,
 				Uname:    file.FileInfo.Owner,
 				Gname:    file.FileInfo.Group,
-				ModTime:  file.FileInfo.MTime,
+				ModTime:  time.Unix(0, 0),
 			})
 		case files.TypeSymlink:
 			err = newItemInsideTar(tw, []byte{}, &tar.Header{
 				Name:     files.AsExplicitRelativePath(file.Destination),
 				Linkname: file.Source,
 				Typeflag: tar.TypeSymlink,
-				ModTime:  file.FileInfo.MTime,
+				ModTime:  time.Unix(0, 0),
 				Format:   tar.FormatGNU,
 			})
 		case files.TypeDebChangelog:
@@ -554,18 +554,27 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		return nil, err
 	}
 
-	filesToCreate := map[string][]byte{
-		"./control":   body.Bytes(),
-		"./md5sums":   md5sums,
-		"./conffiles": conffiles(info),
+	// ensure predefined sort order of these items
+	filesToCreateNames := []string{
+		"./control",
+		"./md5sums",
+		"./conffiles",
+	}
+
+	filesToCreateContent := [][]byte{
+		body.Bytes(),
+		md5sums,
+		conffiles(info),
 	}
 
 	triggers := createTriggers(info)
 	if len(triggers) > 0 {
-		filesToCreate["./triggers"] = triggers
+		filesToCreateNames = append(filesToCreateNames, "./triggers")
+		filesToCreateContent = append(filesToCreateContent, triggers)
 	}
 
-	for name, content := range filesToCreate {
+	for idx, name := range filesToCreateNames {
+		content := filesToCreateContent[idx]
 		if err := newFileInsideTar(out, name, content); err != nil {
 			return nil, err
 		}
@@ -638,7 +647,7 @@ func newFileInsideTar(out *tar.Writer, name string, content []byte) error {
 		Name:     files.AsExplicitRelativePath(name),
 		Size:     int64(len(content)),
 		Mode:     0o644,
-		ModTime:  time.Now(),
+		ModTime:  time.Unix(0, 0),
 		Typeflag: tar.TypeReg,
 		Format:   tar.FormatGNU,
 	})
@@ -657,7 +666,7 @@ func newFilePathInsideTar(out *tar.Writer, path, dest string, mode int64) error 
 		Name:     files.AsExplicitRelativePath(dest),
 		Size:     int64(len(content)),
 		Mode:     mode,
-		ModTime:  time.Now(),
+		ModTime:  time.Unix(0, 0),
 		Typeflag: tar.TypeReg,
 		Format:   tar.FormatGNU,
 	})
