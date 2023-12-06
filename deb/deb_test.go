@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/chglog"
@@ -29,6 +30,8 @@ import (
 
 // nolint: gochecknoglobals
 var update = flag.Bool("update", false, "update .golden files")
+
+var mtime = time.Date(2023, 11, 5, 23, 15, 17, 0, time.UTC)
 
 func exampleInfo() *nfpm.Info {
 	return nfpm.WithDefaults(&nfpm.Info{
@@ -269,8 +272,8 @@ func TestSpecialFiles(t *testing.T) {
 	var w bytes.Buffer
 	out := tar.NewWriter(&w)
 	filePath := "testdata/templates.golden"
-	require.Error(t, newFilePathInsideTar(out, "doesnotexit", "templates", 0o644))
-	require.NoError(t, newFilePathInsideTar(out, filePath, "templates", 0o644))
+	require.Error(t, newFilePathInsideTar(out, "doesnotexit", "templates", 0o644, mtime))
+	require.NoError(t, newFilePathInsideTar(out, filePath, "templates", 0o644, mtime))
 	in := tar.NewReader(&w)
 	header, err := in.Next()
 	require.NoError(t, err)

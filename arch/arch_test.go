@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
@@ -15,6 +16,8 @@ import (
 	"github.com/klauspost/pgzip"
 	"github.com/stretchr/testify/require"
 )
+
+var mtime = time.Date(2023, 11, 5, 23, 15, 17, 0, time.UTC)
 
 func exampleInfo() *nfpm.Info {
 	return nfpm.WithDefaults(&nfpm.Info{
@@ -297,7 +300,7 @@ func TestArchMtree(t *testing.T) {
 			Mode:        0o777,
 			Type:        files.TypeSymlink,
 		},
-	})
+	}, mtime)
 	require.NoError(t, err)
 
 	tw.Close()
@@ -362,7 +365,7 @@ func TestGlob(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := map[string][]string{
-		"./.PKGINFO":                     {"mode=644", "size=185", "type=file"},
+		"./.PKGINFO":                     {"mode=644", "size=184", "type=file"},
 		"./usr/":                         {"mode=755", "type=dir"},
 		"./usr/share/":                   {"mode=755", "type=dir"},
 		"./usr/share/nfpm-repro/":        {"mode=755", "type=dir"},

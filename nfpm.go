@@ -8,8 +8,10 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"dario.cat/mergo"
 	"github.com/AlekSi/pointer"
@@ -255,25 +257,26 @@ func (c *Config) expandEnvVars() {
 // Info contains information about a single package.
 type Info struct {
 	Overridables    `yaml:",inline" json:",inline"`
-	Name            string `yaml:"name" json:"name" jsonschema:"title=package name"`
-	Arch            string `yaml:"arch" json:"arch" jsonschema:"title=target architecture,example=amd64"`
-	Platform        string `yaml:"platform,omitempty" json:"platform,omitempty" jsonschema:"title=target platform,example=linux,default=linux"`
-	Epoch           string `yaml:"epoch,omitempty" json:"epoch,omitempty" jsonschema:"title=version epoch,example=2,default=extracted from version"`
-	Version         string `yaml:"version" json:"version" jsonschema:"title=version,example=v1.0.2,example=2.0.1"`
-	VersionSchema   string `yaml:"version_schema,omitempty" json:"version_schema,omitempty" jsonschema:"title=version schema,enum=semver,enum=none,default=semver"`
-	Release         string `yaml:"release,omitempty" json:"release,omitempty" jsonschema:"title=version release,example=1"`
-	Prerelease      string `yaml:"prerelease,omitempty" json:"prerelease,omitempty" jsonschema:"title=version prerelease,default=extracted from version"`
-	VersionMetadata string `yaml:"version_metadata,omitempty" json:"version_metadata,omitempty" jsonschema:"title=version metadata,example=git"`
-	Section         string `yaml:"section,omitempty" json:"section,omitempty" jsonschema:"title=package section,example=default"`
-	Priority        string `yaml:"priority,omitempty" json:"priority,omitempty" jsonschema:"title=package priority,example=extra"`
-	Maintainer      string `yaml:"maintainer,omitempty" json:"maintainer,omitempty" jsonschema:"title=package maintainer,example=me@example.com"`
-	Description     string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"title=package description"`
-	Vendor          string `yaml:"vendor,omitempty" json:"vendor,omitempty" jsonschema:"title=package vendor,example=MyCorp"`
-	Homepage        string `yaml:"homepage,omitempty" json:"homepage,omitempty" jsonschema:"title=package homepage,example=https://example.com"`
-	License         string `yaml:"license,omitempty" json:"license,omitempty" jsonschema:"title=package license,example=MIT"`
-	Changelog       string `yaml:"changelog,omitempty" json:"changelog,omitempty" jsonschema:"title=package changelog,example=changelog.yaml,description=see https://github.com/goreleaser/chglog for more details"`
-	DisableGlobbing bool   `yaml:"disable_globbing,omitempty" json:"disable_globbing,omitempty" jsonschema:"title=whether to disable file globbing,default=false"`
-	Target          string `yaml:"-" json:"-"`
+	Name            string    `yaml:"name" json:"name" jsonschema:"title=package name"`
+	Arch            string    `yaml:"arch" json:"arch" jsonschema:"title=target architecture,example=amd64"`
+	Platform        string    `yaml:"platform,omitempty" json:"platform,omitempty" jsonschema:"title=target platform,example=linux,default=linux"`
+	Epoch           string    `yaml:"epoch,omitempty" json:"epoch,omitempty" jsonschema:"title=version epoch,example=2,default=extracted from version"`
+	Version         string    `yaml:"version" json:"version" jsonschema:"title=version,example=v1.0.2,example=2.0.1"`
+	VersionSchema   string    `yaml:"version_schema,omitempty" json:"version_schema,omitempty" jsonschema:"title=version schema,enum=semver,enum=none,default=semver"`
+	Release         string    `yaml:"release,omitempty" json:"release,omitempty" jsonschema:"title=version release,example=1"`
+	Prerelease      string    `yaml:"prerelease,omitempty" json:"prerelease,omitempty" jsonschema:"title=version prerelease,default=extracted from version"`
+	VersionMetadata string    `yaml:"version_metadata,omitempty" json:"version_metadata,omitempty" jsonschema:"title=version metadata,example=git"`
+	Section         string    `yaml:"section,omitempty" json:"section,omitempty" jsonschema:"title=package section,example=default"`
+	Priority        string    `yaml:"priority,omitempty" json:"priority,omitempty" jsonschema:"title=package priority,example=extra"`
+	Maintainer      string    `yaml:"maintainer,omitempty" json:"maintainer,omitempty" jsonschema:"title=package maintainer,example=me@example.com"`
+	Description     string    `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"title=package description"`
+	Vendor          string    `yaml:"vendor,omitempty" json:"vendor,omitempty" jsonschema:"title=package vendor,example=MyCorp"`
+	Homepage        string    `yaml:"homepage,omitempty" json:"homepage,omitempty" jsonschema:"title=package homepage,example=https://example.com"`
+	License         string    `yaml:"license,omitempty" json:"license,omitempty" jsonschema:"title=package license,example=MIT"`
+	Changelog       string    `yaml:"changelog,omitempty" json:"changelog,omitempty" jsonschema:"title=package changelog,example=changelog.yaml,description=see https://github.com/goreleaser/chglog for more details"`
+	DisableGlobbing bool      `yaml:"disable_globbing,omitempty" json:"disable_globbing,omitempty" jsonschema:"title=whether to disable file globbing,default=false"`
+	Date            time.Time `yaml:"time,omitempty" json:"time,omitempty" jsonschema:"title=time to set into the files generated by nFPM,default=$SOURCE_DATE_EPOCH"`
+	Target          string    `yaml:"-" json:"-"`
 }
 
 func (i *Info) Validate() error {
@@ -470,7 +473,13 @@ func PrepareForPackager(info *Info, packager string) (err error) {
 		return ErrFieldEmpty{"version"}
 	}
 
-	info.Contents, err = files.PrepareForPackager(info.Contents, info.Umask, packager, info.DisableGlobbing)
+	info.Contents, err = files.PrepareForPackager(
+		info.Contents,
+		info.Umask,
+		packager,
+		info.DisableGlobbing,
+		info.Date,
+	)
 
 	return err
 }
@@ -489,7 +498,13 @@ func Validate(info *Info) (err error) {
 	}
 
 	for packager := range packagers {
-		_, err := files.PrepareForPackager(info.Contents, info.Umask, packager, info.DisableGlobbing)
+		_, err := files.PrepareForPackager(
+			info.Contents,
+			info.Umask,
+			packager,
+			info.DisableGlobbing,
+			info.Date,
+		)
 		if err != nil {
 			return err
 		}
@@ -521,7 +536,9 @@ func WithDefaults(info *Info) *Info {
 	if info.Umask == 0 {
 		info.Umask = 0o02
 	}
-
+	if info.Date.IsZero() {
+		info.Date = getSourceDateEpoch()
+	}
 	switch info.VersionSchema {
 	case "none":
 		// No change to the version or prerelease info set in the YAML file
@@ -533,6 +550,19 @@ func WithDefaults(info *Info) *Info {
 	}
 
 	return info
+}
+
+func getSourceDateEpoch() time.Time {
+	now := time.Now().UTC()
+	epoch := os.Getenv("SOURCE_DATE_EPOCH")
+	if epoch == "" {
+		return now
+	}
+	sde, err := strconv.ParseInt(epoch, 10, 64)
+	if err != nil {
+		return now
+	}
+	return time.Unix(sde, 0).UTC()
 }
 
 // ErrSigningFailure is returned whenever something went wrong during

@@ -105,7 +105,7 @@ func (c Contents) ContainsDestination(dst string) bool {
 	return false
 }
 
-func (c *Content) WithFileInfoDefaults(umask fs.FileMode) *Content {
+func (c *Content) WithFileInfoDefaults(umask fs.FileMode, mtime time.Time) *Content {
 	cc := &Content{
 		Source:      c.Source,
 		Destination: c.Destination,
@@ -129,7 +129,7 @@ func (c *Content) WithFileInfoDefaults(umask fs.FileMode) *Content {
 		cc.FileInfo.Mode = 0o755
 	}
 	if (cc.Type == TypeDir || cc.Type == TypeImplicitDir) && cc.FileInfo.MTime.IsZero() {
-		cc.FileInfo.MTime = time.Now()
+		cc.FileInfo.MTime = mtime
 	}
 
 	// determine if we still need info
@@ -152,7 +152,7 @@ func (c *Content) WithFileInfoDefaults(umask fs.FileMode) *Content {
 	}
 
 	if cc.FileInfo.MTime.IsZero() {
-		cc.FileInfo.MTime = time.Now().UTC()
+		cc.FileInfo.MTime = mtime
 	}
 	return cc
 }
@@ -234,7 +234,13 @@ func (c *Content) String() string {
 //
 // If no packager is specified, only the files that are relevant for any
 // packager are considered.
-func PrepareForPackager(rawContents Contents, umask fs.FileMode, packager string, disableGlobbing bool) (Contents, error) {
+func PrepareForPackager(
+	rawContents Contents,
+	umask fs.FileMode,
+	packager string,
+	disableGlobbing bool,
+	mtime time.Time,
+) (Contents, error) {
 	contentMap := make(map[string]*Content)
 
 	for _, content := range rawContents {
@@ -250,12 +256,12 @@ func PrepareForPackager(rawContents Contents, umask fs.FileMode, packager string
 				return nil, contentCollisionError(content, presentContent)
 			}
 
-			err := addParents(contentMap, content.Destination)
+			err := addParents(contentMap, content.Destination, mtime)
 			if err != nil {
 				return nil, err
 			}
 
-			cc := content.WithFileInfoDefaults(umask)
+			cc := content.WithFileInfoDefaults(umask, mtime)
 			cc.Source = ToNixPath(cc.Source)
 			cc.Destination = NormalizeAbsoluteDirPath(cc.Destination)
 			contentMap[cc.Destination] = cc
@@ -269,17 +275,17 @@ func PrepareForPackager(rawContents Contents, umask fs.FileMode, packager string
 				return nil, contentCollisionError(content, presentContent)
 			}
 
-			err := addParents(contentMap, content.Destination)
+			err := addParents(contentMap, content.Destination, mtime)
 			if err != nil {
 				return nil, err
 			}
 
-			cc := content.WithFileInfoDefaults(umask)
+			cc := content.WithFileInfoDefaults(umask, mtime)
 			cc.Source = ToNixPath(cc.Source)
 			cc.Destination = NormalizeAbsoluteFilePath(cc.Destination)
 			contentMap[cc.Destination] = cc
 		case TypeTree:
-			err := addTree(contentMap, content, umask)
+			err := addTree(contentMap, content, umask, mtime)
 			if err != nil {
 				return nil, fmt.Errorf("add tree: %w", err)
 			}
@@ -293,7 +299,7 @@ func PrepareForPackager(rawContents Contents, umask fs.FileMode, packager string
 				return nil, err
 			}
 
-			err = addGlobbedFiles(contentMap, globbed, content, umask)
+			err = addGlobbedFiles(contentMap, globbed, content, umask, mtime)
 			if err != nil {
 				return nil, fmt.Errorf("add globbed files from %q: %w", content.Source, err)
 			}
@@ -336,7 +342,7 @@ func isRelevantForPackager(packager string, content *Content) bool {
 	return true
 }
 
-func addParents(contentMap map[string]*Content, path string) error {
+func addParents(contentMap map[string]*Content, path string, mtime time.Time) error {
 	for _, parent := range sortedParents(path) {
 		parent = NormalizeAbsoluteDirPath(parent)
 		// check for content collision and just overwrite previously created
@@ -362,7 +368,7 @@ func addParents(contentMap map[string]*Content, path string) error {
 				Owner: "root",
 				Group: "root",
 				Mode:  0o755,
-				MTime: time.Now(),
+				MTime: mtime,
 			},
 		}
 	}
@@ -390,7 +396,13 @@ func sortedParents(dst string) []string {
 	return paths
 }
 
-func addGlobbedFiles(all map[string]*Content, globbed map[string]string, origFile *Content, umask fs.FileMode) error {
+func addGlobbedFiles(
+	all map[string]*Content,
+	globbed map[string]string,
+	origFile *Content,
+	umask fs.FileMode,
+	mtime time.Time,
+) error {
 	for src, dst := range globbed {
 		dst = NormalizeAbsoluteFilePath(dst)
 		presentContent, destinationOccupied := all[dst]
@@ -400,7 +412,7 @@ func addGlobbedFiles(all map[string]*Content, globbed map[string]string, origFil
 			return contentCollisionError(&c, presentContent)
 		}
 
-		err := addParents(all, dst)
+		err := addParents(all, dst, mtime)
 		if err != nil {
 			return err
 		}
@@ -419,7 +431,7 @@ func addGlobbedFiles(all map[string]*Content, globbed map[string]string, origFil
 			Type:        origFile.Type,
 			FileInfo:    newFileInfo,
 			Packager:    origFile.Packager,
-		}).WithFileInfoDefaults(umask)
+		}).WithFileInfoDefaults(umask, mtime)
 		if dst, err := os.Readlink(src); err == nil {
 			newFile.Source = dst
 			newFile.Type = TypeSymlink
@@ -431,7 +443,12 @@ func addGlobbedFiles(all map[string]*Content, globbed map[string]string, origFil
 	return nil
 }
 
-func addTree(all map[string]*Content, tree *Content, umask os.FileMode) error {
+func addTree(
+	all map[string]*Content,
+	tree *Content,
+	umask os.FileMode,
+	mtime time.Time,
+) error {
 	if tree.Destination != "/" && tree.Destination != "" {
 		presentContent, destinationOccupied := all[NormalizeAbsoluteDirPath(tree.Destination)]
 		if destinationOccupied && presentContent.Type != TypeImplicitDir {
@@ -439,7 +456,7 @@ func addTree(all map[string]*Content, tree *Content, umask os.FileMode) error {
 		}
 	}
 
-	err := addParents(all, tree.Destination)
+	err := addParents(all, tree.Destination, mtime)
 	if err != nil {
 		return err
 	}
@@ -491,7 +508,7 @@ func addTree(all map[string]*Content, tree *Content, umask os.FileMode) error {
 			}
 		}
 
-		all[c.Destination] = c.WithFileInfoDefaults(umask)
+		all[c.Destination] = c.WithFileInfoDefaults(umask, mtime)
 
 		return nil
 	})

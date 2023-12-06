@@ -151,7 +151,7 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 	// .PKGINFO must be the first entry in .MTREE
 	entries = append([]MtreeEntry{*pkginfoEntry}, entries...)
 
-	err = createMtree(tw, entries)
+	err = createMtree(tw, entries, info.Date)
 	if err != nil {
 		return fmt.Errorf("create mtree: %w", err)
 	}
@@ -311,7 +311,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		return nil, err
 	}
 
-	builddate := strconv.FormatInt(time.Now().Unix(), 10)
+	builddate := strconv.FormatInt(info.Date.Unix(), 10)
 	totalSizeStr := strconv.FormatInt(totalSize, 10)
 
 	err = writeKVPairs(buf, map[string]string{
@@ -376,7 +376,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		Mode:     0o644,
 		Name:     ".PKGINFO",
 		Size:     int64(size),
-		ModTime:  time.Now(),
+		ModTime:  info.Date,
 	})
 	if err != nil {
 		return nil, err
@@ -395,7 +395,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 
 	return &MtreeEntry{
 		Destination: ".PKGINFO",
-		Time:        time.Now().Unix(),
+		Time:        info.Date.Unix(),
 		Mode:        0o644,
 		Size:        int64(size),
 		Type:        files.TypeFile,
@@ -485,7 +485,7 @@ func (me *MtreeEntry) WriteTo(w io.Writer) (int64, error) {
 	}
 }
 
-func createMtree(tw *tar.Writer, entries []MtreeEntry) error {
+func createMtree(tw *tar.Writer, entries []MtreeEntry, mtime time.Time) error {
 	buf := &bytes.Buffer{}
 	gw := pgzip.NewWriter(buf)
 	defer gw.Close()
@@ -509,7 +509,7 @@ func createMtree(tw *tar.Writer, entries []MtreeEntry) error {
 		Mode:     0o644,
 		Name:     ".MTREE",
 		Size:     int64(buf.Len()),
-		ModTime:  time.Now(),
+		ModTime:  mtime,
 	})
 	if err != nil {
 		return err
@@ -562,7 +562,7 @@ func createScripts(info *nfpm.Info, tw *tar.Writer) error {
 		Mode:     0o644,
 		Name:     ".INSTALL",
 		Size:     int64(buf.Len()),
-		ModTime:  time.Now(),
+		ModTime:  info.Date,
 	})
 	if err != nil {
 		return err

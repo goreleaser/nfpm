@@ -5,14 +5,17 @@ import (
 	"io"
 	"net/mail"
 	"os"
-	"reflect"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/stretchr/testify/require"
 )
+
+var mtime = time.Date(2023, 11, 5, 23, 15, 17, 0, time.UTC)
 
 func TestRegister(t *testing.T) {
 	format := "TestRegister"
@@ -97,6 +100,7 @@ func TestDefaults(t *testing.T) {
 				Version:     "2.4.1",
 				Description: "no description given",
 				Arch:        "arm64",
+				Date:        mtime,
 				Overridables: nfpm.Overridables{
 					Umask: 0o112,
 				},
@@ -107,6 +111,7 @@ func TestDefaults(t *testing.T) {
 		require.Equal(t, makeinfo(), info)
 	})
 	t.Run("none given", func(t *testing.T) {
+		t.Setenv("SOURCE_DATE_EPOCH", strconv.FormatInt(mtime.Unix(), 10))
 		got := nfpm.WithDefaults(&nfpm.Info{})
 		require.Equal(t, nfpm.Info{
 			Platform:    "linux",
@@ -114,6 +119,7 @@ func TestDefaults(t *testing.T) {
 			Version:     "0.0.0",
 			Prerelease:  "rc0",
 			Description: "no description given",
+			Date:        mtime,
 			Overridables: nfpm.Overridables{
 				Umask: 0o002,
 			},
@@ -573,9 +579,9 @@ func TestOverrides(t *testing.T) {
 	}
 
 	t.Run("no_overrides", func(t *testing.T) {
-		info, err := config.Get("doesnotexist")
+		pkg, err := config.Get("doesnotexist")
 		require.NoError(t, err)
-		require.True(t, reflect.DeepEqual(&config.Info, info))
+		require.Empty(t, pkg.Depends)
 	})
 }
 
