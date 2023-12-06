@@ -256,7 +256,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Suggests:    suggests,
 		Conflicts:   conflicts,
 		Compressor:  info.RPM.Compression,
-		BuildTime:   info.Date,
+		BuildTime:   info.MTime,
 		BuildHost:   hostname,
 	}, nil
 }
@@ -372,7 +372,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 		case files.TypeSymlink:
 			file = asRPMSymlink(content)
 		case files.TypeDir:
-			file = asRPMDirectory(content, info.Date)
+			file = asRPMDirectory(content, info.MTime)
 		case files.TypeImplicitDir:
 			// we don't need to add imlicit directories to RPMs
 			continue

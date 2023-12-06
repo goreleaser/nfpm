@@ -100,7 +100,7 @@ func TestDefaults(t *testing.T) {
 				Version:     "2.4.1",
 				Description: "no description given",
 				Arch:        "arm64",
-				Date:        mtime,
+				MTime:       mtime,
 				Overridables: nfpm.Overridables{
 					Umask: 0o112,
 				},
@@ -119,7 +119,7 @@ func TestDefaults(t *testing.T) {
 			Version:     "0.0.0",
 			Prerelease:  "rc0",
 			Description: "no description given",
-			Date:        mtime,
+			MTime:       mtime,
 			Overridables: nfpm.Overridables{
 				Umask: 0o002,
 			},
