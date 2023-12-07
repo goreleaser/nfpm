@@ -100,6 +100,13 @@ homepage: https://nfpm.goreleaser.com
 # License.
 license: MIT
 
+# Date to be used as mtime on internal files.
+#
+# Default is the value of $SOURCE_DATE_EPOCH (which should be an Unix time),
+# or the current time.
+# Read more about SOURCE_DATE_EPOCH at https://reproducible-builds.org/docs/source-date-epoch/
+mtime: "2009-11-10T23:00:00Z"
+
 # Changelog YAML file, see: https://github.com/goreleaser/chglog
 changelog: "changelog.yaml"
 

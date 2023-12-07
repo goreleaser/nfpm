@@ -16,6 +16,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/maps"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
 )
@@ -151,7 +152,7 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 	// .PKGINFO must be the first entry in .MTREE
 	entries = append([]MtreeEntry{*pkginfoEntry}, entries...)
 
-	err = createMtree(tw, entries)
+	err = createMtree(tw, entries, info.MTime)
 	if err != nil {
 		return fmt.Errorf("create mtree: %w", err)
 	}
@@ -181,25 +182,23 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 				Type:        files.TypeDir,
 			})
 
-			err := tw.WriteHeader(&tar.Header{
+			if err := tw.WriteHeader(&tar.Header{
 				Name:     content.Destination,
 				Mode:     int64(content.Mode()),
 				Typeflag: tar.TypeDir,
 				ModTime:  content.ModTime(),
 				Uname:    content.FileInfo.Owner,
 				Gname:    content.FileInfo.Group,
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, 0, err
 			}
 		case files.TypeSymlink:
-			err := tw.WriteHeader(&tar.Header{
+			if err := tw.WriteHeader(&tar.Header{
 				Name:     content.Destination,
 				Linkname: content.Source,
 				ModTime:  content.ModTime(),
 				Typeflag: tar.TypeSymlink,
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, 0, err
 			}
 
@@ -311,7 +310,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		return nil, err
 	}
 
-	builddate := strconv.FormatInt(time.Now().Unix(), 10)
+	builddate := strconv.FormatInt(info.MTime.Unix(), 10)
 	totalSizeStr := strconv.FormatInt(totalSize, 10)
 
 	err = writeKVPairs(buf, map[string]string{
@@ -362,8 +361,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		if content.Type == files.TypeConfig || content.Type == files.TypeConfigNoReplace {
 			path := files.AsRelativePath(content.Destination)
 
-			err = writeKVPair(buf, "backup", path)
-			if err != nil {
+			if err := writeKVPair(buf, "backup", path); err != nil {
 				return nil, err
 			}
 		}
@@ -376,7 +374,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		Mode:     0o644,
 		Name:     ".PKGINFO",
 		Size:     int64(size),
-		ModTime:  time.Now(),
+		ModTime:  info.MTime,
 	})
 	if err != nil {
 		return nil, err
@@ -388,14 +386,13 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	r := io.TeeReader(buf, md5Hash)
 	r = io.TeeReader(r, sha256Hash)
 
-	_, err = io.Copy(tw, r)
-	if err != nil {
+	if _, err = io.Copy(tw, r); err != nil {
 		return nil, err
 	}
 
 	return &MtreeEntry{
 		Destination: ".PKGINFO",
-		Time:        time.Now().Unix(),
+		Time:        info.MTime.Unix(),
 		Mode:        0o644,
 		Size:        int64(size),
 		Type:        files.TypeFile,
@@ -404,10 +401,9 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	}, nil
 }
 
-func writeKVPairs(w io.Writer, s map[string]string) error {
-	for key, val := range s {
-		err := writeKVPair(w, key, val)
-		if err != nil {
+func writeKVPairs(w io.Writer, pairs map[string]string) error {
+	for _, key := range maps.Keys(pairs) {
+		if err := writeKVPair(w, key, pairs[key]); err != nil {
 			return err
 		}
 	}
@@ -485,7 +481,7 @@ func (me *MtreeEntry) WriteTo(w io.Writer) (int64, error) {
 	}
 }
 
-func createMtree(tw *tar.Writer, entries []MtreeEntry) error {
+func createMtree(tw *tar.Writer, entries []MtreeEntry, mtime time.Time) error {
 	buf := &bytes.Buffer{}
 	gw := pgzip.NewWriter(buf)
 	defer gw.Close()
@@ -509,7 +505,7 @@ func createMtree(tw *tar.Writer, entries []MtreeEntry) error {
 		Mode:     0o644,
 		Name:     ".MTREE",
 		Size:     int64(buf.Len()),
-		ModTime:  time.Now(),
+		ModTime:  mtime,
 	})
 	if err != nil {
 		return err
@@ -562,7 +558,7 @@ func createScripts(info *nfpm.Info, tw *tar.Writer) error {
 		Mode:     0o644,
 		Name:     ".INSTALL",
 		Size:     int64(buf.Len()),
-		ModTime:  time.Now(),
+		ModTime:  info.MTime,
 	})
 	if err != nil {
 		return err
@@ -573,10 +569,10 @@ func createScripts(info *nfpm.Info, tw *tar.Writer) error {
 }
 
 func writeScripts(w io.Writer, scripts map[string]string) error {
-	for script, path := range scripts {
+	for _, script := range maps.Keys(scripts) {
 		fmt.Fprintf(w, "function %s() {\n", script)
 
-		fl, err := os.Open(path)
+		fl, err := os.Open(scripts[script])
 		if err != nil {
 			return err
 		}

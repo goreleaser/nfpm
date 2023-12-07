@@ -45,6 +45,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/maps"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	gzip "github.com/klauspost/pgzip"
 )
@@ -343,18 +344,21 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 		// bin/echo 'running preinstall.sh' // do stuff here
 		//
 		// exit 0
-		for script, dest := range map[string]string{
-			info.Scripts.PreInstall:      ".pre-install",
-			info.APK.Scripts.PreUpgrade:  ".pre-upgrade",
-			info.Scripts.PostInstall:     ".post-install",
-			info.APK.Scripts.PostUpgrade: ".post-upgrade",
-			info.Scripts.PreRemove:       ".pre-deinstall",
-			info.Scripts.PostRemove:      ".post-deinstall",
-		} {
-			if script != "" {
-				if err := newScriptInsideTarGz(tw, script, dest); err != nil {
-					return err
-				}
+		scripts := map[string]string{
+			".pre-install":    info.Scripts.PreInstall,
+			".pre-upgrade":    info.APK.Scripts.PreUpgrade,
+			".post-install":   info.Scripts.PostInstall,
+			".post-upgrade":   info.APK.Scripts.PostUpgrade,
+			".pre-deinstall":  info.Scripts.PreRemove,
+			".post-deinstall": info.Scripts.PostRemove,
+		}
+		for _, name := range maps.Keys(scripts) {
+			path := scripts[name]
+			if path == "" {
+				continue
+			}
+			if err := newScriptInsideTarGz(tw, path, name); err != nil {
+				return err
 			}
 		}
 
