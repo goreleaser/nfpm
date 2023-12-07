@@ -22,10 +22,10 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/maps"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
 	"github.com/ulikunitz/xz"
-	"golang.org/x/exp/maps"
 )
 
 const packagerName = "deb"

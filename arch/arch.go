@@ -16,9 +16,9 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/maps"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
-	"golang.org/x/exp/maps"
 )
 
 var ErrInvalidPkgName = errors.New("archlinux: package names may only contain alphanumeric characters or one of ., _, +, or -, and may not start with hyphen or dot")
