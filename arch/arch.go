@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -404,10 +405,9 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	}, nil
 }
 
-func writeKVPairs(w io.Writer, s map[string]string) error {
-	for key, val := range s {
-		err := writeKVPair(w, key, val)
-		if err != nil {
+func writeKVPairs(w io.Writer, pairs map[string]string) error {
+	for _, key := range keys(pairs) {
+		if err := writeKVPair(w, key, pairs[key]); err != nil {
 			return err
 		}
 	}
@@ -573,10 +573,10 @@ func createScripts(info *nfpm.Info, tw *tar.Writer) error {
 }
 
 func writeScripts(w io.Writer, scripts map[string]string) error {
-	for script, path := range scripts {
+	for _, script := range keys(scripts) {
 		fmt.Fprintf(w, "function %s() {\n", script)
 
-		fl, err := os.Open(path)
+		fl, err := os.Open(scripts[script])
 		if err != nil {
 			return err
 		}
@@ -595,4 +595,13 @@ func writeScripts(w io.Writer, scripts map[string]string) error {
 	}
 
 	return nil
+}
+
+func keys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
