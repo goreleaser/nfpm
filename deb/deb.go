@@ -13,6 +13,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -575,47 +576,50 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		mode     int64
 	}
 
-	specialFiles := map[string]*fileAndMode{}
-	specialFiles[info.Scripts.PreInstall] = &fileAndMode{
-		fileName: "preinst",
-		mode:     0o755,
-	}
-	specialFiles[info.Scripts.PostInstall] = &fileAndMode{
-		fileName: "postinst",
-		mode:     0o755,
-	}
-	specialFiles[info.Scripts.PreRemove] = &fileAndMode{
-		fileName: "prerm",
-		mode:     0o755,
-	}
-	specialFiles[info.Scripts.PostRemove] = &fileAndMode{
-		fileName: "postrm",
-		mode:     0o755,
-	}
-	specialFiles[info.Overridables.Deb.Scripts.Rules] = &fileAndMode{
-		fileName: "rules",
-		mode:     0o755,
-	}
-	specialFiles[info.Overridables.Deb.Scripts.Templates] = &fileAndMode{
-		fileName: "templates",
-		mode:     0o644,
-	}
-	specialFiles[info.Overridables.Deb.Scripts.Config] = &fileAndMode{
-		fileName: "config",
-		mode:     0o755,
+	specialFiles := map[string]*fileAndMode{
+		"preinst": {
+			fileName: info.Scripts.PreInstall,
+			mode:     0o755,
+		},
+		"postinst": {
+			fileName: info.Scripts.PostInstall,
+			mode:     0o755,
+		},
+		"prerm": {
+			fileName: info.Scripts.PreRemove,
+			mode:     0o755,
+		},
+		"postrm": {
+			fileName: info.Scripts.PostRemove,
+			mode:     0o755,
+		},
+		"rules": {
+			fileName: info.Overridables.Deb.Scripts.Rules,
+			mode:     0o755,
+		},
+		"templates": {
+			fileName: info.Overridables.Deb.Scripts.Templates,
+			mode:     0o644,
+		},
+		"config": {
+			fileName: info.Overridables.Deb.Scripts.Config,
+			mode:     0o755,
+		},
 	}
 
-	for path, destMode := range specialFiles {
-		if path != "" {
-			if err := newFilePathInsideTar(
-				out,
-				path,
-				destMode.fileName,
-				destMode.mode,
-				info.MTime,
-			); err != nil {
-				return nil, err
-			}
+	for _, filename := range keys(specialFiles) {
+		dets := specialFiles[filename]
+		if dets.fileName == "" {
+			continue
+		}
+		if err := newFilePathInsideTar(
+			out,
+			dets.fileName,
+			filename,
+			dets.mode,
+			info.MTime,
+		); err != nil {
+			return nil, err
 		}
 	}
 
@@ -796,4 +800,13 @@ func writeControl(w io.Writer, data controlData) error {
 		},
 	})
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
+}
+
+func keys[T any](m map[string]T) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
