@@ -44,7 +44,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: stable
       - uses: arduino/setup-task@v1
@@ -71,7 +71,7 @@ jobs:
       NO_TEST_PPC64LE: "true"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: stable
       - uses: arduino/setup-task@v1
