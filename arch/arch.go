@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
+	"golang.org/x/exp/maps"
 )
 
 var ErrInvalidPkgName = errors.New("archlinux: package names may only contain alphanumeric characters or one of ., _, +, or -, and may not start with hyphen or dot")
@@ -402,7 +402,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 }
 
 func writeKVPairs(w io.Writer, pairs map[string]string) error {
-	for _, key := range keys(pairs) {
+	for _, key := range maps.Keys(pairs) {
 		if err := writeKVPair(w, key, pairs[key]); err != nil {
 			return err
 		}
@@ -569,7 +569,7 @@ func createScripts(info *nfpm.Info, tw *tar.Writer) error {
 }
 
 func writeScripts(w io.Writer, scripts map[string]string) error {
-	for _, script := range keys(scripts) {
+	for _, script := range maps.Keys(scripts) {
 		fmt.Fprintf(w, "function %s() {\n", script)
 
 		fl, err := os.Open(scripts[script])
@@ -591,13 +591,4 @@ func writeScripts(w io.Writer, scripts map[string]string) error {
 	}
 
 	return nil
-}
-
-func keys(m map[string]string) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
 }

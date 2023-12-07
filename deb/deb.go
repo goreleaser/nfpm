@@ -13,7 +13,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -26,6 +25,7 @@ import (
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
 	"github.com/ulikunitz/xz"
+	"golang.org/x/exp/maps"
 )
 
 const packagerName = "deb"
@@ -607,7 +607,7 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		},
 	}
 
-	for _, filename := range keys(specialFiles) {
+	for _, filename := range maps.Keys(specialFiles) {
 		dets := specialFiles[filename]
 		if dets.fileName == "" {
 			continue
@@ -800,13 +800,4 @@ func writeControl(w io.Writer, data controlData) error {
 		},
 	})
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
-}
-
-func keys[T any](m map[string]T) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
 }

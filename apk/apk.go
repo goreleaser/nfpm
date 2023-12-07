@@ -38,7 +38,6 @@ import (
 	"io"
 	"net/mail"
 	"os"
-	"sort"
 	"strings"
 	"sync/atomic"
 	"text/template"
@@ -46,6 +45,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/maps"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	gzip "github.com/klauspost/pgzip"
 )
@@ -352,7 +352,7 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 			".pre-deinstall":  info.Scripts.PreRemove,
 			".post-deinstall": info.Scripts.PostRemove,
 		}
-		for _, name := range keys(scripts) {
+		for _, name := range maps.Keys(scripts) {
 			path := scripts[name]
 			if path == "" {
 				continue
@@ -511,13 +511,4 @@ func writeControl(w io.Writer, data controlData) error {
 		},
 	})
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
-}
-
-func keys(m map[string]string) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
 }
