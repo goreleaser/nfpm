@@ -3,9 +3,9 @@ package arch
 import (
 	"archive/tar"
 	"bytes"
+	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -325,6 +325,7 @@ func TestGlob(t *testing.T) {
 		Name:       "nfpm-repro",
 		Version:    "1.0.0",
 		Maintainer: "asdfasdf",
+		MTime:      mtime,
 
 		Overridables: nfpm.Overridables{
 			Contents: files.Contents{
@@ -332,7 +333,8 @@ func TestGlob(t *testing.T) {
 					Destination: "/usr/share/nfpm-repro",
 					Source:      "../files/testdata/globtest/different-sizes/*/*.txt",
 					FileInfo: &files.ContentFileInfo{
-						Mode: 0o644,
+						Mode:  0o644,
+						MTime: mtime,
 					},
 				},
 			},
@@ -364,15 +366,16 @@ func TestGlob(t *testing.T) {
 	mtreeContentBts, err := io.ReadAll(mtreeGzip)
 	require.NoError(t, err)
 
+	expectedTime := fmt.Sprintf("time=%d.0", mtime.Unix())
 	expected := map[string][]string{
-		"./.PKGINFO":                     {"mode=644", "size=184", "type=file"},
-		"./usr/":                         {"mode=755", "type=dir"},
-		"./usr/share/":                   {"mode=755", "type=dir"},
-		"./usr/share/nfpm-repro/":        {"mode=755", "type=dir"},
-		"./usr/share/nfpm-repro/a/":      {"mode=755", "type=dir"},
-		"./usr/share/nfpm-repro/a/a.txt": {"mode=644", "size=4", "type=file", "md5digest=d3b07384d113edec49eaa6238ad5ff00", "sha256digest=b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"},
-		"./usr/share/nfpm-repro/b/":      {"mode=755", "type=dir"},
-		"./usr/share/nfpm-repro/b/b.txt": {"mode=644", "size=7", "type=file", "md5digest=551a67cc6e06de1910061fe318d28f72", "sha256digest=73a2c64f9545172c1195efb6616ca5f7afd1df6f245407cafb90de3998a1c97f"},
+		"./.PKGINFO":                     {expectedTime, "mode=644", "size=185", "type=file", "md5digest=408daafbd01f6622f0bfd6ccdf96735f", "sha256digest=98468a4b87a677958f872662f476b14ff28cc1f8c6bd0029869e21946b4cd8d2"},
+		"./usr/":                         {expectedTime, "mode=755", "type=dir"},
+		"./usr/share/":                   {expectedTime, "mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/":        {expectedTime, "mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/a/":      {expectedTime, "mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/a/a.txt": {expectedTime, "mode=644", "size=4", "type=file", "md5digest=d3b07384d113edec49eaa6238ad5ff00", "sha256digest=b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"},
+		"./usr/share/nfpm-repro/b/":      {expectedTime, "mode=755", "type=dir"},
+		"./usr/share/nfpm-repro/b/b.txt": {expectedTime, "mode=644", "size=7", "type=file", "md5digest=551a67cc6e06de1910061fe318d28f72", "sha256digest=73a2c64f9545172c1195efb6616ca5f7afd1df6f245407cafb90de3998a1c97f"},
 	}
 
 	for _, line := range strings.Split(string(mtreeContentBts), "\n") {
@@ -382,8 +385,6 @@ func TestGlob(t *testing.T) {
 		parts := strings.Fields(line)
 		filename := parts[0]
 		expect := expected[filename]
-		modTime := parts[1]
-		require.Regexp(t, regexp.MustCompile(`time=\d+\.\d`), modTime)
-		require.Equal(t, expect, parts[2:len(expect)+2], filename)
+		require.Equal(t, expect, strings.Split(line, " ")[1:], filename)
 	}
 }

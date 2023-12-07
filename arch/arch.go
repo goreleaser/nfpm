@@ -182,25 +182,23 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 				Type:        files.TypeDir,
 			})
 
-			err := tw.WriteHeader(&tar.Header{
+			if err := tw.WriteHeader(&tar.Header{
 				Name:     content.Destination,
 				Mode:     int64(content.Mode()),
 				Typeflag: tar.TypeDir,
 				ModTime:  content.ModTime(),
 				Uname:    content.FileInfo.Owner,
 				Gname:    content.FileInfo.Group,
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, 0, err
 			}
 		case files.TypeSymlink:
-			err := tw.WriteHeader(&tar.Header{
+			if err := tw.WriteHeader(&tar.Header{
 				Name:     content.Destination,
 				Linkname: content.Source,
 				ModTime:  content.ModTime(),
 				Typeflag: tar.TypeSymlink,
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, 0, err
 			}
 
@@ -363,8 +361,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		if content.Type == files.TypeConfig || content.Type == files.TypeConfigNoReplace {
 			path := files.AsRelativePath(content.Destination)
 
-			err = writeKVPair(buf, "backup", path)
-			if err != nil {
+			if err := writeKVPair(buf, "backup", path); err != nil {
 				return nil, err
 			}
 		}
@@ -389,8 +386,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	r := io.TeeReader(buf, md5Hash)
 	r = io.TeeReader(r, sha256Hash)
 
-	_, err = io.Copy(tw, r)
-	if err != nil {
+	if _, err = io.Copy(tw, r); err != nil {
 		return nil, err
 	}
 

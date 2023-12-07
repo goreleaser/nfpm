@@ -299,8 +299,7 @@ func PrepareForPackager(
 				return nil, err
 			}
 
-			err = addGlobbedFiles(contentMap, globbed, content, umask, mtime)
-			if err != nil {
+			if err := addGlobbedFiles(contentMap, globbed, content, umask, mtime); err != nil {
 				return nil, fmt.Errorf("add globbed files from %q: %w", content.Source, err)
 			}
 		default:
@@ -412,8 +411,7 @@ func addGlobbedFiles(
 			return contentCollisionError(&c, presentContent)
 		}
 
-		err := addParents(all, dst, mtime)
-		if err != nil {
+		if err := addParents(all, dst, mtime); err != nil {
 			return err
 		}
 
