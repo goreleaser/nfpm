@@ -575,6 +575,7 @@ func TestOverrides(t *testing.T) {
 				}
 			}
 			require.Equal(t, "amd64", pkg.Arch)
+			require.Equal(t, time.Date(2023, 0o1, 0o2, 0, 0, 0, 0, time.UTC), pkg.MTime)
 		})
 	}
 

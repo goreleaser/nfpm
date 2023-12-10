@@ -123,7 +123,7 @@ type Config struct {
 func (c *Config) Get(format string) (info *Info, err error) {
 	info = &Info{}
 	// make a deep copy of info
-	if err = mergo.Merge(info, c.Info); err != nil {
+	if err = mergo.Merge(info, c.Info, mergo.WithOverride); err != nil {
 		return nil, fmt.Errorf("failed to merge config into info: %w", err)
 	}
 	override, ok := c.Overrides[format]
