@@ -786,13 +786,13 @@ func TestMD5Sums(t *testing.T) {
 	md5sumsFile := extractFileFromTar(t, inflate(t, "gz", controlTarGz), "./md5sums")
 
 	lines := strings.Split(strings.TrimRight(string(md5sumsFile), "\n"), "\n")
-	require.Equal(t, nFiles, len(lines), string(md5sumsFile))
+	require.Len(t, lines, nFiles, string(md5sumsFile))
 
 	dataTar := inflate(t, tarballName, dataTarball)
 
 	for _, line := range lines {
 		parts := strings.Fields(line)
-		require.Equal(t, len(parts), 2)
+		require.Len(t, parts, 2)
 
 		md5sum, fileName := parts[0], parts[1]
 
@@ -858,8 +858,8 @@ func TestDirectories(t *testing.T) {
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 	h = extractFileHeaderFromTar(t, dataTarball, "/etc/bar")
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
-	require.Equal(t, h.Mode, int64(0o700))
-	require.Equal(t, h.Uname, "test")
+	require.Equal(t, int64(0o700), h.Mode)
+	require.Equal(t, "test", h.Uname)
 	h = extractFileHeaderFromTar(t, dataTarball, "/etc/baz")
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 
@@ -963,7 +963,7 @@ func TestDebsigsSignatureError(t *testing.T) {
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
-	require.True(t, errors.As(err, &expectedError))
+	require.ErrorAs(t, err, &expectedError)
 }
 
 func TestDebsigsSignatureCallback(t *testing.T) {
@@ -1015,7 +1015,7 @@ func TestDpkgSigSignatureError(t *testing.T) {
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
-	require.True(t, errors.As(err, &expectedError))
+	require.ErrorAs(t, err, &expectedError)
 }
 
 func TestDpkgSigSignatureCallback(t *testing.T) {
@@ -1183,7 +1183,7 @@ func TestIgnoreUnrelatedFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	contents := tarContents(t, inflate(t, tarballName, dataTarball))
-	require.Len(t, contents, 0)
+	require.Empty(t, contents)
 }
 
 func extractFileFromTar(tb testing.TB, tarFile []byte, filename string) []byte {

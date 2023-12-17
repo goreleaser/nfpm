@@ -354,13 +354,13 @@ func TestSignatureError(t *testing.T) {
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
-	require.True(t, errors.As(err, &expectedError))
+	require.ErrorAs(t, err, &expectedError)
 
 	info.APK.Signature.KeyName = ""
 	info.Maintainer = ""
 	digest = sha1.New().Sum(nil) // nolint:gosec
 	err = createSignature(&signatureTarGz, info, digest)
-	require.True(t, errors.As(err, &expectedError))
+	require.ErrorAs(t, err, &expectedError)
 }
 
 func TestSignatureCallback(t *testing.T) {
@@ -575,8 +575,8 @@ func TestDirectories(t *testing.T) {
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/bar")
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
-	require.Equal(t, h.Mode, int64(0o700))
-	require.Equal(t, h.Uname, "test")
+	require.Equal(t, int64(0o700), h.Mode)
+	require.Equal(t, "test", h.Uname)
 	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/baz")
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
 }

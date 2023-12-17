@@ -744,7 +744,7 @@ func TestRPMSignatureError(t *testing.T) {
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
-	require.True(t, errors.As(err, &expectedError))
+	require.ErrorAs(t, err, &expectedError)
 }
 
 func TestRPMSignatureCallback(t *testing.T) {
@@ -892,7 +892,7 @@ func TestDirectories(t *testing.T) {
 	// claiming explicit ownership of /etc/bar which already contains a file
 	h, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), "/etc/bar")
 	require.NoError(t, err)
-	require.NotEqual(t, h.Mode()&int(tagDirectory), 0)
+	require.NotEqual(t, 0, h.Mode()&int(tagDirectory))
 
 	// creating an empty folder (which also implies ownership)
 	h, err = extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), "/etc/baz")
@@ -931,7 +931,7 @@ func TestIgnoreUnrelatedFiles(t *testing.T) {
 	err := Default.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
-	require.Len(t, getTree(t, rpmFileBuffer.Bytes()), 0)
+	require.Empty(t, getTree(t, rpmFileBuffer.Bytes()))
 }
 
 func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
