@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/md5" // nolint:gas
-	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
@@ -157,33 +156,10 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 func doSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
 	switch info.Deb.Signature.Method {
 	case "dpkg-sig":
-		return dpkgSign(info, debianBinary, controlTarGz, dataTarball)
+		return nil, "", fmt.Errorf("this signature type is no longer supported, please use 'debsign' instead")
 	default:
 		return debSign(info, debianBinary, controlTarGz, dataTarball)
 	}
-}
-
-func dpkgSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
-	sigType := "builder"
-	if info.Deb.Signature.Type != "" {
-		sigType = info.Deb.Signature.Type
-	}
-
-	data, err := readDpkgSigData(info, debianBinary, controlTarGz, dataTarball)
-	if err != nil {
-		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
-	}
-
-	var sig []byte
-	if signFn := info.Deb.Signature.SignFn; signFn != nil {
-		sig, err = signFn(data)
-	} else {
-		sig, err = sign.PGPClearSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
-	}
-	if err != nil {
-		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
-	}
-	return sig, sigType, nil
 }
 
 func debSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
@@ -216,61 +192,6 @@ func debSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([
 func readDebsignData(debianBinary, controlTarGz, dataTarball []byte) io.Reader {
 	return io.MultiReader(bytes.NewReader(debianBinary), bytes.NewReader(controlTarGz),
 		bytes.NewReader(dataTarball))
-}
-
-// reference: https://manpages.debian.org/jessie/dpkg-sig/dpkg-sig.1.en.html
-const dpkgSigTemplate = `
-Hash: SHA1
-
-Version: 4
-Signer: {{ .Signer }}
-Date: {{ .Date }}
-Role: {{ .Role }}
-Files:
-{{range .Files}}{{ .Md5Sum }} {{ .Sha1Sum }} {{ .Size }} {{ .Name }}{{end}}
-`
-
-type dpkgSigData struct {
-	Signer string
-	Date   time.Time
-	Role   string
-	Files  []dpkgSigFileLine
-	Info   *nfpm.Info
-}
-type dpkgSigFileLine struct {
-	Md5Sum  [16]byte
-	Sha1Sum [20]byte
-	Size    int
-	Name    string
-}
-
-func newDpkgSigFileLine(name string, fileContent []byte) dpkgSigFileLine {
-	return dpkgSigFileLine{
-		Name:    name,
-		Md5Sum:  md5.Sum(fileContent),
-		Sha1Sum: sha1.Sum(fileContent),
-		Size:    len(fileContent),
-	}
-}
-
-func readDpkgSigData(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) (io.Reader, error) {
-	data := dpkgSigData{
-		Signer: info.Deb.Signature.Signer,
-		Date:   info.MTime,
-		Role:   info.Deb.Signature.Type,
-		Files: []dpkgSigFileLine{
-			newDpkgSigFileLine("debian-binary", debianBinary),
-			newDpkgSigFileLine("control.tar.gz", controlTarGz),
-			newDpkgSigFileLine("data.tar.gz", dataTarball),
-		},
-	}
-	temp, _ := template.New("dpkg-sig").Parse(dpkgSigTemplate)
-	buf := &bytes.Buffer{}
-	err := temp.Execute(buf, data)
-	if err != nil {
-		return nil, fmt.Errorf("dpkg-sig template error: %w", err)
-	}
-	return buf, nil
 }
 
 func (*Deb) SetPackagerDefaults(info *nfpm.Info) {

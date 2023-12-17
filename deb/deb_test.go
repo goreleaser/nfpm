@@ -988,54 +988,6 @@ func TestDebsigsSignatureCallback(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestDpkgSigSignature(t *testing.T) {
-	info := exampleInfo()
-	info.Deb.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
-	info.Deb.Signature.KeyPassphrase = "hunter2"
-	info.Deb.Signature.Method = "dpkg-sig"
-	info.Deb.Signature.Signer = "bob McRobert"
-
-	var deb bytes.Buffer
-	err := Default.Package(info, &deb)
-	require.NoError(t, err)
-
-	signature := extractFileFromAr(t, deb.Bytes(), "_gpgbuilder")
-
-	err = sign.PGPReadMessage(signature, "../internal/sign/testdata/pubkey.asc")
-	require.NoError(t, err)
-}
-
-func TestDpkgSigSignatureError(t *testing.T) {
-	info := exampleInfo()
-	info.Deb.Signature.KeyFile = "/does/not/exist"
-	info.Deb.Signature.Method = "dpkg-sig"
-
-	var deb bytes.Buffer
-	err := Default.Package(info, &deb)
-	require.Error(t, err)
-
-	var expectedError *nfpm.ErrSigningFailure
-	require.ErrorAs(t, err, &expectedError)
-}
-
-func TestDpkgSigSignatureCallback(t *testing.T) {
-	info := exampleInfo()
-	info.Deb.Signature.SignFn = func(r io.Reader) ([]byte, error) {
-		return sign.PGPClearSignWithKeyID(r, "../internal/sign/testdata/privkey.asc", "hunter2", nil)
-	}
-	info.Deb.Signature.Method = "dpkg-sig"
-	info.Deb.Signature.Signer = "bob McRobert"
-
-	var deb bytes.Buffer
-	err := Default.Package(info, &deb)
-	require.NoError(t, err)
-
-	signature := extractFileFromAr(t, deb.Bytes(), "_gpgbuilder")
-
-	err = sign.PGPReadMessage(signature, "../internal/sign/testdata/pubkey.asc")
-	require.NoError(t, err)
-}
-
 func TestDisableGlobbing(t *testing.T) {
 	info := exampleInfo()
 	info.DisableGlobbing = true

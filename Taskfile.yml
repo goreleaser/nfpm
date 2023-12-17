@@ -139,6 +139,15 @@ tasks:
       - task: docs:generate
       - "mkdocs build -f www/mkdocs.yml"
 
+  schema:generate:
+    desc: Generate JSONSchema
+    cmds:
+      - go run ./cmd/nfpm/ schema -o ./www/docs/static/schema.json
+    sources:
+      - pkg/config/config.go
+    generates:
+      - ./www/docs/static/schema.json
+
   release:
     desc: Create a new tag
     vars:
