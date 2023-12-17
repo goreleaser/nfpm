@@ -43,8 +43,8 @@ contents:
 	require.Len(t, config.Contents, 2)
 	for _, f := range config.Contents {
 		t.Logf("%+#v\n", f)
-		require.Equal(t, f.Source, "a")
-		require.Equal(t, f.Destination, "b")
+		require.Equal(t, "a", f.Source)
+		require.Equal(t, "b", f.Destination)
 	}
 }
 
@@ -157,8 +157,8 @@ contents:
 	require.NoError(t, err)
 
 	f := config.Contents[0]
-	require.Equal(t, f.Source, "files_test.go")
-	require.Equal(t, f.Destination, "/b")
+	require.Equal(t, "files_test.go", f.Source)
+	require.Equal(t, "/b", f.Destination)
 	require.Equal(t, f.FileInfo.Mode, fi.Mode())
 	require.Equal(t, f.FileInfo.MTime, fi.ModTime())
 }
@@ -193,8 +193,8 @@ contents:
 	require.NoError(t, err)
 
 	f := config.Contents[0]
-	require.Equal(t, f.Source, "files_test.go")
-	require.Equal(t, f.Destination, "/b")
+	require.Equal(t, "files_test.go", f.Source)
+	require.Equal(t, "/b", f.Destination)
 	require.Equal(t, f.FileInfo.Mode, os.FileMode(0o123))
 	require.Equal(t, f.FileInfo.MTime, ct)
 }
@@ -603,7 +603,7 @@ func TestImplicitDirectories(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, withoutFileInfo(results), expected)
+	require.Equal(t, expected, withoutFileInfo(results))
 }
 
 func TestRelevantFiles(t *testing.T) {

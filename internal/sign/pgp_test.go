@@ -2,7 +2,6 @@ package sign
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -106,7 +105,7 @@ func TestPGPSignerError(t *testing.T) {
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
-	require.True(t, errors.As(err, &expectedError))
+	require.ErrorAs(t, err, &expectedError)
 }
 
 func TestNoSigningKey(t *testing.T) {

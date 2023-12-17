@@ -563,13 +563,13 @@ func TestOverrides(t *testing.T) {
 		t.Run(format, func(t *testing.T) {
 			pkg, err := config.Get(format)
 			require.NoError(t, err)
-			require.Equal(t, pkg.Depends, []string{format + "_depend"})
+			require.Equal(t, []string{format + "_depend"}, pkg.Depends)
 			for _, f := range pkg.Contents {
 				switch f.Packager {
 				case format:
 					require.Contains(t, f.Destination, "/"+format)
 				case "":
-					require.True(t, f.Destination == "/etc/foo/whatever.conf")
+					require.Equal(t, "/etc/foo/whatever.conf", f.Destination)
 				default:
 					t.Fatalf("invalid packager: %s", f.Packager)
 				}
