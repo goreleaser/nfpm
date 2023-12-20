@@ -120,6 +120,39 @@ scoops:
     description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
     license: MIT
 
+nix:
+  - name: nfpm
+    repository:
+      owner: goreleaser
+      name: nur
+    homepage: https://nfpm.goreleaser.com
+    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+    path: pkgs/nfpm/default.nix
+    license: mit
+    extra_install: |-
+      installManPage ./manpages/nfpm.1.gz
+      installShellCompletion ./completions/*
+
+winget:
+  - name: nfpm
+    publisher: goreleaser
+    license: Copyright Becker Software LTDA
+    copyright: Becker Software LTDA
+    homepage: https://nfpm.goreleaser.com
+    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
+    repository:
+      owner: goreleaser
+      name: winget-pkgs
+      branch: "nfpm-{{.Version}}"
+      pull_request:
+        enabled: true
+        draft: true
+        check_boxes: true
+        base:
+          owner: microsoft
+          name: winget-pkgs
+          branch: master
+
 nfpms:
   - file_name_template: "{{ .ConventionalFileName }}"
     homepage: https://nfpm.goreleaser.com
