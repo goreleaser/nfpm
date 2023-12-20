@@ -751,6 +751,76 @@ func TestRelevantFiles(t *testing.T) {
 	})
 }
 
+func TestTreeOwner(t *testing.T) {
+	results, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source:      filepath.Join("testdata", "tree"),
+				Destination: "/base",
+				Type:        files.TypeTree,
+				FileInfo: &files.ContentFileInfo{
+					Owner: "goreleaser",
+					Group: "goreleaser",
+					MTime: mtime,
+				},
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	for _, f := range results {
+		require.Equal(t, "goreleaser", f.FileInfo.Owner, f.Destination)
+		require.Equal(t, "goreleaser", f.FileInfo.Group, f.Destination)
+	}
+
+	require.Equal(t, files.Contents{
+		{
+			Source:      "",
+			Destination: "/base/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      "",
+			Destination: "/base/files/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      filepath.Join("testdata", "tree", "files", "a"),
+			Destination: "/base/files/a",
+			Type:        files.TypeFile,
+		},
+		{
+			Source:      "",
+			Destination: "/base/files/b/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      filepath.Join("testdata", "tree", "files", "b", "c"),
+			Destination: "/base/files/b/c",
+			Type:        files.TypeFile,
+		},
+		{
+			Source:      "",
+			Destination: "/base/symlinks/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      "/etc/foo",
+			Destination: "/base/symlinks/link1",
+			Type:        files.TypeSymlink,
+		},
+		{
+			Source:      "../files/a",
+			Destination: "/base/symlinks/link2",
+			Type:        files.TypeSymlink,
+		},
+	}, withoutFileInfo(results))
+}
+
 func TestTree(t *testing.T) {
 	results, err := files.PrepareForPackager(
 		files.Contents{

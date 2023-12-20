@@ -471,7 +471,13 @@ func addTree(
 
 		destination := filepath.Join(tree.Destination, relPath)
 
-		c := &Content{}
+		c := &Content{
+			FileInfo: &ContentFileInfo{},
+		}
+		if tree.FileInfo != nil {
+			c.FileInfo.Owner = tree.FileInfo.Owner
+			c.FileInfo.Group = tree.FileInfo.Group
+		}
 
 		switch {
 		case d.IsDir():
@@ -482,28 +488,22 @@ func addTree(
 
 			c.Type = TypeDir
 			c.Destination = NormalizeAbsoluteDirPath(destination)
-			c.FileInfo = &ContentFileInfo{
-				Owner: "root",
-				Group: "root",
-				Mode:  info.Mode() &^ umask,
-				MTime: info.ModTime(),
-			}
+			c.FileInfo.Mode = info.Mode() &^ umask
+			c.FileInfo.MTime = info.ModTime()
 		case d.Type()&os.ModeSymlink != 0:
 			linkDestination, err := os.Readlink(path)
 			if err != nil {
 				return err
 			}
 
+			c.Type = TypeSymlink
 			c.Source = filepath.ToSlash(strings.TrimPrefix(linkDestination, filepath.VolumeName(linkDestination)))
 			c.Destination = NormalizeAbsoluteFilePath(destination)
-			c.Type = TypeSymlink
 		default:
+			c.Type = TypeFile
 			c.Source = path
 			c.Destination = NormalizeAbsoluteFilePath(destination)
-			c.Type = TypeFile
-			c.FileInfo = &ContentFileInfo{
-				Mode: d.Type() &^ umask,
-			}
+			c.FileInfo.Mode = d.Type() &^ umask
 		}
 
 		all[c.Destination] = c.WithFileInfoDefaults(umask, mtime)
