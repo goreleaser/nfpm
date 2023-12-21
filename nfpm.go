@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/modtime"
 	"gopkg.in/yaml.v3"
 )
 
@@ -537,7 +537,7 @@ func WithDefaults(info *Info) *Info {
 		info.Umask = 0o02
 	}
 	if info.MTime.IsZero() {
-		info.MTime = getSourceDateEpoch()
+		info.MTime = modtime.FromEnv()
 	}
 	switch info.VersionSchema {
 	case "none":
@@ -550,19 +550,6 @@ func WithDefaults(info *Info) *Info {
 	}
 
 	return info
-}
-
-func getSourceDateEpoch() time.Time {
-	now := time.Now().UTC()
-	epoch := os.Getenv("SOURCE_DATE_EPOCH")
-	if epoch == "" {
-		return now
-	}
-	sde, err := strconv.ParseInt(epoch, 10, 64)
-	if err != nil {
-		return now
-	}
-	return time.Unix(sde, 0).UTC()
 }
 
 // ErrSigningFailure is returned whenever something went wrong during
