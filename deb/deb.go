@@ -23,6 +23,7 @@ import (
 	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/maps"
+	"github.com/goreleaser/nfpm/v2/internal/modtime"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
 	"github.com/ulikunitz/xz"
@@ -126,15 +127,17 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 		return fmt.Errorf("cannot write ar header to deb file: %w", err)
 	}
 
-	if err := addArFile(w, "debian-binary", debianBinary, info.MTime); err != nil {
+	mtime := modtime.Get(info.MTime)
+
+	if err := addArFile(w, "debian-binary", debianBinary, mtime); err != nil {
 		return fmt.Errorf("cannot pack debian-binary: %w", err)
 	}
 
-	if err := addArFile(w, "control.tar.gz", controlTarGz, info.MTime); err != nil {
+	if err := addArFile(w, "control.tar.gz", controlTarGz, mtime); err != nil {
 		return fmt.Errorf("cannot add control.tar.gz to deb: %w", err)
 	}
 
-	if err := addArFile(w, dataTarballName, dataTarball, info.MTime); err != nil {
+	if err := addArFile(w, dataTarballName, dataTarball, mtime); err != nil {
 		return fmt.Errorf("cannot add data.tar.gz to deb: %w", err)
 	}
 
@@ -144,7 +147,7 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 			return err
 		}
 
-		if err := addArFile(w, "_gpg"+sigType, sig, info.MTime); err != nil {
+		if err := addArFile(w, "_gpg"+sigType, sig, mtime); err != nil {
 			return &nfpm.ErrSigningFailure{
 				Err: fmt.Errorf("add signature to ar file: %w", err),
 			}
@@ -256,7 +259,7 @@ func newDpkgSigFileLine(name string, fileContent []byte) dpkgSigFileLine {
 func readDpkgSigData(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) (io.Reader, error) {
 	data := dpkgSigData{
 		Signer: info.Deb.Signature.Signer,
-		Date:   info.MTime,
+		Date:   modtime.Get(info.MTime),
 		Role:   info.Deb.Signature.Type,
 		Files: []dpkgSigFileLine{
 			newDpkgSigFileLine("debian-binary", debianBinary),
@@ -392,14 +395,14 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer) (md5buf bytes.Buf
 				Format:   tar.FormatGNU,
 				Uname:    file.FileInfo.Owner,
 				Gname:    file.FileInfo.Group,
-				ModTime:  time.Unix(0, 0),
+				ModTime:  modtime.Get(info.MTime),
 			})
 		case files.TypeSymlink:
 			err = newItemInsideTar(tw, []byte{}, &tar.Header{
 				Name:     files.AsExplicitRelativePath(file.Destination),
 				Linkname: file.Source,
 				Typeflag: tar.TypeSymlink,
-				ModTime:  time.Unix(0, 0),
+				ModTime:  modtime.Get(info.MTime),
 				Format:   tar.FormatGNU,
 			})
 		case files.TypeDebChangelog:
@@ -511,7 +514,7 @@ func createChangelogInsideDataTar(
 		return 0, err
 	}
 
-	if err = newFileInsideTar(tarw, fileName, changelogData, info.MTime); err != nil {
+	if err = newFileInsideTar(tarw, fileName, changelogData, modtime.Get(info.MTime)); err != nil {
 		return 0, err
 	}
 
@@ -555,18 +558,19 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		return nil, err
 	}
 
-	if err := newFileInsideTar(out, "./control", body.Bytes(), info.MTime); err != nil {
+	mtime := modtime.Get(info.MTime)
+	if err := newFileInsideTar(out, "./control", body.Bytes(), mtime); err != nil {
 		return nil, err
 	}
-	if err := newFileInsideTar(out, "./md5sums", md5sums, info.MTime); err != nil {
+	if err := newFileInsideTar(out, "./md5sums", md5sums, mtime); err != nil {
 		return nil, err
 	}
-	if err := newFileInsideTar(out, "./conffiles", conffiles(info), info.MTime); err != nil {
+	if err := newFileInsideTar(out, "./conffiles", conffiles(info), mtime); err != nil {
 		return nil, err
 	}
 
 	if triggers := createTriggers(info); len(triggers) > 0 {
-		if err := newFileInsideTar(out, "./triggers", triggers, info.MTime); err != nil {
+		if err := newFileInsideTar(out, "./triggers", triggers, mtime); err != nil {
 			return nil, err
 		}
 	}
@@ -612,13 +616,7 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 		if dets.fileName == "" {
 			continue
 		}
-		if err := newFilePathInsideTar(
-			out,
-			dets.fileName,
-			filename,
-			dets.mode,
-			info.MTime,
-		); err != nil {
+		if err := newFilePathInsideTar(out, dets.fileName, filename, dets.mode, mtime); err != nil {
 			return nil, err
 		}
 	}

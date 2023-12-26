@@ -17,6 +17,7 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/maps"
+	"github.com/goreleaser/nfpm/v2/internal/modtime"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
 )
@@ -152,7 +153,7 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 	// .PKGINFO must be the first entry in .MTREE
 	entries = append([]MtreeEntry{*pkginfoEntry}, entries...)
 
-	err = createMtree(tw, entries, info.MTime)
+	err = createMtree(tw, entries, modtime.Get(info.MTime))
 	if err != nil {
 		return fmt.Errorf("create mtree: %w", err)
 	}
@@ -310,7 +311,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		return nil, err
 	}
 
-	builddate := strconv.FormatInt(info.MTime.Unix(), 10)
+	builddate := strconv.FormatInt(modtime.Get(info.MTime).Unix(), 10)
 	totalSizeStr := strconv.FormatInt(totalSize, 10)
 
 	err = writeKVPairs(buf, map[string]string{
@@ -374,7 +375,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		Mode:     0o644,
 		Name:     ".PKGINFO",
 		Size:     int64(size),
-		ModTime:  info.MTime,
+		ModTime:  modtime.Get(info.MTime),
 	})
 	if err != nil {
 		return nil, err
@@ -392,7 +393,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 
 	return &MtreeEntry{
 		Destination: ".PKGINFO",
-		Time:        info.MTime.Unix(),
+		Time:        modtime.Get(info.MTime).Unix(),
 		Mode:        0o644,
 		Size:        int64(size),
 		Type:        files.TypeFile,
@@ -558,7 +559,7 @@ func createScripts(info *nfpm.Info, tw *tar.Writer) error {
 		Mode:     0o644,
 		Name:     ".INSTALL",
 		Size:     int64(buf.Len()),
-		ModTime:  info.MTime,
+		ModTime:  modtime.Get(info.MTime),
 	})
 	if err != nil {
 		return err

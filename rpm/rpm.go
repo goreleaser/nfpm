@@ -15,6 +15,7 @@ import (
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/modtime"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 )
 
@@ -256,7 +257,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		Suggests:    suggests,
 		Conflicts:   conflicts,
 		Compressor:  info.RPM.Compression,
-		BuildTime:   info.MTime,
+		BuildTime:   modtime.Get(info.MTime),
 		BuildHost:   hostname,
 	}, nil
 }
@@ -344,7 +345,9 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	return nil
 }
 
+// TODO: pass mtime down in all content types
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
+	mtime := modtime.Get(info.MTime)
 	for _, content := range info.Contents {
 		if content.Packager != "" && content.Packager != packagerName {
 			continue
@@ -372,7 +375,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 		case files.TypeSymlink:
 			file = asRPMSymlink(content)
 		case files.TypeDir:
-			file = asRPMDirectory(content, info.MTime)
+			file = asRPMDirectory(content, mtime)
 		case files.TypeImplicitDir:
 			// we don't need to add imlicit directories to RPMs
 			continue
