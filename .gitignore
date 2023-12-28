@@ -20,3 +20,4 @@ manpages
 output.json
 !acceptance_test.go
 .direnv/
+tmp/
