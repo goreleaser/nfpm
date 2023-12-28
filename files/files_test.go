@@ -756,7 +756,7 @@ func TestTreeOwner(t *testing.T) {
 		files.Contents{
 			{
 				Source:      filepath.Join("testdata", "tree"),
-				Destination: "/base",
+				Destination: "/usr/share/foo",
 				Type:        files.TypeTree,
 				FileInfo: &files.ContentFileInfo{
 					Owner: "goreleaser",
@@ -773,6 +773,11 @@ func TestTreeOwner(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, f := range results {
+		if f.Destination == "/usr/" || f.Destination == "/usr/share/" {
+			require.Equal(t, "root", f.FileInfo.Owner, f.Destination)
+			require.Equal(t, "root", f.FileInfo.Group, f.Destination)
+			continue
+		}
 		require.Equal(t, "goreleaser", f.FileInfo.Owner, f.Destination)
 		require.Equal(t, "goreleaser", f.FileInfo.Group, f.Destination)
 	}
@@ -780,42 +785,52 @@ func TestTreeOwner(t *testing.T) {
 	require.Equal(t, files.Contents{
 		{
 			Source:      "",
-			Destination: "/base/",
+			Destination: "/usr/",
+			Type:        files.TypeImplicitDir,
+		},
+		{
+			Source:      "",
+			Destination: "/usr/share/",
+			Type:        files.TypeImplicitDir,
+		},
+		{
+			Source:      "",
+			Destination: "/usr/share/foo/",
 			Type:        files.TypeDir,
 		},
 		{
 			Source:      "",
-			Destination: "/base/files/",
+			Destination: "/usr/share/foo/files/",
 			Type:        files.TypeDir,
 		},
 		{
 			Source:      filepath.Join("testdata", "tree", "files", "a"),
-			Destination: "/base/files/a",
+			Destination: "/usr/share/foo/files/a",
 			Type:        files.TypeFile,
 		},
 		{
 			Source:      "",
-			Destination: "/base/files/b/",
+			Destination: "/usr/share/foo/files/b/",
 			Type:        files.TypeDir,
 		},
 		{
 			Source:      filepath.Join("testdata", "tree", "files", "b", "c"),
-			Destination: "/base/files/b/c",
+			Destination: "/usr/share/foo/files/b/c",
 			Type:        files.TypeFile,
 		},
 		{
 			Source:      "",
-			Destination: "/base/symlinks/",
+			Destination: "/usr/share/foo/symlinks/",
 			Type:        files.TypeDir,
 		},
 		{
 			Source:      "/etc/foo",
-			Destination: "/base/symlinks/link1",
+			Destination: "/usr/share/foo/symlinks/link1",
 			Type:        files.TypeSymlink,
 		},
 		{
 			Source:      "../files/a",
-			Destination: "/base/symlinks/link2",
+			Destination: "/usr/share/foo/symlinks/link2",
 			Type:        files.TypeSymlink,
 		},
 	}, withoutFileInfo(results))

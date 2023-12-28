@@ -474,7 +474,7 @@ func addTree(
 		c := &Content{
 			FileInfo: &ContentFileInfo{},
 		}
-		if tree.FileInfo != nil {
+		if tree.FileInfo != nil && !ownedByFilesystem(tree.Destination) {
 			c.FileInfo.Owner = tree.FileInfo.Owner
 			c.FileInfo.Group = tree.FileInfo.Group
 		}
