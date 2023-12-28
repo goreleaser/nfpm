@@ -20,8 +20,9 @@ brew install nfpm
 ```
 
 !!! info
-The [formula in homebrew-core](https://github.com/Homebrew/homebrew-core/blob/master/Formula/n/nfpm.rb) might be slightly outdated.
-Use our homebrew tap to always get the latest updates.
+
+    The [formula in homebrew-core](https://github.com/Homebrew/homebrew-core/blob/master/Formula/n/nfpm.rb) might be slightly outdated.
+    Use our homebrew tap to always get the latest updates.
 
 ### scoop
 
