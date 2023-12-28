@@ -200,7 +200,7 @@ On upgrade, the scripts are being executed in the following order:
 
 ### The `.lintian-overrides` file
 
-It is recommended to run [lintian](https://lintian.debian.org) against your
+It is recommended to run [lintian](https://wiki.debian.org/Lintian) against your
 deb packages to see if there are any problems.
 
 You can also add a `lintian-overrides` file:
@@ -215,7 +215,7 @@ contents:
 	mode: 0644
 ```
 
-You can read more in [lintian's documentation](https://lintian.debian.org/manual/index.html).
+You can read more in [lintian's documentation](https://wiki.debian.org/Lintian).
 
 ### The `copyright` file
 

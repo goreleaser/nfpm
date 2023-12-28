@@ -20,7 +20,8 @@ brew install nfpm
 ```
 
 !!! info
-    The [formula in homebrew-core](https://github.com/Homebrew/homebrew-core/blob/master/Formula/nfpm.rb) might be slightly outdated.
+
+    The [formula in homebrew-core](https://github.com/Homebrew/homebrew-core/blob/master/Formula/n/nfpm.rb) might be slightly outdated.
     Use our homebrew tap to always get the latest updates.
 
 ### scoop
@@ -73,24 +74,25 @@ All artifacts are checksummed, and the checksum is signed with [cosign][].
 
 1. Download the files you want, the `checksums.txt` and `checksums.txt.sig`
    files from the [releases][releases] page:
-	```bash
-	wget 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt'
-	```
+
+   ```bash
+   wget 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt'
+   ```
 
 1. Verify the signature:
-	```bash
-	cosign verify-blob \
-		--certificate-identity 'https://github.com/goreleaser/nfpm/.github/workflows/release.yml@refs/tags/__VERSION__' \
-        --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-		--signature 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sig' \
-		--cert 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.pem' \
-		checksums.txt
-	```
+   ```bash
+   cosign verify-blob \
+   	--certificate-identity 'https://github.com/goreleaser/nfpm/.github/workflows/release.yml@refs/tags/__VERSION__' \
+       --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+   	--signature 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sig' \
+   	--cert 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.pem' \
+   	checksums.txt
+   ```
 1. If the signature is valid, you can then verify the SHA256 sums match with the
    downloaded binary:
-	```bash
-	sha256sum --ignore-missing -c checksums.txt
-	```
+   ```bash
+   sha256sum --ignore-missing -c checksums.txt
+   ```
 
 ### docker images
 
@@ -155,4 +157,3 @@ go build -o nfpm ./cmd/nfpm
 
 [releases]: https://github.com/goreleaser/nfpm/releases
 [cosign]: https://github.com/sigstore/cosign
-
