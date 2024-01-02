@@ -9,7 +9,6 @@ fi
 mkdir -p www/docs/cmd
 rm -rf www/docs/cmd/*.md
 go run ./cmd/nfpm docs
-go run ./cmd/nfpm schema -o ./www/docs/static/schema.json
 
 "$SED" \
 	-i'' \

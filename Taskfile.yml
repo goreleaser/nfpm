@@ -97,6 +97,22 @@ tasks:
     cmds:
       - task: ci
 
+  schema:generate:
+    desc: Generate JSONSchema
+    cmds:
+      - go run ./cmd/nfpm/ schema -o ./www/docs/static/schema.json
+    sources:
+      - nfpm.go
+    generates:
+      - ./www/docs/static/schema.json
+
+  schema:validate:
+    desc: Validate JSONSchema
+    cmds:
+      - jv ./www/docs/static/schema.json
+    sources:
+      - ./www/docs/static/schema.json
+
   docs:generate:
     desc: Generate docs
     cmds:
@@ -104,7 +120,6 @@ tasks:
     sources:
       - cmd/*.go
       - files/*.go
-      - nfpm.go
       - ./scripts/cmd_docs.sh
       - CONTRIBUTING.md
     generates:

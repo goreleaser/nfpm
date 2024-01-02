@@ -3,13 +3,13 @@ name: generate
 on:
   push:
     branches:
-      - 'main'
+      - "main"
     paths:
-      - '.github/workflows/generate.yml'
-      - 'www/*'
-      - 'cmd/*'
-      - 'internal/cmd/*'
-      - 'files/*'
+      - ".github/workflows/generate.yml"
+      - "www/*"
+      - "cmd/*"
+      - "internal/cmd/*"
+      - "files/*"
   workflow_dispatch:
 
 jobs:
@@ -23,10 +23,13 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - run: task docs:generate
+      - run: "go install github.com/santhosh-tekuri/jsonschema/cmd/jv@latest"
       - run: task docs:releases
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+      - run: task docs:generate
+      - run: task schema:generate
+      - run: task schema:validate
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs: update cmd docs"
