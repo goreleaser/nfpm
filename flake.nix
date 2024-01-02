@@ -29,6 +29,16 @@
           shellHook = "go mod tidy";
         };
 
+        # nix develop .#packagers
+        devShells.packagers = pkgs.mkShell {
+          packages = with pkgs; [
+            apk-tools
+            dpkg
+            rpm
+          ];
+        };
+
+        # nix develop .#docs
         devShells.docs = pkgs.mkShell {
           packages = with pkgs; with staging-pkgs.python311Packages; [
             (pkgs.writeScriptBin "ci-docs" "task docs:test")
