@@ -21,7 +21,7 @@
         };
 
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; with staging-pkgs.python311Packages; [
+          packages = with pkgs; [
             go
             go-task
             gofumpt
@@ -51,6 +51,4 @@
       }
     );
 }
-
-
 
