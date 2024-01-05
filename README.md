@@ -13,6 +13,9 @@
   </p>
 </p>
 
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fgoreleaser%2Fnfpm.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fgoreleaser%2Fnfpm?ref=badge_large)
+
 ## Why
 
 While [fpm][] is great, for me, it is a bummer that it depends on `ruby`, `tar`
@@ -50,6 +53,7 @@ easy and will surely help the developers at least buy some ☕️ or 🍺!
 ## Stargazers over time
 
 [![goreleaser/nfpm stargazers over time](https://starchart.cc/goreleaser/nfpm.svg)](https://starchart.cc/goreleaser/nfpm)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fgoreleaser%2Fnfpm.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fgoreleaser%2Fnfpm?ref=badge_shield)
 
 ---
 
