@@ -49,7 +49,7 @@ easy and will surely help the developers at least buy some ☕️ or 🍺!
 
 ## Stargazers over time
 
-[![goreleaser/nfpm stargazers over time](https://starchart.cc/goreleaser/nfpm.svg)](https://starchart.cc/goreleaser/nfpm)
+[![Stargazers over time](https://starchart.cc/goreleaser/nfpm.svg?variant=adaptive)](https://starchart.cc/goreleaser/nfpm)
 
 ---
 
