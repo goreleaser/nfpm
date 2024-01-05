@@ -9,7 +9,7 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371
 	github.com/ProtonMail/gopenpgp/v2 v2.7.1
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
-	github.com/caarlos0/go-rpmutils v0.2.1-0.20211112020245-2cd62ff89b11
+	github.com/caarlos0/go-rpmutils v0.2.1-0.20240105125627-01185134a559
 	github.com/caarlos0/go-version v0.1.1
 	github.com/google/rpmpack v0.5.0
 	github.com/goreleaser/chglog v0.5.0
@@ -28,7 +28,6 @@ require (
 )
 
 require (
-	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
