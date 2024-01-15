@@ -38,7 +38,7 @@ jobs:
       - uses: anchore/sbom-action/download-syft@v0.15.3
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
-      - uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v25
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - run: task setup
