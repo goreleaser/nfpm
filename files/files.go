@@ -128,7 +128,7 @@ func (c *Content) WithFileInfoDefaults(umask fs.FileMode, mtime time.Time) *Cont
 	if (cc.Type == TypeDir || cc.Type == TypeImplicitDir) && cc.FileInfo.Mode == 0 {
 		cc.FileInfo.Mode = 0o755
 	}
-	if (cc.Type == TypeDir || cc.Type == TypeImplicitDir) && cc.FileInfo.MTime.IsZero() {
+	if cc.FileInfo.MTime.IsZero() {
 		cc.FileInfo.MTime = mtime
 	}
 

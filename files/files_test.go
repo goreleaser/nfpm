@@ -160,7 +160,7 @@ contents:
 	require.Equal(t, "files_test.go", f.Source)
 	require.Equal(t, "/b", f.Destination)
 	require.Equal(t, f.FileInfo.Mode, fi.Mode())
-	require.Equal(t, f.FileInfo.MTime, fi.ModTime())
+	require.Equal(t, f.FileInfo.MTime, mtime)
 }
 
 func TestFileInfo(t *testing.T) {
