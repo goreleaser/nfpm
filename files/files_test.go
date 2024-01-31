@@ -2,6 +2,7 @@ package files_test
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -894,6 +895,34 @@ func TestTree(t *testing.T) {
 			Type:        files.TypeSymlink,
 		},
 	}, withoutFileInfo(results))
+}
+
+func TestTreeMode(t *testing.T) {
+	results, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source:      filepath.Join("testdata", "tree"),
+				Destination: "/usr/share/foo",
+				Type:        files.TypeTree,
+				FileInfo: &files.ContentFileInfo{
+					Mode: 0o777,
+				},
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	for _, f := range results {
+		if f.Destination == "/usr/" || f.Destination == "/usr/share/" || f.Type == files.TypeSymlink {
+			require.NotEqual(t, fs.FileMode(0o777).String(), f.FileInfo.Mode.String(), f.Destination)
+			continue
+		}
+		require.Equal(t, fs.FileMode(0o777).String(), f.FileInfo.Mode.String(), "%s: %s", f.Destination, f.Type)
+	}
 }
 
 func withoutFileInfo(contents files.Contents) files.Contents {
