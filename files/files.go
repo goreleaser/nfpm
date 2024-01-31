@@ -506,6 +506,10 @@ func addTree(
 			c.FileInfo.Mode = d.Type() &^ umask
 		}
 
+		if tree.FileInfo != nil && tree.FileInfo.Mode != 0 && c.Type != TypeSymlink {
+			c.FileInfo.Mode = tree.FileInfo.Mode
+		}
+
 		all[c.Destination] = c.WithFileInfoDefaults(umask, mtime)
 
 		return nil
