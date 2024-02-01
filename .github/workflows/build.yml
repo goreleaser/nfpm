@@ -55,7 +55,7 @@ jobs:
       - run: task setup
       - name: test
         run: ./scripts/test.sh test ${{ matrix.os }}
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         if: matrix.os == 'ubuntu-latest'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
