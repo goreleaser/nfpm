@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-      - uses: arduino/setup-task@v1
+      - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: setup-tparse
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-      - uses: arduino/setup-task@v1
+      - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - shell: bash
@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: docker/setup-qemu-action@v3
       - uses: actions/checkout@v4
-      - uses: arduino/setup-task@v1
+      - uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - shell: bash
