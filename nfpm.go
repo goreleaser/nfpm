@@ -362,6 +362,7 @@ type RPM struct {
 type RPMScripts struct {
 	PreTrans  string `yaml:"pretrans,omitempty" json:"pretrans,omitempty" jsonschema:"title=pretrans script"`
 	PostTrans string `yaml:"posttrans,omitempty" json:"posttrans,omitempty" jsonschema:"title=posttrans script"`
+	Verify    string `yaml:"verify,omitempty" json:"verify,omitempty" jsonschema:"title=verify script"`
 }
 
 type PackageSignature struct {

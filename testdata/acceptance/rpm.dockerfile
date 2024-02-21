@@ -220,3 +220,9 @@ RUN test ! -f /etc/bar/file
 RUN test -d /etc/foo
 RUN test ! -d /etc/bar
 RUN test ! -d /etc/baz
+
+# ---- verify test ----
+FROM min as verify
+RUN rpm -V foo
+RUN rm /tmp/postinstall-proof
+RUN ! rpm -V foo

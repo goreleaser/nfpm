@@ -1,0 +1,20 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar"
+release: "4"
+description: |
+  Foo bar
+    Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/fake
+    dst: /etc/foo/file
+scripts:
+  postinstall: ./testdata/acceptance/scripts/postinstall.sh
+rpm:
+  scripts:
+    verify: ./testdata/acceptance/scripts/verify.sh
