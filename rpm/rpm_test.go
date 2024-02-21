@@ -82,6 +82,7 @@ func exampleInfo() *nfpm.Info {
 				Scripts: nfpm.RPMScripts{
 					PreTrans:  "../testdata/scripts/pretrans.sh",
 					PostTrans: "../testdata/scripts/posttrans.sh",
+					Verify:    "../testdata/scripts/verify.sh",
 				},
 			},
 		},
@@ -481,6 +482,13 @@ echo "Pretrans" > /dev/null
 
 echo "Posttrans" > /dev/null
 `, data, "Posttrans script does not match")
+
+	data, err = rpm.Header.GetString(rpmutils.VERIFYSCRIPT)
+	require.NoError(t, err)
+	require.Equal(t, `#!/bin/bash
+
+echo "Verify" > /dev/null
+`, data, "Verify script does not match")
 }
 
 func TestRPMFileDoesNotExist(t *testing.T) {

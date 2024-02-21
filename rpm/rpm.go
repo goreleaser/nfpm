@@ -342,6 +342,14 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 		rpm.AddPosttrans(string(data))
 	}
 
+	if info.RPM.Scripts.Verify != "" {
+		data, err := os.ReadFile(info.RPM.Scripts.Verify)
+		if err != nil {
+			return err
+		}
+		rpm.AddVerifyScript(string(data))
+	}
+
 	return nil
 }
 

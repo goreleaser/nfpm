@@ -202,6 +202,7 @@ func TestRPMSpecific(t *testing.T) {
 	testNames := []string{
 		"release",
 		"directories",
+		"verify",
 	}
 	for _, name := range testNames {
 		for _, arch := range formatArchs[format] {

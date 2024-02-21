@@ -719,6 +719,10 @@
 					"posttrans": {
 						"type": "string",
 						"title": "posttrans script"
+					},
+					"verify": {
+						"type": "string",
+						"title": "verify script"
 					}
 				},
 				"additionalProperties": false,

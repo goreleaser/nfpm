@@ -322,6 +322,8 @@ rpm:
     pretrans: ./scripts/pretrans.sh
     # The posttrans script runs after all RPM package transactions / stages.
     posttrans: ./scripts/posttrans.sh
+    # The verify script runs when verifying packages using `rpm -V`.
+    verify: ./scripts/verify.sh
 
   # The package group. This option is deprecated by most distros
   # but required by old distros like CentOS 5 / EL 5 and earlier.
