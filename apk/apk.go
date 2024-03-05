@@ -94,8 +94,21 @@ func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 		version += "_" + info.Prerelease
 	}
 
-	if info.Release != "" {
-		version += "_p" + info.Release
+	if rel := info.Release; rel != "" {
+		if !strings.HasPrefix(rel, "r") {
+			rel = "r" + rel
+		}
+		version += "-" + rel
+	}
+	if meta := info.VersionMetadata; meta != "" {
+		if !strings.HasPrefix(meta, "p") &&
+			!strings.HasPrefix(meta, "cvs") &&
+			!strings.HasPrefix(meta, "svn") &&
+			!strings.HasPrefix(meta, "git") &&
+			!strings.HasPrefix(meta, "hg") {
+			meta = "p" + meta
+		}
+		version += "-" + meta
 	}
 
 	return fmt.Sprintf("%s_%s_%s.apk", info.Name, version, info.Arch)
