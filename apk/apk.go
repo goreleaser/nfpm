@@ -88,29 +88,7 @@ type Apk struct{}
 
 func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 	info = ensureValidArch(info)
-	version := info.Version
-
-	if info.Prerelease != "" {
-		version += "_" + info.Prerelease
-	}
-
-	if rel := info.Release; rel != "" {
-		if !strings.HasPrefix(rel, "r") {
-			rel = "r" + rel
-		}
-		version += "-" + rel
-	}
-	if meta := info.VersionMetadata; meta != "" {
-		if !strings.HasPrefix(meta, "p") &&
-			!strings.HasPrefix(meta, "cvs") &&
-			!strings.HasPrefix(meta, "svn") &&
-			!strings.HasPrefix(meta, "git") &&
-			!strings.HasPrefix(meta, "hg") {
-			meta = "p" + meta
-		}
-		version += "-" + meta
-	}
-
+	version := pkgver(info)
 	return fmt.Sprintf("%s_%s_%s.apk", info.Name, version, info.Arch)
 }
 
@@ -482,9 +460,7 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 pkgname = {{.Info.Name}}
-pkgver = {{.Info.Version}}
-		 {{- if .Info.Prerelease}}{{ .Info.Prerelease }}{{- end }}
-         {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
+pkgver = {{ pkgver .Info }}
 arch = {{.Info.Arch}}
 size = {{.InstalledSize}}
 pkgdesc = {{multiline .Info.Description}}
@@ -522,6 +498,33 @@ func writeControl(w io.Writer, data controlData) error {
 			ret := strings.ReplaceAll(strs, "\n", "\n  ")
 			return strings.Trim(ret, " \n")
 		},
+		"pkgver": pkgver,
 	})
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
+}
+
+func pkgver(info *nfpm.Info) string {
+	version := info.Version
+
+	if info.Prerelease != "" {
+		version += "_" + info.Prerelease
+	}
+
+	if rel := info.Release; rel != "" {
+		if !strings.HasPrefix(rel, "r") {
+			rel = "r" + rel
+		}
+		version += "-" + rel
+	}
+	if meta := info.VersionMetadata; meta != "" {
+		if !strings.HasPrefix(meta, "p") &&
+			!strings.HasPrefix(meta, "cvs") &&
+			!strings.HasPrefix(meta, "svn") &&
+			!strings.HasPrefix(meta, "git") &&
+			!strings.HasPrefix(meta, "hg") {
+			meta = "p" + meta
+		}
+		version += "-" + meta
+	}
+	return version
 }
