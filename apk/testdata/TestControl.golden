@@ -1,5 +1,5 @@
 pkgname = foo
-pkgver = 1.0.0beta1-r1
+pkgver = 1.0.0_beta1-r1
 arch = amd64
 size = 10
 pkgdesc = Foo does things
