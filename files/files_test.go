@@ -279,6 +279,8 @@ contents:
 `))
 	err := dec.Decode(&config)
 	require.NoError(t, err)
+	errs := make(chan error, 10)
+	t.Cleanup(func() { close(errs) })
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
@@ -291,10 +293,14 @@ contents:
 				false,
 				mtime,
 			)
-			require.NoError(t, err)
+			errs <- err
 		}()
 	}
 	wg.Wait()
+
+	for i := 0; i < 10; i++ {
+		require.NoError(t, <-errs)
+	}
 }
 
 func TestCollision(t *testing.T) {

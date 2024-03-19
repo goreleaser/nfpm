@@ -26,7 +26,7 @@ func newSchemaCmd() *schemaCmd {
 		SilenceErrors:     true,
 		Args:              cobra.NoArgs,
 		ValidArgsFunction: cobra.NoFileCompletions,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(*cobra.Command, []string) error {
 			schema := jsonschema.Reflect(&nfpm.Config{})
 			schema.Description = "nFPM configuration definition file"
 			bts, err := json.MarshalIndent(schema, "	", "	")

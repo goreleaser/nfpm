@@ -28,7 +28,7 @@ func newPackageCmd() *packageCmd {
 		SilenceErrors:     true,
 		Args:              cobra.NoArgs,
 		ValidArgsFunction: cobra.NoFileCompletions,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(*cobra.Command, []string) error {
 			return doPackage(root.config, root.target, root.packager)
 		},
 	}
