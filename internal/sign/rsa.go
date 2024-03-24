@@ -20,6 +20,11 @@ var (
 	errNoRSAKey     = errors.New("key is not an RSA key")
 )
 
+const (
+	PKCS1_PRIVKEY_PREAMBLE = "RSA PRIVATE KEY"
+	PKCS8_PRIVKEY_PREAMBLE = "PRIVATE KEY"
+)
+
 // RSASignSHA1Digest signs the provided SHA1 message digest. The key file
 // must be in the PEM format and can either be encrypted or not.
 func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, error) {
@@ -53,9 +58,26 @@ func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, e
 		blockData = decryptedBlockData
 	}
 
-	priv, err := x509.ParsePKCS1PrivateKey(blockData)
-	if err != nil {
-		return nil, fmt.Errorf("parse PKCS1 private key: %w", err)
+	var priv crypto.Signer
+
+	switch block.Type {
+	case PKCS1_PRIVKEY_PREAMBLE:
+		priv, err = x509.ParsePKCS1PrivateKey(blockData)
+		if err != nil {
+			return nil, fmt.Errorf("parse PKCS#1 private key: %w", err)
+		}
+	case PKCS8_PRIVKEY_PREAMBLE:
+		privAny, err := x509.ParsePKCS8PrivateKey(blockData)
+		if err != nil {
+			return nil, fmt.Errorf("parse PKCS#8 private key: %w", err)
+		}
+		privTmp, ok := privAny.(crypto.Signer)
+		if !ok {
+			return nil, fmt.Errorf("cannot sign with given private key")
+		}
+		priv = privTmp
+	default:
+		return nil, fmt.Errorf(`key type "%v" is not supported`, block.Type)
 	}
 
 	signature, err := priv.Sign(rand.Reader, sha1Digest, crypto.SHA1)
