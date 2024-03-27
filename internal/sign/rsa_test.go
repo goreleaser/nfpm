@@ -17,8 +17,9 @@ func TestRSASignAndVerify(t *testing.T) {
 		pubKey     string
 		passphrase string
 	}{
-		{"unprotected", "testdata/rsa_unprotected.priv", "testdata/rsa_unprotected.pub", ""},
-		{"protected", "testdata/rsa.priv", "testdata/rsa.pub", pass},
+		{"unprotected pkcs1", "testdata/rsa_unprotected.priv", "testdata/rsa_unprotected.pub", ""},
+		{"protected pkcs1", "testdata/rsa.priv", "testdata/rsa.pub", pass},
+		{"unprotected pkcs8", "testdata/rsa_pkcs8.priv", "testdata/rsa_pkcs8.pub", ""},
 	}
 
 	for _, testCase := range testCases {
@@ -54,18 +55,39 @@ func TestInvalidHash(t *testing.T) {
 func TestRSAVerifyWrongKey(t *testing.T) {
 	digest := sha1.New().Sum(nil) // nolint:gosec
 
-	sig, err := rsaSign(bytes.NewReader(digest), "testdata/rsa_unprotected.priv", "")
-	require.NoError(t, err)
+	testCases := []struct {
+		name    string
+		privKey string
+		pubKey  string
+	}{
+		{"pkcs1", "testdata/rsa_unprotected.priv", "testdata/rsa_unprotected.pub"},
+		{"pkcs8", "testdata/rsa_pkcs8.priv", "testdata/rsa_pkcs8.pub"},
+	}
 
-	err = RSAVerifySHA1Digest(digest, sig, "testdata/rsa.pub")
-	require.EqualError(t, err, "verify PKCS1v15 signature: crypto/rsa: verification error")
+	for _, testCase := range testCases {
+		sig, err := rsaSign(bytes.NewReader(digest), testCase.privKey, "")
+		require.NoError(t, err)
+
+		err = RSAVerifySHA1Digest(digest, sig, testCase.pubKey)
+		require.EqualError(t, err, "verify PKCS1v15 signature: crypto/rsa: verification error")
+	}
 }
 
 func TestRSAVerifyWrongSignature(t *testing.T) {
 	digest := sha1.New().Sum(nil) // nolint:gosec
 
-	err := RSAVerifySHA1Digest(digest, []byte{}, "testdata/rsa.pub")
-	require.EqualError(t, err, "verify PKCS1v15 signature: crypto/rsa: verification error")
+	testCases := []struct {
+		name   string
+		pubKey string
+	}{
+		{"pkcs1", "testdata/rsa.pub"},
+		{"pkcs8", "testdata/rsa_pkcs8.pub"},
+	}
+
+	for _, testCase := range testCases {
+		err := RSAVerifySHA1Digest(digest, []byte{}, testCase.pubKey)
+		require.EqualError(t, err, "verify PKCS1v15 signature: crypto/rsa: verification error")
+	}
 }
 
 func TestRSAVerifyWrongPublicKeyFormat(t *testing.T) {
