@@ -21,8 +21,8 @@ var (
 )
 
 const (
-	PKCS1_PRIVKEY_PREAMBLE = "RSA PRIVATE KEY"
-	PKCS8_PRIVKEY_PREAMBLE = "PRIVATE KEY"
+	PKCS1PrivkeyPreamble = "RSA PRIVATE KEY"
+	PKCS8PrivkeyPreamble = "PRIVATE KEY"
 )
 
 // RSASignSHA1Digest signs the provided SHA1 message digest. The key file
@@ -61,12 +61,12 @@ func RSASignSHA1Digest(sha1Digest []byte, keyFile, passphrase string) ([]byte, e
 	var priv crypto.Signer
 
 	switch block.Type {
-	case PKCS1_PRIVKEY_PREAMBLE:
+	case PKCS1PrivkeyPreamble:
 		priv, err = x509.ParsePKCS1PrivateKey(blockData)
 		if err != nil {
 			return nil, fmt.Errorf("parse PKCS#1 private key: %w", err)
 		}
-	case PKCS8_PRIVKEY_PREAMBLE:
+	case PKCS8PrivkeyPreamble:
 		privAny, err := x509.ParsePKCS8PrivateKey(blockData)
 		if err != nil {
 			return nil, fmt.Errorf("parse PKCS#8 private key: %w", err)
