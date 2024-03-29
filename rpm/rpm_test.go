@@ -29,6 +29,8 @@ func exampleInfo() *nfpm.Info {
 		Priority:    "extra",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
 		Version:     "1.0.0",
+		Release:     "1",
+		Epoch:       "0",
 		Section:     "default",
 		Homepage:    "http://carlosbecker.com",
 		Vendor:      "nope",
@@ -78,6 +80,7 @@ func exampleInfo() *nfpm.Info {
 				PostRemove:  "../testdata/scripts/postremove.sh",
 			},
 			RPM: nfpm.RPM{
+				Group:    "foo",
 				Prefixes: []string{"/opt"},
 				Scripts: nfpm.RPMScripts{
 					PreTrans:  "../testdata/scripts/pretrans.sh",
@@ -134,7 +137,7 @@ func TestRPM(t *testing.T) {
 
 	group, err := rpm.Header.GetString(rpmutils.GROUP)
 	require.NoError(t, err)
-	require.Equal(t, "", group)
+	require.Equal(t, "foo", group)
 
 	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
 	require.NoError(t, err)
@@ -143,6 +146,60 @@ func TestRPM(t *testing.T) {
 	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
 	require.NoError(t, err)
 	require.Equal(t, "Foo does things", description)
+}
+
+func TestRPMMandatoryFieldsOnly(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
+	require.NoError(t, err)
+	require.NoError(t, Default.Package(&nfpm.Info{
+		Name:        "foo",
+		Arch:        "amd64",
+		Version:     "1.2",
+		Release:     "1",
+		Description: "summary\nfoo bar\nlong description",
+		License:     "MIT",
+	}, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
+	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		require.NoError(t, err)
+	}()
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	os, err := rpm.Header.GetString(rpmutils.OS)
+	require.NoError(t, err)
+	require.Equal(t, "linux", os)
+
+	arch, err := rpm.Header.GetString(rpmutils.ARCH)
+	require.NoError(t, err)
+	require.Equal(t, archToRPM["amd64"], arch)
+
+	version, err := rpm.Header.GetString(rpmutils.VERSION)
+	require.NoError(t, err)
+	require.Equal(t, "1.2", version)
+
+	release, err := rpm.Header.GetString(rpmutils.RELEASE)
+	require.NoError(t, err)
+	require.Equal(t, "1", release)
+
+	_, err = rpm.Header.Get(rpmutils.EPOCH)
+	require.Error(t, err, "epoch should not be set")
+
+	_, err = rpm.Header.GetString(rpmutils.GROUP)
+	require.Error(t, err, "group should not be set")
+
+	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
+	require.NoError(t, err)
+	require.Equal(t, "summary", summary)
+
+	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
+	require.NoError(t, err)
+	require.Equal(t, "summary\nfoo bar\nlong description", description)
 }
 
 func TestRPMPlatform(t *testing.T) {

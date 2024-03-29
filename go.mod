@@ -11,7 +11,7 @@ require (
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-rpmutils v0.2.1-0.20240105125627-01185134a559
 	github.com/caarlos0/go-version v0.1.1
-	github.com/google/rpmpack v0.6.0
+	github.com/google/rpmpack v0.6.1-0.20240329070804-c2247cbb881a
 	github.com/goreleaser/chglog v0.5.0
 	github.com/goreleaser/fileglob v1.3.0
 	github.com/invopop/jsonschema v0.12.0
