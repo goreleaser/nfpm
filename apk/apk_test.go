@@ -315,6 +315,28 @@ func TestControl(t *testing.T) {
 	require.Equal(t, string(bts), w.String())
 }
 
+func TestSignatureName(t *testing.T) {
+	info := exampleInfo()
+	info.APK.Signature.KeyFile = "../internal/sign/testdata/rsa.priv"
+	info.APK.Signature.KeyName = "testkey"
+	info.APK.Signature.KeyPassphrase = "hunter2"
+	err := nfpm.PrepareForPackager(info, "apk")
+	require.NoError(t, err)
+
+	digest := sha1.New().Sum(nil) // nolint:gosec
+
+	var signatureTarGz bytes.Buffer
+	tw := tar.NewWriter(&signatureTarGz)
+	require.NoError(t, createSignatureBuilder(digest, info)(tw))
+
+	signature := extractFromTar(t, signatureTarGz.Bytes(), ".SIGN.RSA.testkey.rsa.pub")
+	err = sign.RSAVerifySHA1Digest(digest, signature, "../internal/sign/testdata/rsa.pub")
+	require.NoError(t, err)
+
+	err = Default.Package(info, io.Discard)
+	require.NoError(t, err)
+}
+
 func TestSignature(t *testing.T) {
 	info := exampleInfo()
 	info.APK.Signature.KeyFile = "../internal/sign/testdata/rsa.priv"
