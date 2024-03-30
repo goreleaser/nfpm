@@ -281,7 +281,10 @@ func createSignatureBuilder(digest []byte, info *nfpm.Info) func(*tar.Writer) er
 				return errNoKeyAddress
 			}
 
-			keyname = addr.Address + ".rsa.pub"
+			keyname = addr.Address
+		}
+		if !strings.HasSuffix(keyname, ".rsa.pub") {
+			keyname += ".rsa.pub"
 		}
 
 		// In principle apk supports RSA signatures over SHA256/512 keys, but in
