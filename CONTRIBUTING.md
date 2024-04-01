@@ -38,6 +38,16 @@ If on the ARM tests you are seeing `standard_init_linux.go:211: exec user proces
 sudo docker run --rm --privileged hypriot/qemu-register
 ```
 
+### A note about Docker multi-arch builds
+
+If you want to properly run the Docker tests, or run `goreleaser release
+--snapshot` locally, you might need to setup Docker for it.
+You can do so by running:
+
+```sh
+task docker:setup
+```
+
 ## Test your change
 
 You can create a branch for your changes and try to build from the source as you go:
