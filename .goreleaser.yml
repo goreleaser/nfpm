@@ -147,7 +147,7 @@ winget:
       branch: "nfpm-{{.Version}}"
       pull_request:
         enabled: true
-        draft: true
+        draft: false
         check_boxes: true
         base:
           owner: microsoft
