@@ -1,14 +1,12 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    staging.url = "github:caarlos0/nixpkgs/wip";
     flake-utils.url = "github:numtide/flake-utils";
   };
-  outputs = { nixpkgs, staging, flake-utils, ... }:
+  outputs = { nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        staging-pkgs = staging.legacyPackages.${system};
       in
       {
         packages.default = pkgs.buildGoModule {
@@ -17,7 +15,7 @@
           src = ./.;
           ldflags = [ "-s" "-w" "-X main.version=dev" "-X main.builtBy=flake" ];
           doCheck = false;
-          vendorHash = "sha256-P9jSQG6EyVGMZKtThy8Q7Y/pV7mbMl2eGrylea0VHRc=";
+          vendorHash = "sha256-g57tLk2+WWcdG0COqkQD7eLYG0TdC0RnlhLF6Qt4woY=";
         };
 
         devShells.default = pkgs.mkShell {
@@ -25,6 +23,7 @@
             go
             go-task
             gofumpt
+            nix-prefetch
           ];
           shellHook = "go mod tidy";
         };
