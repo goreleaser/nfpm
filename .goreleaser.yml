@@ -24,7 +24,7 @@ builds:
       - amd64
       - arm64
       - ppc64le
-      - s390
+      - s390x
     mod_timestamp: "{{ .CommitTimestamp }}"
     flags:
       - -trimpath
@@ -85,7 +85,6 @@ archives:
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
-      {{- else if eq .Arch "s390" }}s390x
       {{- else }}{{ .Arch }}{{ end }}
     format_overrides:
       - goos: windows
