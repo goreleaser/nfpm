@@ -1,0 +1,7 @@
+Architecture: arm64
+Description: Has an epoch added to it's version
+Maintainer: 
+Package: withepoch
+Priority: extra
+Version: 2:1.0.0
+Section: default

@@ -1,0 +1,17 @@
+Architecture: amd64
+Description: Foo does things
+Maintainer: Carlos A Becker <pkg@carlosbecker.com>
+Package: foo
+Priority: extra
+Version: 1.0.0
+Conflicts: zsh
+Depends: bash
+Homepage: http://carlosbecker.com
+Installed-Size: 10
+Pre-Depends: less
+Provides: bzr
+Recommends: git
+Replaces: svn
+Section: default
+Suggests: bash
+Vendor: nope

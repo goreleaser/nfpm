@@ -15,6 +15,7 @@ import (
 	_ "github.com/goreleaser/nfpm/v2/apk"
 	_ "github.com/goreleaser/nfpm/v2/arch"
 	_ "github.com/goreleaser/nfpm/v2/deb"
+	_ "github.com/goreleaser/nfpm/v2/ipk"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
 	"github.com/stretchr/testify/require"
 )
@@ -23,6 +24,7 @@ import (
 var formatArchs = map[string][]string{
 	"apk":       {"amd64", "arm64", "386", "ppc64le", "armv6", "armv7", "s390x"},
 	"deb":       {"amd64", "arm64", "ppc64le", "armv7", "s390x"},
+	"ipk":       {"x86_64", "aarch64_generic"},
 	"rpm":       {"amd64", "arm64", "ppc64le"},
 	"archlinux": {"amd64"},
 }
@@ -235,6 +237,38 @@ func TestDebSpecific(t *testing.T) {
 		"rules",
 		"triggers",
 		"breaks",
+		"predepends",
+	}
+	for _, name := range testNames {
+		for _, arch := range formatArchs[format] {
+			func(t *testing.T, testName, testArch string) {
+				t.Run(fmt.Sprintf("%s/%s/%s", format, testArch, testName), func(t *testing.T) {
+					t.Parallel()
+					if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
+						t.Skip("ppc64le arch not supported in pipeline")
+					}
+					accept(t, acceptParms{
+						Name:   fmt.Sprintf("%s_%s", testName, testArch),
+						Conf:   fmt.Sprintf("%s.%s.yaml", format, testName),
+						Format: format,
+						Docker: dockerParams{
+							File:   fmt.Sprintf("%s.dockerfile", format),
+							Target: testName,
+							Arch:   testArch,
+						},
+					})
+				})
+			}(t, name, arch)
+		}
+	}
+}
+
+func TestIPKSpecific(t *testing.T) {
+	t.Parallel()
+	format := "ipk"
+	testNames := []string{
+		"alternatives",
+		"conflicts",
 		"predepends",
 	}
 	for _, name := range testNames {

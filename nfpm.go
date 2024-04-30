@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -57,6 +58,22 @@ func Get(format string) (Packager, error) {
 		return nil, ErrNoPackager{format}
 	}
 	return p, nil
+}
+
+// Enumerate lists the available packagers
+func Enumerate() []string {
+	lock.Lock()
+	defer lock.Unlock()
+
+	list := make([]string, 0, len(packagers))
+	for key := range packagers {
+		if key != "" {
+			list = append(list, key)
+		}
+	}
+
+	sort.Strings(list)
+	return list
 }
 
 // Parse decodes YAML data from an io.Reader into a configuration struct.
@@ -252,6 +269,15 @@ func (c *Config) expandEnvVars() {
 		c.Info.Deb.Fields[k] = os.Expand(v, c.envMappingFunc)
 	}
 	c.Info.Deb.Predepends = c.expandEnvVarsStringSlice(c.Info.Deb.Predepends)
+
+	// IPK specific
+	for k, v := range c.Info.IPK.Fields {
+		c.Info.IPK.Fields[k] = os.Expand(v, c.envMappingFunc)
+	}
+	c.Info.IPK.Predepends = c.expandEnvVarsStringSlice(c.Info.IPK.Predepends)
+
+	// RPM specific
+	c.Info.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
 }
 
 // Info contains information about a single package.
@@ -332,6 +358,7 @@ type Overridables struct {
 	Deb        Deb            `yaml:"deb,omitempty" json:"deb,omitempty" jsonschema:"title=deb-specific settings"`
 	APK        APK            `yaml:"apk,omitempty" json:"apk,omitempty" jsonschema:"title=apk-specific settings"`
 	ArchLinux  ArchLinux      `yaml:"archlinux,omitempty" json:"archlinux,omitempty" jsonschema:"title=archlinux-specific settings"`
+	IPK        IPK            `yaml:"ipk,omitempty" json:"ipk,omitempty" jsonschema:"title=ipk-specific settings"`
 }
 
 type ArchLinux struct {
@@ -438,6 +465,25 @@ type DebScripts struct {
 	Rules     string `yaml:"rules,omitempty" json:"rules,omitempty" jsonschema:"title=rules"`
 	Templates string `yaml:"templates,omitempty" json:"templates,omitempty" jsonschema:"title=templates"`
 	Config    string `yaml:"config,omitempty" json:"config,omitempty" jsonschema:"title=config"`
+}
+
+// IPK is custom configs that are only available on deb packages.
+type IPK struct {
+	ABIVersion    string            `yaml:"abi_version,omitempty" json:"abi_version,omitempty" jsonschema:"title=abi version"`
+	Alternatives  []IPKAlternative  `yaml:"alternatives,omitempty" json:"alternatives,omitempty" jsonschema:"title=alternatives"`
+	Arch          string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
+	AutoInstalled bool              `yaml:"auto_installed,omitempty" json:"auto_installed,omitempty" jsonschema:"title=auto installed,default=false"`
+	Essential     bool              `yaml:"essential,omitempty" json:"essential,omitempty" jsonschema:"title=whether package is essential,default=false"`
+	Fields        map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
+	Predepends    []string          `yaml:"predepends,omitempty" json:"predepends,omitempty" jsonschema:"title=predepends directive,example=nfpm"`
+	Tags          []string          `yaml:"tags,omitempty" json:"tags,omitempty" jsonschema:"title=tags"`
+}
+
+// IPKAlternative represents an alternative for an IPK package.
+type IPKAlternative struct {
+	Priority int    `yaml:"priority,omitempty" json:"priority,omitempty" jsonschema:"title=priority"`
+	Target   string `yaml:"target,omitempty" json:"target,omitempty" jsonschema:"title=target"`
+	LinkName string `yaml:"link_name,omitempty" json:"link_name,omitempty" jsonschema:"title=link name"`
 }
 
 // Scripts contains information about maintainer scripts for packages.

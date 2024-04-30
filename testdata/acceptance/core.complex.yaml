@@ -62,6 +62,12 @@ contents:
     file_info:
       mode: 04755
 
+  - packager: ipk
+    src: ./testdata/fake
+    dst: /usr/bin/fake2
+    file_info:
+      mode: 04755
+
 scripts:
   preinstall: ./testdata/acceptance/scripts/preinstall.sh
   postinstall: ./testdata/acceptance/scripts/postinstall.sh
