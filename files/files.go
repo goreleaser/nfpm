@@ -60,6 +60,7 @@ type Content struct {
 	Packager    string           `yaml:"packager,omitempty" json:"packager,omitempty"`
 	FileInfo    *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
 	Expand      bool             `yaml:"expand,omitempty" json:"expand,omitempty"`
+	Excludes    []string         `yaml:"excludes,omitempty" json:"excludes,omitempty"`
 }
 
 type ContentFileInfo struct {
@@ -470,6 +471,15 @@ func addTree(
 		}
 
 		destination := filepath.Join(tree.Destination, relPath)
+
+		if tree.Excludes != nil {
+			// Check if src matches any of the exclude patterns
+			for _, exclude := range tree.Excludes {
+				if strings.Contains(destination, exclude) {
+					return nil
+				}
+			}
+		}
 
 		c := &Content{
 			FileInfo: &ContentFileInfo{},

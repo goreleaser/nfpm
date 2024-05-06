@@ -365,6 +365,12 @@
 					},
 					"expand": {
 						"type": "boolean"
+					},
+					"excludes": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
 					}
 				},
 				"additionalProperties": false,
