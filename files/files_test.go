@@ -931,6 +931,57 @@ func TestTreeMode(t *testing.T) {
 	}
 }
 
+func TestExcludesTree(t *testing.T) {
+	results, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source:      filepath.Join("testdata", "tree"),
+				Destination: "/base",
+				Type:        files.TypeTree,
+				Excludes:    []string{"/base/files/b"},
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	require.Equal(t, files.Contents{
+		{
+			Source:      "",
+			Destination: "/base/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      "",
+			Destination: "/base/files/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      filepath.Join("testdata", "tree", "files", "a"),
+			Destination: "/base/files/a",
+			Type:        files.TypeFile,
+		},
+		{
+			Source:      "",
+			Destination: "/base/symlinks/",
+			Type:        files.TypeDir,
+		},
+		{
+			Source:      "/etc/foo",
+			Destination: "/base/symlinks/link1",
+			Type:        files.TypeSymlink,
+		},
+		{
+			Source:      "../files/a",
+			Destination: "/base/symlinks/link2",
+			Type:        files.TypeSymlink,
+		},
+	}, withoutFileInfo(results))
+}
+
 func withoutFileInfo(contents files.Contents) files.Contents {
 	filtered := make(files.Contents, 0, len(contents))
 
