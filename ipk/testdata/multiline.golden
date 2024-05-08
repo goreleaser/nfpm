@@ -1,0 +1,9 @@
+Architecture: riscv64
+Description: This field is a
+ multiline field
+ .
+ that should work.
+Maintainer: someone
+Package: multiline
+Priority: extra
+Version: 1.0.0

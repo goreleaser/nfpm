@@ -192,6 +192,10 @@
 						"$ref": "#/$defs/ArchLinux",
 						"title": "archlinux-specific settings"
 					},
+					"ipk": {
+						"$ref": "#/$defs/IPK",
+						"title": "ipk-specific settings"
+					},
 					"name": {
 						"type": "string",
 						"title": "package name"
@@ -563,6 +567,79 @@
 				"additionalProperties": false,
 				"type": "object"
 			},
+			"IPK": {
+				"properties": {
+					"abi_version": {
+						"type": "string",
+						"title": "abi version"
+					},
+					"alternatives": {
+						"items": {
+							"$ref": "#/$defs/IPKAlternative"
+						},
+						"type": "array",
+						"title": "alternatives"
+					},
+					"arch": {
+						"type": "string",
+						"title": "architecture in deb nomenclature"
+					},
+					"auto_installed": {
+						"type": "boolean",
+						"title": "auto installed",
+						"default": false
+					},
+					"essential": {
+						"type": "boolean",
+						"title": "whether package is essential",
+						"default": false
+					},
+					"fields": {
+						"additionalProperties": {
+							"type": "string"
+						},
+						"type": "object",
+						"title": "fields"
+					},
+					"predepends": {
+						"items": {
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
+						},
+						"type": "array",
+						"title": "predepends directive"
+					},
+					"tags": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"title": "tags"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"IPKAlternative": {
+				"properties": {
+					"priority": {
+						"type": "integer",
+						"title": "priority"
+					},
+					"target": {
+						"type": "string",
+						"title": "target"
+					},
+					"link_name": {
+						"type": "string",
+						"title": "link name"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
 			"Overridables": {
 				"properties": {
 					"replaces": {
@@ -655,6 +732,10 @@
 					"archlinux": {
 						"$ref": "#/$defs/ArchLinux",
 						"title": "archlinux-specific settings"
+					},
+					"ipk": {
+						"$ref": "#/$defs/IPK",
+						"title": "ipk-specific settings"
 					}
 				},
 				"additionalProperties": false,

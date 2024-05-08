@@ -1,0 +1,14 @@
+Architecture: amd64
+Description: Foo does things
+Maintainer: Carlos A Becker <pkg@carlosbecker.com>
+Package: foo
+Priority: extra
+Version: 1.0.0
+ABIVersion: 1
+Auto-Installed: yes
+Essential: yes
+Homepage: http://carlosbecker.com
+License: MIT
+Installed-Size: 10
+Section: default
+Bugs: https://github.com/goreleaser/nfpm/issues

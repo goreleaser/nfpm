@@ -33,7 +33,7 @@ func main() {
 
 func buildVersion(version, commit, date, builtBy, treeState string) goversion.Info {
 	return goversion.GetVersionInfo(
-		goversion.WithAppDetails("nfpm", "a simple and 0-dependencies deb, rpm, apk and arch linux packager written in Go", website),
+		goversion.WithAppDetails("nfpm", "a simple and 0-dependencies apk, arch linux, deb, ipk, and rpm packager written in Go", website),
 		goversion.WithASCIIName(asciiArt),
 		func(i *goversion.Info) {
 			if commit != "" {

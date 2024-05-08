@@ -1,0 +1,10 @@
+Architecture: amd64
+Description: Foo does things
+Maintainer: Carlos A Becker <pkg@carlosbecker.com>
+Package: foo
+Priority: extra
+Version: 1.0.0~beta+meta-2
+Homepage: http://carlosbecker.com
+Installed-Size: 10
+Section: default
+Vendor: nope

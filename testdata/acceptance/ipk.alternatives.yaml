@@ -1,0 +1,18 @@
+name: "foo"
+arch: "all"
+platform: "linux"
+version: "v1.0.0"
+maintainer: "John Doe <john@example.com>"
+description: Foo conflicts dummy
+contents:
+- src: ./testdata/fake
+  dst: /usr/bin/fake
+ipk:
+  alternatives:
+  - priority: 100
+    target: /usr/bin/fake
+    link_name: /usr/bin/bar
+      
+  - link_name: /usr/bin/baz
+    target: /usr/bin/fake
+    priority: 200

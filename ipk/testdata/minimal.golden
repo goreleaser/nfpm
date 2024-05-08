@@ -1,0 +1,6 @@
+Architecture: arm64
+Description: Minimal does nothing
+Maintainer: maintainer
+Package: minimal
+Priority: extra
+Version: 1.0.0
