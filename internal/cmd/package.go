@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/spf13/cobra"
@@ -37,9 +38,12 @@ func newPackageCmd() *packageCmd {
 	_ = cmd.MarkFlagFilename("config", "yaml", "yml")
 	cmd.Flags().StringVarP(&root.target, "target", "t", "", "where to save the generated package (filename, folder or empty for current folder)")
 	_ = cmd.MarkFlagFilename("target")
-	cmd.Flags().StringVarP(&root.packager, "packager", "p", "", "which packager implementation to use [apk|deb|rpm|archlinux]")
-	_ = cmd.RegisterFlagCompletionFunc("packager", cobra.FixedCompletions(
-		[]string{"apk", "deb", "rpm", "archlinux"},
+
+	pkgs := nfpm.Enumerate()
+
+	cmd.Flags().StringVarP(&root.packager, "packager", "p", "",
+		fmt.Sprintf("which packager implementation to use [%s]", strings.Join(pkgs, "|")))
+	_ = cmd.RegisterFlagCompletionFunc("packager", cobra.FixedCompletions(pkgs,
 		cobra.ShellCompDirectiveNoFileComp,
 	))
 

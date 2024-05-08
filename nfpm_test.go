@@ -299,6 +299,7 @@ func TestParseFile(t *testing.T) {
 	nfpm.RegisterPackager("deb", &fakePackager{})
 	nfpm.RegisterPackager("rpm", &fakePackager{})
 	nfpm.RegisterPackager("apk", &fakePackager{})
+	nfpm.RegisterPackager("ipk", &fakePackager{})
 	_, err = parseAndValidate("./testdata/overrides.yaml")
 	require.NoError(t, err)
 	_, err = parseAndValidate("./testdata/doesnotexist.yaml")

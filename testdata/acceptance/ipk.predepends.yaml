@@ -1,0 +1,9 @@
+name: "foo"
+arch: "all"
+platform: "linux"
+version: "v1.0.0"
+maintainer: "John Doe <john@example.com>"
+description: Foo breaks dummy
+ipk:
+  predepends:
+    - dummy
