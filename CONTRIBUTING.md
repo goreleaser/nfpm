@@ -9,7 +9,7 @@ By participating to this project, you agree to abide our [code of conduct](https
 Prerequisites:
 
 - [Task](https://taskfile.dev/#/installation)
-- [Go 1.19+](https://golang.org/doc/install)
+- [Go 1.21+](https://golang.org/doc/install)
 - [Docker](https://www.docker.com/)
 - `gpg` (probably already installed on your system)
 
