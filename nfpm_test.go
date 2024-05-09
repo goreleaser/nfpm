@@ -17,6 +17,12 @@ import (
 
 var mtime = time.Date(2023, 11, 5, 23, 15, 17, 0, time.UTC)
 
+func TestEnumerate(t *testing.T) {
+	nfpm.RegisterPackager("deb", nil)
+	result := nfpm.Enumerate()
+	require.NotEmpty(t, result)
+}
+
 func TestRegister(t *testing.T) {
 	format := "TestRegister"
 	pkgr := &fakePackager{}
