@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema-pro.json
-
+version: 2
 env:
   - GO111MODULE=on
 
@@ -99,7 +99,7 @@ brews:
   - repository:
       owner: goreleaser
       name: homebrew-tap
-    folder: Formula
+    directory: Formula
     homepage: https://nfpm.goreleaser.com
     description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
     license: MIT
@@ -117,7 +117,7 @@ scoops:
       owner: goreleaser
       name: scoop-bucket
     homepage: https://nfpm.goreleaser.com
-    folder: bucket
+    directory: bucket
     description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
     license: MIT
 
