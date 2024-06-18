@@ -103,4 +103,12 @@ func TestGlob(t *testing.T) {
 		require.Len(t, files, 1)
 		require.Equal(t, "/foo/bar/dest.dat", files["testdata/dir_a/dir_b/test_b.txt"])
 	})
+
+	t.Run("simple excludes", func(t *testing.T) {
+		var excludes []string = []string{"/foo/bar/dir_c/*"}
+		files, err := GlobExcludes("./testdata/dir_a/dir_*/*", "/foo/bar", excludes)
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		require.Equal(t, "/foo/bar/dir_b/test_b.txt", files["testdata/dir_a/dir_b/test_b.txt"])
+	})
 }

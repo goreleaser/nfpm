@@ -52,10 +52,18 @@ func (e ErrGlobNoMatch) Error() string {
 	return fmt.Sprintf("glob failed: %s: no matching files", e.glob)
 }
 
+func Glob(pattern, dst string, ignoreMatchers bool) (map[string]string, error) {
+	return globCommon(pattern, dst, ignoreMatchers, nil)
+}
+
+func GlobExcludes(pattern, dst string, excludes []string) (map[string]string, error) {
+	return globCommon(pattern, dst, false, excludes)
+}
+
 // Glob returns a map with source file path as keys and destination as values.
 // First the longest common prefix (lcp) of all globbed files is found. The destination
 // for each globbed file is then dst joined with src with the lcp trimmed off.
-func Glob(pattern, dst string, ignoreMatchers bool) (map[string]string, error) {
+func globCommon(pattern, dst string, ignoreMatchers bool, excludes []string) (map[string]string, error) {
 	options := []fileglob.OptFunc{fileglob.MatchDirectoryIncludesContents}
 	if ignoreMatchers {
 		options = append(options, fileglob.QuoteMeta)
@@ -106,7 +114,27 @@ func Glob(pattern, dst string, ignoreMatchers bool) (map[string]string, error) {
 			return nil, err
 		}
 
-		globdst := filepath.ToSlash(filepath.Join(dst, relpath))
+		dst_relpath := filepath.Join(dst, relpath)
+
+		// Check if src matches any of the exclude patterns
+		if excludes != nil {
+			excluded := false
+			for _, exclude := range excludes {
+				matched, err := filepath.Match(exclude, dst_relpath)
+				if err != nil {
+					return nil, fmt.Errorf("failed to match exclude pattern: %s: %w", exclude, err)
+				}
+				if matched {
+					excluded = true
+					break
+				}
+			}
+			if excluded {
+				continue
+			}
+		}
+
+		globdst := filepath.ToSlash(dst_relpath)
 		files[src] = globdst
 	}
 

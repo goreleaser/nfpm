@@ -184,7 +184,7 @@ contents:
   - src: path/to/local/*.1.gz
     dst: /usr/share/man/man1/
 
-  # Simple symlink at /usr/bin/foo which points to /sbin/foo, which is
+# Simple symlink at /usr/bin/foo which points to /sbin/foo, which is
   # the same behaviour as `ln -s /sbin/foo /usr/bin/foo`.
   #
   # This also means that both "src" and "dst" are paths inside the package (or
@@ -265,6 +265,22 @@ contents:
   - dst: /usr/local/bin/${NAME}
     src: "${NAME}"
     expand: true
+
+  # This replicates the directory structure from some/directory to /etc.
+  # By specifying "excludes", directories under /etc/ are not duplicated.
+  # If "excludes -/etc/dir_c" is set, then some/directory/dir_c will not be replicated.
+  - src: some/directory/
+    dst: /etc
+    type: tree
+    excludes:
+      - /etc/dir_c
+
+  # Select files in glob.
+  # Set "excludes" to exclude files from being copied to dst
+  - src: path/to/local/*.1.gz
+    dst: /usr/share/man/man1/
+    excludes:
+      - /usr/share/man/man1/*a.1.gz
 
 # Umask to be used on files without explicit mode set.
 #
