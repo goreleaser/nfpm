@@ -4,7 +4,7 @@ import "path/filepath"
 
 func ownedByFilesystem(path string) bool {
 	p := filepath.Clean(path)
-	for _, pp := range fsPaths {
+	for _, pp := range append(fsPaths, logrotatePaths...) {
 		if p == pp {
 			return true
 		}
@@ -12,7 +12,8 @@ func ownedByFilesystem(path string) bool {
 	return false
 }
 
-// from: repoquery --installed -l filesystem | while read -r f; do test -d $f && echo $f; done
+// yum install yum-utils
+// from: repoquery --installed -l filesystem | while read -r f; do test -d "\"$f\"," && echo $f; done
 var fsPaths = []string{
 	"/afs",
 	"/bin",
@@ -212,4 +213,13 @@ var fsPaths = []string{
 	"/var/spool/mail",
 	"/var/tmp",
 	"/var/yp",
+}
+
+// from: repoquery --installed -l logrotate | while read -r f; do test -d "\"$f\"," && echo $f; done
+var logrotatePaths = []string{
+	"/etc/logrotate.d",
+	"/usr/lib/.build-id",
+	"/usr/lib/.build-id/ae",
+	"/usr/share/licenses/logrotate",
+	"/var/lib/logrotate",
 }

@@ -510,6 +510,10 @@ func addTree(
 			c.FileInfo.Mode = tree.FileInfo.Mode
 		}
 
+		if ownedByFilesystem(c.Destination) {
+			c.Type = TypeImplicitDir
+		}
+
 		all[c.Destination] = c.WithFileInfoDefaults(umask, mtime)
 
 		return nil
