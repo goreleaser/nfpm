@@ -974,3 +974,68 @@ func TestAsExplicitRelativePath(t *testing.T) {
 		assert.Equal(t, expected, files.AsExplicitRelativePath(input))
 	}
 }
+
+func TestIssue829(t *testing.T) {
+	var config testStruct
+	dec := yaml.NewDecoder(strings.NewReader(`---
+contents:
+  # Implementation.
+  - src: ./testdata/issue829/lib/
+    dst: /usr/lib/
+    type: tree
+  - src: ./testdata/issue829/usr/
+    dst: /usr/
+    type: tree
+  - src: ./testdata/issue829/var/
+    dst: /var/
+    type: tree
+
+  # Configuration.
+  - src: ./testdata/issue829/etc/logrotate.d/acme
+    dst: /etc/logrotate.d/acme
+    type: config|noreplace
+  - src: ./testdata/issue829/etc/sysconfig/acme
+    dst: /etc/sysconfig/acme
+    type: config|noreplace
+`))
+	dec.KnownFields(true)
+	require.NoError(t, dec.Decode(&config))
+	files, err := files.PrepareForPackager(
+		config.Contents,
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	expect := map[string]string{
+		"/etc/":                                "implicit dir",
+		"/etc/logrotate.d/":                    "implicit dir",
+		"/etc/logrotate.d/acme":                "config|noreplace",
+		"/etc/sysconfig/":                      "implicit dir",
+		"/etc/sysconfig/acme":                  "config|noreplace",
+		"/usr/lib/":                            "implicit dir",
+		"/usr/lib/systemd/":                    "implicit dir",
+		"/usr/lib/systemd/system/":             "implicit dir",
+		"/usr/lib/systemd/system/acme.service": "file",
+		"/usr/":                                "implicit dir",
+		"/usr/bin/":                            "implicit dir",
+		"/usr/bin/acme":                        "file",
+		"/usr/share/":                          "implicit dir",
+		"/usr/share/doc/":                      "implicit dir",
+		"/usr/share/doc/acme/":                 "dir",
+		"/usr/share/doc/acme/readme.md":        "file",
+		"/usr/share/man/":                      "implicit dir",
+		"/usr/share/man/man1/":                 "implicit dir",
+		"/usr/share/man/man1/acme.1.gz":        "file",
+		"/var/":                                "implicit dir",
+		"/var/log/":                            "implicit dir",
+		"/var/log/acme/":                       "dir",
+		"/var/log/acme/.gitkeep":               "file",
+	}
+
+	for _, file := range files {
+		require.Equal(t, expect[file.Destination], file.Type, "invalid type for %s", file.Destination)
+	}
+}
