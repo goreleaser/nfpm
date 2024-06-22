@@ -13,7 +13,8 @@ func ownedByFilesystem(path string) bool {
 }
 
 // yum install yum-utils
-// from: repoquery --installed -l filesystem | while read -r f; do test -d "\"$f\"," && echo $f; done
+
+// repoquery --installed -l filesystem | while read -r f; do test -d "\"$f\"," && echo $f; done
 var fsPaths = []string{
 	"/afs",
 	"/bin",
@@ -215,7 +216,7 @@ var fsPaths = []string{
 	"/var/yp",
 }
 
-// from: repoquery --installed -l logrotate | while read -r f; do test -d "\"$f\"," && echo $f; done
+// repoquery --installed -l logrotate | while read -r f; do test -d "\"$f\"," && echo $f; done
 var logrotatePaths = []string{
 	"/etc/logrotate.d",
 	"/usr/lib/.build-id",
