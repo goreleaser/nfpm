@@ -974,3 +974,16 @@ func TestAsExplicitRelativePath(t *testing.T) {
 		assert.Equal(t, expected, files.AsExplicitRelativePath(input))
 	}
 }
+
+func TestIssue826(t *testing.T) {
+	contents, err := files.PrepareForPackager([]*files.Content{
+		{
+			Source:      "testdata/tree/files/a",
+			Destination: "/a",
+		},
+	}, 0, "deb", false, mtime)
+	require.NoError(t, err)
+	require.Len(t, contents, 1)
+	require.Equal(t, "file", contents[0].Type)
+	require.Equal(t, os.FileMode(0), contents[0].Mode().Type()&os.ModeSymlink)
+}
