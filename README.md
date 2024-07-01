@@ -1,7 +1,5 @@
 <p align="center">
-  <img alt="GoReleaser Logo" src="https://avatars2.githubusercontent.com/u/24697112?v=3&s=200" height="140" />
-  <h3 align="center">nFPM</h3>
-  <p align="center">nFPM is a simple and 0-dependencies deb, rpm, apk and arch linux packager written in Go</p>
+  <img alt="GoReleaser Logo" src="https://becker.software/nfpm.png" height="140" />
   <p align="center">
     <a href="https://github.com/goreleaser/nfpm/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/goreleaser/nfpm.svg?style=for-the-badge"></a>
     <a href="/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=for-the-badge"></a>
