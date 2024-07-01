@@ -1,8 +1,9 @@
 # nFPM
 
-![](/static/banner.svg)
+![](https://becker.software/nfpm.png)
 
-nFPM is a simple, 0-dependencies, `deb`, `rpm`, `apk`, and Arch Linux packager.
+**nFPM is Not FPM** - a zero dependencies, simple `deb`, `rpm`, `apk`, `ipk`, and
+arch linux packager written in Go.
 
 ## Why
 
@@ -28,5 +29,5 @@ And that's OK!, most of us don't need all those features most of the time.
 
 You create a YAML file with the definition of what you need, run the `nfpm`
 binary, and it takes care of everything.
-
-The same config file can be used to create both the RPM and Deb packages.
+The same configuration file can be used to create packages in all the supported
+formats.
