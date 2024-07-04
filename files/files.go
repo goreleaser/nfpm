@@ -490,6 +490,9 @@ func addTree(
 			c.Destination = NormalizeAbsoluteDirPath(destination)
 			c.FileInfo.Mode = info.Mode() &^ umask
 			c.FileInfo.MTime = info.ModTime()
+			if ownedByFilesystem(c.Destination) {
+				c.Type = TypeImplicitDir
+			}
 		case d.Type()&os.ModeSymlink != 0:
 			linkDestination, err := os.Readlink(path)
 			if err != nil {
