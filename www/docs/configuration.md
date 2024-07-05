@@ -162,11 +162,16 @@ contents:
   - src: path/to/local/foo
     dst: /usr/bin/foo
 
+  # This duplicates the directory structure of 'some/directory' into '/etc',
+  # without taking ownership of the directories.
+  - src: some/directory/
+    dst: /etc
+
   # This will add all files in some/directory or in subdirectories at the
   # same level under the directory /etc. This means the tree structure in
   # some/directory will not be replicated.
   - src: some/directory/
-    dst: /etc
+    dst: /etc/ # notice the trailing slash
 
   # This will replicate the directory structure under some/directory at /etc.
   - src: some/directory/
