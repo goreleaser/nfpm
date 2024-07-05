@@ -1,4 +1,4 @@
-FROM debian:11 AS test_base
+FROM debian AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.deb
