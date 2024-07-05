@@ -1,9 +1,7 @@
 package files
 
-import "path/filepath"
-
 func ownedByFilesystem(path string) bool {
-	p := filepath.Clean(path)
+	p := ToNixPath(path)
 	for _, pp := range append(fsPaths, logrotatePaths...) {
 		if p == pp {
 			return true
