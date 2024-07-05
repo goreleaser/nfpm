@@ -420,6 +420,16 @@ func TestRPMVersionWithPrerelease(t *testing.T) {
 	require.Equal(t, "1", meta.Release)
 }
 
+func TestRPMVersionWithPrereleaseWithDashes(t *testing.T) {
+	info := exampleInfo()
+	info.Version = "1.0.0"
+	info.Prerelease = "rc1-alpha-omega" // nolint:goconst
+	meta, err := buildRPMMeta(info)
+	require.NoError(t, err)
+	require.Equal(t, "1.0.0~rc1_alpha_omega", meta.Version)
+	require.Equal(t, "1", meta.Release)
+}
+
 func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	// https://fedoraproject.org/wiki/Package_Versioning_Examples#Complex_versioning_examples
 	info := exampleInfo()

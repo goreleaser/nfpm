@@ -271,7 +271,7 @@ func formatVersion(info *nfpm.Info) string {
 	version := info.Version
 
 	if info.Prerelease != "" {
-		version += "~" + info.Prerelease
+		version += "~" + strings.ReplaceAll(info.Prerelease, "-", "_")
 	}
 
 	if info.VersionMetadata != "" {
