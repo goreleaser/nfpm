@@ -74,12 +74,12 @@ RUN test ! -d /usr/foo/bar/something
 
 # ---- signed test ----
 FROM test_base AS signed
-COPY keys/pubkey.gpg /usr/share/debsig/keyrings/9890904DFB2EC88A/debsig.gpg
 RUN apt update -y
 RUN apt install -y debsig-verify
 COPY deb.policy.pol /etc/debsig/policies/9890904DFB2EC88A/policy.pol
+COPY keys/pubkey.gpg /usr/share/debsig/keyrings/9890904DFB2EC88A/debsig.gpg
 # manually check signature
-RUN debsig-verify /tmp/foo.deb | grep "debsig: Verified package from 'Test package' (test)"
+RUN debsig-verify -v -d /tmp/foo.deb | grep "debsig: Verified package from 'Test package' (test)"
 # clear dpkg config as it contains 'no-debsig', now every
 # package that will be installed must be signed
 RUN echo "" > /etc/dpkg/dpkg.cfg
@@ -87,10 +87,11 @@ RUN dpkg -i /tmp/foo.deb
 
 # ---- signed dpkg-sig test ----
 FROM test_base AS dpkg-signed
+COPY keys/pubkey.gpg /tmp/gpg.key
 RUN apt update -y
-RUN apt install -y dpkg-sig
-# TODO: we should properly check the signature here, not sure how to do so.
-RUN dpkg-sig --verify /tmp/foo.deb | grep "UNKNOWNSIG _gpgbuilder 15BD80B3"
+RUN apt install -y gnupg
+RUN gpg --import /tmp/gpg.key
+RUN gpg --verify /tmp/foo.deb
 RUN dpkg -i /tmp/foo.deb
 
 # ---- overrides test ----
