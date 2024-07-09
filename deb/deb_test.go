@@ -22,13 +22,12 @@ import (
 
 	"github.com/blakesmith/ar"
 	"github.com/goreleaser/chglog"
-	"github.com/klauspost/compress/zstd"
-	"github.com/stretchr/testify/require"
-	"github.com/xi2/xz"
-
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
+	"github.com/klauspost/compress/zstd"
+	"github.com/stretchr/testify/require"
+	"github.com/xi2/xz"
 )
 
 // nolint: gochecknoglobals
