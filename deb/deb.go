@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"crypto/md5" // nolint:gas
 	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -230,7 +231,9 @@ Signer: {{ .Signer }}
 Date: {{ .Date }}
 Role: {{ .Role }}
 Files:
-{{range .Files}}{{ .Md5Sum }} {{ .Sha1Sum }} {{ .Size }} {{ .Name }}{{end}}
+{{range .Files -}}
+{{"\t"}}{{ hex .Md5Sum }} {{ hex .Sha1Sum }} {{ .Size }} {{ .Name }}
+{{end -}}
 `
 
 type dpkgSigData struct {
@@ -241,17 +244,18 @@ type dpkgSigData struct {
 	Info   *nfpm.Info
 }
 type dpkgSigFileLine struct {
-	Md5Sum  [16]byte
-	Sha1Sum [20]byte
+	Md5Sum  []byte
+	Sha1Sum []byte
 	Size    int
 	Name    string
 }
 
 func newDpkgSigFileLine(name string, fileContent []byte) dpkgSigFileLine {
+	md5Sum, sha1Sum := md5.Sum(fileContent), sha1.Sum(fileContent)
 	return dpkgSigFileLine{
 		Name:    name,
-		Md5Sum:  md5.Sum(fileContent),
-		Sha1Sum: sha1.Sum(fileContent),
+		Md5Sum:  md5Sum[:],
+		Sha1Sum: sha1Sum[:],
 		Size:    len(fileContent),
 	}
 }
@@ -267,7 +271,9 @@ func readDpkgSigData(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []
 			newDpkgSigFileLine("data.tar.gz", dataTarball),
 		},
 	}
-	temp, _ := template.New("dpkg-sig").Parse(dpkgSigTemplate)
+	temp, _ := template.New("dpkg-sig").Funcs(template.FuncMap{
+		"hex": hex.EncodeToString,
+	}).Parse(dpkgSigTemplate)
 	buf := &bytes.Buffer{}
 	err := temp.Execute(buf, data)
 	if err != nil {

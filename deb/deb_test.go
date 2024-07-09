@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/md5" // nolint: gosec
+	"crypto/sha1"
 	"encoding/hex"
 	"errors"
 	"flag"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -1001,8 +1003,10 @@ func TestDpkgSigSignature(t *testing.T) {
 
 	signature := extractFileFromAr(t, deb.Bytes(), "_gpgbuilder")
 
-	err = sign.PGPReadMessage(signature, "../internal/sign/testdata/pubkey.asc")
+	msg, err := sign.PGPReadMessage(signature, "../internal/sign/testdata/pubkey.asc")
 	require.NoError(t, err)
+
+	require.NoError(t, verifyDpkgSigFileHashes(extractAllFilesFromAr(t, deb.Bytes()), string(msg)))
 }
 
 func TestDpkgSigSignatureError(t *testing.T) {
@@ -1032,8 +1036,10 @@ func TestDpkgSigSignatureCallback(t *testing.T) {
 
 	signature := extractFileFromAr(t, deb.Bytes(), "_gpgbuilder")
 
-	err = sign.PGPReadMessage(signature, "../internal/sign/testdata/pubkey.asc")
+	msg, err := sign.PGPReadMessage(signature, "../internal/sign/testdata/pubkey.asc")
 	require.NoError(t, err)
+
+	require.NoError(t, verifyDpkgSigFileHashes(extractAllFilesFromAr(t, deb.Bytes()), string(msg)))
 }
 
 func TestDisableGlobbing(t *testing.T) {
@@ -1400,6 +1406,26 @@ func extractFileFromAr(tb testing.TB, arFile []byte, filename string) []byte {
 	return nil
 }
 
+func extractAllFilesFromAr(tb testing.TB, arFile []byte) map[string][]byte {
+	tb.Helper()
+
+	tr := ar.NewReader(bytes.NewReader(arFile))
+	files := make(map[string][]byte)
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break // End of archive
+		}
+		require.NoError(tb, err)
+
+		fileContents, err := io.ReadAll(tr)
+		require.NoError(tb, err)
+
+		files[hdr.Name] = fileContents
+	}
+	return files
+}
+
 func TestEmptyButRequiredDebFields(t *testing.T) {
 	item := nfpm.WithDefaults(&nfpm.Info{
 		Name:    "foo",
@@ -1504,5 +1530,47 @@ type zstdReadCloser struct {
 func (zrc *zstdReadCloser) Close() error {
 	zrc.Decoder.Close()
 
+	return nil
+}
+
+func verifyDpkgSigFileHashes(arFiles map[string][]byte, msg string) error {
+	_, hashes, ok := strings.Cut(msg, "Files:")
+	if !ok {
+		return errors.New("expected Files section in dpkg-sig message")
+	}
+	lines := strings.Split(hashes, "\n")
+	for i := range lines {
+		lines[i] = strings.TrimSpace(lines[i])
+		if lines[i] == "" {
+			continue
+		}
+		var md5Hex, sha1Hex, size, name string
+		if n, err := fmt.Sscanln(lines[i], &md5Hex, &sha1Hex, &size, &name); err != nil {
+			return err
+		} else if n != 4 {
+			return fmt.Errorf("expected 4 elements in line %q, but got %d", lines[i], n)
+		}
+
+		md5Sum, err := hex.DecodeString(md5Hex)
+		if err != nil {
+			return err
+		}
+		sha1Sum, err := hex.DecodeString(sha1Hex)
+		if err != nil {
+			return err
+		}
+
+		content, ok := arFiles[name]
+		if !ok {
+			return fmt.Errorf("dpkg-sig message contains hash of file %q, but the package does not contain the file", name)
+		}
+		actualMD5Sum, actualSHA1Sum := md5.Sum(content), sha1.Sum(content)
+		if !slices.Equal(actualMD5Sum[:], md5Sum) {
+			return fmt.Errorf("file %q has invalid MD5 sum", name)
+		}
+		if !slices.Equal(actualSHA1Sum[:], sha1Sum) {
+			return fmt.Errorf("file %q has invalid SHA1 sum", name)
+		}
+	}
 	return nil
 }
