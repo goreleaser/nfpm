@@ -13,6 +13,7 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
+
 	"github.com/goreleaser/nfpm/v2"
 )
 
@@ -143,10 +144,10 @@ func PGPVerify(message io.Reader, signature []byte, armoredPubKeyFile string) er
 	return err
 }
 
-func PGPReadMessage(message []byte, armoredPubKeyFile string) error {
+func PGPReadMessage(message []byte, armoredPubKeyFile string) (plaintext []byte, err error) {
 	keyFileContent, err := os.ReadFile(armoredPubKeyFile)
 	if err != nil {
-		return fmt.Errorf("reading armored public key file: %w", err)
+		return nil, fmt.Errorf("reading armored public key file: %w", err)
 	}
 
 	var keyring openpgp.EntityList
@@ -154,19 +155,19 @@ func PGPReadMessage(message []byte, armoredPubKeyFile string) error {
 	if isASCII(keyFileContent) {
 		keyring, err = openpgp.ReadArmoredKeyRing(bytes.NewReader(keyFileContent))
 		if err != nil {
-			return fmt.Errorf("decoding armored public key file: %w", err)
+			return nil, fmt.Errorf("decoding armored public key file: %w", err)
 		}
 	} else {
 		keyring, err = openpgp.ReadKeyRing(bytes.NewReader(keyFileContent))
 		if err != nil {
-			return fmt.Errorf("decoding public key file: %w", err)
+			return nil, fmt.Errorf("decoding public key file: %w", err)
 		}
 	}
 
 	block, _ := clearsign.Decode(message)
 	_, err = block.VerifySignature(keyring, nil)
 
-	return err
+	return block.Plaintext, err
 }
 
 func parseKeyID(hexKeyID *string) (uint64, error) {
