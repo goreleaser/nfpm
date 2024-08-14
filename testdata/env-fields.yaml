@@ -4,6 +4,7 @@ arch: "amd64"
 version: "v$GOROOT"
 release: ${TEST_RELEASE_ENV_VAR}
 prerelease: ${TEST_PRERELEASE_ENV_VAR}
+description: My ${TEST_DESCRIPTION_ENV_VAR}
 contents:
 - src: ./testdata/whatever.conf
   dst: /etc/foo/regular.conf

@@ -83,6 +83,7 @@ priority: extra
 maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 
 # Description.
+# This will expand any env var you set in the field, e.g. description: ${DESCRIPTION}
 # Defaults to `no description given`.
 # Most packagers call for a one-line synopsis of the package. Some (like deb)
 # also call for a multi-line description starting on the second line.
