@@ -231,6 +231,7 @@ func (c *Config) expandEnvVars() {
 	c.Info.Homepage = os.Expand(c.Info.Homepage, c.envMappingFunc)
 	c.Info.Maintainer = os.Expand(c.Info.Maintainer, c.envMappingFunc)
 	c.Info.Vendor = os.Expand(c.Info.Vendor, c.envMappingFunc)
+	c.Info.Description = os.Expand(c.Info.Description, c.envMappingFunc)
 
 	// Package signing related fields
 	c.Info.Deb.Signature.KeyFile = os.Expand(c.Deb.Signature.KeyFile, c.envMappingFunc)

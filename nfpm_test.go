@@ -313,11 +313,13 @@ func TestParseFile(t *testing.T) {
 	t.Setenv("RPM_KEY_FILE", "my/rpm/key/file")
 	t.Setenv("TEST_RELEASE_ENV_VAR", "1234")
 	t.Setenv("TEST_PRERELEASE_ENV_VAR", "beta1")
+	t.Setenv("TEST_DESCRIPTION_ENV_VAR", "description")
 	config, err := parseAndValidate("./testdata/env-fields.yaml")
 	require.NoError(t, err)
 	require.Equal(t, fmt.Sprintf("v%s", os.Getenv("GOROOT")), config.Version)
 	require.Equal(t, "1234", config.Release)
 	require.Equal(t, "beta1", config.Prerelease)
+	require.Equal(t, "My description", config.Description)
 	require.Equal(t, "my/rpm/key/file", config.RPM.Signature.KeyFile)
 	require.Equal(t, "hard/coded/file", config.Deb.Signature.KeyFile)
 	require.Equal(t, "", config.APK.Signature.KeyFile)
@@ -381,6 +383,7 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		maintainerEmail = "nope@example.com"
 		homepage        = "https://nfpm.goreleaser.com"
 		vcsBrowser      = "https://github.com/goreleaser/nfpm"
+		description     = "barfoo"
 	)
 
 	t.Run("platform", func(t *testing.T) {
@@ -438,6 +441,13 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		info, err := nfpm.Parse(strings.NewReader("name: foo\nhomepage: $CI_PROJECT_URL"))
 		require.NoError(t, err)
 		require.Equal(t, homepage, info.Homepage)
+	})
+
+	t.Run("description", func(t *testing.T) {
+		t.Setenv("DESCRIPTION", description)
+		info, err := nfpm.Parse(strings.NewReader("name: foo\ndescription: $DESCRIPTION"))
+		require.NoError(t, err)
+		require.Equal(t, description, info.Description)
 	})
 
 	t.Run("global passphrase", func(t *testing.T) {
