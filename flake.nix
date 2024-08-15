@@ -33,10 +33,12 @@
         # nix develop .#packagers
         devShells.packagers = pkgs.mkShell {
           packages = with pkgs; [
-            apk-tools
             dpkg
+          ] ++ (lib.optionals pkgs.stdenv.isLinux [
+            apk-tools
             rpm
-          ];
+          ]);
+
         };
 
         # nix develop .#docs
