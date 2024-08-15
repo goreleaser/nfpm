@@ -15,17 +15,19 @@
           src = ./.;
           ldflags = [ "-s" "-w" "-X main.version=dev" "-X main.builtBy=flake" ];
           doCheck = false;
-          vendorHash = "sha256-g57tLk2+WWcdG0COqkQD7eLYG0TdC0RnlhLF6Qt4woY=";
+          vendorHash = "";
         };
 
         devShells.default = pkgs.mkShell {
+          shellHook = "go mod tidy";
+        };
+
+        # nix develop .#dev
+        devShells.dev = pkgs.mkShell {
           packages = with pkgs; [
-            go
             go-task
             gofumpt
-            nix-prefetch
           ];
-          shellHook = "go mod tidy";
         };
 
         # nix develop .#packagers
