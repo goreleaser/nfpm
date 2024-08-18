@@ -46,6 +46,7 @@ func exampleInfo() *nfpm.Info {
 		Section:     "default",
 		Homepage:    "http://carlosbecker.com",
 		Vendor:      "nope",
+		License:     "MIT",
 		Overridables: nfpm.Overridables{
 			Depends: []string{
 				"bash",
