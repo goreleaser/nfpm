@@ -3,6 +3,7 @@ Version: 1.0.0
 Section: default
 Priority: extra
 Architecture: amd64
+License: MIT
 Maintainer: Carlos A Becker <pkg@carlosbecker.com>
 Installed-Size: 0
 Replaces: svn

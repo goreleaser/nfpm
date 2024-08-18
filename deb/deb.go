@@ -724,6 +724,9 @@ Section: {{.Info.Section}}
 Priority: {{.Info.Priority}}
 Architecture: {{ if ne .Info.Platform "linux"}}{{ .Info.Platform }}-{{ end }}{{.Info.Arch}}
 {{- /* Optional fields */ -}}
+{{- if .Info.License }}
+License: {{.Info.License}}
+{{- end }}
 {{- if .Info.Maintainer}}
 Maintainer: {{.Info.Maintainer}}
 {{- end }}
