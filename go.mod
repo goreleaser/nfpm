@@ -3,7 +3,7 @@ module github.com/goreleaser/nfpm/v2
 go 1.21
 
 require (
-	dario.cat/mergo v1.0.0
+	dario.cat/mergo v1.0.1
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/ProtonMail/go-crypto v1.0.0
