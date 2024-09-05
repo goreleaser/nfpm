@@ -681,7 +681,7 @@ func conffiles(info *nfpm.Info) []byte {
 	var confs []string
 	for _, file := range info.Contents {
 		switch file.Type {
-		case files.TypeConfig, files.TypeConfigNoReplace:
+		case files.TypeConfig, files.TypeConfigNoReplace, files.TypeConfigMissingOK:
 			confs = append(confs, files.NormalizeAbsoluteFilePath(file.Destination))
 		}
 	}

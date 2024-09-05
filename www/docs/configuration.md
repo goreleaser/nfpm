@@ -209,6 +209,12 @@ contents:
     dst: /etc/bar.conf
     type: config|noreplace
 
+  # Corresponds to `%config(missingok)` if the packager is rpm, otherwise it
+  # is just a config file
+  - src: path/to/local/bar.conf
+    dst: /etc/bar.conf
+    type: config|missingok
+
   # These files are not actually present in the package, but the file names
   # are added to the package header. From the RPM directives documentation:
   #
