@@ -87,7 +87,9 @@ func TestMetaSignature(t *testing.T) {
 		Info:    info,
 		Package: pkg,
 	}, &w))
-	require.NoError(t, sign.PGPReadMessage(w.Bytes(), "../internal/sign/testdata/pubkey.asc"))
+
+	_, err := sign.PGPReadMessage(w.Bytes(), "../internal/sign/testdata/pubkey.asc")
+	require.NoError(t, err)
 }
 
 func TestMetaSignatureError(t *testing.T) {
