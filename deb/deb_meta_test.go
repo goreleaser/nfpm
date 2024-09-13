@@ -2,7 +2,6 @@ package deb
 
 import (
 	"bytes"
-	"errors"
 	"os"
 	"testing"
 	"time"
@@ -107,5 +106,5 @@ func TestMetaSignatureError(t *testing.T) {
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
-	require.True(t, errors.As(err, &expectedError))
+	require.ErrorAs(t, err, &expectedError)
 }
