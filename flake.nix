@@ -43,7 +43,7 @@
 
         # nix develop .#docs
         devShells.docs = pkgs.mkShell {
-          packages = with pkgs; with staging-pkgs.python311Packages; [
+          packages = with pkgs; with pkgs.python311Packages; [
             (pkgs.writeScriptBin "ci-docs" "task docs:test")
             go-task
             htmltest
