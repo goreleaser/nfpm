@@ -33,7 +33,6 @@ const (
 	TypeConfig = "config"
 	// TypeConfigNoReplace is like TypeConfig with an added noreplace directive
 	// that is respected by RPM-based distributions.
-	// that is respected by RPM-based distributions.
 	// For all other package formats it is handled exactly like TypeConfig.
 	TypeConfigNoReplace = "config|noreplace"
 	// TypeConfigMissingOK is like TypeConfig with an added missingok directive
