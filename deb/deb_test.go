@@ -86,6 +86,11 @@ func exampleInfo() *nfpm.Info {
 					Type:        files.TypeConfigNoReplace,
 				},
 				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/etc/fake/fake3.conf",
+					Type:        files.TypeConfigMissingOK,
+				},
+				{
 					Destination: "/var/log/whatever",
 					Type:        files.TypeDir,
 				},

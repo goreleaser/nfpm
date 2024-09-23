@@ -359,7 +359,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 	}
 
 	for _, content := range info.Contents {
-		if content.Type == files.TypeConfig || content.Type == files.TypeConfigNoReplace {
+		if content.Type == files.TypeConfig || content.Type == files.TypeConfigNoReplace || content.Type == files.TypeConfigMissingOK {
 			path := files.AsRelativePath(content.Destination)
 
 			if err := writeKVPair(buf, "backup", path); err != nil {

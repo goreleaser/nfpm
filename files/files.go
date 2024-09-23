@@ -32,9 +32,13 @@ const (
 	// user of the package.
 	TypeConfig = "config"
 	// TypeConfigNoReplace is like TypeConfig with an added noreplace directive
-	// that is respected by RPM-based distributions. For all other packages it
-	// is handled exactly like TypeConfig.
+	// that is respected by RPM-based distributions.
+	// For all other package formats it is handled exactly like TypeConfig.
 	TypeConfigNoReplace = "config|noreplace"
+	// TypeConfigMissingOK is like TypeConfig with an added missingok directive
+	// that is respected by RPM-based distributions.
+	// For all other package formats it is handled exactly like TypeConfig.
+	TypeConfigMissingOK = "config|missingok"
 	// TypeGhost is the type of an RPM ghost file which is ignored by other packagers.
 	TypeRPMGhost = "ghost"
 	// TypeRPMDoc is the type of an RPM doc file which is ignored by other packagers.
@@ -289,7 +293,7 @@ func PrepareForPackager(
 			if err != nil {
 				return nil, fmt.Errorf("add tree: %w", err)
 			}
-		case TypeConfig, TypeConfigNoReplace, TypeFile, "":
+		case TypeConfig, TypeConfigNoReplace, TypeConfigMissingOK, TypeFile, "":
 			globbed, err := glob.Glob(
 				filepath.ToSlash(content.Source),
 				filepath.ToSlash(content.Destination),

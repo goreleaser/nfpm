@@ -595,6 +595,42 @@ func TestArches(t *testing.T) {
 	})
 }
 
+func TestConfigMissingOK(t *testing.T) {
+	var (
+		buildConfigFile   = "../testdata/whatever.conf"
+		packageConfigFile = "/etc/fake/fake.conf"
+	)
+
+	info := &nfpm.Info{
+		Name:        "symlink-in-files",
+		Arch:        "amd64",
+		Description: "This package's config references a file via symlink.",
+		Version:     "1.0.0",
+		Maintainer:  "maintainer",
+		Overridables: nfpm.Overridables{
+			Contents: []*files.Content{
+				{
+					Source:      buildConfigFile,
+					Destination: packageConfigFile,
+					Type:        files.TypeConfigMissingOK,
+				},
+			},
+		},
+	}
+
+	var rpmFileBuffer bytes.Buffer
+	err := Default.Package(info, &rpmFileBuffer)
+	require.NoError(t, err)
+
+	expectedConfigContent, err := os.ReadFile(buildConfigFile)
+	require.NoError(t, err)
+
+	packageConfigContent, err := extractFileFromRpm(rpmFileBuffer.Bytes(), packageConfigFile)
+	require.NoError(t, err)
+
+	require.Equal(t, expectedConfigContent, packageConfigContent)
+}
+
 func TestConfigNoReplace(t *testing.T) {
 	var (
 		buildConfigFile   = "../testdata/whatever.conf"

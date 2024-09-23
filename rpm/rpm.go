@@ -373,6 +373,8 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 			file, err = asRPMFile(content, rpmpack.ConfigFile)
 		case files.TypeConfigNoReplace:
 			file, err = asRPMFile(content, rpmpack.ConfigFile|rpmpack.NoReplaceFile)
+		case files.TypeConfigMissingOK:
+			file, err = asRPMFile(content, rpmpack.ConfigFile|rpmpack.MissingOkFile)
 		case files.TypeRPMGhost:
 			if content.FileInfo.Mode == 0 {
 				content.FileInfo.Mode = os.FileMode(0o644)
