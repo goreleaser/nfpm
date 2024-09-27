@@ -9,7 +9,7 @@ A commented `nfpm.yaml` config file example:
 name: foo
 
 # Architecture. (required)
-# This will expand any env var you set in the field, e.g. version: ${GOARCH}
+# This will expand any env var you set in the field, e.g. arch: ${GOARCH}
 # The architecture is specified using Go nomenclature (GOARCH) and translated
 # to the platform specific equivalent. In order to manually set the architecture
 # to a platform specific value, use deb_arch, rpm_arch and apk_arch.
@@ -18,7 +18,7 @@ name: foo
 arch: amd64
 
 # Platform.
-# This will expand any env var you set in the field, e.g. version: ${GOOS}
+# This will expand any env var you set in the field, e.g. platform: ${GOOS}
 # This is only used by the rpm and deb packagers.
 # Examples: `linux` (default), `darwin`
 platform: linux
