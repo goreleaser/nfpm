@@ -2,7 +2,7 @@
 
 ## Reference
 
-A commented `nfpm.yaml` config file example:
+A commented `nfpm.yaml` configuration file example:
 
 ```yaml
 # Name. (required)
@@ -12,7 +12,7 @@ name: foo
 # This will expand any env var you set in the field, e.g. arch: ${GOARCH}
 # The architecture is specified using Go nomenclature (GOARCH) and translated
 # to the platform specific equivalent. In order to manually set the architecture
-# to a platform specific value, use deb_arch, rpm_arch and apk_arch.
+# to a platform specific value, set `{format}.arch`.
 # Examples: `all`, `amd64`, `386`, `arm5`, `arm6`, `arm7`, `arm64`, `mips`,
 # `mipsle`, `mips64le`, `ppc64le`, `s390`
 arch: amd64
@@ -326,7 +326,7 @@ overrides:
 rpm:
   # rpm specific architecture name that overrides "arch" without performing any
   # replacements.
-  rpm_arch: ia64
+  arch: ia64
 
   # RPM specific scripts.
   scripts:
@@ -375,7 +375,7 @@ rpm:
 # Custom configuration applied only to the Deb packager.
 deb:
   # deb specific architecture name that overrides "arch" without performing any replacements.
-  deb_arch: arm
+  arch: arm
 
   # Custom deb special files.
   scripts:
@@ -443,7 +443,7 @@ deb:
 
 apk:
   # apk specific architecture name that overrides "arch" without performing any replacements.
-  apk_arch: armhf
+  arch: armhf
 
   # The package is signed if a key_file is set
   signature:
