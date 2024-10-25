@@ -21,7 +21,7 @@ So I decided to create nFPM: a **simpler**, **0-dependency**,
 This is a subtle way of saying it won't have all features, nor all
 formats that `fpm` has: it is supposed to be simpler.
 
-And that's OK!, most of us don't need all those features most of the time.
+And that's OK! Most of us don't need all those features most of the time.
 
 [fpm]: https://github.com/jordansissel/fpm
 

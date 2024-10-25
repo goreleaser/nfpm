@@ -1,0 +1,56 @@
+# This is an example nfpm configuration file.
+# Make sure to check the documentation at https://nfpm.goreleaser.com
+#
+# The lines below are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/need to use them.
+# yaml-language-server: $schema=https://nfpm.goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+name: "foo"
+arch: "amd64"
+platform: "linux"
+version: "1.0.0"
+section: "default"
+priority: "extra"
+replaces:
+  - foobar
+provides:
+  - bar
+depends:
+  - foo
+  - bar
+recommends:
+  - whatever
+suggests:
+  - something-else
+conflicts:
+  - not-foo
+  - not-bar
+maintainer: "John Doe <john@example.com>"
+description: |
+  FooBar is the great foo and bar software.
+    And this can be in multiple lines!
+vendor: "FooBarCorp"
+homepage: "http://example.com"
+license: "MIT"
+changelog: "changelog.yaml"
+contents:
+  - src: ./foo
+    dst: /usr/bin/foo
+  - src: ./bar
+    dst: /usr/bin/bar
+  - src: ./foobar.conf
+    dst: /etc/foobar.conf
+    type: config
+  - src: /usr/bin/foo
+    dst: /sbin/foo
+    type: symlink
+overrides:
+  rpm:
+    scripts:
+      preinstall: ./scripts/preinstall.sh
+      postremove: ./scripts/postremove.sh
+  deb:
+    scripts:
+      postinstall: ./scripts/postinstall.sh
+      preremove: ./scripts/preremove.sh
