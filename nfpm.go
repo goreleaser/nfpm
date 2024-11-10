@@ -442,8 +442,8 @@ type Deb struct {
 
 type DebSignature struct {
 	PackageSignature `yaml:",inline" json:",inline"`
-	// debsign, or dpkg-sig (defaults to debsign)
-	Method string `yaml:"method,omitempty" json:"method,omitempty" jsonschema:"title=method role,enum=debsign,enum=dpkg-sig,default=debsign"`
+	// Only debsign still supported
+	Method string `yaml:"method,omitempty" json:"method,omitempty" jsonschema:"title=method role,enum=debsign,default=debsign"`
 	// origin, maint or archive (defaults to origin)
 	Type   string `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"title=signer role,enum=origin,enum=maint,enum=archive,default=origin"`
 	Signer string `yaml:"signer,omitempty" json:"signer,omitempty" jsonschema:"title=signer"`
