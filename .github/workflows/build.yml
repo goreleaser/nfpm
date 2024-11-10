@@ -125,7 +125,7 @@ jobs:
           enableCrossOsArchive: true
       - run: task acceptance:windows:install
   dependabot:
-    needs: [unit-tests]
+    needs: [unit-tests, acceptance-tests, install-windows-pkgs]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
