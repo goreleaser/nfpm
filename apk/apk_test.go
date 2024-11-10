@@ -114,7 +114,7 @@ func TestCreateBuilderData(t *testing.T) {
 
 	require.NoError(t, builderData(tw))
 
-	require.Equal(t, 13824, buf.Len(), buf.String())
+	require.Equal(t, 15872, buf.Len(), buf.String())
 }
 
 func TestCombineToApk(t *testing.T) {
@@ -136,6 +136,7 @@ func TestDefaultWithArch(t *testing.T) {
 		"usr/bin/fake":                "f46cece3eeb7d9ed5cb244d902775427be71492d",
 		"etc/fake/fake.conf":          "96c335dc28122b5f09a4cef74b156cd24c23784c",
 		"etc/fake/fake2.conf":         "96c335dc28122b5f09a4cef74b156cd24c23784c",
+		"etc/fake/fake3.conf":         "96c335dc28122b5f09a4cef74b156cd24c23784c",
 	}
 	for _, arch := range []string{"386", "amd64"} {
 		arch := arch

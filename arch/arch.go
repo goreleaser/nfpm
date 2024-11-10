@@ -215,6 +215,7 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 			if err != nil {
 				return nil, 0, err
 			}
+			defer src.Close() // nolint: errcheck
 
 			header := &tar.Header{
 				Name:     content.Destination,
@@ -577,6 +578,7 @@ func writeScripts(w io.Writer, scripts map[string]string) error {
 		if err != nil {
 			return err
 		}
+		defer fl.Close() //nolint: errcheck
 
 		_, err = io.Copy(w, fl)
 		if err != nil {
