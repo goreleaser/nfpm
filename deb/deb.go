@@ -658,11 +658,7 @@ func newFileInsideTar(out *tar.Writer, name string, content []byte, modtime time
 }
 
 func newFilePathInsideTar(out *tar.Writer, path, dest string, mode int64, modtime time.Time) error {
-	file, err := os.Open(path) //nolint:gosec
-	if err != nil {
-		return err
-	}
-	content, err := io.ReadAll(file)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}

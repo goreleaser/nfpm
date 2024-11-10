@@ -112,7 +112,7 @@ func TestUpgrade(t *testing.T) {
 
 						f, err := os.Create(target)
 						require.NoError(t, err)
-						defer f.Close()
+						t.Cleanup(func() { require.NoError(t, f.Close()) })
 						info.Target = target
 						require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
 
