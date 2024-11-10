@@ -413,6 +413,7 @@ deb:
   signature:
     # Signature method, either "dpkg-sig" or "debsign".
     # Defaults to "debsign"
+    # "dpkg-sig" is not supported in newer Debian versions.
     method: dpkg-sig
 
     # PGP secret key (can also be ASCII-armored). The passphrase is taken

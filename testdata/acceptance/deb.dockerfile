@@ -1,4 +1,4 @@
-FROM debian:11 AS test_base
+FROM debian:trixie AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.deb
@@ -83,14 +83,6 @@ RUN debsig-verify /tmp/foo.deb | grep "debsig: Verified package from 'Test packa
 # clear dpkg config as it contains 'no-debsig', now every
 # package that will be installed must be signed
 RUN echo "" > /etc/dpkg/dpkg.cfg
-RUN dpkg -i /tmp/foo.deb
-
-# ---- signed dpkg-sig test ----
-FROM test_base AS dpkg-signed
-RUN apt update -y
-RUN apt install -y dpkg-sig
-# TODO: we should properly check the signature here, not sure how to do so.
-RUN dpkg-sig --verify /tmp/foo.deb | grep "UNKNOWNSIG _gpgbuilder 15BD80B3"
 RUN dpkg -i /tmp/foo.deb
 
 # ---- overrides test ----
