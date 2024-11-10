@@ -85,6 +85,15 @@ RUN debsig-verify /tmp/foo.deb | grep "debsig: Verified package from 'Test packa
 RUN echo "" > /etc/dpkg/dpkg.cfg
 RUN dpkg -i /tmp/foo.deb
 
+# ---- signed dpkg-sig test ----
+FROM test_base AS dpkg-signed
+COPY keys/pubkey.gpg /tmp/gpg.key
+RUN apt update -y
+RUN apt install -y gnupg
+RUN gpg --import /tmp/gpg.key
+RUN gpg --verify /tmp/foo.deb
+RUN dpkg -i /tmp/foo.deb
+
 # ---- overrides test ----
 FROM min AS overrides
 RUN test -e /usr/bin/fake

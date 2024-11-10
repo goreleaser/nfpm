@@ -318,25 +318,30 @@ func TestRPMSign(t *testing.T) {
 func TestDebSign(t *testing.T) {
 	t.Parallel()
 	for _, arch := range formatArchs["deb"] {
-		func(t *testing.T, testArch string) {
-			t.Run(fmt.Sprintf("deb/%s", testArch), func(t *testing.T) {
-				t.Parallel()
-				target := "signed"
-				if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
-					t.Skip("ppc64le arch not supported in pipeline")
-				}
-				accept(t, acceptParms{
-					Name:   "debsign_sign_" + testArch,
-					Conf:   "deb.debsign.sign.yaml",
-					Format: "deb",
-					Docker: dockerParams{
-						File:   "deb.dockerfile",
-						Target: target,
-						Arch:   testArch,
-					},
+		for _, sigtype := range []string{"dpkg-sig", "debsign"} {
+			func(t *testing.T, testSigtype, testArch string) {
+				t.Run(fmt.Sprintf("deb/%s/%s", testArch, testSigtype), func(t *testing.T) {
+					t.Parallel()
+					target := "signed"
+					if testSigtype == "dpkg-sig" {
+						target = "dpkg-signed"
+					}
+					if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
+						t.Skip("ppc64le arch not supported in pipeline")
+					}
+					accept(t, acceptParms{
+						Name:   fmt.Sprintf("%s_sign_%s", testSigtype, testArch),
+						Conf:   fmt.Sprintf("deb.%s.sign.yaml", testSigtype),
+						Format: "deb",
+						Docker: dockerParams{
+							File:   "deb.dockerfile",
+							Target: target,
+							Arch:   testArch,
+						},
+					})
 				})
-			})
-		}(t, arch)
+			}(t, sigtype, arch)
+		}
 	}
 }
 
