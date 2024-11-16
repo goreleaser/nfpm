@@ -495,8 +495,7 @@
 					"method": {
 						"type": "string",
 						"enum": [
-							"debsign",
-							"dpkg-sig"
+							"debsign"
 						],
 						"title": "method role",
 						"default": "debsign"
