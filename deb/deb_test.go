@@ -27,7 +27,7 @@ import (
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
-	"github.com/xi2/xz"
+	"github.com/ulikunitz/xz"
 )
 
 // nolint: gochecknoglobals
@@ -1325,7 +1325,7 @@ func inflate(tb testing.TB, nameOrType string, data []byte) []byte {
 		inflateReadCloser, err = gzip.NewReader(dataReader)
 		require.NoError(tb, err)
 	case "xz":
-		r, err := xz.NewReader(dataReader, 0)
+		r, err := xz.NewReader(dataReader)
 		require.NoError(tb, err)
 		inflateReadCloser = io.NopCloser(r)
 	case "zst":
