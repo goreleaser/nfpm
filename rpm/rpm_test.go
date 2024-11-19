@@ -751,12 +751,12 @@ func TestRPMChangelog(t *testing.T) {
 		notes := strings.Split(allNotes[i], "\n")
 
 		require.Equal(t, entry.Date, timestamp)
-		require.True(t, strings.Contains(title, entry.Packager))
-		require.True(t, strings.Contains(title, entry.Semver))
+		require.Contains(t, title, entry.Packager)
+		require.Contains(t, title, entry.Semver)
 		require.Equal(t, len(entry.Changes), len(notes))
 
 		for j, change := range entry.Changes {
-			require.True(t, strings.Contains(notes[j], change.Note))
+			require.Contains(t, notes[j], change.Note)
 		}
 	}
 }

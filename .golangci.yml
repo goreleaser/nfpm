@@ -31,3 +31,6 @@ linters-settings:
         deny:
           - pkg: "github.com/pkg/errors"
             desc: "use stdlib instead"
+  testifylint:
+    disable:
+      - encoded-compare

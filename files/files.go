@@ -525,7 +525,7 @@ func addTree(
 
 var ErrContentCollision = fmt.Errorf("content collision")
 
-func contentCollisionError(new *Content, present *Content) error {
+func contentCollisionError(newc *Content, present *Content) error {
 	var presentSource string
 	if present.Source != "" {
 		presentSource = " with source " + present.Source
@@ -533,7 +533,7 @@ func contentCollisionError(new *Content, present *Content) error {
 
 	return fmt.Errorf("adding %s at destination %s: "+
 		"%s%s is already present at this destination: %w",
-		new.Type, new.Destination, present.Type, presentSource, ErrContentCollision,
+		newc.Type, newc.Destination, present.Type, presentSource, ErrContentCollision,
 	)
 }
 
