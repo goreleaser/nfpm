@@ -21,9 +21,12 @@ was really simple.
 
 So I created nFPM: a simpler, 0-dependency, as-little-assumptions-as-possible alternative to fpm.
 
-## Usage and getting started
+## Getting started
 
-Check the documentation at https://nfpm.goreleaser.com
+- [Getting Started](https://nfpm.goreleaser.com)
+- [Install](https://nfpm.goreleaser.com/install/)
+- [Usage](https://nfpm.goreleaser.com/usage/)
+- [Configuration reference](https://nfpm.goreleaser.com/configuration/)
 
 ## Used and supported by
 
