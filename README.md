@@ -21,9 +21,21 @@ was really simple.
 
 So I created nFPM: a simpler, 0-dependency, as-little-assumptions-as-possible alternative to fpm.
 
-## Usage
+## Usage and getting started
 
 Check the documentation at https://nfpm.goreleaser.com
+
+## Used and supported by
+
+<p>
+  <a href="https://wails.io">
+    <img src="https://github.com/user-attachments/assets/e55bbae4-9551-49f1-92ea-ea9223b91fc0" width="120px" alt="wails icon" />
+  </a>
+  <br/>
+  <br/>
+  <b>Build beautiful cross-platform applications using Go.</b>
+  <br/>
+</p>
 
 ## Special thanks 🙏
 
