@@ -20,7 +20,7 @@ require (
 	github.com/muesli/roff v0.1.0
 	github.com/sassoftware/go-rpmutils v0.4.0
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/ulikunitz/xz v0.5.12
 	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb
 	gopkg.in/yaml.v3 v3.0.1
