@@ -769,7 +769,11 @@ type controlData struct {
 }
 
 func writeControl(w io.Writer, data controlData) error {
-	tmpl := template.New("control")
+	return writeTemplate("control", controlTemplate, w, data)
+}
+
+func writeTemplate(name, t string, w io.Writer, data interface{}) error {
+	tmpl := template.New(name)
 	tmpl.Funcs(template.FuncMap{
 		"join": func(strs []string) string {
 			return strings.Trim(strings.Join(strs, ", "), " ")
@@ -802,5 +806,5 @@ func writeControl(w io.Writer, data controlData) error {
 			return result
 		},
 	})
-	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
+	return template.Must(tmpl.Parse(t)).Execute(w, data)
 }
