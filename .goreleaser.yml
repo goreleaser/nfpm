@@ -235,8 +235,6 @@ aur_sources:
     private_key: "{{ .Env.AUR_KEY }}"
     git_url: "ssh://aur@aur.archlinux.org/nfpm.git"
     build: |-
-      cd "${pkgname}-${pkgver}"
-
       export CGO_CPPFLAGS="${CPPFLAGS}"
       export CGO_CFLAGS="${CFLAGS}"
       export CGO_CXXFLAGS="${CXXFLAGS}"
@@ -244,13 +242,8 @@ aur_sources:
       export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
       go build -ldflags="-w -s -buildid='' -linkmode=external -X main.version=v${pkgver}" ./cmd/nfpm
 
-      ls -alF
       chmod +x "./${pkgname}"
     package: |-
-
-      cd "${pkgname}-${pkgver}"
-      ls -alF
-
       # Bin
       install -Dsm755 "./${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
 
