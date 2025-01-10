@@ -91,10 +91,14 @@ func PGPClearSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKey
 
 	var signature bytes.Buffer
 
-	writeCloser, err := clearsign.Encode(&signature, key.PrivateKey, &packet.Config{
-		SigningKeyId: keyID,
-		DefaultHash:  crypto.SHA256,
-	})
+	writeCloser, err := clearsign.Encode(
+		&signature,
+		key.PrivateKey,
+		&packet.Config{
+			SigningKeyId: keyID,
+			DefaultHash:  crypto.SHA256,
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("clear sign: %w", err)
 	}
