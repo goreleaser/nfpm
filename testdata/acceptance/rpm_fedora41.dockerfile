@@ -1,4 +1,4 @@
-FROM fedora:38 AS test_base
+FROM fedora:41 AS test_base
 RUN yum install -y createrepo yum-utils
 ARG package
 RUN echo "${package}"
