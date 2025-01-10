@@ -9,6 +9,18 @@ before:
     - ./scripts/completions.sh
     - ./scripts/manpages.sh
 
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+  description: nFPM is a simple, 0-dependencies, deb, rpm, and apk packager.
+  full_description: |-
+    Simple, 0-dependencies, deb, rpm, and apk packager.
+    nFPM (not FPM) is configurable via YAML and does not need any
+    packaging software installed.
+  homepage: https://nfpm.goreleaser.com
+  license: MIT
+  maintainers:
+    - Carlos Alexandro Becker <carlos@becker.software>
+
 gomod:
   proxy: true
 
@@ -104,9 +116,6 @@ brews:
       owner: goreleaser
       name: homebrew-tap
     directory: Formula
-    homepage: https://nfpm.goreleaser.com
-    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
-    license: MIT
     test: |
       system "#{bin}/nfpm -v"
     install: |-
@@ -120,31 +129,23 @@ scoops:
   - repository:
       owner: goreleaser
       name: scoop-bucket
-    homepage: https://nfpm.goreleaser.com
     directory: bucket
-    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
-    license: MIT
 
 nix:
   - name: nfpm
     repository:
       owner: goreleaser
       name: nur
-    homepage: https://nfpm.goreleaser.com
-    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
     path: pkgs/nfpm/default.nix
-    license: mit
     extra_install: |-
       installManPage ./manpages/nfpm.1.gz
       installShellCompletion ./completions/*
 
 winget:
   - name: nfpm
+    license_url: https://github.com/goreleaser/nfpm/blob/main/LICENSE.md
     publisher: goreleaser
-    license: Copyright Becker Software LTDA
     copyright: Becker Software LTDA
-    homepage: https://nfpm.goreleaser.com
-    short_description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
     repository:
       owner: goreleaser
       name: winget-pkgs
@@ -160,13 +161,6 @@ winget:
 
 nfpms:
   - file_name_template: "{{ .ConventionalFileName }}"
-    homepage: https://nfpm.goreleaser.com
-    description: |-
-      Simple, 0-dependencies, deb, rpm and apk packager.
-      nFPM (not FPM) is configurable via YAML and does not need any
-      packaging software installed.
-    maintainer: Carlos Alexandro Becker <carlos@becker.software>
-    license: MIT
     vendor: GoReleaser
     formats:
       - apk
@@ -202,12 +196,9 @@ nfpms:
           mode: 0644
 
 aurs:
-  - homepage: https://nfpm.goreleaser.com
-    description: nFPM is a simple, 0-dependencies, deb, rpm and apk packager.
-    maintainers:
+  - maintainers:
       - "Fernandez Ludovic <lfernandez dot dev at gmail dot com>"
       - "Carlos Alexandro Becker <carlos at becker dot software>"
-    license: MIT
     private_key: "{{ .Env.AUR_KEY }}"
     git_url: "ssh://aur@aur.archlinux.org/nfpm-bin.git"
     package: |-
