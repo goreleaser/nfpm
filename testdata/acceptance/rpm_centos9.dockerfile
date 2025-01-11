@@ -6,6 +6,7 @@ COPY ${package} /tmp/foo.rpm
 
 FROM test_base AS signed
 COPY keys/pubkey.asc /tmp/pubkey.asc
+RUN rpm --version
 RUN rpm --import /tmp/pubkey.asc
 RUN rpm -q gpg-pubkey --qf '%{NAME}-%{VERSION}-%{RELEASE}\t%{SUMMARY}\n'
 RUN rpm -vK /tmp/foo.rpm
