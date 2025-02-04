@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -394,23 +395,19 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer) (md5buf bytes.Buf
 			// skip ghost files in deb
 			continue
 		case files.TypeDir, files.TypeImplicitDir:
-			err = tw.WriteHeader(&tar.Header{
-				Name:     files.AsExplicitRelativePath(file.Destination),
-				Mode:     int64(file.FileInfo.Mode),
-				Typeflag: tar.TypeDir,
-				Format:   tar.FormatGNU,
-				Uname:    file.FileInfo.Owner,
-				Gname:    file.FileInfo.Group,
-				ModTime:  modtime.Get(info.MTime),
-			})
+			header, headerErr := tarHeader(file, info.MTime) // headerErr to avoid shadowing err
+			if err != nil {
+				return md5buf, 0, fmt.Errorf("build directory header: %w", headerErr)
+			}
+
+			err = tw.WriteHeader(header)
 		case files.TypeSymlink:
-			err = newItemInsideTar(tw, []byte{}, &tar.Header{
-				Name:     files.AsExplicitRelativePath(file.Destination),
-				Linkname: file.Source,
-				Typeflag: tar.TypeSymlink,
-				ModTime:  modtime.Get(info.MTime),
-				Format:   tar.FormatGNU,
-			})
+			header, headerErr := tarHeader(file, info.MTime) // headerErr to avoid shadowing err
+			if err != nil {
+				return md5buf, 0, fmt.Errorf("build symlink header: %w", headerErr)
+			}
+
+			err = newItemInsideTar(tw, []byte{}, header)
 		case files.TypeDebChangelog:
 			size, err = createChangelogInsideDataTar(tw, &md5buf, info, file.Destination)
 		default:
@@ -433,18 +430,11 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 	// don't care if it errs while closing...
 	defer tarFile.Close() // nolint: errcheck,gosec
 
-	header, err := tar.FileInfoHeader(file, file.Source)
+	header, err := tarHeader(file)
 	if err != nil {
 		return 0, err
 	}
 
-	// tar.FileInfoHeader only uses file.Mode().Perm() which masks the mode with
-	// 0o777 which we don't want because we want to be able to set the suid bit.
-	header.Mode = int64(file.Mode())
-	header.Format = tar.FormatGNU
-	header.Name = files.AsExplicitRelativePath(file.Destination)
-	header.Uname = file.FileInfo.Owner
-	header.Gname = file.FileInfo.Group
 	if err := tw.WriteHeader(header); err != nil {
 		return 0, fmt.Errorf("cannot write header of %s to data.tar.gz: %w", file.Source, err)
 	}
@@ -803,4 +793,60 @@ func writeControl(w io.Writer, data controlData) error {
 		},
 	})
 	return template.Must(tmpl.Parse(controlTemplate)).Execute(w, data)
+}
+
+func tarHeader(content *files.Content, preferredModTimes ...time.Time) (*tar.Header, error) {
+	const (
+		ISUID = 0o4000 // Set uid
+		ISGID = 0o2000 // Set gid
+		ISVTX = 0o1000 // Save text (sticky bit)
+	)
+
+	fm := content.Mode()
+
+	h := &tar.Header{
+		Name: content.Name(),
+		ModTime: modtime.Get(
+			append(preferredModTimes, content.ModTime())...),
+		Mode:   int64(fm & 0o7777),
+		Uname:  content.FileInfo.Owner,
+		Gname:  content.FileInfo.Group,
+		Format: tar.FormatGNU,
+	}
+
+	switch {
+	case content.IsDir() || fm&fs.ModeDir != 0:
+		h.Typeflag = tar.TypeDir
+		h.Name = files.AsExplicitRelativePath(content.Destination)
+	case content.Type == files.TypeSymlink || fm&fs.ModeSymlink != 0:
+		h.Typeflag = tar.TypeSymlink
+		h.Name = files.AsExplicitRelativePath(content.Destination)
+		h.Linkname = content.Source
+	case fm&fs.ModeDevice != 0:
+		if fm&fs.ModeCharDevice != 0 {
+			h.Typeflag = tar.TypeChar
+		} else {
+			h.Typeflag = tar.TypeBlock
+		}
+	case fm&fs.ModeNamedPipe != 0:
+		h.Typeflag = tar.TypeFifo
+	case fm&fs.ModeSocket != 0:
+		return nil, fmt.Errorf("archive/tar: sockets not supported")
+	default:
+		h.Typeflag = tar.TypeReg
+		h.Name = files.AsExplicitRelativePath(content.Destination)
+		h.Size = content.Size()
+	}
+
+	if fm&fs.ModeSetuid != 0 {
+		h.Mode |= ISUID
+	}
+	if fm&fs.ModeSetgid != 0 {
+		h.Mode |= ISGID
+	}
+	if fm&fs.ModeSticky != 0 {
+		h.Mode |= ISVTX
+	}
+
+	return h, nil
 }
