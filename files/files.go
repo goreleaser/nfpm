@@ -183,7 +183,7 @@ func (c *Content) ModTime() time.Time {
 
 // IsDir to part of the os.FileInfo interface
 func (c *Content) IsDir() bool {
-	return false
+	return c.Type == TypeDir || c.Type == TypeImplicitDir
 }
 
 // Sys to part of the os.FileInfo interface
