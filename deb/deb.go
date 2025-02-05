@@ -387,36 +387,49 @@ func fillDataTar(info *nfpm.Info, w io.Writer) (md5sums []byte, instSize int64, 
 }
 
 func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer) (md5buf bytes.Buffer, instSize int64, err error) {
-	// create files and implicit directories
 	for _, file := range info.Contents {
-		var size int64 // declare early to avoid shadowing err
 		switch file.Type {
 		case files.TypeRPMGhost:
-			// skip ghost files in deb
-			continue
+			continue // skip ghost files in deb
 		case files.TypeDir, files.TypeImplicitDir:
-			header, headerErr := tarHeader(file, info.MTime) // headerErr to avoid shadowing err
+			header, err := tarHeader(file, info.MTime)
 			if err != nil {
-				return md5buf, 0, fmt.Errorf("build directory header: %w", headerErr)
+				return md5buf, 0, fmt.Errorf("build directory header for %q: %w",
+					file.Destination, err)
 			}
 
 			err = tw.WriteHeader(header)
-		case files.TypeSymlink:
-			header, headerErr := tarHeader(file, info.MTime) // headerErr to avoid shadowing err
 			if err != nil {
-				return md5buf, 0, fmt.Errorf("build symlink header: %w", headerErr)
+				return md5buf, 0, fmt.Errorf("create directory %q in data tar: %w",
+					header.Name, err)
+			}
+		case files.TypeSymlink:
+			header, err := tarHeader(file, info.MTime)
+			if err != nil {
+				return md5buf, 0, fmt.Errorf("build symlink header for %q: %w",
+					file.Destination, err)
 			}
 
 			err = newItemInsideTar(tw, []byte{}, header)
+			if err != nil {
+				return md5buf, 0, fmt.Errorf("create symlink %q in data tar: %w",
+					header.Linkname, err)
+			}
 		case files.TypeDebChangelog:
-			size, err = createChangelogInsideDataTar(tw, &md5buf, info, file.Destination)
+			size, err := createChangelogInsideDataTar(tw, &md5buf, info, file.Destination)
+			if err != nil {
+				return md5buf, 0, fmt.Errorf("write changelog to data tar: %w", err)
+			}
+
+			instSize += size
 		default:
-			size, err = copyToTarAndDigest(file, tw, &md5buf)
+			size, err := copyToTarAndDigest(file, tw, &md5buf)
+			if err != nil {
+				return md5buf, 0, fmt.Errorf("write %q to data tar: %w", file.Destination, err)
+			}
+
+			instSize += size
 		}
-		if err != nil {
-			return md5buf, 0, err
-		}
-		instSize += size
 	}
 
 	return md5buf, instSize, nil
