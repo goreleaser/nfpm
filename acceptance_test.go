@@ -297,7 +297,7 @@ func TestIPKSpecific(t *testing.T) {
 
 func TestRPMSign(t *testing.T) {
 	for _, os := range []string{
-		// "centos9", // XXX: RPM v4.16, doesn't work with newer versions of go-openpgp.
+		"centos9",
 		"centos10",
 		"fedora40",
 		"fedora41",
