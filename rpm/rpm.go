@@ -235,9 +235,12 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		return nil, err
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
+	hostname := info.RPM.BuildHost
+	if hostname == "" {
+		hostname, err = os.Hostname()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &rpmpack.RPMMetaData{
