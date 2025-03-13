@@ -351,6 +351,10 @@ rpm:
   # This will expand any env var you set in the field, e.g. packager: ${PACKAGER}
   packager: GoReleaser <staff@goreleaser.com>
 
+  # The hostname of the machine the rpm was built with.  If ommited os.Hostname()
+  # will be used.
+  buildhost: buildserver1
+
   # Compression algorithm (gzip (default), zstd, lzma or xz).
   compression: zstd
 

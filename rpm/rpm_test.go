@@ -80,8 +80,9 @@ func exampleInfo() *nfpm.Info {
 				PostRemove:  "../testdata/scripts/postremove.sh",
 			},
 			RPM: nfpm.RPM{
-				Group:    "foo",
-				Prefixes: []string{"/opt"},
+				Group:     "foo",
+				BuildHost: "barhost",
+				Prefixes:  []string{"/opt"},
 				Scripts: nfpm.RPMScripts{
 					PreTrans:  "../testdata/scripts/pretrans.sh",
 					PostTrans: "../testdata/scripts/posttrans.sh",
@@ -138,6 +139,10 @@ func TestRPM(t *testing.T) {
 	group, err := rpm.Header.GetString(rpmutils.GROUP)
 	require.NoError(t, err)
 	require.Equal(t, "foo", group)
+
+	buildhost, err := rpm.Header.GetString(rpmutils.BUILDHOST)
+	require.NoError(t, err)
+	require.Equal(t, "barhost", buildhost)
 
 	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
 	require.NoError(t, err)
