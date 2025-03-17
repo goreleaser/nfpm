@@ -1,6 +1,6 @@
 # Go's GOARCH to packager
 
-nFPM was branched out of [GoReleaser](https://goreleaser.com), so some if it
+nFPM was branched out of [GoReleaser](https://goreleaser.com), so some of it
 lean towards "the Go way" (whatever that means).
 
 GoReleaser passes a string joining `GOARCH`, `GOARM`, etc as the package
