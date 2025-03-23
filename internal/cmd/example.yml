@@ -33,7 +33,7 @@ description: |
 vendor: "FooBarCorp"
 homepage: "http://example.com"
 license: "MIT"
-changelog: "changelog.yaml"
+changelog: "changelog.yml"
 contents:
   - src: ./foo
     dst: /usr/bin/foo
