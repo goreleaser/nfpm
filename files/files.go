@@ -187,7 +187,7 @@ func (c *Content) IsDir() bool {
 }
 
 // Sys to part of the os.FileInfo interface
-func (c *Content) Sys() interface{} {
+func (c *Content) Sys() any {
 	return nil
 }
 

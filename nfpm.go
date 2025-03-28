@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -182,7 +183,7 @@ func (c *Config) expandEnvVarsStringSlice(items []string) []string {
 	}
 	for i := 0; i < len(items); i++ {
 		if items[i] == "" {
-			items = append(items[:i], items[i+1:]...)
+			items = slices.Delete(items, i, i+1)
 			i-- // Since we just deleted items[i], we must redo that index
 		}
 	}

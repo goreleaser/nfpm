@@ -254,7 +254,7 @@ func readSigningKey(keyFile, passphrase string) (*openpgp.Entity, error) {
 }
 
 func isASCII(s []byte) bool {
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		if s[i] > unicode.MaxASCII {
 			return false
 		}

@@ -1,13 +1,10 @@
 package files
 
+import "slices"
+
 func ownedByFilesystem(path string) bool {
 	p := ToNixPath(path)
-	for _, pp := range append(fsPaths, logrotatePaths...) {
-		if p == pp {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(append(fsPaths, logrotatePaths...), p)
 }
 
 // yum install yum-utils

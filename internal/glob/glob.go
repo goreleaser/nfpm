@@ -29,18 +29,13 @@ func longestCommonPrefix(strs []string) string {
 }
 
 func strlcp(a, b string) string {
-	var min int
-	if len(a) > len(b) {
-		min = len(b)
-	} else {
-		min = len(a)
-	}
-	for i := 0; i < min; i++ {
+	minlen := min(len(a), len(b))
+	for i := range minlen {
 		if a[i] != b[i] {
 			return a[0:i]
 		}
 	}
-	return a[0:min]
+	return a[0:minlen]
 }
 
 // ErrGlobNoMatch happens when no files matched the given glob.
