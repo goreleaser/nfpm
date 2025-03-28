@@ -52,21 +52,21 @@ func TestDefaultsVersion(t *testing.T) {
 	})
 	require.NotEmpty(t, info.Platform)
 	require.Equal(t, "1.0.0", info.Version)
-	require.Equal(t, "", info.Release)
-	require.Equal(t, "", info.Prerelease)
+	require.Empty(t, info.Release)
+	require.Empty(t, info.Prerelease)
 
 	info = nfpm.WithDefaults(&nfpm.Info{
 		Version: "v1.0.0-rc1",
 	})
 	require.Equal(t, "1.0.0", info.Version)
-	require.Equal(t, "", info.Release)
+	require.Empty(t, info.Release)
 	require.Equal(t, "rc1", info.Prerelease)
 
 	info = nfpm.WithDefaults(&nfpm.Info{
 		Version: "v1.0.0-beta1",
 	})
 	require.Equal(t, "1.0.0", info.Version)
-	require.Equal(t, "", info.Release)
+	require.Empty(t, info.Release)
 	require.Equal(t, "beta1", info.Prerelease)
 
 	info = nfpm.WithDefaults(&nfpm.Info{
@@ -180,20 +180,20 @@ func TestPrepareForPackager(t *testing.T) {
 			},
 		})
 		require.NoError(t, nfpm.PrepareForPackager(info, ""))
-		require.Len(t, info.Overridables.Contents, 5)
-		asdFile := info.Overridables.Contents[0]
+		require.Len(t, info.Contents, 5)
+		asdFile := info.Contents[0]
 		require.Equal(t, "/asd", asdFile.Destination)
 		require.Equal(t, files.TypeFile, asdFile.Type)
 		require.Equal(t, "-rw-r--r--", asdFile.FileInfo.Mode.String())
 		require.Equal(t, "root", asdFile.FileInfo.Owner)
 		require.Equal(t, "root", asdFile.FileInfo.Group)
-		usrDir := info.Overridables.Contents[1]
+		usrDir := info.Contents[1]
 		require.Equal(t, "/usr/", usrDir.Destination)
 		require.Equal(t, files.TypeImplicitDir, usrDir.Type)
 		require.Equal(t, "-rwxr-xr-x", usrDir.FileInfo.Mode.String())
 		require.Equal(t, "root", usrDir.FileInfo.Owner)
 		require.Equal(t, "root", usrDir.FileInfo.Group)
-		aDir := info.Overridables.Contents[2]
+		aDir := info.Contents[2]
 		require.Equal(t, "/usr/a/", aDir.Destination)
 		require.Equal(t, files.TypeDir, aDir.Type)
 		require.Equal(t, "-rwxr-xr-x", aDir.FileInfo.Mode.String())
@@ -239,7 +239,7 @@ func TestValidate(t *testing.T) {
 			},
 		}
 		require.NoError(t, nfpm.Validate(&info))
-		require.Len(t, info.Overridables.Contents, 2)
+		require.Len(t, info.Contents, 2)
 	})
 
 	t.Run("config", func(t *testing.T) {
@@ -322,7 +322,7 @@ func TestParseFile(t *testing.T) {
 	require.Equal(t, "My description", config.Description)
 	require.Equal(t, "my/rpm/key/file", config.RPM.Signature.KeyFile)
 	require.Equal(t, "hard/coded/file", config.Deb.Signature.KeyFile)
-	require.Equal(t, "", config.APK.Signature.KeyFile)
+	require.Empty(t, config.APK.Signature.KeyFile)
 }
 
 func TestParseEnhancedFile(t *testing.T) {

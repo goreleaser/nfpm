@@ -22,7 +22,7 @@ func TestLongestCommonPrefix(t *testing.T) {
 
 	empty := []string{}
 	lcp2 := longestCommonPrefix(empty)
-	require.Equal(t, "", lcp2)
+	require.Empty(t, lcp2)
 
 	unique := []string{
 		"every",
@@ -35,7 +35,7 @@ func TestLongestCommonPrefix(t *testing.T) {
 	}
 
 	lcp3 := longestCommonPrefix(unique)
-	require.Equal(t, "", lcp3)
+	require.Empty(t, lcp3)
 }
 
 func TestGlob(t *testing.T) {

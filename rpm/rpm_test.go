@@ -736,19 +736,19 @@ func TestRPMChangelog(t *testing.T) {
 	require.NoError(t, err)
 	times, ok := _times.([]uint32)
 	require.True(t, ok)
-	require.Equal(t, len(changelog), len(times))
+	require.Len(t, changelog, len(times))
 
 	_titles, err := rpm.Header.Get(tagChangelogName)
 	require.NoError(t, err)
 	titles, ok := _titles.([]string)
 	require.True(t, ok)
-	require.Equal(t, len(changelog), len(titles))
+	require.Len(t, changelog, len(titles))
 
 	_notes, err := rpm.Header.Get(tagChangelogText)
 	require.NoError(t, err)
 	allNotes, ok := _notes.([]string)
 	require.True(t, ok)
-	require.Equal(t, len(changelog), len(allNotes))
+	require.Len(t, changelog, len(allNotes))
 
 	for i, entry := range changelog {
 		timestamp := time.Unix(int64(times[i]), 0).UTC()
@@ -758,7 +758,7 @@ func TestRPMChangelog(t *testing.T) {
 		require.Equal(t, entry.Date, timestamp)
 		require.Contains(t, title, entry.Packager)
 		require.Contains(t, title, entry.Semver)
-		require.Equal(t, len(entry.Changes), len(notes))
+		require.Len(t, entry.Changes, len(notes))
 
 		for j, change := range entry.Changes {
 			require.Contains(t, notes[j], change.Note)
