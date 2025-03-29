@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -107,12 +108,7 @@ func mapValidChar(r rune) rune {
 
 // isOneOf checks whether a rune is one of the runes in rr
 func isOneOf(r rune, rr ...rune) bool {
-	for _, char := range rr {
-		if r == char {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(rr, r)
 }
 
 // Package writes a new archlinux package to the given writer using the given info.

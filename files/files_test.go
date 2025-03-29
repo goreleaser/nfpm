@@ -282,7 +282,7 @@ contents:
 	errs := make(chan error, 10)
 	t.Cleanup(func() { close(errs) })
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -298,7 +298,7 @@ contents:
 	}
 	wg.Wait()
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		require.NoError(t, <-errs)
 	}
 }

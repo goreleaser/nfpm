@@ -1034,7 +1034,7 @@ func Test_stripDisallowedFields(t *testing.T) {
 
 			stripDisallowedFields(tc.info)
 
-			assert.Equal(tc.expect, tc.info.Overridables.IPK.Fields)
+			assert.Equal(tc.expect, tc.info.IPK.Fields)
 		})
 	}
 }

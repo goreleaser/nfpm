@@ -26,6 +26,6 @@ func Println(s string) {
 }
 
 // Printf printfs the given string to the Noticer.
-func Printf(format string, a ...interface{}) {
+func Printf(format string, a ...any) {
 	fmt.Fprintf(Noticer, format, a...)
 }

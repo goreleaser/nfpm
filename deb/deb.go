@@ -607,15 +607,15 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 			mode:     0o755,
 		},
 		"rules": {
-			fileName: info.Overridables.Deb.Scripts.Rules,
+			fileName: info.Deb.Scripts.Rules,
 			mode:     0o755,
 		},
 		"templates": {
-			fileName: info.Overridables.Deb.Scripts.Templates,
+			fileName: info.Deb.Scripts.Templates,
 			mode:     0o644,
 		},
 		"config": {
-			fileName: info.Overridables.Deb.Scripts.Config,
+			fileName: info.Deb.Scripts.Config,
 			mode:     0o755,
 		},
 	}

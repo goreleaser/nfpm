@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -182,7 +183,7 @@ func (c *Config) expandEnvVarsStringSlice(items []string) []string {
 	}
 	for i := 0; i < len(items); i++ {
 		if items[i] == "" {
-			items = append(items[:i], items[i+1:]...)
+			items = slices.Delete(items, i, i+1)
 			i-- // Since we just deleted items[i], we must redo that index
 		}
 	}
@@ -204,11 +205,11 @@ func (c *Config) expandEnvVarsContents(contents files.Contents) files.Contents {
 
 func (c *Config) expandEnvVars() {
 	// Version related fields
-	c.Info.Release = os.Expand(c.Info.Release, c.envMappingFunc)
-	c.Info.Version = os.Expand(c.Info.Version, c.envMappingFunc)
-	c.Info.Prerelease = os.Expand(c.Info.Prerelease, c.envMappingFunc)
-	c.Info.Platform = os.Expand(c.Info.Platform, c.envMappingFunc)
-	c.Info.Arch = os.Expand(c.Info.Arch, c.envMappingFunc)
+	c.Release = os.Expand(c.Release, c.envMappingFunc)
+	c.Version = os.Expand(c.Version, c.envMappingFunc)
+	c.Prerelease = os.Expand(c.Prerelease, c.envMappingFunc)
+	c.Platform = os.Expand(c.Platform, c.envMappingFunc)
+	c.Arch = os.Expand(c.Arch, c.envMappingFunc)
 	for or := range c.Overrides {
 		c.Overrides[or].Conflicts = c.expandEnvVarsStringSlice(c.Overrides[or].Conflicts)
 		c.Overrides[or].Depends = c.expandEnvVarsStringSlice(c.Overrides[or].Depends)
@@ -218,67 +219,67 @@ func (c *Config) expandEnvVars() {
 		c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
 		c.Overrides[or].Contents = c.expandEnvVarsContents(c.Overrides[or].Contents)
 	}
-	c.Info.Conflicts = c.expandEnvVarsStringSlice(c.Info.Conflicts)
-	c.Info.Depends = c.expandEnvVarsStringSlice(c.Info.Depends)
-	c.Info.Replaces = c.expandEnvVarsStringSlice(c.Info.Replaces)
-	c.Info.Recommends = c.expandEnvVarsStringSlice(c.Info.Recommends)
-	c.Info.Provides = c.expandEnvVarsStringSlice(c.Info.Provides)
-	c.Info.Suggests = c.expandEnvVarsStringSlice(c.Info.Suggests)
-	c.Info.Contents = c.expandEnvVarsContents(c.Info.Contents)
+	c.Conflicts = c.expandEnvVarsStringSlice(c.Conflicts)
+	c.Depends = c.expandEnvVarsStringSlice(c.Depends)
+	c.Replaces = c.expandEnvVarsStringSlice(c.Replaces)
+	c.Recommends = c.expandEnvVarsStringSlice(c.Recommends)
+	c.Provides = c.expandEnvVarsStringSlice(c.Provides)
+	c.Suggests = c.expandEnvVarsStringSlice(c.Suggests)
+	c.Contents = c.expandEnvVarsContents(c.Contents)
 
 	// Basic metadata fields
-	c.Info.Name = os.Expand(c.Info.Name, c.envMappingFunc)
-	c.Info.Homepage = os.Expand(c.Info.Homepage, c.envMappingFunc)
-	c.Info.Maintainer = os.Expand(c.Info.Maintainer, c.envMappingFunc)
-	c.Info.Vendor = os.Expand(c.Info.Vendor, c.envMappingFunc)
-	c.Info.Description = os.Expand(c.Info.Description, c.envMappingFunc)
+	c.Name = os.Expand(c.Name, c.envMappingFunc)
+	c.Homepage = os.Expand(c.Homepage, c.envMappingFunc)
+	c.Maintainer = os.Expand(c.Maintainer, c.envMappingFunc)
+	c.Vendor = os.Expand(c.Vendor, c.envMappingFunc)
+	c.Description = os.Expand(c.Description, c.envMappingFunc)
 
 	// Package signing related fields
-	c.Info.Deb.Signature.KeyFile = os.Expand(c.Deb.Signature.KeyFile, c.envMappingFunc)
-	c.Info.RPM.Signature.KeyFile = os.Expand(c.RPM.Signature.KeyFile, c.envMappingFunc)
-	c.Info.APK.Signature.KeyFile = os.Expand(c.APK.Signature.KeyFile, c.envMappingFunc)
-	c.Info.Deb.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.Deb.Signature.KeyID), c.envMappingFunc))
-	c.Info.RPM.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.RPM.Signature.KeyID), c.envMappingFunc))
-	c.Info.APK.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.APK.Signature.KeyID), c.envMappingFunc))
+	c.Deb.Signature.KeyFile = os.Expand(c.Deb.Signature.KeyFile, c.envMappingFunc)
+	c.RPM.Signature.KeyFile = os.Expand(c.RPM.Signature.KeyFile, c.envMappingFunc)
+	c.APK.Signature.KeyFile = os.Expand(c.APK.Signature.KeyFile, c.envMappingFunc)
+	c.Deb.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.Deb.Signature.KeyID), c.envMappingFunc))
+	c.RPM.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.RPM.Signature.KeyID), c.envMappingFunc))
+	c.APK.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.APK.Signature.KeyID), c.envMappingFunc))
 
 	// Package signing passphrase
 	generalPassphrase := os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
-	c.Info.Deb.Signature.KeyPassphrase = generalPassphrase
-	c.Info.RPM.Signature.KeyPassphrase = generalPassphrase
-	c.Info.APK.Signature.KeyPassphrase = generalPassphrase
+	c.Deb.Signature.KeyPassphrase = generalPassphrase
+	c.RPM.Signature.KeyPassphrase = generalPassphrase
+	c.APK.Signature.KeyPassphrase = generalPassphrase
 
 	debPassphrase := os.Expand("$NFPM_DEB_PASSPHRASE", c.envMappingFunc)
 	if debPassphrase != "" {
-		c.Info.Deb.Signature.KeyPassphrase = debPassphrase
+		c.Deb.Signature.KeyPassphrase = debPassphrase
 	}
 
 	rpmPassphrase := os.Expand("$NFPM_RPM_PASSPHRASE", c.envMappingFunc)
 	if rpmPassphrase != "" {
-		c.Info.RPM.Signature.KeyPassphrase = rpmPassphrase
+		c.RPM.Signature.KeyPassphrase = rpmPassphrase
 	}
 
 	apkPassphrase := os.Expand("$NFPM_APK_PASSPHRASE", c.envMappingFunc)
 	if apkPassphrase != "" {
-		c.Info.APK.Signature.KeyPassphrase = apkPassphrase
+		c.APK.Signature.KeyPassphrase = apkPassphrase
 	}
 
 	// RPM specific
-	c.Info.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
+	c.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
 
 	// Deb specific
-	for k, v := range c.Info.Deb.Fields {
-		c.Info.Deb.Fields[k] = os.Expand(v, c.envMappingFunc)
+	for k, v := range c.Deb.Fields {
+		c.Deb.Fields[k] = os.Expand(v, c.envMappingFunc)
 	}
-	c.Info.Deb.Predepends = c.expandEnvVarsStringSlice(c.Info.Deb.Predepends)
+	c.Deb.Predepends = c.expandEnvVarsStringSlice(c.Deb.Predepends)
 
 	// IPK specific
-	for k, v := range c.Info.IPK.Fields {
-		c.Info.IPK.Fields[k] = os.Expand(v, c.envMappingFunc)
+	for k, v := range c.IPK.Fields {
+		c.IPK.Fields[k] = os.Expand(v, c.envMappingFunc)
 	}
-	c.Info.IPK.Predepends = c.expandEnvVarsStringSlice(c.Info.IPK.Predepends)
+	c.IPK.Predepends = c.expandEnvVarsStringSlice(c.IPK.Predepends)
 
 	// RPM specific
-	c.Info.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
+	c.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
 }
 
 // Info contains information about a single package.
