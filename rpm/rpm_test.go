@@ -207,6 +207,10 @@ func TestSRPM(t *testing.T) {
 	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
 	require.NoError(t, err)
 	require.Equal(t, "Foo does things", description)
+
+	bts, err := rpm.Header.GetUint32s(tagSourcePackage)
+	require.NoError(t, err)
+	require.Equal(t, []uint32{1}, bts)
 }
 
 func TestRPMMandatoryFieldsOnly(t *testing.T) {

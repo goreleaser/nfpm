@@ -44,8 +44,8 @@ const (
 
 // nolint: gochecknoinits
 func init() {
-	nfpm.RegisterPackager("rpm", DefaultRPM)
-	nfpm.RegisterPackager("src.rpm", DefaultSRPM)
+	nfpm.RegisterPackager(formatRPM.String(), DefaultRPM)
+	nfpm.RegisterPackager(formatSRPM.String(), DefaultSRPM)
 }
 
 // DefaultRPM RPM packager.
@@ -62,6 +62,9 @@ const (
 	formatRPM format = iota
 	formatSRPM
 )
+
+// String implements fmt.Stringer.
+func (f format) String() string { return [2]string{"rpm", "srpm"}[f] }
 
 // RPM is a RPM packager implementation.
 type RPM struct {
