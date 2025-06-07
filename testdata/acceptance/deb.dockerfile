@@ -161,7 +161,7 @@ FROM min AS rules
 RUN dpkg -r foo
 
 # ---- triggers test ----
-FROM min as triggers
+FROM min AS triggers
 # simulate another package that activates the trigger
 RUN dpkg-trigger --by-package foo manual-trigger
 RUN dpkg --triggers-only foo
