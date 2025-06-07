@@ -26,6 +26,8 @@ const (
 	tagChangelogName = 1081
 	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L154
 	tagChangelogText = 1082
+	// https://github.com/rpm-software-management/rpm/blob/master/include/rpm/rpmtag.h#L183
+	tagSourcePackage = 1106
 
 	// Symbolic link
 	tagLink = 0o120000
@@ -40,19 +42,31 @@ const (
 {{- end}}{{- end}}`
 )
 
-const packagerName = "rpm"
-
 // nolint: gochecknoinits
 func init() {
-	nfpm.RegisterPackager(packagerName, Default)
+	nfpm.RegisterPackager("rpm", DefaultRPM)
+	nfpm.RegisterPackager("src.rpm", DefaultSRPM)
 }
 
-// Default RPM packager.
+// DefaultRPM RPM packager.
 // nolint: gochecknoglobals
-var Default = &RPM{}
+var DefaultRPM = &RPM{formatRPM}
+
+// DefaultRPM RPM packager.
+// nolint: gochecknoglobals
+var DefaultSRPM = &RPM{formatSRPM}
+
+type format uint
+
+const (
+	formatRPM format = iota
+	formatSRPM
+)
 
 // RPM is a RPM packager implementation.
-type RPM struct{}
+type RPM struct {
+	format format
+}
 
 // https://docs.fedoraproject.org/ro/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch01s03.html
 // nolint: gochecknoglobals
@@ -85,33 +99,37 @@ func setDefaults(info *nfpm.Info) *nfpm.Info {
 // ConventionalFileName returns a file name according
 // to the conventions for RPM packages. See:
 // http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html
-func (*RPM) ConventionalFileName(info *nfpm.Info) string {
+func (r *RPM) ConventionalFileName(info *nfpm.Info) string {
 	info = setDefaults(info)
 
 	// name-version-release.architecture.rpm
 	return fmt.Sprintf(
-		"%s-%s-%s.%s.rpm",
+		"%s-%s-%s.%s%s",
 		info.Name,
 		formatVersion(info),
 		defaultTo(info.Release, "1"),
 		info.Arch,
+		r.ConventionalExtension(),
 	)
 }
 
 // ConventionalExtension returns the file name conventionally used for RPM packages
-func (*RPM) ConventionalExtension() string {
+func (r *RPM) ConventionalExtension() string {
+	if r.format == formatSRPM {
+		return ".src.rpm"
+	}
 	return ".rpm"
 }
 
 // Package writes a new RPM package to the given writer using the given info.
-func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
+func (r *RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 	var (
 		meta *rpmpack.RPMMetaData
 		rpm  *rpmpack.RPM
 	)
 	info = setDefaults(info)
 
-	err = nfpm.PrepareForPackager(info, packagerName)
+	err = nfpm.PrepareForPackager(info, "rpm")
 	if err != nil {
 		return err
 	}
@@ -121,6 +139,10 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 	}
 	if rpm, err = rpmpack.NewRPM(*meta); err != nil {
 		return err
+	}
+
+	if r.format == formatSRPM {
+		rpm.AddCustomTag(tagSourcePackage, rpmpack.EntryUint32([]uint32{1}))
 	}
 
 	if info.RPM.Signature.KeyFile != "" {
@@ -365,7 +387,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 	mtime := modtime.Get(info.MTime)
 	for _, content := range info.Contents {
-		if content.Packager != "" && content.Packager != packagerName {
+		if content.Packager != "" && content.Packager != "rpm" {
 			continue
 		}
 

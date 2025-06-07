@@ -94,13 +94,69 @@ func exampleInfo() *nfpm.Info {
 }
 
 func TestConventionalExtension(t *testing.T) {
-	require.Equal(t, ".rpm", Default.ConventionalExtension())
+	require.Equal(t, ".rpm", DefaultRPM.ConventionalExtension())
 }
 
 func TestRPM(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)
-	require.NoError(t, Default.Package(exampleInfo(), f))
+	require.NoError(t, DefaultRPM.Package(exampleInfo(), f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
+	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		require.NoError(t, err)
+	}()
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	os, err := rpm.Header.GetString(rpmutils.OS)
+	require.NoError(t, err)
+	require.Equal(t, "linux", os)
+
+	arch, err := rpm.Header.GetString(rpmutils.ARCH)
+	require.NoError(t, err)
+	require.Equal(t, archToRPM["amd64"], arch)
+
+	version, err := rpm.Header.GetString(rpmutils.VERSION)
+	require.NoError(t, err)
+	require.Equal(t, "1.0.0", version)
+
+	release, err := rpm.Header.GetString(rpmutils.RELEASE)
+	require.NoError(t, err)
+	require.Equal(t, "1", release)
+
+	epoch, err := rpm.Header.Get(rpmutils.EPOCH)
+	require.NoError(t, err)
+	epochUint32, ok := epoch.([]uint32)
+	require.True(t, ok)
+	require.Len(t, epochUint32, 1)
+	require.Equal(t, uint32(0), epochUint32[0])
+
+	group, err := rpm.Header.GetString(rpmutils.GROUP)
+	require.NoError(t, err)
+	require.Equal(t, "foo", group)
+
+	buildhost, err := rpm.Header.GetString(rpmutils.BUILDHOST)
+	require.NoError(t, err)
+	require.Equal(t, "barhost", buildhost)
+
+	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
+	require.NoError(t, err)
+	require.Equal(t, "Foo does things", summary)
+
+	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
+	require.NoError(t, err)
+	require.Equal(t, "Foo does things", description)
+}
+
+func TestSRPM(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
+	require.NoError(t, err)
+	require.NoError(t, DefaultSRPM.Package(exampleInfo(), f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
@@ -156,7 +212,7 @@ func TestRPM(t *testing.T) {
 func TestRPMMandatoryFieldsOnly(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)
-	require.NoError(t, Default.Package(&nfpm.Info{
+	require.NoError(t, DefaultRPM.Package(&nfpm.Info{
 		Name:        "foo",
 		Arch:        "amd64",
 		Version:     "1.2",
@@ -213,7 +269,7 @@ func TestRPMPlatform(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, f.Close()) })
 	info := exampleInfo()
 	info.Platform = "darwin"
-	require.NoError(t, Default.Package(info, f))
+	require.NoError(t, DefaultRPM.Package(info, f))
 }
 
 func TestRPMGroup(t *testing.T) {
@@ -221,7 +277,7 @@ func TestRPMGroup(t *testing.T) {
 	require.NoError(t, err)
 	info := exampleInfo()
 	info.RPM.Group = "Unspecified"
-	require.NoError(t, Default.Package(info, f))
+	require.NoError(t, DefaultRPM.Package(info, f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
@@ -257,7 +313,7 @@ func TestRPMCompression(t *testing.T) {
 				info := exampleInfo()
 				info.RPM.Compression = compLevel
 
-				require.NoError(t, Default.Package(info, f))
+				require.NoError(t, DefaultRPM.Package(info, f))
 				file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 				require.NoError(t, err)
 				defer func() {
@@ -289,7 +345,7 @@ func TestRPMSummary(t *testing.T) {
 	info.RPM.Group = "Unspecified"
 	info.RPM.Summary = customSummary
 
-	require.NoError(t, Default.Package(info, f))
+	require.NoError(t, DefaultRPM.Package(info, f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
@@ -316,7 +372,7 @@ func TestRPMPackager(t *testing.T) {
 	info.RPM.Group = "Unspecified"
 	info.RPM.Packager = customPackager
 
-	require.NoError(t, Default.Package(info, f))
+	require.NoError(t, DefaultRPM.Package(info, f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
@@ -345,7 +401,7 @@ func TestWithRPMTags(t *testing.T) {
 		Group: "default",
 	}
 	info.Description = "first line\nsecond line\nthird line"
-	require.NoError(t, Default.Package(info, f))
+	require.NoError(t, DefaultRPM.Package(info, f))
 
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
@@ -491,14 +547,14 @@ func TestWithInvalidEpoch(t *testing.T) {
 		Group: "default",
 	}
 	info.Description = "first line\nsecond line\nthird line"
-	require.Error(t, Default.Package(info, f))
+	require.Error(t, DefaultRPM.Package(info, f))
 }
 
 func TestRPMScripts(t *testing.T) {
 	info := exampleInfo()
 	f, err := os.CreateTemp(t.TempDir(), fmt.Sprintf("%s-%s-*.rpm", info.Name, info.Version))
 	require.NoError(t, err)
-	err = Default.Package(info, f)
+	err = DefaultRPM.Package(info, f)
 	require.NoError(t, err)
 	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
 	require.NoError(t, err)
@@ -578,7 +634,7 @@ func TestRPMFileDoesNotExist(t *testing.T) {
 	}
 	abs, err := filepath.Abs("../testdata/whatever.confzzz")
 	require.NoError(t, err)
-	err = Default.Package(info, io.Discard)
+	err = DefaultRPM.Package(info, io.Discard)
 	require.EqualError(t, err, fmt.Sprintf("matching \"%s\": file does not exist", filepath.ToSlash(abs)))
 }
 
@@ -624,7 +680,7 @@ func TestConfigMissingOK(t *testing.T) {
 	}
 
 	var rpmFileBuffer bytes.Buffer
-	err := Default.Package(info, &rpmFileBuffer)
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
 	expectedConfigContent, err := os.ReadFile(buildConfigFile)
@@ -660,7 +716,7 @@ func TestConfigNoReplace(t *testing.T) {
 	}
 
 	var rpmFileBuffer bytes.Buffer
-	err := Default.Package(info, &rpmFileBuffer)
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
 	expectedConfigContent, err := os.ReadFile(buildConfigFile)
@@ -714,7 +770,7 @@ func TestRPMConventionalFileName(t *testing.T) {
 		info.Prerelease = testCase.Prerelease
 		info.VersionMetadata = testCase.Metadata
 
-		require.Equal(t, testCase.Expected, Default.ConventionalFileName(info))
+		require.Equal(t, testCase.Expected, DefaultRPM.ConventionalFileName(info))
 	}
 }
 
@@ -723,7 +779,7 @@ func TestRPMChangelog(t *testing.T) {
 	info.Changelog = "../testdata/changelog.yaml"
 
 	var rpmFileBuffer bytes.Buffer
-	err := Default.Package(info, &rpmFileBuffer)
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
 	rpm, err := rpmutils.ReadRpm(bytes.NewReader(rpmFileBuffer.Bytes()))
@@ -770,7 +826,7 @@ func TestRPMNoChangelogTagsWithoutChangelogConfigured(t *testing.T) {
 	info := exampleInfo()
 
 	var rpmFileBuffer bytes.Buffer
-	err := Default.Package(info, &rpmFileBuffer)
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
 	rpm, err := rpmutils.ReadRpm(bytes.NewReader(rpmFileBuffer.Bytes()))
@@ -815,7 +871,7 @@ func TestSymlink(t *testing.T) {
 	}
 
 	var rpmFileBuffer bytes.Buffer
-	err := Default.Package(info, &rpmFileBuffer)
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
 	packagedSymlinkHeader, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), symlink)
@@ -842,7 +898,7 @@ func TestRPMSignature(t *testing.T) {
 	require.NotNil(t, keyring, "cannot verify sigs with an empty keyring")
 
 	var rpmBuffer bytes.Buffer
-	err = Default.Package(info, &rpmBuffer)
+	err = DefaultRPM.Package(info, &rpmBuffer)
 	require.NoError(t, err)
 
 	_, sigs, err := rpmutils.Verify(bytes.NewReader(rpmBuffer.Bytes()), keyring)
@@ -856,7 +912,7 @@ func TestRPMSignatureError(t *testing.T) {
 	info.RPM.Signature.KeyPassphrase = "wrongpass"
 
 	var rpmBuffer bytes.Buffer
-	err := Default.Package(info, &rpmBuffer)
+	err := DefaultRPM.Package(info, &rpmBuffer)
 	require.Error(t, err)
 
 	var expectedError *nfpm.ErrSigningFailure
@@ -881,7 +937,7 @@ func TestRPMSignatureCallback(t *testing.T) {
 	require.NotNil(t, keyring, "cannot verify sigs with an empty keyring")
 
 	var rpmBuffer bytes.Buffer
-	err = Default.Package(info, &rpmBuffer)
+	err = DefaultRPM.Package(info, &rpmBuffer)
 	require.NoError(t, err)
 
 	_, sigs, err := rpmutils.Verify(bytes.NewReader(rpmBuffer.Bytes()), keyring)
@@ -909,7 +965,7 @@ func TestRPMGhostFiles(t *testing.T) {
 	}
 
 	var rpmFileBuffer bytes.Buffer
-	err := Default.Package(info, &rpmFileBuffer)
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
 	headerFiles, err := extraFileInfoSliceFromRpm(rpmFileBuffer.Bytes())
@@ -947,7 +1003,7 @@ func TestDisableGlobbing(t *testing.T) {
 	}
 
 	var rpmFileBuffer bytes.Buffer
-	err := Default.Package(info, &rpmFileBuffer)
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
 	expectedContent, err := os.ReadFile("../testdata/{file}[")
@@ -989,7 +1045,7 @@ func TestDirectories(t *testing.T) {
 	}
 
 	var rpmFileBuffer bytes.Buffer
-	err := Default.Package(info, &rpmFileBuffer)
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
 	require.Equal(t, []string{
@@ -1017,7 +1073,7 @@ func TestDirectories(t *testing.T) {
 }
 
 func TestGlob(t *testing.T) {
-	require.NoError(t, Default.Package(nfpm.WithDefaults(&nfpm.Info{
+	require.NoError(t, DefaultRPM.Package(nfpm.WithDefaults(&nfpm.Info{
 		Name:       "nfpm-repro",
 		Version:    "1.0.0",
 		Maintainer: "asdfasdf",
@@ -1044,7 +1100,7 @@ func TestIgnoreUnrelatedFiles(t *testing.T) {
 	}
 
 	var rpmFileBuffer bytes.Buffer
-	err := Default.Package(info, &rpmFileBuffer)
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
 	require.NoError(t, err)
 
 	require.Empty(t, getTree(t, rpmFileBuffer.Bytes()))
