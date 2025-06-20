@@ -1,13 +1,12 @@
 package maps
 
 import (
-	"sort"
-
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 func Keys[T any](m map[string]T) []string {
-	keys := maps.Keys(m)
-	sort.Strings(keys)
+	keys := slices.Collect(maps.Keys(m))
+	slices.Sort(keys)
 	return keys
 }
