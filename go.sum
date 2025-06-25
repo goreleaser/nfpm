@@ -31,8 +31,8 @@ github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb/go.mod h1:PkYb9DJNAw
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/bwesterb/go-ristretto v1.2.0/go.mod h1:fUIoIZaG73pV5biE2Blr2xEzDoMj7NFEuV9ekS419A0=
-github.com/caarlos0/go-version v0.2.0 h1:TTD5dF3PBAtRHbfCKRE173SrVVpbE0yX95EDQ4BwTGs=
-github.com/caarlos0/go-version v0.2.0/go.mod h1:X+rI5VAtJDpcjCjeEIXpxGa5+rTcgur1FK66wS0/944=
+github.com/caarlos0/go-version v0.2.1 h1:bJY5WRvs2RXErLKBELd1WR0U72whX8ELbKg0WtQ9/7A=
+github.com/caarlos0/go-version v0.2.1/go.mod h1:X+rI5VAtJDpcjCjeEIXpxGa5+rTcgur1FK66wS0/944=
 github.com/caarlos0/testfs v0.4.4 h1:3PHvzHi5Lt+g332CiShwS8ogTgS3HjrmzZxCm6JCDr8=
 github.com/caarlos0/testfs v0.4.4/go.mod h1:bRN55zgG4XCUVVHZCeU+/Tz1Q6AxEJOEJTliBy+1DMk=
 github.com/cavaliergopher/cpio v1.0.1 h1:KQFSeKmZhv0cr+kawA3a0xTQCU4QxXF1vhU7P7av2KM=
