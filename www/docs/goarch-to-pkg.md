@@ -19,7 +19,7 @@ Thank you!
 | GOARCH | Value |
 | :--: | :--: |
 | `386` | `i386` |
-| `amd64` | `x86_64` |
+| `amd64` | `amd64` |
 | `arm64` | `arm64` |
 | `arm5` | `armel` |
 | `arm6` | `armhf` |
