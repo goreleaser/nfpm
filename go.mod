@@ -10,7 +10,7 @@ require (
 	github.com/ProtonMail/gopenpgp/v2 v2.7.1
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-version v0.2.1
-	github.com/google/rpmpack v0.7.0
+	github.com/google/rpmpack v0.7.1
 	github.com/goreleaser/chglog v0.7.3
 	github.com/goreleaser/fileglob v1.3.0
 	github.com/invopop/jsonschema v0.13.0
