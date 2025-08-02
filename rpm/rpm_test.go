@@ -155,10 +155,11 @@ func TestRPM(t *testing.T) {
 
 func TestIssue952(t *testing.T) {
 	info := exampleInfo()
+	info.MTime = time.Time{}
 
 	info.Contents = files.Contents{
 		&files.Content{
-			Source:      "/tmp",
+			Source:      "/file-that-does-not-exist",
 			Destination: "/etc/link",
 			Type:        files.TypeSymlink,
 		},
@@ -175,8 +176,10 @@ func TestIssue952(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 	f := files[0]
-	require.NotZero(t, f.Mtime())
 	require.Equal(t, cpio.S_ISLNK, f.Mode())
+	require.Equal(t, "/etc/link", f.Name())
+	require.Equal(t, "/file-that-does-not-exist", f.Linkname())
+	require.Greater(t, f.Mtime(), 0)
 }
 
 func TestSRPM(t *testing.T) {

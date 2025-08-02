@@ -145,7 +145,9 @@ func (c *Content) WithFileInfoDefaults(umask fs.FileMode, mtime time.Time) *Cont
 	if cc.Source != "" && !fileInfoAlreadyComplete {
 		info, err := os.Stat(cc.Source)
 		if err == nil {
-			if cc.FileInfo.MTime.IsZero() {
+			if cc.FileInfo.MTime.IsZero() && !info.ModTime().IsZero() {
+				// if we can stat the file and mtime not set, use original
+				// file's mtime
 				cc.FileInfo.MTime = info.ModTime()
 			}
 			if cc.FileInfo.Mode == 0 {
@@ -154,9 +156,9 @@ func (c *Content) WithFileInfoDefaults(umask fs.FileMode, mtime time.Time) *Cont
 			cc.FileInfo.Size = info.Size()
 		}
 	}
-
+	// if mtime is still 0, set time.Now()
 	if cc.FileInfo.MTime.IsZero() {
-		cc.FileInfo.MTime = mtime
+		cc.FileInfo.MTime = time.Now()
 	}
 	return cc
 }
