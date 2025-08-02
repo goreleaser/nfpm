@@ -260,7 +260,7 @@ func PrepareForPackager(
 				return nil, contentCollisionError(content, presentContent)
 			}
 
-			err := addParents(contentMap, content.Destination, mtime)
+			err := addParents(contentMap, content.Destination, mtime, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -279,7 +279,7 @@ func PrepareForPackager(
 				return nil, contentCollisionError(content, presentContent)
 			}
 
-			err := addParents(contentMap, content.Destination, mtime)
+			err := addParents(contentMap, content.Destination, mtime, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -345,7 +345,7 @@ func isRelevantForPackager(packager string, content *Content) bool {
 	return true
 }
 
-func addParents(contentMap map[string]*Content, path string, mtime time.Time) error {
+func addParents(contentMap map[string]*Content, path string, mtime time.Time, fileInfo *ContentFileInfo) error {
 	for _, parent := range sortedParents(path) {
 		parent = NormalizeAbsoluteDirPath(parent)
 		// check for content collision and just overwrite previously created
@@ -364,12 +364,25 @@ func addParents(contentMap map[string]*Content, path string, mtime time.Time) er
 			}, c)
 		}
 
+		owner := "root"
+		group := "root"
+
+		// Use provided ownership for directories that are not owned by the filesystem
+		if fileInfo != nil && !ownedByFilesystem(parent) {
+			if fileInfo.Owner != "" {
+				owner = fileInfo.Owner
+			}
+			if fileInfo.Group != "" {
+				group = fileInfo.Group
+			}
+		}
+
 		contentMap[parent] = &Content{
 			Destination: parent,
 			Type:        TypeImplicitDir,
 			FileInfo: &ContentFileInfo{
-				Owner: "root",
-				Group: "root",
+				Owner: owner,
+				Group: group,
 				Mode:  0o755,
 				MTime: mtime,
 			},
@@ -415,7 +428,7 @@ func addGlobbedFiles(
 			return contentCollisionError(&c, presentContent)
 		}
 
-		if err := addParents(all, dst, mtime); err != nil {
+		if err := addParents(all, dst, mtime, origFile.FileInfo); err != nil {
 			return err
 		}
 
@@ -458,7 +471,7 @@ func addTree(
 		}
 	}
 
-	err := addParents(all, tree.Destination, mtime)
+	err := addParents(all, tree.Destination, mtime, tree.FileInfo)
 	if err != nil {
 		return err
 	}
@@ -478,10 +491,6 @@ func addTree(
 		c := &Content{
 			FileInfo: &ContentFileInfo{},
 		}
-		if tree.FileInfo != nil && !ownedByFilesystem(tree.Destination) {
-			c.FileInfo.Owner = tree.FileInfo.Owner
-			c.FileInfo.Group = tree.FileInfo.Group
-		}
 
 		switch {
 		case d.IsDir():
@@ -497,6 +506,10 @@ func addTree(
 			if ownedByFilesystem(c.Destination) {
 				c.Type = TypeImplicitDir
 			}
+			if tree.FileInfo != nil && !ownedByFilesystem(c.Destination) {
+				c.FileInfo.Owner = tree.FileInfo.Owner
+				c.FileInfo.Group = tree.FileInfo.Group
+			}
 		case d.Type()&os.ModeSymlink != 0:
 			linkDestination, err := os.Readlink(path)
 			if err != nil {
@@ -506,11 +519,19 @@ func addTree(
 			c.Type = TypeSymlink
 			c.Source = filepath.ToSlash(strings.TrimPrefix(linkDestination, filepath.VolumeName(linkDestination)))
 			c.Destination = NormalizeAbsoluteFilePath(destination)
+			if tree.FileInfo != nil {
+				c.FileInfo.Owner = tree.FileInfo.Owner
+				c.FileInfo.Group = tree.FileInfo.Group
+			}
 		default:
 			c.Type = TypeFile
 			c.Source = path
 			c.Destination = NormalizeAbsoluteFilePath(destination)
 			c.FileInfo.Mode = d.Type() &^ umask
+			if tree.FileInfo != nil {
+				c.FileInfo.Owner = tree.FileInfo.Owner
+				c.FileInfo.Group = tree.FileInfo.Group
+			}
 		}
 
 		if tree.FileInfo != nil && tree.FileInfo.Mode != 0 && c.Type != TypeSymlink {

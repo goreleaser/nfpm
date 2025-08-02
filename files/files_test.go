@@ -975,6 +975,56 @@ func TestAsExplicitRelativePath(t *testing.T) {
 	}
 }
 
+func TestIssue954(t *testing.T) {
+	tmpDir := t.TempDir()
+	contentDir := filepath.Join(tmpDir, "content")
+	require.NoError(t, os.MkdirAll(filepath.Join(contentDir, "subdir1"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(contentDir, "subdir2"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(contentDir, "subdir1", "file1.txt"), []byte("test"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(contentDir, "subdir2", "file2.txt"), []byte("test"), 0o644))
+
+	results, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source:      contentDir + "/",
+				Destination: "/srv/www",
+				FileInfo: &files.ContentFileInfo{
+					Owner: "www-data",
+					Group: "www-data",
+					Mode:  0o775,
+				},
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	found := []string{}
+	for _, f := range results {
+		found = append(found, f.Destination)
+		if f.Destination == "/srv/" {
+			require.Equal(t, "root", f.FileInfo.Owner, f.Destination)
+			require.Equal(t, "root", f.FileInfo.Group, f.Destination)
+			continue
+		}
+		require.Contains(t, f.Destination, "/srv/www")
+		require.Equal(t, "www-data", f.FileInfo.Owner, f.Destination)
+		require.Equal(t, "www-data", f.FileInfo.Group, f.Destination)
+
+	}
+	require.ElementsMatch(t, []string{
+		"/srv/",
+		"/srv/www/",
+		"/srv/www/subdir1/",
+		"/srv/www/subdir1/file1.txt",
+		"/srv/www/subdir2/",
+		"/srv/www/subdir2/file2.txt",
+	}, found)
+}
+
 func TestIssue829(t *testing.T) {
 	var config testStruct
 	dec := yaml.NewDecoder(strings.NewReader(`---
