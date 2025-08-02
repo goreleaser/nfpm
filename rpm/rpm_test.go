@@ -179,7 +179,7 @@ func TestIssue952(t *testing.T) {
 	require.Equal(t, cpio.S_ISLNK, f.Mode())
 	require.Equal(t, "/etc/link", f.Name())
 	require.Equal(t, "/file-that-does-not-exist", f.Linkname())
-	require.Greater(t, f.Mtime(), 0)
+	require.Positive(t, f.Mtime())
 }
 
 func TestSRPM(t *testing.T) {
