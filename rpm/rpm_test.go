@@ -153,6 +153,32 @@ func TestRPM(t *testing.T) {
 	require.Equal(t, "Foo does things", description)
 }
 
+func TestIssue952(t *testing.T) {
+	info := exampleInfo()
+
+	info.Contents = files.Contents{
+		&files.Content{
+			Source:      "/tmp",
+			Destination: "/etc/link",
+			Type:        files.TypeSymlink,
+		},
+	}
+
+	var buf bytes.Buffer
+	err := DefaultRPM.Package(info, &buf)
+	require.NoError(t, err)
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+
+	files, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+	f := files[0]
+	require.NotZero(t, f.Mtime())
+	require.Equal(t, cpio.S_ISLNK, f.Mode())
+}
+
 func TestSRPM(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)

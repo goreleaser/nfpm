@@ -589,6 +589,10 @@ func WithDefaults(info *Info) *Info {
 	if info.MTime.IsZero() {
 		info.MTime = modtime.FromEnv()
 	}
+	// If still not set, use current time.
+	if info.MTime.IsZero() {
+		info.MTime = time.Now()
+	}
 	switch info.VersionSchema {
 	case "none":
 		// No change to the version or prerelease info set in the YAML file
