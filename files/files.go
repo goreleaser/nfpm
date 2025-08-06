@@ -146,6 +146,8 @@ func (c *Content) WithFileInfoDefaults(umask fs.FileMode, mtime time.Time) *Cont
 		info, err := os.Stat(cc.Source)
 		if err == nil {
 			if cc.FileInfo.MTime.IsZero() {
+				// if we can stat the file and mtime not set, use original
+				// file's mtime
 				cc.FileInfo.MTime = info.ModTime()
 			}
 			if cc.FileInfo.Mode == 0 {
@@ -155,8 +157,9 @@ func (c *Content) WithFileInfoDefaults(umask fs.FileMode, mtime time.Time) *Cont
 		}
 	}
 
+	// finally, if mtime is still 0, set time.Now()
 	if cc.FileInfo.MTime.IsZero() {
-		cc.FileInfo.MTime = mtime
+		cc.FileInfo.MTime = time.Now()
 	}
 	return cc
 }

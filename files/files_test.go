@@ -1025,6 +1025,25 @@ func TestIssue954(t *testing.T) {
 	}, found)
 }
 
+func TestIssue952(t *testing.T) {
+	contents := files.Contents{
+		{
+			Source:      "/source",
+			Destination: "/dest",
+			Type:        files.TypeSymlink,
+		},
+	}
+
+	result, err := files.PrepareForPackager(contents, 0, "", false, mtime)
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+
+	symlink := result[0]
+	require.Equal(t, files.TypeSymlink, symlink.Type)
+	require.Equal(t, "/dest", symlink.Destination)
+	require.Equal(t, mtime, symlink.FileInfo.MTime)
+}
+
 func TestIssue829(t *testing.T) {
 	var config testStruct
 	dec := yaml.NewDecoder(strings.NewReader(`---

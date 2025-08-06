@@ -153,6 +153,35 @@ func TestRPM(t *testing.T) {
 	require.Equal(t, "Foo does things", description)
 }
 
+func TestIssue952(t *testing.T) {
+	info := exampleInfo()
+	info.MTime = time.Time{}
+
+	info.Contents = files.Contents{
+		&files.Content{
+			Source:      "/file-that-does-not-exist",
+			Destination: "/etc/link",
+			Type:        files.TypeSymlink,
+		},
+	}
+
+	var buf bytes.Buffer
+	err := DefaultRPM.Package(info, &buf)
+	require.NoError(t, err)
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+
+	files, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+	f := files[0]
+	require.Equal(t, cpio.S_ISLNK, f.Mode())
+	require.Equal(t, "/etc/link", f.Name())
+	require.Equal(t, "/file-that-does-not-exist", f.Linkname())
+	require.Positive(t, f.Mtime())
+}
+
 func TestSRPM(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)
