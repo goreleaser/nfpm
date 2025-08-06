@@ -179,6 +179,15 @@ contents:
     dst: /etc
     type: tree
 
+  # This will replicate the directory structure under some/directory at /opt/somesoft.
+  # (`force_implicit_dirs` marks dirs that should be *not* be owned by the package,
+  #  outside of the normal set of such system-owned directories like `/etc`)
+  - src: some/directory/
+    dst: /opt/somesoft
+    type: tree
+    force_implicit_dirs:
+      - /opt/somesoft
+
   # Simple config file
   - src: path/to/local/foo.conf
     dst: /etc/foo.conf
