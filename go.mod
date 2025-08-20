@@ -21,7 +21,7 @@ require (
 	github.com/sassoftware/go-rpmutils v0.4.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/ulikunitz/xz v0.5.12
+	github.com/ulikunitz/xz v0.5.13
 	gopkg.in/yaml.v3 v3.0.1
 )
 
