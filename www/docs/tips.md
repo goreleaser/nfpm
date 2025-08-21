@@ -40,7 +40,7 @@ systemd_version=0
 if ! command -V systemctl >/dev/null 2>&1; then
   use_systemctl="False"
 else
-    systemd_version=$(systemctl --version | head -1  | grep -E -o "[0-9]+" | head -1)
+    systemd_version=$(systemctl --version | head -1 | grep -E -o "[0-9]+" | head -1)
 fi
 
 cleanup() {
