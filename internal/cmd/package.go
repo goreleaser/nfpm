@@ -17,6 +17,7 @@ type packageCmd struct {
 	config   string
 	target   string
 	packager string
+	multiple string
 }
 
 func newPackageCmd() *packageCmd {
@@ -30,7 +31,11 @@ func newPackageCmd() *packageCmd {
 		Args:              cobra.NoArgs,
 		ValidArgsFunction: cobra.NoFileCompletions,
 		RunE: func(*cobra.Command, []string) error {
-			return doPackage(root.config, root.target, root.packager)
+			if root.multiple != "" {
+				return doPackages(root.config, root.target, strings.Split(root.multiple, ","))
+			} else {
+				return doPackage(root.config, root.target, root.packager)
+			}
 		},
 	}
 
@@ -43,6 +48,11 @@ func newPackageCmd() *packageCmd {
 
 	cmd.Flags().StringVarP(&root.packager, "packager", "p", "",
 		fmt.Sprintf("which packager implementation to use [%s]", strings.Join(pkgs, "|")))
+
+	// support multiple packagers in single command
+	cmd.Flags().StringVarP(&root.multiple, "multi", "m", "",
+		fmt.Sprintf("multiple packager implementations 'deb,rpm' to use [%s]", strings.Join(pkgs, "|")))
+
 	_ = cmd.RegisterFlagCompletionFunc("packager", cobra.FixedCompletions(pkgs,
 		cobra.ShellCompDirectiveNoFileComp,
 	))
@@ -52,6 +62,28 @@ func newPackageCmd() *packageCmd {
 }
 
 var errInsufficientParams = errors.New("a packager must be specified if target is a directory or blank")
+
+func doPackages(configPath string, target string, multi []string) error {
+	var packageErrors []error
+
+	for _, p := range multi {
+		if err := doPackage(configPath, target, p); err != nil {
+			packageErrors = append(packageErrors, err)
+		}
+	}
+
+	if len(packageErrors) > 0 {
+		var combinedError string
+		for _, err := range packageErrors {
+			combinedError = combinedError + err.Error() + ";"
+		}
+
+		if combinedError != "" {
+			return errors.New(combinedError)
+		}
+	}
+	return nil
+}
 
 // nolint:funlen
 func doPackage(configPath, target, packager string) error {
