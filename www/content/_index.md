@@ -26,12 +26,12 @@ layout: hextra-home
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
-    title="Zero Dependencies"
+    title="No Runtime Dependencies"
     subtitle="No Ruby, no tar, no external dependencies. Just a single binary."
   >}}
   {{< hextra/feature-card
     title="Multiple Formats"
-    subtitle="Create deb, rpm, apk, ipk, and arch linux packages from a single configuration file."
+    subtitle="Create deb, rpm, apk, ipk, and arch linux packages."
   >}}
   {{< hextra/feature-card
     title="Simple Configuration"
