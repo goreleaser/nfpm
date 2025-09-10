@@ -16,12 +16,24 @@ permissions:
   contents: read
 
 jobs:
-  htmltest:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: cachix/install-nix-action@v31
+      - uses: actions/setup-go@v5
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - run: nix develop .#docs --command ci-docs
+          go-version: '1.21'
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: 'latest'
+          extended: true
+      - name: Build Hugo site
+        run: |
+          cd www
+          hugo --minify
+      - name: Test HTML
+        uses: wjdp/htmltest-action@master
+        with:
+          config: www/htmltest.yml
+          path: www/public

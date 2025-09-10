@@ -1,4 +1,6 @@
-# nfpm completion powershell
+---
+title: nfpm completion powershell
+---
 
 Generate the autocompletion script for powershell
 
@@ -27,5 +29,5 @@ nfpm completion powershell [flags]
 
 ## See also
 
-* [nfpm completion](/cmd/nfpm_completion/)	 - Generate the autocompletion script for the specified shell
+* [nfpm completion](/docs/cmd/nfpm_completion/)	 - Generate the autocompletion script for the specified shell
 

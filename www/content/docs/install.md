@@ -1,9 +1,11 @@
-# Install
+---
+title: Install
+weight: 2
+---
 
-You can install the pre-compiled binary (in several ways), use Docker
-or compile from source.
+You can install the pre-compiled binary (in several ways), use Docker or compile from source.
 
-Bellow you can find the steps for each of them.
+Below you can find the steps for each of them.
 
 ## Install the pre-compiled binary
 
@@ -19,10 +21,9 @@ brew install goreleaser/tap/nfpm
 brew install nfpm
 ```
 
-!!! info
-
-    The [formula in homebrew-core](https://github.com/Homebrew/homebrew-core/blob/master/Formula/n/nfpm.rb) might be slightly outdated.
-    Use our homebrew tap to always get the latest updates.
+> [!WARNING]
+> The [formula in homebrew-core](https://github.com/Homebrew/homebrew-core/blob/master/Formula/n/nfpm.rb) might be slightly outdated.
+> Use our homebrew tap to always get the latest updates.
 
 ### scoop
 
@@ -50,10 +51,10 @@ gpgcheck=0' | sudo tee /etc/yum.repos.d/goreleaser.repo
 sudo yum install nfpm
 ```
 
-### deb, apk and rpm packages
+### deb, apk, and rpm packages
 
-Download the `.deb`, `.rpm` or `.apk` from the [releases page][releases] and
-install them with the appropriate tools.
+Download the `.deb`, `.rpm`, or `.apk` from the [releases page][releases]
+and install them with the appropriate tools.
 
 ### go install
 
@@ -63,8 +64,7 @@ go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 
 ### manually
 
-Download the pre-compiled binaries from the [releases page][releases] and copy
-them to the desired location.
+Download the pre-compiled binaries from the [releases page][releases] and copy them to the desired location.
 
 ## Verifying the artifacts
 
@@ -72,8 +72,7 @@ them to the desired location.
 
 All artifacts are checksummed, and the checksum is signed with [cosign][].
 
-1. Download the files you want, the `checksums.txt` and `checksums.txt.sig`
-   files from the [releases][releases] page:
+1. Download the files you want, the `checksums.txt` and `checksums.txt.sig` files from the [releases][releases] page:
 
    ```bash
    wget 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt'
@@ -88,8 +87,7 @@ All artifacts are checksummed, and the checksum is signed with [cosign][].
    	--cert 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.pem' \
    	checksums.txt
    ```
-1. If the signature is valid, you can then verify the SHA256 sums match with the
-   downloaded binary:
+1. If the signature is valid, you can then verify the SHA256 sums match with the downloaded binary:
    ```bash
    sha256sum --ignore-missing -c checksums.txt
    ```
@@ -107,8 +105,7 @@ cosign verify ghcr.io/goreleaser/nfpm
 
 ## Running with Docker
 
-You can also use it within a Docker container. To do that, you'll need to
-execute something more-or-less like the following:
+You can also use it within a Docker container. To do that, you'll need to execute something more-or-less like the following:
 
 ```bash
 docker run --rm -v $PWD:/tmp -w /tmp goreleaser/nfpm package \
@@ -125,8 +122,7 @@ docker run --rm -v $PWD:/tmp -w /tmp goreleaser/nfpm package \
 
 Here you have two options:
 
-If you want to contribute to the project, please follow the steps on our
-[contributing guide](/contributing).
+If you want to contribute to the project, please follow the steps on our [contributing guide](/docs/contributing).
 
 If you just want to build from source for whatever reason, follow these steps:
 

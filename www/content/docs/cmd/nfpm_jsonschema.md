@@ -1,4 +1,6 @@
-# nfpm jsonschema
+---
+title: nfpm jsonschema
+---
 
 Outputs nFPM's JSON schema
 
@@ -15,5 +17,5 @@ nfpm jsonschema [flags]
 
 ## See also
 
-* [nfpm](/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK, Arch Linux, and ipk formats based on a YAML configuration file
+* [nfpm](/docs/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK, Arch Linux, and ipk formats based on a YAML configuration file
 
