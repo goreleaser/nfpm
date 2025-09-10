@@ -32,6 +32,15 @@ permissions:
   contents: read
 
 jobs:
+  license-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - name: Check licenses
+        run: go run github.com/google/go-licenses/v2@latest check --allowed_licenses=MIT,Apache-2.0,BSD-3-Clause,BSD-2-Clause,ISC ./...
   govulncheck:
     uses: caarlos0/meta/.github/workflows/govulncheck.yml@main
     with:
@@ -125,7 +134,7 @@ jobs:
           enableCrossOsArchive: true
       - run: task acceptance:windows:install
   dependabot:
-    needs: [unit-tests, acceptance-tests, install-windows-pkgs]
+    needs: [license-check, unit-tests, acceptance-tests, install-windows-pkgs]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
