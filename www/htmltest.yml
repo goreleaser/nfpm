@@ -1,0 +1,19 @@
+# htmltest configuration for nFPM Hugo site
+DirectoryPath: "public"
+CheckDoctype: true
+CheckAnchors: true
+CheckLinks: true
+CheckImages: true
+CheckScripts: true
+CheckFavicon: true
+CheckOpengraph: false
+CheckMetaRefresh: true
+CheckMetaViewport: true
+EnforceHTTPS: false
+IgnoreDirectoryMissingTrailingSlash: true
+IgnoreURLs:
+  - "https://github.com/goreleaser/nfpm/edit/main/www/content"
+  - "https://github.com/goreleaser/nfpm/releases"
+  - "https://becker.software/nfpm.png"
+IgnoreInternalEmptyHash: true
+LogLevel: 2
