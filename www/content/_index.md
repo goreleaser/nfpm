@@ -26,32 +26,32 @@ layout: hextra-home
   {{< hextra/feature-card
     title="No Runtime Dependencies"
     subtitle="No Ruby, no tar, no external dependencies. Just a single binary."
-    icon="paper-airplane"
+    icon="cube-transparent"
   >}}
   {{< hextra/feature-card
     title="Multiple Formats"
     subtitle="Create deb, rpm, apk, ipk, and arch linux packages."
-    icon="folder-add"
+    icon="collection"
   >}}
   {{< hextra/feature-card
     title="Simple Configuration"
     subtitle="Define your package with a simple YAML configuration file."
-    icon="code"
+    icon="document-text"
   >}}
   {{< hextra/feature-card
     title="Cross Platform"
     subtitle="Build packages on any platform that Go supports."
-    icon="globe"
+    icon="switch-horizontal"
   >}}
   {{< hextra/feature-card
     title="Library & Binary"
     subtitle="Use as a standalone binary or integrate as a Go library."
-    icon="lock-open"
+    icon="terminal"
   >}}
   {{< hextra/feature-card
     title="Fast & Lightweight"
     subtitle="Written in Go for speed and efficiency."
-    icon="lightning-bolt"
+    icon="sparkles"
   >}}
 {{< /hextra/feature-grid >}}
 </div>
