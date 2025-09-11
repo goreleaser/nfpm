@@ -15,5 +15,6 @@ IgnoreURLs:
   - "https://github.com/goreleaser/nfpm/edit/main/www/content"
   - "https://github.com/goreleaser/nfpm/releases"
   - "https://becker.software/nfpm.png"
+IgnoreAltMissing: true
 IgnoreInternalEmptyHash: true
 LogLevel: 2
