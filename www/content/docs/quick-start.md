@@ -1,5 +1,5 @@
 ---
-title: Usage
+title: Quick Start
 weight: 1
 ---
 
@@ -11,21 +11,22 @@ nFPM can be used both as a command line tool or as a Go library.
 
 ### Install nFPM
 
-Choose your preferred installation method:
+You can choose from [several instalation methods](/docs/install), for example:
 
-**Using Homebrew (recommended):**
+**Using Homebrew:**
 
 ```sh
 brew install goreleaser/tap/nfpm
 ```
 
-**Using Go:**
+**Using go install:**
 
 ```sh
 go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 ```
 
-**Download Binary:** Get the latest from the [releases page](https://github.com/goreleaser/nfpm/releases).
+Make sure to [check the complete list](/docs/install) and choose the best option
+for your case.
 
 ### Initialize your project
 
