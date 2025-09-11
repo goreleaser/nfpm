@@ -1,4 +1,6 @@
-# nfpm completion bash
+---
+title: nfpm completion bash
+---
 
 Generate the autocompletion script for bash
 
@@ -39,5 +41,5 @@ nfpm completion bash
 
 ## See also
 
-* [nfpm completion](/cmd/nfpm_completion/)	 - Generate the autocompletion script for the specified shell
+* [nfpm completion](/docs/cmd/nfpm_completion/)	 - Generate the autocompletion script for the specified shell
 

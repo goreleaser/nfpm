@@ -6,15 +6,15 @@ if which gsed >/dev/null 2>&1; then
 	SED="gsed"
 fi
 
-mkdir -p www/docs/cmd
-rm -rf www/docs/cmd/*.md
+mkdir -p www/content/docs/cmd
+rm -rf www/content/docs/cmd/nfpm*.md
 go run ./cmd/nfpm docs
 
-"$SED" \
-	-i'' \
+"$SED" -E -i'' \
+	-e 's/^## (.*)/---\ntitle: \1\n---/' \
 	-e 's/SEE ALSO/See also/g' \
 	-e 's/^## /# /g' \
 	-e 's/^### /## /g' \
 	-e 's/^#### /### /g' \
 	-e 's/^##### /#### /g' \
-	./www/docs/cmd/*.md
+	./www/content/docs/cmd/*.md

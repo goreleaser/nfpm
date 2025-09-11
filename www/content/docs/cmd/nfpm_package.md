@@ -1,4 +1,6 @@
-# nfpm package
+---
+title: nfpm package
+---
 
 Creates a package based on the given config file and flags
 
@@ -17,5 +19,5 @@ nfpm package [flags]
 
 ## See also
 
-* [nfpm](/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK, Arch Linux, and ipk formats based on a YAML configuration file
+* [nfpm](/docs/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK, Arch Linux, and ipk formats based on a YAML configuration file
 

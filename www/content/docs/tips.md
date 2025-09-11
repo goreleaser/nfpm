@@ -1,4 +1,7 @@
-# Tips, Hints and useful information
+---
+title: Tips & Hints
+weight: 4
+---
 
 ## General maintainability of your packages
 

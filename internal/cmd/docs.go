@@ -23,10 +23,10 @@ func newDocsCmd() *docsCmd {
 		ValidArgsFunction:     cobra.NoFileCompletions,
 		RunE: func(*cobra.Command, []string) error {
 			root.cmd.Root().DisableAutoGenTag = true
-			return doc.GenMarkdownTreeCustom(root.cmd.Root(), "www/docs/cmd", func(_ string) string {
+			return doc.GenMarkdownTreeCustom(root.cmd.Root(), "www/content/docs/cmd", func(_ string) string {
 				return ""
 			}, func(s string) string {
-				return "/cmd/" + strings.TrimSuffix(s, ".md") + "/"
+				return "/docs/cmd/" + strings.TrimSuffix(s, ".md") + "/"
 			})
 		},
 	}
