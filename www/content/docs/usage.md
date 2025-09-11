@@ -14,12 +14,14 @@ nFPM can be used both as a command line tool or as a Go library.
 Choose your preferred installation method:
 
 **Using Homebrew (recommended):**
-```bash
+
+```sh
 brew install goreleaser/tap/nfpm
 ```
 
 **Using Go:**
-```bash
+
+```sh
 go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 ```
 
@@ -29,7 +31,7 @@ go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 
 Use [`nfpm init`](/docs/cmd/nfpm_init) to create a sample configuration:
 
-```bash
+```sh
 nfpm init
 ```
 
@@ -39,7 +41,7 @@ This creates a `nfpm.yaml` file with a commented example configuration.
 
 Use [`nfpm package`](/docs/cmd/nfpm_package) to create your packages:
 
-```bash
+```sh
 # Build specific formats
 nfpm pkg --packager deb --target /tmp/
 nfpm pkg --packager rpm --target /tmp/

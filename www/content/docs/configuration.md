@@ -501,7 +501,14 @@ nFPM also has a [jsonschema][] file which you can use to have better editor
 support:
 
 ```
-https://nfpm.goreleaser.com/static/schema.json
+https://nfpm.goreleaser.com/schema.json
+```
+
+You can also add it to your `nfpm.yaml` file if your editor don't automatically
+pick it up:
+
+```yaml
+# yaml-language-server: $schema=https://nfpm.goreleaser.com/schema.json
 ```
 
 You can also generate it for your specific version using the
