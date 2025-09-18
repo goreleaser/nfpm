@@ -58,12 +58,13 @@ const (
 // Content describes the source and destination
 // of one file to copy into a package.
 type Content struct {
-	Source      string           `yaml:"src,omitempty" json:"src,omitempty"`
-	Destination string           `yaml:"dst" json:"dst"`
-	Type        string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=dir,enum=tree,enum=,default="`
-	Packager    string           `yaml:"packager,omitempty" json:"packager,omitempty"`
-	FileInfo    *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
-	Expand      bool             `yaml:"expand,omitempty" json:"expand,omitempty"`
+	Source            string           `yaml:"src,omitempty" json:"src,omitempty"`
+	Destination       string           `yaml:"dst" json:"dst"`
+	Type              string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=dir,enum=tree,enum=,default="`
+	Packager          string           `yaml:"packager,omitempty" json:"packager,omitempty"`
+	FileInfo          *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
+	Expand            bool             `yaml:"expand,omitempty" json:"expand,omitempty"`
+	ForceImplicitDirs []string         `yaml:"force_implicit_dirs,omitempty" json:"force_implicit_dirs,omitempty"`
 }
 
 type ContentFileInfo struct {
@@ -510,7 +511,7 @@ func addTree(
 			c.Destination = NormalizeAbsoluteDirPath(destination)
 			c.FileInfo.Mode = info.Mode() &^ umask
 			c.FileInfo.MTime = info.ModTime()
-			if ownedByFilesystem(c.Destination) {
+			if isForcedImplicitDir(c.Destination, tree.ForceImplicitDirs) || ownedByFilesystem(c.Destination) {
 				c.Type = TypeImplicitDir
 			}
 		case d.Type()&os.ModeSymlink != 0:
@@ -551,6 +552,23 @@ func contentCollisionError(newc *Content, present *Content) error {
 		"%s%s is already present at this destination: %w",
 		newc.Type, newc.Destination, present.Type, presentSource, ErrContentCollision,
 	)
+}
+
+func isForcedImplicitDir(path string, implicitPaths []string) bool {
+	if len(implicitPaths) == 0 {
+		return false
+	}
+
+	path = ToNixPath(path)
+
+	for _, implicitPath := range implicitPaths {
+		match, _ := filepath.Match(implicitPath, path)
+		if match || path == implicitPath {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ToNixPath converts the given path to a nix-style path.
