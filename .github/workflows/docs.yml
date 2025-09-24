@@ -29,4 +29,4 @@ jobs:
         uses: wjdp/htmltest-action@master
         with:
           config: www/htmltest.yml
-          path: www/public
+          path: www/site
