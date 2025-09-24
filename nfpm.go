@@ -87,7 +87,7 @@ func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Conf
 	dec := yaml.NewDecoder(in)
 	dec.KnownFields(true)
 	if err = dec.Decode(&config); err != nil {
-		return
+		return config, err
 	}
 	config.envMappingFunc = mapping
 	if config.envMappingFunc == nil {
@@ -112,7 +112,7 @@ func ParseFileWithEnvMapping(path string, mapping func(string) string) (config C
 	var file *os.File
 	file, err = os.Open(path) //nolint:gosec
 	if err != nil {
-		return
+		return config, err
 	}
 	defer file.Close() // nolint: errcheck,gosec
 	return ParseWithEnvMapping(file, mapping)
