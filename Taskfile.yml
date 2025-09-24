@@ -151,13 +151,13 @@ tasks:
     desc: Start documentation server
     cmds:
       - task: docs:generate
-      - "mkdocs serve -f www/mkdocs.yml -a 0.0.0.0:8000"
+      - "docker run --rm -p 8000:8000 -v ./www:/docs squidfunk/mkdocs-material:9"
 
   docs:build:
     desc: Build docs
     cmds:
       - task: docs:generate
-      - "mkdocs build -f www/mkdocs.yml"
+      - "docker run --rm -v ./www:/docs squidfunk/mkdocs-material:9 build"
 
   docs:test:
     desc: Test docs with htmltest
