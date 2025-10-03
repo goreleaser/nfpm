@@ -574,8 +574,10 @@ func createControl(instSize int64, md5sums []byte, info *nfpm.Info) (controlTarG
 	if err := newFileInsideTar(out, "./md5sums", md5sums, mtime); err != nil {
 		return nil, err
 	}
-	if err := newFileInsideTar(out, "./conffiles", conffiles(info), mtime); err != nil {
-		return nil, err
+	if conffiles, ok := conffiles(info); ok {
+		if err := newFileInsideTar(out, "./conffiles", conffiles, mtime); err != nil {
+			return nil, err
+		}
 	}
 
 	if triggers := createTriggers(info); len(triggers) > 0 {
@@ -675,7 +677,7 @@ func newFilePathInsideTar(out *tar.Writer, path, dest string, mode int64, modtim
 	})
 }
 
-func conffiles(info *nfpm.Info) []byte {
+func conffiles(info *nfpm.Info) ([]byte, bool) {
 	// nolint: prealloc
 	var confs []string
 	for _, file := range info.Contents {
@@ -684,7 +686,11 @@ func conffiles(info *nfpm.Info) []byte {
 			confs = append(confs, files.NormalizeAbsoluteFilePath(file.Destination))
 		}
 	}
-	return []byte(strings.Join(confs, "\n") + "\n")
+	if len(confs) == 0 {
+		return nil, false
+	}
+
+	return []byte(strings.Join(confs, "\n") + "\n"), true
 }
 
 func createTriggers(info *nfpm.Info) []byte {
