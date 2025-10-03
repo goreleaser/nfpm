@@ -1,6 +1,6 @@
 module github.com/goreleaser/nfpm/v2
 
-go 1.23.0
+go 1.25
 
 require (
 	dario.cat/mergo v1.0.2
@@ -12,7 +12,7 @@ require (
 	github.com/caarlos0/go-version v0.2.2
 	github.com/google/rpmpack v0.7.1
 	github.com/goreleaser/chglog v0.7.3
-	github.com/goreleaser/fileglob v1.3.0
+	github.com/goreleaser/fileglob v1.4.0
 	github.com/invopop/jsonschema v0.13.0
 	github.com/klauspost/compress v1.18.0
 	github.com/klauspost/pgzip v1.2.6
