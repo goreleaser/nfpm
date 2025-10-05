@@ -43,52 +43,19 @@ builds:
     ldflags:
       - -s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }} -X main.date={{ .CommitDate }} -X main.builtBy=goreleaser -X main.treeState={{ .IsGitDirty }}
 
-dockers:
-  - image_templates:
-      - "goreleaser/nfpm:{{ .Tag }}-amd64"
-      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64"
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-      - "--platform=linux/amd64"
-  - image_templates:
-      - "goreleaser/nfpm:{{ .Tag }}-arm64v8"
-      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8"
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-      - "--platform=linux/arm64/v8"
-    goarch: arm64
-
-docker_manifests:
-  - name_template: "goreleaser/nfpm:{{ .Tag }}"
-    image_templates:
-      - "goreleaser/nfpm:{{ .Tag }}-amd64"
-      - "goreleaser/nfpm:{{ .Tag }}-arm64v8"
-  - name_template: "ghcr.io/goreleaser/nfpm:{{ .Tag }}"
-    image_templates:
-      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64"
-      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8"
-  - name_template: "goreleaser/nfpm:latest"
-    image_templates:
-      - "goreleaser/nfpm:{{ .Tag }}-amd64"
-      - "goreleaser/nfpm:{{ .Tag }}-arm64v8"
-  - name_template: "ghcr.io/goreleaser/nfpm:latest"
-    image_templates:
-      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-amd64"
-      - "ghcr.io/goreleaser/nfpm:{{ .Tag }}-arm64v8"
+dockers_v2:
+  - images:
+      - "goreleaser/nfpm"
+      - "ghcr.io/goreleaser/nfpm"
+    tags:
+      - "{{ .Tag }}"
+      - latest
+    labels:
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.name": "{{.ProjectName}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.source": "{{.GitURL}}"
 
 archives:
   - name_template: >-
@@ -109,7 +76,7 @@ archives:
 
 source:
   enabled: true
-  name_template: '{{ .ProjectName }}_{{ .Version }}_source'
+  name_template: "{{ .ProjectName }}_{{ .Version }}_source"
 
 brews:
   - repository:
