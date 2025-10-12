@@ -15,6 +15,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -329,18 +330,59 @@ func createDataTarball(info *nfpm.Info) (dataTarBall, md5sums []byte,
 		dataTarballWriteCloser io.WriteCloser
 	)
 
-	switch info.Deb.Compression {
-	case "", "gzip": // the default for now
-		dataTarballWriteCloser = gzip.NewWriter(&dataTarball)
+	if info.Deb.Compression == "" {
+		info.Deb.Compression = "gzip:-1" // the default for now
+	}
+
+	parts := strings.Split(info.Deb.Compression, ":")
+	if len(parts) > 2 {
+		return nil, nil, 0, "", fmt.Errorf("malformed compressor setting: %s", info.Deb.Compression)
+	}
+
+	compressorType := parts[0]
+	compressorLevel := ""
+	if len(parts) == 2 {
+		compressorLevel = parts[1]
+	}
+
+	switch compressorType {
+	case "gzip":
+		level := 9
+		if compressorLevel != "" {
+			var err error
+			level, err = strconv.Atoi(compressorLevel)
+			if err != nil {
+				return nil, nil, 0, "", fmt.Errorf("parse gzip compressor level: %w", err)
+			}
+		}
+		dataTarballWriteCloser, err = gzip.NewWriterLevel(&dataTarball, level)
+		if err != nil {
+			return nil, nil, 0, "", err
+		}
 		name = "data.tar.gz"
 	case "xz":
+		if compressorLevel != "" {
+			return nil, nil, 0, "", fmt.Errorf("no compressor level supported for xz: %s", compressorLevel)
+		}
 		dataTarballWriteCloser, err = xz.NewWriter(&dataTarball)
 		if err != nil {
 			return nil, nil, 0, "", err
 		}
 		name = "data.tar.xz"
 	case "zstd":
-		dataTarballWriteCloser, err = zstd.NewWriter(&dataTarball)
+		level := zstd.SpeedBetterCompression
+		if compressorLevel != "" {
+			if intLevel, err := strconv.Atoi(compressorLevel); err == nil {
+				level = zstd.EncoderLevelFromZstd(intLevel)
+			} else {
+				var ok bool
+				ok, level = zstd.EncoderLevelFromString(compressorLevel)
+				if !ok {
+					return nil, nil, 0, "", fmt.Errorf("invalid zstd compressor level: %s", compressorLevel)
+				}
+			}
+		}
+		dataTarballWriteCloser, err = zstd.NewWriter(&dataTarball, zstd.WithEncoderLevel(level))
 		if err != nil {
 			return nil, nil, 0, "", err
 		}
