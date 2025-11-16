@@ -5,7 +5,9 @@ layout: hextra-home
 
 <div class="hx:mt-6 hx:mb-6">
 {{< hextra/hero-headline >}}
-    nFPM
+<div class="hx-flex hx-justify-center hx-mb-12">
+  <img src="/images/nfpm-logo.png" alt="nFPM Logo" style="height: 80px; width: auto;" />
+</div>
 {{< /hextra/hero-headline >}}
 </div>
 

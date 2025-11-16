@@ -151,7 +151,7 @@ tasks:
     desc: Start documentation server
     cmds:
       - task: docs:generate
-      - cd www && hugo server --buildDrafts --bind 0.0.0.0 --port 8000
+      - cd www && hugo server --buildDrafts --bind 0.0.0.0 --port 8080
 
   docs:build:
     desc: Build docs

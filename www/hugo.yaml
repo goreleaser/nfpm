@@ -28,16 +28,12 @@ menu:
       name: Documentation
       pageRef: /docs/usage
       weight: 10
-    - identifier: about
-      name: About
-      pageRef: /about
-      weight: 20
     - name: Search
-      weight: 30
+      weight: 20
       params:
         type: search
     - name: GitHub
-      weight: 40
+      weight: 30
       url: "https://github.com/goreleaser/nfpm"
       params:
         icon: github
