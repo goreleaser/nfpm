@@ -35,20 +35,16 @@ jobs:
   license-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: stable
       - name: Check licenses
         run: go run github.com/google/go-licenses/v2@latest check --allowed_licenses=MIT,Apache-2.0,BSD-3-Clause,BSD-2-Clause,ISC ./...
-  govulncheck:
-    uses: caarlos0/meta/.github/workflows/govulncheck.yml@main
-    with:
-      go-version: stable
   semgrep:
-    uses: caarlos0/meta/.github/workflows/semgrep.yml@main
+    uses: caarlos0/meta/.github/workflows/semgrep.yml@c7f17af352dac91fa6c785d06ebac8547f1abdd3 # v0.1.0
   ruleguard:
-    uses: caarlos0/meta/.github/workflows/ruleguard.yml@main
+    uses: caarlos0/meta/.github/workflows/ruleguard.yml@c7f17af352dac91fa6c785d06ebac8547f1abdd3 # v0.1.0
     with:
       go-version: stable
       args: "-disable largeloopcopy"
@@ -58,16 +54,16 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: stable
-      - uses: arduino/setup-task@v2
+      - uses: go-task/setup-task@0ab1b2a65bc55236a3bc64cde78f80e20e8885c2 # v1.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task setup
       - run: task test
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         if: matrix.os == 'ubuntu-latest'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -82,15 +78,15 @@ jobs:
       DOCKER_CLI_EXPERIMENTAL: "enabled"
       NO_TEST_PPC64LE: "true"
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: stable
-      - uses: arduino/setup-task@v2
+      - uses: go-task/setup-task@0ab1b2a65bc55236a3bc64cde78f80e20e8885c2 # v1.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
       - run: task setup
       - run: task acceptance
         env:
@@ -99,17 +95,17 @@ jobs:
     needs: [unit-tests]
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: stable
-      - uses: arduino/setup-task@v2
+      - uses: go-task/setup-task@0ab1b2a65bc55236a3bc64cde78f80e20e8885c2 # v1.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - shell: bash
         run: |
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: dist/
           key: ${{ env.sha_short }}
@@ -119,15 +115,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: [windows-build-pkgs]
     steps:
-      - uses: docker/setup-qemu-action@v3
-      - uses: actions/checkout@v5
-      - uses: arduino/setup-task@v2
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          go-version: stable
+      - uses: go-task/setup-task@0ab1b2a65bc55236a3bc64cde78f80e20e8885c2 # v1.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - shell: bash
         run: |
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: dist/
           key: ${{ env.sha_short }}

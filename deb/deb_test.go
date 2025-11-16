@@ -450,8 +450,34 @@ func TestConffiles(t *testing.T) {
 	})
 	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
 	require.NoError(t, err)
-	out := conffiles(info)
+	out, ok := conffiles(info)
+	require.True(t, ok)
 	require.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
+}
+
+func TestNoConffiles(t *testing.T) {
+	info := nfpm.WithDefaults(&nfpm.Info{
+		Name:        "minimal",
+		Arch:        "arm64",
+		Description: "Minimal does nothing",
+		Priority:    "extra",
+		Version:     "1.0.0",
+		Section:     "default",
+		Maintainer:  "maintainer",
+		Overridables: nfpm.Overridables{
+			Contents: []*files.Content{
+				{
+					Source:      "../testdata/fake",
+					Destination: "/etc/fake",
+				},
+			},
+		},
+	})
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
+	require.NoError(t, err)
+	out, ok := conffiles(info)
+	require.False(t, ok)
+	require.Nil(t, out)
 }
 
 func TestMinimalFields(t *testing.T) {

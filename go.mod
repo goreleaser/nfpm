@@ -1,6 +1,6 @@
 module github.com/goreleaser/nfpm/v2
 
-go 1.23.0
+go 1.25
 
 require (
 	dario.cat/mergo v1.0.2
@@ -12,11 +12,11 @@ require (
 	github.com/caarlos0/go-version v0.2.2
 	github.com/google/rpmpack v0.7.1
 	github.com/goreleaser/chglog v0.7.3
-	github.com/goreleaser/fileglob v1.3.0
+	github.com/goreleaser/fileglob v1.4.0
 	github.com/invopop/jsonschema v0.13.0
-	github.com/klauspost/compress v1.18.0
+	github.com/klauspost/compress v1.18.1
 	github.com/klauspost/pgzip v1.2.6
-	github.com/muesli/mango-cobra v1.2.0
+	github.com/muesli/mango-cobra v1.3.0
 	github.com/muesli/roff v0.1.0
 	github.com/sassoftware/go-rpmutils v0.4.0
 	github.com/spf13/cobra v1.10.1
@@ -52,7 +52,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/muesli/mango v0.1.0 // indirect
+	github.com/muesli/mango v0.2.0 // indirect
 	github.com/muesli/mango-pflag v0.1.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

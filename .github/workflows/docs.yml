@@ -19,21 +19,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: '1.21'
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v3
+          go-version: "1.21"
+      - uses: peaceiris/actions-hugo@75d2e84710de30f6ff7268e08f310b60ef14033f # v3
         with:
-          hugo-version: 'latest'
+          hugo-version: "latest"
           extended: true
-      - name: Build Hugo site
-        run: |
+      - run: |
           cd www
           hugo --minify
-      - name: Test HTML
-        uses: wjdp/htmltest-action@master
+      - uses: wjdp/htmltest-action@31be84a95c860a331e0cf9a99f71e3eb39d2f86b # master
         with:
           config: www/htmltest.yml
           path: www/public
