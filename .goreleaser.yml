@@ -11,9 +11,9 @@ before:
 
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
-  description: nFPM is a simple, 0-dependencies, deb, rpm, and apk packager.
+  description: "nFPM is Not FPM - a simple deb, rpm, apk, ipk, and arch linux packager written in Go."
   full_description: |-
-    Simple, 0-dependencies, deb, rpm, and apk packager.
+    Simple, 0-dependencies, deb, rpm, apk, ipk, and arch linux packager.
     nFPM (not FPM) is configurable via YAML and does not need any
     packaging software installed.
   homepage: https://nfpm.goreleaser.com
@@ -125,6 +125,19 @@ winget:
           owner: microsoft
           name: winget-pkgs
           branch: master
+
+npms:
+  - name: "@goreleaser/nfpm"
+    repository: "git+https://github.com/goreleaser/nfpm.git"
+    bugs: https://github.com/goreleaser/nfpm/issues
+    homepage: https://nfpm.goreleaser.com
+    access: public
+    keywords:
+      - packaging
+      - rpm
+      - deb
+      - apk
+      - archlinux
 
 nfpms:
   - file_name_template: "{{ .ConventionalFileName }}"
