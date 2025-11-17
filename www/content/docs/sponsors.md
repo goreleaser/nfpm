@@ -1,4 +1,7 @@
-# Sponsoring the Project
+---
+title: Sponsors
+weight: 7
+---
 
 Does you or your company use nFPM?
 You can help keep the project bug-free and feature rich by sponsoring the

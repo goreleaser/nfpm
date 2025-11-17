@@ -1,0 +1,75 @@
+baseURL: "https://nfpm.goreleaser.com"
+languageCode: "en-us"
+title: "nFPM"
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+enableRobotsTXT: true
+enableGitInfo: true
+enableEmoji: true
+hasCJKLanguage: true
+
+services:
+  googleAnalytics:
+    ID: ""
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+  highlight:
+    noClasses: false
+
+menu:
+  main:
+    - identifier: install
+      name: Install
+      pageRef: /docs/install
+      weight: 10
+    - identifier: documentation
+      name: Documentation
+      pageRef: /docs/usage
+      weight: 15
+    - name: Search
+      weight: 20
+      params:
+        type: search
+    - name: GitHub
+      weight: 30
+      url: "https://github.com/goreleaser/nfpm"
+      params:
+        icon: github
+
+params:
+  navbar:
+    displayTitle: true
+    displayLogo: true
+    logo:
+      path: images/logo.png
+      dark: images/logo.png
+      width: 40
+      height: 40
+      link: /
+  page:
+    width: wide
+  theme:
+    default: system
+    displayToggle: true
+  footer:
+    displayCopyright: true
+    displayPoweredBy: false
+    width: normal
+  displayUpdatedDate: true
+  dateFormat: "January 2, 2006"
+  search:
+    enable: true
+    type: flexsearch
+    maxResults: 10
+  editPage:
+    enable: true
+    base: "https://github.com/goreleaser/nfpm/edit/main/www/content"
+
+outputs:
+  home: [html, llms]

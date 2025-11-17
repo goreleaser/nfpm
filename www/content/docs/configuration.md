@@ -1,10 +1,13 @@
-# Configuration
+---
+title: Configuration
+weight: 3
+---
 
 ## Reference
 
 A commented `nfpm.yaml` configuration file example:
 
-```yaml
+```yaml {filename="nfpm.yaml"}
 # Name. (required)
 name: foo
 
@@ -498,7 +501,14 @@ nFPM also has a [jsonschema][] file which you can use to have better editor
 support:
 
 ```
-https://nfpm.goreleaser.com/static/schema.json
+https://nfpm.goreleaser.com/schema.json
+```
+
+You can also add it to your `nfpm.yaml` file if your editor don't automatically
+pick it up:
+
+```yaml {filename="nfpm.yaml"}
+# yaml-language-server: $schema=https://nfpm.goreleaser.com/schema.json
 ```
 
 You can also generate it for your specific version using the
@@ -508,4 +518,4 @@ Note that it is in early stages.
 Any help and/or feedback is greatly appreciated!
 
 [jsonschema]: http://json-schema.org/draft/2020-12/json-schema-validation.html
-[schema]: /cmd/nfpm_jsonschema/
+[schema]: /docs/cmd/nfpm_jsonschema/

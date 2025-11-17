@@ -3,7 +3,7 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 # Feel free to remove those if you don't want/need to use them.
-# yaml-language-server: $schema=https://nfpm.goreleaser.com/static/schema.json
+# yaml-language-server: $schema=https://nfpm.goreleaser.com/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
 name: "foo"

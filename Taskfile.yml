@@ -128,42 +128,42 @@ tasks:
       - ./scripts/cmd_docs.sh
       - CONTRIBUTING.md
     generates:
-      - www/docs/cmd/*.md
-      - www/docs/contributing.md
+      - www/content/docs/cmd/*.md
+      - www/content/docs/contributing.md
 
   docs:releases:
     desc: Generate the latest file
     cmds:
       - ./scripts/pages/releases.sh
     generates:
-      - www/docs/static/latest
+      - www/static/latest
 
   docs:imgs:
     desc: Download and resize images
     cmds:
-      - wget -O www/docs/static/logo.png https://github.com/goreleaser/artwork/raw/master/goreleaserfundo.png
-      - wget -O www/docs/static/card.png "https://og.caarlos0.dev/**GoReleaser**%20%7C%20Deliver%20Go%20binaries%20as%20fast%20and%20easily%20as%20possible.png?theme=light&md=1&fontSize=80px&images=https://github.com/goreleaser.png"
-      - wget -O www/docs/static/avatar.png https://github.com/goreleaser.png
-      - convert www/docs/static/avatar.png -define icon:auto-resize=64,48,32,16 www/docs/static/favicon.ico
-      - convert www/docs/static/avatar.png -resize x120 www/docs/static/apple-touch-icon.png
+      - wget -O www/static/images/logo.png https://github.com/goreleaser/artwork/raw/master/goreleaserfundo.png
+      - wget -O www/static/images/card.png "https://og.caarlos0.dev/**nFPM**%20%7C%20A a simple deb, rpm, apk, ipk, and arch linux packager written in Go.png?theme=light&md=1&fontSize=80px&images=https://github.com/goreleaser.png"
+      - wget -O www/static/images/avatar.png https://github.com/goreleaser.png
+      - convert www/static/images/avatar.png -define icon:auto-resize=64,48,32,16 www/static/images/favicon.ico
+      - convert www/static/images/avatar.png -resize x120 www/static/images/apple-touch-icon.png
 
   docs:serve:
     desc: Start documentation server
     cmds:
       - task: docs:generate
-      - "docker run --rm -p 8000:8000 -v ./www:/docs squidfunk/mkdocs-material:9"
+      - cd www && hugo server --buildDrafts --bind 0.0.0.0 --port 8080
 
   docs:build:
     desc: Build docs
     cmds:
       - task: docs:generate
-      - "docker run --rm -v ./www:/docs squidfunk/mkdocs-material:9 build"
+      - cd www && hugo --minify
 
   docs:test:
     desc: Test docs with htmltest
     cmds:
       - task: docs:build
-      - "htmltest www/site -c www/htmltest.yml"
+      - htmltest www/public -c www/htmltest.yml
 
   release:
     desc: Create a new tag

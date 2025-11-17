@@ -1,4 +1,7 @@
-# Contributing
+---
+title: Contributing
+weight: 6
+---
 
 This page will eventually have information for those who want to contribute
 to the project.
