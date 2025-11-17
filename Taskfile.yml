@@ -105,18 +105,18 @@ tasks:
   schema:generate:
     desc: Generate JSONSchema
     cmds:
-      - go run ./cmd/nfpm/ schema -o ./www/docs/static/schema.json
+      - go run ./cmd/nfpm/ schema -o ./www/static/schema.json
     sources:
       - nfpm.go
     generates:
-      - ./www/docs/static/schema.json
+      - ./www/static/schema.json
 
   schema:validate:
     desc: Validate JSONSchema
     cmds:
-      - jv ./www/docs/static/schema.json
+      - jv ./www/static/schema.json
     sources:
-      - ./www/docs/static/schema.json
+      - ./www/static/schema.json
 
   docs:generate:
     desc: Generate docs
