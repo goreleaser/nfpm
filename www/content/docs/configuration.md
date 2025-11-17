@@ -7,7 +7,7 @@ weight: 3
 
 A commented `nfpm.yaml` configuration file example:
 
-```yaml
+```yaml {filename="nfpm.yaml"}
 # Name. (required)
 name: foo
 
@@ -507,7 +507,7 @@ https://nfpm.goreleaser.com/schema.json
 You can also add it to your `nfpm.yaml` file if your editor don't automatically
 pick it up:
 
-```yaml
+```yaml {filename="nfpm.yaml"}
 # yaml-language-server: $schema=https://nfpm.goreleaser.com/schema.json
 ```
 

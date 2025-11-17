@@ -17,7 +17,9 @@ Thank you!
 
 ---
 
-## `deb`
+{{< tabs items="Deb,RPM,APK,Arch Linux" >}}
+
+{{< tab >}}
 
 |   GOARCH   |   Value    |
 | :--------: | :--------: |
@@ -33,7 +35,9 @@ Thank you!
 | `ppc64le`  | `ppc64el`  |
 |   `s390`   |  `s390x`   |
 
-## `rpm`
+{{< /tab >}}
+
+{{< tab >}}
 
 |   GOARCH   |   Value    |
 | :--------: | :--------: |
@@ -47,7 +51,9 @@ Thank you!
 |   `mips`   |   `mips`   |
 |  `mipsle`  |  `mipsel`  |
 
-## `apk`
+{{< /tab >}}
+
+{{< tab >}}
 
 |  GOARCH   |   Value   |
 | :-------: | :-------: |
@@ -59,7 +65,9 @@ Thank you!
 | `ppc64le` | `ppc64le` |
 |  `s390`   |  `s390x`  |
 
-## `archlinux`
+{{< /tab >}}
+
+{{< tab >}}
 
 | GOARCH  |   Value   |
 | :-----: | :-------: |
@@ -69,3 +77,7 @@ Thank you!
 | `arm5`  |   `arm`   |
 | `arm6`  |  `arm6h`  |
 | `arm7`  | `armv7h`  |
+
+{{< /tab >}}
+
+{{< /tabs >}}
