@@ -9,7 +9,7 @@ Below you can find the steps for each of them.
 
 ## Using a package manager
 
-{{< tabs items="Homebrew Tap,Homebrew,Scoop,APT,Yum,Winget" >}}
+{{< tabs items="Homebrew Tap,Homebrew,Scoop,APT,Yum,Winget,NPM" >}}
 
 {{< tab >}}
 
@@ -71,6 +71,16 @@ winget install --id=goreleaser.nfpm
 
 {{< /tab >}}
 
+{{< tab >}}
+
+```bash
+npm install -g @goreleaser/nfpm
+# or
+npx @goreleaser/nfpm
+```
+
+{{< /tab >}}
+
 {{< /tabs >}}
 
 ## Pre-built packages and archives
@@ -121,12 +131,12 @@ wget 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums
 ### Verify the signature
 
 ```bash
+wget 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sigstore.json'
 cosign verify-blob \
- --certificate-identity 'https://github.com/goreleaser/nfpm/.github/workflows/release.yml@refs/tags/__VERSION__' \
-    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
- --signature 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.sig' \
- --cert 'https://github.com/goreleaser/nfpm/releases/download/__VERSION__/checksums.txt.pem' \
- checksums.txt
+  --certificate-identity 'https://github.com/goreleaser/nfpm/.github/workflows/release.yml@refs/tags/__VERSION__' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  --bundle "checksums.txt.sigstore.json" \
+  checksums.txt
 ```
 
 ### Verify the checksums
@@ -145,12 +155,24 @@ sha256sum --ignore-missing -c checksums.txt
 
 Our Docker images are signed with [cosign](https://github.com/sigstore/cosign).
 
-You can verify them by running:
+{{% steps %}}
+
+### Pull the images
+
+```bash
+docker buill goreleaser/nfpm
+# or
+docker build ghcr.io/goreleaser/nfpm
+```
+
+### Verify
 
 ```bash
 cosign verify goreleaser/nfpm
 cosign verify ghcr.io/goreleaser/nfpm
 ```
+
+{{% /steps %}}
 
 {{< /tab >}}
 

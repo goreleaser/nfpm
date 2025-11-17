@@ -24,10 +24,14 @@ markup:
 
 menu:
   main:
+    - identifier: install
+      name: Install
+      pageRef: /docs/install
+      weight: 10
     - identifier: documentation
       name: Documentation
       pageRef: /docs/usage
-      weight: 10
+      weight: 15
     - name: Search
       weight: 20
       params:

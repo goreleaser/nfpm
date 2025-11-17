@@ -136,7 +136,7 @@ tasks:
     cmds:
       - ./scripts/pages/releases.sh
     generates:
-      - www/static/images/latest
+      - www/static/latest
 
   docs:imgs:
     desc: Download and resize images
