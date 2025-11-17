@@ -30,7 +30,7 @@ menu:
       weight: 10
     - identifier: documentation
       name: Documentation
-      pageRef: /docs/usage
+      pageRef: /docs
       weight: 15
     - name: Search
       weight: 20
