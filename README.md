@@ -24,9 +24,9 @@ So I created nFPM: a simpler, 0-dependency, as-little-assumptions-as-possible al
 ## Getting started
 
 - [Getting Started](https://nfpm.goreleaser.com)
-- [Install](https://nfpm.goreleaser.com/install/)
-- [Usage](https://nfpm.goreleaser.com/usage/)
-- [Configuration reference](https://nfpm.goreleaser.com/configuration/)
+- [Install](https://nfpm.goreleaser.com/docs/install/)
+- [Usage](https://nfpm.goreleaser.com/docs/usage/)
+- [Configuration reference](https://nfpm.goreleaser.com/docs/configuration/)
 
 ## Used and supported by
 
