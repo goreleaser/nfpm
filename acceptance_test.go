@@ -175,19 +175,13 @@ func TestDebCompression(t *testing.T) {
 						t.Skip("ppc64le arch not supported in pipeline")
 					}
 
-					target := "compression"
-					if testCompFormat == "zstd" {
-						// we can remove this exception as soon as the debian image supports zstd
-						target = "zstdcompression"
-					}
-
 					accept(t, acceptParms{
 						Name:   fmt.Sprintf("%s_compression_%s", testCompFormat, testArch),
 						Conf:   fmt.Sprintf("deb.%s.compression.yaml", testCompFormat),
 						Format: format,
 						Docker: dockerParams{
 							File:   fmt.Sprintf("%s.dockerfile", format),
-							Target: target,
+							Target: "compression",
 							Arch:   testArch,
 						},
 					})
