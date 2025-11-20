@@ -382,7 +382,7 @@ type RPM struct {
 	Scripts     RPMScripts   `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=rpm-specific scripts"`
 	Group       string       `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=package group,example=Unspecified"`
 	Summary     string       `yaml:"summary,omitempty" json:"summary,omitempty" jsonschema:"title=package summary"`
-	Compression string       `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=lzma,enum=xz,default=gzip:-1"`
+	Compression string       `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=lzma,enum=xz,enum=zstd,default=gzip:-1"`
 	Signature   RPMSignature `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=rpm signature"`
 	Packager    string       `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that actually packaged the software"`
 	Prefixes    []string     `yaml:"prefixes,omitempty" json:"prefixes,omitempty" jsonschema:"title=Prefixes for relocatable packages"`
@@ -437,7 +437,7 @@ type Deb struct {
 	Triggers    DebTriggers       `yaml:"triggers,omitempty" json:"triggers,omitempty" jsonschema:"title=triggers"`
 	Breaks      []string          `yaml:"breaks,omitempty" json:"breaks,omitempty" jsonschema:"title=breaks"`
 	Signature   DebSignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=signature"`
-	Compression string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
+	Compression string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=zstd,enum=none,default=gzip"`
 	Fields      map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
 	Predepends  []string          `yaml:"predepends,omitempty" json:"predepends,omitempty" jsonschema:"title=predepends directive,example=nfpm"`
 }
@@ -445,7 +445,7 @@ type Deb struct {
 type DebSignature struct {
 	PackageSignature `yaml:",inline" json:",inline"`
 	// Only debsign still supported
-	Method string `yaml:"method,omitempty" json:"method,omitempty" jsonschema:"title=method role,enum=debsign,default=debsign"`
+	Method string `yaml:"method,omitempty" json:"method,omitempty" jsonschema:"title=method role,enum=dpkg-sig,enum=debsign,default=debsign"`
 	// origin, maint or archive (defaults to origin)
 	Type   string `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"title=signer role,enum=origin,enum=maint,enum=archive,default=origin"`
 	Signer string `yaml:"signer,omitempty" json:"signer,omitempty" jsonschema:"title=signer"`
