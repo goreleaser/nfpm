@@ -142,14 +142,13 @@ tasks:
     desc: Download and resize images
     cmds:
       - wget -O www/static/logo.png https://github.com/goreleaser/artwork/raw/master/goreleaserfundo.png
-      - wget -O www/static/avatar.png https://github.com/goreleaser.png
       - wget -O www/static/favicon.svg https://raw.githubusercontent.com/goreleaser/artwork/refs/heads/master/goreleaser.svg
-      - convert www/static/avatar.png -define icon:auto-resize=64,48,32,16 www/static/favicon.ico
-      - convert www/static/avatar.png -resize x120 www/static/apple-touch-icon.png
-      - convert www/static/avatar.png -resize x192 www/static/android-chrome-192x192.png
-      - convert www/static/avatar.png -resize x512 www/static/android-chrome-512x512.png
-      - convert www/static/avatar.png -resize x16 www/static/favicon-16x16.png
-      - convert www/static/avatar.png -resize x32 www/static/favicon-32x32.png
+      - convert www/static/logo.png -define icon:auto-resize=64,48,32,16 www/static/favicon.ico
+      - convert www/static/logo.png -resize x120 www/static/apple-touch-icon.png
+      - convert www/static/logo.png -resize x192 www/static/android-chrome-192x192.png
+      - convert www/static/logo.png -resize x512 www/static/android-chrome-512x512.png
+      - convert www/static/logo.png -resize x16 www/static/favicon-16x16.png
+      - convert www/static/logo.png -resize x32 www/static/favicon-32x32.png
 
   docs:serve:
     desc: Start documentation server
