@@ -114,9 +114,10 @@ tasks:
   schema:validate:
     desc: Validate JSONSchema
     cmds:
-      - jv ./www/static/schema.json
+      - jv ./www/static/schema.json ./testdata/acceptance/*.yaml
     sources:
       - ./www/static/schema.json
+      - ./testdata/acceptance/*.yaml
 
   docs:generate:
     desc: Generate docs

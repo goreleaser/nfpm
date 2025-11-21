@@ -432,6 +432,7 @@
 						"enum": [
 							"gzip",
 							"xz",
+							"zstd",
 							"none"
 						],
 						"title": "compression algorithm to be used",
@@ -495,6 +496,7 @@
 					"method": {
 						"type": "string",
 						"enum": [
+							"dpkg-sig",
 							"debsign"
 						],
 						"title": "method role",
@@ -770,7 +772,8 @@
 						"enum": [
 							"gzip",
 							"lzma",
-							"xz"
+							"xz",
+							"zstd"
 						],
 						"title": "compression algorithm to be used",
 						"default": "gzip:-1"
