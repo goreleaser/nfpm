@@ -436,7 +436,7 @@
 							"none"
 						],
 						"title": "compression algorithm to be used",
-						"default": "gzip"
+						"default": "gzip:-1"
 					},
 					"fields": {
 						"additionalProperties": {

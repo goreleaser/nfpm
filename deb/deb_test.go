@@ -1153,12 +1153,28 @@ func TestCompressionAlgorithms(t *testing.T) {
 	testCases := []struct {
 		algorithm       string
 		dataTarballName string
+		expectedError   string
 	}{
-		{"gzip", "data.tar.gz"},
-		{"", "data.tar.gz"}, // test current default
-		{"xz", "data.tar.xz"},
-		{"none", "data.tar"},
-		{"zstd", "data.tar.zst"},
+		{"gzip", "data.tar.gz", ""},
+		{"gzip:-1", "data.tar.gz", ""},
+		{"gzip:0", "data.tar.gz", ""},
+		{"gzip:1", "data.tar.gz", ""},
+		{"gzip:9", "data.tar.gz", ""},
+		{"gzip:foo", "data.tar.gz", "parse gzip compressor level"},
+		{"", "data.tar.gz", ""}, // test current default
+		{"xz", "data.tar.xz", ""},
+		{"xz:9", "data.tar.xz", "no compressor level supported"},
+		{"none", "data.tar", ""},
+		{"zstd", "data.tar.zst", ""},
+		{"zstd:-1", "data.tar.zst", ""},
+		{"zstd:0", "data.tar.zst", ""},
+		{"zstd:1", "data.tar.zst", ""},
+		{"zstd:9", "data.tar.zst", ""},
+		{"zstd:19", "data.tar.zst", ""},
+		{"zstd:best", "data.tar.zst", ""},
+		{"zstd:bar", "data.tar.zst", "invalid zstd compressor level"},
+		{"foo", "data.tar", "unknown compression algorithm"},
+		{"foo:bar:baz", "data.tar", "malformed compressor setting"},
 	}
 
 	for _, testCase := range testCases {
@@ -1171,7 +1187,12 @@ func TestCompressionAlgorithms(t *testing.T) {
 			var deb bytes.Buffer
 
 			err := Default.Package(info, &deb)
-			require.NoError(t, err)
+			if testCase.expectedError == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, testCase.expectedError)
+				return
+			}
 
 			dataTarballName := findDataTarball(t, deb.Bytes())
 			require.Equal(t, dataTarballName, testCase.dataTarballName)

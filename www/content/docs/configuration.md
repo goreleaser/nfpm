@@ -359,6 +359,7 @@ rpm:
   buildhost: buildserver1
 
   # Compression algorithm (gzip (default), zstd, lzma or xz).
+  # Optionally compression level (gzip:-1 (default), gzip:1, gzip:9, zstd:1, zstd:19)
   compression: zstd
 
   # Prefixes for relocatable packages.
@@ -414,6 +415,7 @@ deb:
     - some-package
 
   # Compression algorithm (gzip (default), zstd, xz or none).
+  # Optionally compression level (gzip:-1 (default), gzip:1, gzip:9, zstd:1, zstd:19)
   compression: zstd
 
   # The package is signed if a key_file is set
