@@ -5,7 +5,8 @@ CheckAnchors: true
 CheckLinks: true
 CheckImages: true
 CheckScripts: true
-CheckFavicon: true
+# XXX: change this once https://github.com/wjdp/htmltest/pull/243 is fixed.
+CheckFavicon: false
 CheckOpengraph: false
 CheckMetaRefresh: true
 CheckMetaViewport: true
