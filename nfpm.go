@@ -20,7 +20,7 @@ import (
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/modtime"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // nolint: gochecknoglobals
