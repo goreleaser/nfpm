@@ -15,7 +15,7 @@ import (
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 var mtime = time.Date(2023, 11, 5, 23, 15, 17, 0, time.UTC)
