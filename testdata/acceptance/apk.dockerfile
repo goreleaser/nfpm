@@ -1,4 +1,4 @@
-FROM alpine AS test_base
+FROM alpine:3.23.0 AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.apk
@@ -73,7 +73,7 @@ RUN test ! -d /usr/foo/bar/something
 # ---- signed test ----
 FROM test_base AS signed
 COPY keys/rsa_unprotected.pub /etc/apk/keys/john@example.com.rsa.pub
-RUN apk verify /tmp/foo.apk | grep "/tmp/foo.apk: 0 - OK"
+RUN apk verify /tmp/foo.apk | grep "/tmp/foo.apk: OK"
 RUN apk add  /tmp/foo.apk
 
 

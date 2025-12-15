@@ -33,7 +33,9 @@ updates:
         patterns:
           - "*"
   - package-ecosystem: "docker"
-    directory: "/"
+    directories:
+      - "/"
+      - "/testdata/acceptance/"
     schedule:
       interval: "weekly"
       day: "monday"
