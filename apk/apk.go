@@ -58,6 +58,7 @@ func init() {
 }
 
 // https://wiki.alpinelinux.org/wiki/Architecture
+// https://github.com/golang/go/blob/master/src/internal/syslist/syslist.go
 // nolint: gochecknoglobals
 var archToAlpine = map[string]string{
 	"386":     "x86",
@@ -67,6 +68,7 @@ var archToAlpine = map[string]string{
 	"arm7":    "armv7",
 	"ppc64le": "ppc64le",
 	"s390":    "s390x",
+	"loong64": "loongarch64",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {

@@ -72,6 +72,7 @@ type RPM struct {
 }
 
 // https://docs.fedoraproject.org/ro/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch01s03.html
+// https://github.com/rpm-software-management/rpm/blob/4a9b7b5908d8b463a836b51322242677677bd8b7/lib/rpmrc.cc#L1167
 // nolint: gochecknoglobals
 var archToRPM = map[string]string{
 	"all":      "noarch",
@@ -84,6 +85,7 @@ var archToRPM = map[string]string{
 	"mips64le": "mips64el",
 	"mipsle":   "mipsel",
 	"mips":     "mips",
+	"loong64":  "loongarch64",
 	// TODO: other arches
 }
 
