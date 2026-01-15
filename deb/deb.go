@@ -39,6 +39,7 @@ func init() {
 	nfpm.RegisterPackager(packagerName, Default)
 }
 
+// https://wiki.debian.org/ArchitectureSpecificsMemo
 // nolint: gochecknoglobals
 var archToDebian = map[string]string{
 	"386":      "i386",
