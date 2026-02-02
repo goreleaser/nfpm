@@ -1,4 +1,4 @@
-FROM alpine:3.23.2 AS test_base
+FROM alpine:3.23.3 AS test_base
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/foo.apk
