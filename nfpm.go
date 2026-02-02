@@ -433,6 +433,7 @@ type APKScripts struct {
 // Deb is custom configs that are only available on deb packages.
 type Deb struct {
 	Arch        string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in deb nomenclature"`
+	ArchVariant string            `yaml:"arch_variant,omitempty" json:"arch_variant,omitempty" jsonschema:"title=target architecture variant in deb nomenclature,example=amd64v3"`
 	Scripts     DebScripts        `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=scripts"`
 	Triggers    DebTriggers       `yaml:"triggers,omitempty" json:"triggers,omitempty" jsonschema:"title=triggers"`
 	Breaks      []string          `yaml:"breaks,omitempty" json:"breaks,omitempty" jsonschema:"title=breaks"`
