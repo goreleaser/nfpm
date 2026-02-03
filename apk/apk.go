@@ -69,6 +69,10 @@ var archToAlpine = map[string]string{
 	"ppc64le": "ppc64le",
 	"s390":    "s390x",
 	"loong64": "loongarch64",
+	"aarch64": "aarch64",
+	"x86_64":  "x86_64",
+	"i386":    "x86",
+	"i686":    "x86",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {

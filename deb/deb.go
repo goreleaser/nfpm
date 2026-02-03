@@ -51,6 +51,8 @@ var archToDebian = map[string]string{
 	"mipsle":   "mipsel",
 	"ppc64le":  "ppc64el",
 	"s390":     "s390x",
+	"x86_64":   "amd64",
+	"aarch64":  "arm64",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {

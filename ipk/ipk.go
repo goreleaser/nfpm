@@ -42,6 +42,9 @@ var archToIPK = map[string]string{
 	"mipsle":   "mipsel",
 	"ppc64le":  "ppc64el",
 	"s390":     "s390x",
+	"x86_64":   "x86_64",
+	"aarch64":  "arm64",
+	"i386":     "i386",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
