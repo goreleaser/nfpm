@@ -3,6 +3,7 @@ Version: 2:1.2.0
 Section: default
 Priority: extra
 Architecture: arm64
+Architecture-Variant: amd64v2
 Maintainer: maintainer
 Installed-Size: 0
 Description: Has rules script

@@ -529,24 +529,27 @@ func TestDebEpoch(t *testing.T) {
 
 func TestDebRules(t *testing.T) {
 	var w bytes.Buffer
-	require.NoError(t, writeControl(&w, controlData{
-		Info: nfpm.WithDefaults(&nfpm.Info{
-			Name:        "lala",
-			Arch:        "arm64",
-			Description: "Has rules script",
-			Priority:    "extra",
-			Epoch:       "2",
-			Version:     "1.2.0",
-			Section:     "default",
-			Maintainer:  "maintainer",
-			Overridables: nfpm.Overridables{
-				Deb: nfpm.Deb{
-					Scripts: nfpm.DebScripts{
-						Rules: "foo.sh",
-					},
+	info := nfpm.WithDefaults(&nfpm.Info{
+		Name:        "lala",
+		Arch:        "arm64",
+		Description: "Has rules script",
+		Priority:    "extra",
+		Epoch:       "2",
+		Version:     "1.2.0",
+		Section:     "default",
+		Maintainer:  "maintainer",
+		Overridables: nfpm.Overridables{
+			Deb: nfpm.Deb{
+				ArchVariant: "v2",
+				Scripts: nfpm.DebScripts{
+					Rules: "foo.sh",
 				},
 			},
-		}),
+		},
+	})
+	ensureValidArch(info)
+	require.NoError(t, writeControl(&w, controlData{
+		Info: info,
 	}))
 	golden := "testdata/rules.golden"
 	if *update {

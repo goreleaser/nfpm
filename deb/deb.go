@@ -60,6 +60,14 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 		info.Arch = arch
 	}
 
+	switch info.Deb.ArchVariant {
+	case "", "amd64v1", "amd64v2", "amd64v3", "amd64v4":
+		// ignore empty, ignore already valid
+	case "v1", "v2", "v3", "v4":
+		// prefix 'amd64' to valid versions
+		info.Deb.ArchVariant = "amd64" + info.Deb.ArchVariant
+	}
+
 	return info
 }
 
