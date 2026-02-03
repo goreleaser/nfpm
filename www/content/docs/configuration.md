@@ -475,6 +475,9 @@ apk:
     key_id: ignored
 
 archlinux:
+  # archlinux specific architecture name that overrides "arch" without performing any replacements.
+  arch: armhf
+
   # This value is used to specify the name used to refer to a group
   # of packages when building a split package. Defaults to name
   # See: https://wiki.archlinux.org/title/PKGBUILD#pkgbase
@@ -491,6 +494,43 @@ archlinux:
 
     # The postupgrade script runs after pacman upgrades the package
     postupgrade: ./scripts/postupgrade.sh
+
+# Custom configuration applied only to the IPK packager (OpenWrt).
+ipk:
+  # ipk specific architecture name that overrides "arch" without performing any replacements.
+  arch: mipsel
+
+  # ABI version for shared library packages. Appended to package name to allow
+  # multiple ABI-incompatible versions to coexist.
+  abi_version: "1"
+
+  # Mark the package as automatically installed (installed as a dependency).
+  # Packages marked as auto-installed can be removed with `opkg --autoremove`.
+  auto_installed: false
+
+  # Mark the package as essential. Essential packages cannot be removed.
+  essential: false
+
+  # Predepends ensures these packages are fully configured before this package
+  # is unpacked. Use sparingly.
+  predepends:
+    - libc
+
+  # Tags for package categorization and filtering.
+  tags:
+    - embedded
+    - networking
+
+  # Additional fields for the control file. Empty fields are ignored.
+  fields:
+    Source: https://github.com/example/repo
+
+  # Alternatives allow this package to provide a generic command via symlinks.
+  # Useful when multiple packages can provide the same functionality.
+  alternatives:
+    - link_name: /usr/bin/editor
+      target: /usr/bin/vim
+      priority: 50
 ```
 
 ## Templating
