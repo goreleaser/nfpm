@@ -61,14 +61,18 @@ func init() {
 // https://github.com/golang/go/blob/master/src/internal/syslist/syslist.go
 // nolint: gochecknoglobals
 var archToAlpine = map[string]string{
-	"386":     "x86",
-	"amd64":   "x86_64",
-	"arm64":   "aarch64",
-	"arm6":    "armhf",
-	"arm7":    "armv7",
-	"ppc64le": "ppc64le",
-	"s390":    "s390x",
-	"loong64": "loongarch64",
+	"386":      "x86",
+	"amd64":    "x86_64",
+	"arm64":    "aarch64",
+	"arm6":     "armhf",
+	"arm7":     "armv7",
+	"ppc64le":  "ppc64le",
+	"s390":     "s390x",
+	"loong64":  "loongarch64",
+	"aarch64":  "aarch64",
+	"x86_64":   "x86_64",
+	"i386":     "x86",
+	"i686":     "x86",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
