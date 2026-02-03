@@ -42,16 +42,16 @@ type ArchLinux struct{}
 
 // nolint: gochecknoglobals
 var archToArchLinux = map[string]string{
-	"all":      "any",
-	"amd64":    "x86_64",
-	"386":      "i686",
-	"arm64":    "aarch64",
-	"arm7":     "armv7h",
-	"arm6":     "armv6h",
-	"arm5":     "arm",
-	"x86_64":   "x86_64",
-	"aarch64":  "aarch64",
-	"i386":     "i686",
+	"all":     "any",
+	"amd64":   "x86_64",
+	"386":     "i686",
+	"arm64":   "aarch64",
+	"arm7":    "armv7h",
+	"arm6":    "armv6h",
+	"arm5":    "arm",
+	"x86_64":  "x86_64",
+	"aarch64": "aarch64",
+	"i386":    "i686",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
