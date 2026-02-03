@@ -385,6 +385,9 @@ deb:
   # deb specific architecture name that overrides "arch" without performing any replacements.
   arch: arm
 
+  # deb arch variant (amd64v1, amd64v2, etc).
+  arch_variant: amd64v3
+
   # Custom deb special files.
   scripts:
     # Deb rules script.
