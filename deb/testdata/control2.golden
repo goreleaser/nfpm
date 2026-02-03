@@ -3,6 +3,7 @@ Version: 1.0.0
 Section: default
 Priority: extra
 Architecture: amd64
+Architecture-Variant: amd64v3
 Maintainer: Carlos A Becker <pkg@carlosbecker.com>
 Installed-Size: 10
 Homepage: http://carlosbecker.com

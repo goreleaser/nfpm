@@ -317,6 +317,9 @@ func TestNoJoinsControl(t *testing.T) {
 				Provides:   []string{},
 				Conflicts:  []string{},
 				Contents:   []*files.Content{},
+				Deb: nfpm.Deb{
+					ArchVariant: "amd64v3",
+				},
 			},
 		}),
 		InstalledSize: 10,
