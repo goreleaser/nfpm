@@ -443,6 +443,10 @@ deb:
     # This will expand any env var you set in the field, e.g. key_id: ${DEB_SIGNING_KEY_ID}
     key_id: bc8acdd415bd80b3
 
+    # The signer is used for signing when the dpkg-sig method is used.
+    # Signer should be in the format `Name <email>`, e.g. `Jon Doe <john.doe@example.com>`
+    signer: GoReleaser <staff@goreleaser.com>
+
   # Additional fields for the control file. Empty fields are ignored.
   # This will expand any env vars you set in the field values, e.g. Vcs-Browser: ${CI_PROJECT_URL}
   fields:
@@ -457,6 +461,14 @@ deb:
 apk:
   # apk specific architecture name that overrides "arch" without performing any replacements.
   arch: armhf
+
+  # APK specific scripts.
+  scripts:
+    # The preupgrade script runs before apk upgrades the package.
+    preupgrade: ./scripts/preupgrade.sh
+
+    # The postupgrade script runs after apk upgrades the package.
+    postupgrade: ./scripts/postupgrade.sh
 
   # The package is signed if a key_file is set
   signature:
