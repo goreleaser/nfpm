@@ -408,6 +408,13 @@
 						"type": "string",
 						"title": "architecture in deb nomenclature"
 					},
+					"arch_variant": {
+						"type": "string",
+						"title": "target architecture variant in deb nomenclature",
+						"examples": [
+							"amd64v3"
+						]
+					},
 					"scripts": {
 						"$ref": "#/$defs/DebScripts",
 						"title": "scripts"
