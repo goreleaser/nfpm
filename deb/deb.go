@@ -785,9 +785,6 @@ Architecture: {{ if ne .Info.Platform "linux"}}{{ .Info.Platform }}-{{ end }}{{.
 {{- if .Info.Deb.ArchVariant}}
 Architecture-Variant: {{ .Info.Deb.ArchVariant }}
 {{- end }}
-{{- if .Info.License }}
-License: {{.Info.License}}
-{{- end }}
 {{- if .Info.Maintainer}}
 Maintainer: {{.Info.Maintainer}}
 {{- end }}
