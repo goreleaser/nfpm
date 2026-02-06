@@ -61,6 +61,7 @@ func init() {
 // https://github.com/golang/go/blob/master/src/internal/syslist/syslist.go
 // nolint: gochecknoglobals
 var archToAlpine = map[string]string{
+	"all":     "noarch",
 	"386":     "x86",
 	"amd64":   "x86_64",
 	"arm64":   "aarch64",

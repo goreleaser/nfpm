@@ -518,7 +518,7 @@ func TestAPKConventionalFileName(t *testing.T) {
 		},
 		{
 			Arch: "all", Version: "1.2.3",
-			Expect: "default_1.2.3_all.apk",
+			Expect: "default_1.2.3_noarch.apk",
 		},
 		{
 			Arch: "386", Version: "1.2.3", Release: "1", Prerelease: "beta1",
