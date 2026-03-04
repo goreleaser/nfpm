@@ -160,9 +160,9 @@ Our Docker images are signed with [cosign](https://github.com/sigstore/cosign).
 ### Pull the images
 
 ```bash
-docker buill goreleaser/nfpm
+docker pull goreleaser/nfpm
 # or
-docker build ghcr.io/goreleaser/nfpm
+docker pull ghcr.io/goreleaser/nfpm
 ```
 
 ### Verify
