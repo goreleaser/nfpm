@@ -1213,6 +1213,23 @@ func TestCompressionAlgorithms(t *testing.T) {
 	}
 }
 
+func TestDefaultCompressionMatchesExplicitGzip(t *testing.T) {
+	// When compression is unset, it should default to gzip at the same level
+	// as explicitly setting compression to "gzip", producing identical output.
+	buildDeb := func(compression string) []byte {
+		info := exampleInfo()
+		info.Deb.Compression = compression
+
+		var deb bytes.Buffer
+		require.NoError(t, Default.Package(info, &deb))
+		return deb.Bytes()
+	}
+
+	defaultDeb := buildDeb("")
+	explicitGzipDeb := buildDeb("gzip")
+	require.Equal(t, defaultDeb, explicitGzipDeb, "default compression should produce identical output to explicit 'gzip'")
+}
+
 func TestIgnoreUnrelatedFiles(t *testing.T) {
 	info := exampleInfo()
 	info.Contents = files.Contents{

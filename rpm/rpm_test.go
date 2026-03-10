@@ -369,6 +369,48 @@ func TestRPMCompression(t *testing.T) {
 	}
 }
 
+func TestRPMDefaultCompression(t *testing.T) {
+	// When compression is unset, it should default to gzip and produce the
+	// same output as explicitly setting compression to "gzip".
+	buildRPM := func(compression string) []byte {
+		f, err := os.CreateTemp(t.TempDir(), "test.rpm")
+		require.NoError(t, err)
+		defer f.Close()
+
+		info := exampleInfo()
+		info.RPM.Compression = compression
+		require.NoError(t, DefaultRPM.Package(info, f))
+
+		data, err := os.ReadFile(f.Name())
+		require.NoError(t, err)
+		return data
+	}
+
+	defaultRPM := buildRPM("")
+	explicitGzipRPM := buildRPM("gzip")
+	require.Equal(t, defaultRPM, explicitGzipRPM, "default compression should produce identical output to explicit 'gzip'")
+
+	// Also verify the default uses gzip as the compressor type in the RPM header.
+	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
+	require.NoError(t, err)
+	defer f.Close()
+
+	info := exampleInfo()
+	// leave info.RPM.Compression empty to test the default
+	require.NoError(t, DefaultRPM.Package(info, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
+	require.NoError(t, err)
+	defer file.Close()
+
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	rpmCompressor, err := rpm.Header.GetString(rpmutils.PAYLOADCOMPRESSOR)
+	require.NoError(t, err)
+	require.Equal(t, "gzip", rpmCompressor)
+}
+
 func TestRPMSummary(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)

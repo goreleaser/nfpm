@@ -342,7 +342,7 @@ func createDataTarball(info *nfpm.Info) (dataTarBall, md5sums []byte,
 	)
 
 	if info.Deb.Compression == "" {
-		info.Deb.Compression = "gzip:-1" // the default for now
+		info.Deb.Compression = "gzip"
 	}
 
 	parts := strings.Split(info.Deb.Compression, ":")

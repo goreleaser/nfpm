@@ -232,7 +232,7 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		conflicts rpmpack.Relations
 	)
 	if info.RPM.Compression == "" {
-		info.RPM.Compression = "gzip:-1"
+		info.RPM.Compression = "gzip"
 	}
 
 	if info.Epoch == "" {
