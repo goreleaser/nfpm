@@ -283,9 +283,7 @@ contents:
 	t.Cleanup(func() { close(errs) })
 	var wg sync.WaitGroup
 	for range 10 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_, err := files.PrepareForPackager(
 				config.Contents,
 				0,
@@ -294,7 +292,7 @@ contents:
 				mtime,
 			)
 			errs <- err
-		}()
+		})
 	}
 	wg.Wait()
 

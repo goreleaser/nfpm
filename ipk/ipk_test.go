@@ -98,7 +98,6 @@ func TestConventionalExtension(t *testing.T) {
 
 func TestIPK(t *testing.T) {
 	for _, arch := range []string{"386", "amd64"} {
-		arch := arch
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
@@ -119,7 +118,7 @@ func TestIPKPlatform(t *testing.T) {
 }
 
 func extractIPKArchitecture(deb *bytes.Buffer) string {
-	for _, s := range strings.Split(deb.String(), "\n") {
+	for s := range strings.SplitSeq(deb.String(), "\n") {
 		if strings.Contains(s, "Architecture: ") {
 			return strings.TrimPrefix(s, "Architecture: ")
 		}
@@ -155,7 +154,7 @@ func TestIPKArch(t *testing.T) {
 }
 
 func extractIPKVersion(deb *bytes.Buffer) string {
-	for _, s := range strings.Split(deb.String(), "\n") {
+	for s := range strings.SplitSeq(deb.String(), "\n") {
 		if strings.Contains(s, "Version: ") {
 			return strings.TrimPrefix(s, "Version: ")
 		}

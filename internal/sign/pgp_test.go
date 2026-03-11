@@ -36,7 +36,6 @@ var testCases = []struct {
 func TestPGPSignerAndVerify(t *testing.T) {
 	data := []byte("testdata")
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			armoredPublicKey := fmt.Sprintf("%s.asc", testCase.pubKeyFile)
 			gpgPublicKey := fmt.Sprintf("%s.gpg", testCase.pubKeyFile)
@@ -67,7 +66,6 @@ func TestPGPSignerAndVerify(t *testing.T) {
 func TestArmoredDetachSignAndVerify(t *testing.T) {
 	data := []byte("testdata")
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			armoredPublicKey := fmt.Sprintf("%s.asc", testCase.pubKeyFile)
 			gpgPublicKey := fmt.Sprintf("%s.gpg", testCase.pubKeyFile)

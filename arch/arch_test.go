@@ -95,7 +95,6 @@ func TestConventionalExtension(t *testing.T) {
 
 func TestArch(t *testing.T) {
 	for _, arch := range []string{"386", "amd64", "arm64"} {
-		arch := arch
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
@@ -131,7 +130,6 @@ func TestArchNoInfo(t *testing.T) {
 
 func TestArchConventionalFileName(t *testing.T) {
 	for _, arch := range []string{"386", "amd64", "arm64"} {
-		arch := arch
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
@@ -378,7 +376,7 @@ func TestGlob(t *testing.T) {
 		"./usr/share/nfpm-repro/b/b.txt": {expectedTime, "mode=644", "size=7", "type=file", "md5digest=551a67cc6e06de1910061fe318d28f72", "sha256digest=73a2c64f9545172c1195efb6616ca5f7afd1df6f245407cafb90de3998a1c97f"},
 	}
 
-	for _, line := range strings.Split(string(mtreeContentBts), "\n") {
+	for line := range strings.SplitSeq(string(mtreeContentBts), "\n") {
 		if line == "#mtree" || line == "" {
 			continue
 		}

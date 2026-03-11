@@ -576,7 +576,6 @@ func TestOverrides(t *testing.T) {
 	require.Equal(t, "amd64", config.Arch)
 
 	for _, format := range []string{"apk", "deb", "rpm"} {
-		format := format
 		t.Run(format, func(t *testing.T) {
 			pkg, err := config.Get(format)
 			require.NoError(t, err)

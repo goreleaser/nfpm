@@ -23,7 +23,6 @@ func TestRSASignAndVerify(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			sig, err := rsaSign(bytes.NewReader(testData), testCase.privKey, testCase.passphrase)
 			require.NoError(t, err)
