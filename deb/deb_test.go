@@ -1234,7 +1234,7 @@ func TestDefaultCompressionMatchesExplicitGzip(t *testing.T) {
 
 	defaultDeb := buildDeb("")
 	explicitGzipDeb := buildDeb("gzip")
-	require.Equal(t, len(defaultDeb), len(explicitGzipDeb), "default compression should produce identical output to explicit 'gzip'")
+	require.Len(t, explicitGzipDeb, len(defaultDeb), "default compression should produce identical output to explicit 'gzip'")
 }
 
 func TestIgnoreUnrelatedFiles(t *testing.T) {
