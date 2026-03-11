@@ -5,6 +5,7 @@ import (
 	"archive/tar"
 	"bufio"
 	"bytes"
+	"cmp"
 	"compress/gzip"
 	"crypto/md5" // nolint:gas
 	"crypto/sha1"
@@ -299,9 +300,7 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 	// Priority should be set on all packages per:
 	//   https://www.debian.org/doc/debian-policy/ch-archive.html#priorities
 	// "optional" seems to be the safe/sane default here
-	if info.Priority == "" {
-		info.Priority = "optional"
-	}
+	info.Priority = cmp.Or(info.Priority, "optional")
 
 	// The safe thing here feels like defaulting to something like below.
 	// That will prevent existing configs from breaking anyway...  Wondering
@@ -311,6 +310,8 @@ func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
 		deprecation.Println("Leaving the 'maintainer' field unset will not be allowed in a future version")
 		info.Maintainer = "Unset Maintainer <unset@localhost>"
 	}
+
+	info.Deb.Compression = cmp.Or(info.Deb.Compression, "gzip")
 }
 
 func addArFile(w *ar.Writer, name string, body []byte, date time.Time) error {
@@ -340,10 +341,6 @@ func createDataTarball(info *nfpm.Info) (dataTarBall, md5sums []byte,
 		dataTarball            bytes.Buffer
 		dataTarballWriteCloser io.WriteCloser
 	)
-
-	if info.Deb.Compression == "" {
-		info.Deb.Compression = "gzip"
-	}
 
 	parts := strings.Split(info.Deb.Compression, ":")
 	if len(parts) > 2 {

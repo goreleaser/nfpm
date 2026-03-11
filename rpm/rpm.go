@@ -4,6 +4,7 @@ package rpm
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"io"
 	"os"
@@ -52,7 +53,7 @@ func init() {
 // nolint: gochecknoglobals
 var DefaultRPM = &RPM{formatRPM}
 
-// DefaultRPM RPM packager.
+// DefaultSRPM SRPM packager.
 // nolint: gochecknoglobals
 var DefaultSRPM = &RPM{formatSRPM}
 
@@ -95,8 +96,8 @@ func setDefaults(info *nfpm.Info) *nfpm.Info {
 		info.Arch = arch
 	}
 
-	info.Release = defaultTo(info.Release, "1")
-
+	info.Release = cmp.Or(info.Release, "1")
+	info.RPM.Compression = cmp.Or(info.RPM.Compression, "gzip")
 	return info
 }
 
@@ -231,9 +232,6 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 		suggests,
 		conflicts rpmpack.Relations
 	)
-	if info.RPM.Compression == "" {
-		info.RPM.Compression = "gzip"
-	}
 
 	if info.Epoch == "" {
 		epoch = uint64(rpmpack.NoEpoch)

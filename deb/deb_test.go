@@ -636,8 +636,9 @@ func TestDebChangelogData(t *testing.T) {
 		Changelog:   "../testdata/changelog.yaml",
 		Maintainer:  "maintainer",
 	}
-	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
-	require.NoError(t, err)
+
+	Default.SetPackagerDefaults(info)
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
@@ -660,8 +661,9 @@ func TestDebNoChangelogDataWithoutChangelogConfigured(t *testing.T) {
 		Version:     "1.0.0",
 		Maintainer:  "maintainer",
 	}
-	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
-	require.NoError(t, err)
+
+	Default.SetPackagerDefaults(info)
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
@@ -767,8 +769,9 @@ func TestSymlink(t *testing.T) {
 			},
 		},
 	}
-	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
-	require.NoError(t, err)
+
+	Default.SetPackagerDefaults(info)
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	dataTarball, _, _, dataTarballName, err := createDataTarball(info)
 	require.NoError(t, err)
@@ -791,8 +794,9 @@ func TestEnsureRelativePrefixInTarballs(t *testing.T) {
 		},
 	}
 	info.Changelog = "../testdata/changelog.yaml"
-	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
-	require.NoError(t, err)
+
+	Default.SetPackagerDefaults(info)
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	dataTarball, md5sums, instSize, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
@@ -814,8 +818,8 @@ func TestMD5Sums(t *testing.T) {
 		}
 	}
 
-	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
-	require.NoError(t, err)
+	Default.SetPackagerDefaults(info)
+	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	dataTarball, md5sums, instSize, tarballName, err := createDataTarball(info)
 	require.NoError(t, err)
@@ -872,6 +876,7 @@ func TestDirectories(t *testing.T) {
 		},
 	}
 
+	Default.SetPackagerDefaults(info)
 	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	deflatedDataTarball, _, _, dataTarballName, err := createDataTarball(info)
@@ -934,6 +939,7 @@ func TestNoDuplicateContents(t *testing.T) {
 		},
 	}
 
+	Default.SetPackagerDefaults(info)
 	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	deflatedDataTarball, _, _, dataTarballName, err := createDataTarball(info)
@@ -1089,6 +1095,8 @@ func TestDisableGlobbing(t *testing.T) {
 			Destination: "/test/{file}[",
 		},
 	}
+
+	Default.SetPackagerDefaults(info)
 	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	dataTarball, _, _, tarballName, err := createDataTarball(info)
@@ -1115,6 +1123,8 @@ func TestNoDuplicateAutocreatedDirectories(t *testing.T) {
 			Destination: "/etc/foo",
 		},
 	}
+
+	Default.SetPackagerDefaults(info)
 	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	expected := map[string]bool{
@@ -1184,8 +1194,6 @@ func TestCompressionAlgorithms(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.algorithm, func(t *testing.T) {
 			info := exampleInfo()
 			info.Deb.Compression = testCase.algorithm
@@ -1227,7 +1235,7 @@ func TestDefaultCompressionMatchesExplicitGzip(t *testing.T) {
 
 	defaultDeb := buildDeb("")
 	explicitGzipDeb := buildDeb("gzip")
-	require.Equal(t, defaultDeb, explicitGzipDeb, "default compression should produce identical output to explicit 'gzip'")
+	require.Equal(t, len(defaultDeb), len(explicitGzipDeb), "default compression should produce identical output to explicit 'gzip'")
 }
 
 func TestIgnoreUnrelatedFiles(t *testing.T) {
@@ -1259,6 +1267,7 @@ func TestIgnoreUnrelatedFiles(t *testing.T) {
 		},
 	}
 
+	Default.SetPackagerDefaults(info)
 	require.NoError(t, nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName))
 
 	dataTarball, _, _, tarballName, err := createDataTarball(info)

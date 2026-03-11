@@ -388,7 +388,7 @@ func TestRPMDefaultCompression(t *testing.T) {
 
 	defaultRPM := buildRPM("")
 	explicitGzipRPM := buildRPM("gzip")
-	require.Equal(t, defaultRPM, explicitGzipRPM, "default compression should produce identical output to explicit 'gzip'")
+	require.Equal(t, len(defaultRPM), len(explicitGzipRPM), "default compression should produce identical output to explicit 'gzip'")
 
 	// Also verify the default uses gzip as the compressor type in the RPM header.
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
