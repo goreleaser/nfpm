@@ -35,12 +35,14 @@ tasks:
     desc: Build packages for testing
     vars:
       SRC: "./testdata/acceptance/core.complex.yaml"
+      MSIX_SRC: "./testdata/acceptance/msix.basic.yaml"
     cmds:
       - mkdir -p ./dist
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p deb -t ./dist/foo.deb
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p rpm -t ./dist/foo.rpm
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p apk -t ./dist/foo.apk
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p archlinux -t ./dist/foo.pkg.tar.zst
+      - go run ./cmd/nfpm/... pkg -f {{.MSIX_SRC}} -p msix -t ./dist/foo.msix
 
   acceptance:windows:install:
     desc: Install packages built with package
@@ -49,6 +51,21 @@ tasks:
       - docker run --rm --workdir /tmp -v $PWD/dist:/tmp ubuntu dpkg -i foo.deb
       - docker run --rm --workdir /tmp -v $PWD/dist:/tmp archlinux pacman --noconfirm -U foo.pkg.tar.zst
       - docker run --rm --workdir /tmp -v $PWD/dist:/tmp alpine apk add --allow-untrusted foo.apk
+
+  acceptance:windows:package:msix:
+    desc: Build MSIX package for Windows install testing
+    platforms: [windows]
+    cmds:
+      - go build -o ./dist/testapp.exe ./testdata/acceptance/testapp/
+      - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/create-test-cert.ps1
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msix.install.yaml -p msix -t ./dist/foo.msix
+      - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/sign-msix.ps1
+
+  acceptance:windows:install:msix:
+    desc: Install and verify MSIX package on Windows
+    platforms: [windows]
+    cmds:
+      - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/install-msix.ps1
 
   acceptance:pull:
     desc: Pull acceptance test images

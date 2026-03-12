@@ -91,6 +91,20 @@ jobs:
       - run: task acceptance
         env:
           TEST_PATTERN: "/${{ matrix.pkgFormat }}/${{ matrix.pkgPlatform }}/"
+  msix-acceptance-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: stable
+      - uses: go-task/setup-task@0ab1b2a65bc55236a3bc64cde78f80e20e8885c2 # v1.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task setup
+      - run: task acceptance
+        env:
+          TEST_PATTERN: "TestMSIXStructure"
   windows-build-pkgs:
     needs: [unit-tests]
     runs-on: windows-latest
@@ -131,8 +145,33 @@ jobs:
           key: ${{ env.sha_short }}
           enableCrossOsArchive: true
       - run: task acceptance:windows:install
+  msix-windows-install:
+    needs: [unit-tests]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: stable
+      - uses: go-task/setup-task@0ab1b2a65bc55236a3bc64cde78f80e20e8885c2 # v1.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and sign MSIX package
+        run: task acceptance:windows:package:msix
+      - name: Install MSIX package
+        run: task acceptance:windows:install:msix
+      - name: Verify installed app runs correctly
+        shell: pwsh
+        run: |
+          $pkg = Get-AppxPackage -Name "com.example.foo"
+          $exe = Join-Path $pkg.InstallLocation "app\testapp.exe"
+          $output = & $exe 2>&1
+          if ($output -ne "nfpm-msix-test-ok") {
+            Write-Error "Expected 'nfpm-msix-test-ok' but got '$output'"
+            exit 1
+          }
   dependabot:
-    needs: [license-check, unit-tests, acceptance-tests, install-windows-pkgs]
+    needs: [license-check, unit-tests, acceptance-tests, msix-acceptance-tests, install-windows-pkgs, msix-windows-install]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write

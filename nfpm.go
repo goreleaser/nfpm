@@ -132,7 +132,7 @@ type PackagerWithExtension interface {
 // Config contains the top level configuration for packages.
 type Config struct {
 	Info           `yaml:",inline" json:",inline"`
-	Overrides      map[string]*Overridables `yaml:"overrides,omitempty" json:"overrides,omitempty" jsonschema:"title=overrides,description=override some fields when packaging with a specific packager,enum=apk,enum=deb,enum=rpm"`
+	Overrides      map[string]*Overridables `yaml:"overrides,omitempty" json:"overrides,omitempty" jsonschema:"title=overrides,description=override some fields when packaging with a specific packager"`
 	envMappingFunc func(string) string
 }
 
@@ -280,6 +280,14 @@ func (c *Config) expandEnvVars() {
 
 	// RPM specific
 	c.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
+
+	// MSIX specific
+	c.MSIX.Signature.PFXFile = os.Expand(c.MSIX.Signature.PFXFile, c.envMappingFunc)
+	c.MSIX.Publisher = os.Expand(c.MSIX.Publisher, c.envMappingFunc)
+	msixPassphrase := os.Expand("$NFPM_MSIX_PASSPHRASE", c.envMappingFunc)
+	if msixPassphrase != "" {
+		c.MSIX.Signature.KeyPassphrase = msixPassphrase
+	}
 }
 
 // Info contains information about a single package.
@@ -361,6 +369,7 @@ type Overridables struct {
 	APK        APK            `yaml:"apk,omitempty" json:"apk,omitempty" jsonschema:"title=apk-specific settings"`
 	ArchLinux  ArchLinux      `yaml:"archlinux,omitempty" json:"archlinux,omitempty" jsonschema:"title=archlinux-specific settings"`
 	IPK        IPK            `yaml:"ipk,omitempty" json:"ipk,omitempty" jsonschema:"title=ipk-specific settings"`
+	MSIX       MSIX           `yaml:"msix,omitempty" json:"msix,omitempty" jsonschema:"title=msix-specific settings"`
 }
 
 type ArchLinux struct {
@@ -490,6 +499,72 @@ type IPKAlternative struct {
 	LinkName string `yaml:"link_name,omitempty" json:"link_name,omitempty" jsonschema:"title=link name"`
 }
 
+// MSIX contains configs that are only available on MSIX packages.
+type MSIX struct {
+	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msix nomenclature"`
+	Publisher    string            `yaml:"publisher" json:"publisher" jsonschema:"title=publisher identity,example=CN=MyCompany\\, O=MyCompany\\, C=US"`
+	Identity     MSIXIdentity      `yaml:"identity,omitempty" json:"identity,omitempty" jsonschema:"title=package identity"`
+	Properties   MSIXProperties    `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=package properties"`
+	Applications []MSIXApplication `yaml:"applications" json:"applications" jsonschema:"title=applications in the package"`
+	Dependencies MSIXDependencies  `yaml:"dependencies,omitempty" json:"dependencies,omitempty" jsonschema:"title=target device families"`
+	Capabilities MSIXCapabilities  `yaml:"capabilities,omitempty" json:"capabilities,omitempty" jsonschema:"title=package capabilities"`
+	Signature    MSIXSignature     `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=msix signature"`
+}
+
+// MSIXIdentity contains identity fields for MSIX packages.
+type MSIXIdentity struct {
+	ResourceID string `yaml:"resource_id,omitempty" json:"resource_id,omitempty" jsonschema:"title=resource identifier"`
+}
+
+// MSIXProperties contains display properties for MSIX packages.
+type MSIXProperties struct {
+	DisplayName          string `yaml:"display_name,omitempty" json:"display_name,omitempty" jsonschema:"title=display name"`
+	PublisherDisplayName string `yaml:"publisher_display_name,omitempty" json:"publisher_display_name,omitempty" jsonschema:"title=publisher display name"`
+	Logo                 string `yaml:"logo,omitempty" json:"logo,omitempty" jsonschema:"title=package logo path"`
+}
+
+// MSIXApplication describes an application entry in an MSIX package.
+type MSIXApplication struct {
+	ID             string             `yaml:"id" json:"id" jsonschema:"title=application ID"`
+	Executable     string             `yaml:"executable" json:"executable" jsonschema:"title=executable path in package"`
+	EntryPoint     string             `yaml:"entry_point,omitempty" json:"entry_point,omitempty" jsonschema:"title=entry point,default=Windows.FullTrustApplication"`
+	VisualElements MSIXVisualElements `yaml:"visual_elements,omitempty" json:"visual_elements,omitempty" jsonschema:"title=visual elements"`
+}
+
+// MSIXVisualElements contains visual presentation settings for an MSIX application.
+type MSIXVisualElements struct {
+	DisplayName       string `yaml:"display_name,omitempty" json:"display_name,omitempty"`
+	Description       string `yaml:"description,omitempty" json:"description,omitempty"`
+	BackgroundColor   string `yaml:"background_color,omitempty" json:"background_color,omitempty" jsonschema:"default=transparent"`
+	Square150x150Logo string `yaml:"square150x150_logo,omitempty" json:"square150x150_logo,omitempty"`
+	Square44x44Logo   string `yaml:"square44x44_logo,omitempty" json:"square44x44_logo,omitempty"`
+}
+
+// MSIXDependencies contains dependency information for MSIX packages.
+type MSIXDependencies struct {
+	TargetDeviceFamilies []MSIXTargetDeviceFamily `yaml:"target_device_families,omitempty" json:"target_device_families,omitempty"`
+}
+
+// MSIXTargetDeviceFamily describes a target device family for an MSIX package.
+type MSIXTargetDeviceFamily struct {
+	Name             string `yaml:"name" json:"name" jsonschema:"title=device family name,example=Windows.Desktop"`
+	MinVersion       string `yaml:"min_version" json:"min_version" jsonschema:"title=minimum OS version,example=10.0.17763.0"`
+	MaxVersionTested string `yaml:"max_version_tested" json:"max_version_tested" jsonschema:"title=max tested version,example=10.0.22621.0"`
+}
+
+// MSIXCapabilities contains capability declarations for MSIX packages.
+type MSIXCapabilities struct {
+	Capabilities       []string `yaml:"capabilities,omitempty" json:"capabilities,omitempty"`
+	DeviceCapabilities []string `yaml:"device_capabilities,omitempty" json:"device_capabilities,omitempty"`
+	Restricted         []string `yaml:"restricted,omitempty" json:"restricted,omitempty"`
+}
+
+// MSIXSignature contains signing configuration for MSIX packages.
+type MSIXSignature struct {
+	PFXFile       string `yaml:"pfx_file,omitempty" json:"pfx_file,omitempty" jsonschema:"title=PFX certificate file"`
+	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSIX_PASSPHRASE env var
+}
+
 // Scripts contains information about maintainer scripts for packages.
 type Scripts struct {
 	PreInstall  string `yaml:"preinstall,omitempty" json:"preinstall,omitempty" jsonschema:"title=pre install"`
@@ -517,7 +592,8 @@ func PrepareForPackager(info *Info, packager string) (err error) {
 	if info.Arch == "" &&
 		((packager == "deb" && info.Deb.Arch == "") ||
 			(packager == "rpm" && info.RPM.Arch == "") ||
-			(packager == "apk" && info.APK.Arch == "")) {
+			(packager == "apk" && info.APK.Arch == "") ||
+			(packager == "msix" && info.MSIX.Arch == "")) {
 		return ErrFieldEmpty{"arch"}
 	}
 	if info.Version == "" {
