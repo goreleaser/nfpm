@@ -568,7 +568,7 @@ func createChangelogInsideDataTar(
 		g,
 		"%x  %s\n",
 		digest.Sum(nil),
-		files.AsExplicitRelativePath(fileName),
+		files.AsRelativePath(fileName),
 	); err != nil {
 		return 0, err
 	}

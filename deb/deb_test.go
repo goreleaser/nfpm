@@ -839,6 +839,8 @@ func TestMD5Sums(t *testing.T) {
 
 		md5sum, fileName := parts[0], parts[1]
 
+		require.False(t, strings.HasPrefix(fileName, "./"), "md5sums path must not start with './': %s", fileName)
+
 		digest := md5.New() // nolint:gosec
 		_, err = digest.Write(extractFileFromTar(t, dataTar, fileName))
 		require.NoError(t, err)
