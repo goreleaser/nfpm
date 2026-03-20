@@ -2,8 +2,10 @@
 package msix
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"strconv"
@@ -270,7 +272,7 @@ func addContents(builder *msix.Builder, info *nfpm.Info) error {
 func configureSigning(builder *msix.Builder, info *nfpm.Info) error {
 	pfxPath := info.MSIX.Signature.PFXFile
 	if _, err := os.Stat(pfxPath); err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("PFX file not found: %w", err)
 		}
 		return fmt.Errorf("unable to access PFX file: %w", err)
