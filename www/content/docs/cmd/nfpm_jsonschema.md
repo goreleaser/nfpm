@@ -17,5 +17,5 @@ nfpm jsonschema [flags]
 
 ## See also
 
-* [nfpm](/docs/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK, Arch Linux, and ipk formats based on a YAML configuration file
+* [nfpm](/docs/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK, Arch Linux, ipk, and MSIX formats based on a YAML configuration file
 

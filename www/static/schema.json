@@ -196,6 +196,10 @@
 						"$ref": "#/$defs/IPK",
 						"title": "ipk-specific settings"
 					},
+					"msix": {
+						"$ref": "#/$defs/MSIX",
+						"title": "msix-specific settings"
+					},
 					"name": {
 						"type": "string",
 						"title": "package name"
@@ -648,6 +652,209 @@
 				"additionalProperties": false,
 				"type": "object"
 			},
+			"MSIX": {
+				"properties": {
+					"arch": {
+						"type": "string",
+						"title": "architecture in msix nomenclature"
+					},
+					"publisher": {
+						"type": "string",
+						"title": "publisher identity",
+						"examples": [
+							"CN=MyCompany, O=MyCompany, C=US"
+						]
+					},
+					"identity": {
+						"$ref": "#/$defs/MSIXIdentity",
+						"title": "package identity"
+					},
+					"properties": {
+						"$ref": "#/$defs/MSIXProperties",
+						"title": "package properties"
+					},
+					"applications": {
+						"items": {
+							"$ref": "#/$defs/MSIXApplication"
+						},
+						"type": "array",
+						"title": "applications in the package"
+					},
+					"dependencies": {
+						"$ref": "#/$defs/MSIXDependencies",
+						"title": "target device families"
+					},
+					"capabilities": {
+						"$ref": "#/$defs/MSIXCapabilities",
+						"title": "package capabilities"
+					},
+					"signature": {
+						"$ref": "#/$defs/MSIXSignature",
+						"title": "msix signature"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"publisher",
+					"applications"
+				]
+			},
+			"MSIXApplication": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"title": "application ID"
+					},
+					"executable": {
+						"type": "string",
+						"title": "executable path in package"
+					},
+					"entry_point": {
+						"type": "string",
+						"title": "entry point",
+						"default": "Windows.FullTrustApplication"
+					},
+					"visual_elements": {
+						"$ref": "#/$defs/MSIXVisualElements",
+						"title": "visual elements"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"id",
+					"executable"
+				]
+			},
+			"MSIXCapabilities": {
+				"properties": {
+					"capabilities": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"device_capabilities": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"restricted": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"MSIXDependencies": {
+				"properties": {
+					"target_device_families": {
+						"items": {
+							"$ref": "#/$defs/MSIXTargetDeviceFamily"
+						},
+						"type": "array"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"MSIXIdentity": {
+				"properties": {
+					"resource_id": {
+						"type": "string",
+						"title": "resource identifier"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"MSIXProperties": {
+				"properties": {
+					"display_name": {
+						"type": "string",
+						"title": "display name"
+					},
+					"publisher_display_name": {
+						"type": "string",
+						"title": "publisher display name"
+					},
+					"logo": {
+						"type": "string",
+						"title": "package logo path"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"MSIXSignature": {
+				"properties": {
+					"pfx_file": {
+						"type": "string",
+						"title": "PFX certificate file"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"MSIXTargetDeviceFamily": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "device family name",
+						"examples": [
+							"Windows.Desktop"
+						]
+					},
+					"min_version": {
+						"type": "string",
+						"title": "minimum OS version",
+						"examples": [
+							"10.0.17763.0"
+						]
+					},
+					"max_version_tested": {
+						"type": "string",
+						"title": "max tested version",
+						"examples": [
+							"10.0.22621.0"
+						]
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"name",
+					"min_version",
+					"max_version_tested"
+				]
+			},
+			"MSIXVisualElements": {
+				"properties": {
+					"display_name": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"background_color": {
+						"type": "string",
+						"default": "transparent"
+					},
+					"square150x150_logo": {
+						"type": "string"
+					},
+					"square44x44_logo": {
+						"type": "string"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
 			"Overridables": {
 				"properties": {
 					"replaces": {
@@ -744,6 +951,10 @@
 					"ipk": {
 						"$ref": "#/$defs/IPK",
 						"title": "ipk-specific settings"
+					},
+					"msix": {
+						"$ref": "#/$defs/MSIX",
+						"title": "msix-specific settings"
 					}
 				},
 				"additionalProperties": false,
