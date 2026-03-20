@@ -15,7 +15,7 @@ This is a subtle way of saying it won't have all features, nor all formats that 
 ## Features
 
 - **Zero Dependencies**: No Ruby, no tar, no external dependencies
-- **Multiple Formats**: deb, rpm, apk, ipk, and arch linux packages
+- **Multiple Formats**: deb, rpm, apk, ipk, arch linux, and msix packages
 - **Simple Configuration**: Single YAML file for all package formats
 - **Cross Platform**: Build on any platform Go supports
 - **Fast**: Written in Go for speed and efficiency

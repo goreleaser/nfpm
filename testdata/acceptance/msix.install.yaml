@@ -1,0 +1,28 @@
+name: com.example.foo
+arch: amd64
+version: 1.0.0
+license: MIT
+maintainer: "Test Company"
+description: "A test MSIX package for Windows installation"
+contents:
+  - src: ./dist/testapp.exe
+    dst: /app/testapp.exe
+  - src: ./testdata/acceptance/testapp/logo.png
+    dst: /Assets/logo.png
+msix:
+  publisher: "CN=TestCompany, O=TestCompany, C=US"
+  properties:
+    logo: Assets/logo.png
+  applications:
+    - id: TestApp
+      executable: app/testapp.exe
+      entry_point: Windows.FullTrustApplication
+      visual_elements:
+        display_name: "Test App"
+        description: "A test application"
+        background_color: transparent
+  dependencies:
+    target_device_families:
+      - name: Windows.Desktop
+        min_version: "10.0.17763.0"
+        max_version_tested: "10.0.22621.0"

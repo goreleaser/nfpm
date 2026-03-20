@@ -3,6 +3,8 @@
 package nfpm_test
 
 import (
+	"archive/zip"
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,6 +17,7 @@ import (
 	_ "github.com/goreleaser/nfpm/v2/arch"
 	_ "github.com/goreleaser/nfpm/v2/deb"
 	_ "github.com/goreleaser/nfpm/v2/ipk"
+	_ "github.com/goreleaser/nfpm/v2/msix"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
 	"github.com/stretchr/testify/require"
 )
@@ -415,4 +418,56 @@ func accept(t *testing.T, params acceptParms) {
 		target,
 		string(bts),
 	)
+}
+
+func TestMSIXStructure(t *testing.T) {
+	t.Parallel()
+	for _, arch := range []string{"amd64", "arm64"} {
+		arch := arch
+		t.Run(arch, func(t *testing.T) {
+			t.Parallel()
+
+			configFile := "./testdata/acceptance/msix.basic.yaml"
+			envFunc := func(s string) string {
+				switch s {
+				case "BUILD_ARCH":
+					return arch
+				case "SEMVER":
+					return "v1.0.0-0.1.b1+git.abcdefgh"
+				default:
+					return os.Getenv(s)
+				}
+			}
+
+			config, err := nfpm.ParseFileWithEnvMapping(configFile, envFunc)
+			require.NoError(t, err)
+
+			info, err := config.Get("msix")
+			require.NoError(t, err)
+			require.NoError(t, nfpm.Validate(info))
+
+			pkg, err := nfpm.Get("msix")
+			require.NoError(t, err)
+
+			var buf bytes.Buffer
+			require.NoError(t, pkg.Package(nfpm.WithDefaults(info), &buf))
+
+			// Open the MSIX as a ZIP archive and verify structure
+			reader, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+			require.NoError(t, err)
+
+			fileNames := make(map[string]bool)
+			for _, f := range reader.File {
+				fileNames[f.Name] = true
+			}
+
+			// Verify required MSIX structure files exist
+			require.True(t, fileNames["AppxManifest.xml"], "AppxManifest.xml must exist")
+			require.True(t, fileNames["AppxBlockMap.xml"], "AppxBlockMap.xml must exist")
+			require.True(t, fileNames["[Content_Types].xml"], "[Content_Types].xml must exist")
+
+			// Verify payload file exists
+			require.True(t, fileNames["app/fake.exe"], "payload file app/fake.exe must exist")
+		})
+	}
 }

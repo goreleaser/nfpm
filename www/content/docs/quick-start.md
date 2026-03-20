@@ -49,7 +49,7 @@ nfpm pkg --packager rpm --target /tmp/
 nfpm pkg --packager apk --target /tmp/
 ```
 
-You can also use `ipk` and `archlinux` as packagers.
+You can also use `ipk`, `archlinux`, and `msix` as packagers.
 
 {{% /steps %}}
 

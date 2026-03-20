@@ -543,6 +543,73 @@ ipk:
     - link_name: /usr/bin/editor
       target: /usr/bin/vim
       priority: 50
+
+# Custom configuration applied only to the MSIX packager (Windows).
+msix:
+  # msix specific architecture name that overrides "arch" without performing
+  # any replacements.
+  arch: x64
+
+  # Publisher identity. (required)
+  # Must match the subject of the signing certificate if signing is used.
+  publisher: "CN=MyCompany, O=MyCompany, C=US"
+
+  # Package identity settings.
+  identity:
+    # Optional resource identifier.
+    resource_id: ""
+
+  # Package display properties.
+  properties:
+    # Display name shown to users (defaults to package name).
+    display_name: "My Application"
+    # Publisher display name (defaults to package name).
+    publisher_display_name: "My Company"
+    # Path to a logo file in the package.
+    logo: "Assets/logo.png"
+
+  # Applications in the package. At least one is required.
+  applications:
+    - id: App
+      # Path to the executable in the package.
+      executable: app/myapp.exe
+      # Entry point (defaults to Windows.FullTrustApplication).
+      entry_point: Windows.FullTrustApplication
+      # Visual presentation settings.
+      visual_elements:
+        display_name: "My Application"
+        description: "My application description"
+        # Background color (defaults to transparent).
+        background_color: transparent
+        square150x150_logo: "Assets/Square150x150Logo.png"
+        square44x44_logo: "Assets/Square44x44Logo.png"
+
+  # Target device family dependencies.
+  # Defaults to Windows.Desktop with min version 10.0.17763.0.
+  dependencies:
+    target_device_families:
+      - name: Windows.Desktop
+        min_version: "10.0.17763.0"
+        max_version_tested: "10.0.22621.0"
+
+  # Package capabilities.
+  capabilities:
+    # Standard capabilities.
+    capabilities:
+      - internetClient
+    # Device capabilities.
+    device_capabilities:
+      - microphone
+    # Restricted capabilities (require special approval).
+    restricted:
+      - broadFileSystemAccess
+
+  # MSIX signing configuration.
+  # Uses PFX certificates (not PGP like Linux packagers).
+  signature:
+    # Path to the PFX certificate file.
+    pfx_file: certificate.pfx
+    # Passphrase is read from the NFPM_MSIX_PASSPHRASE environment variable.
 ```
 
 ## Templating

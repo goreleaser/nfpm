@@ -20,7 +20,7 @@ Thank you!
 
 ---
 
-{{< tabs items="Deb,RPM,APK,Arch Linux,IPK" >}}
+{{< tabs items="Deb,RPM,APK,Arch Linux,IPK,MSIX" >}}
 
 {{< tab >}}
 
@@ -111,6 +111,23 @@ Thank you!
 | `mips64le` | `mips64el` |
 | `ppc64le`  | `ppc64el`  |
 |   `s390`   |  `s390x`   |
+
+{{< /tab >}}
+
+{{< tab >}}
+
+|   Input    |   Value   |
+| :--------: | :-------: |
+|  `amd64`   |   `x64`   |
+|  `x86_64`  |   `x64`   |
+|   `386`    |   `x86`   |
+|  `i386`    |   `x86`   |
+|  `i686`    |   `x86`   |
+|  `arm64`   |  `arm64`  |
+| `aarch64`  |  `arm64`  |
+|   `arm`    |   `arm`   |
+|   `arm7`   |   `arm`   |
+|   `all`    | `neutral` |
 
 {{< /tab >}}
 
