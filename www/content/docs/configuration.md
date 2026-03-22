@@ -182,14 +182,16 @@ contents:
     dst: /etc
     type: tree
 
-  # This will replicate the directory structure under some/directory at /opt/somesoft.
-  # (`force_implicit_dirs` marks dirs that should be *not* be owned by the package,
-  #  outside of the normal set of such system-owned directories like `/etc`)
+  # It is possible to add an entire directory structure without automatically
+  # marking all directories within the structure as owned by this package.
+  # In this case, `disown_subtree` is used to mark `/opt` and all
+  # subdirectories that end with `-common` as *not* owned by this package.
   - src: some/directory/
-    dst: /opt/somesoft
+    dst: /opt
     type: tree
-    force_implicit_dirs:
-      - /opt/somesoft
+    disown_subtree:
+      - /opt
+      - /opt/*-common
 
   # Simple config file
   - src: path/to/local/foo.conf
