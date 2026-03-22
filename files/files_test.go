@@ -1106,3 +1106,43 @@ contents:
 		require.Equal(t, expect[file.Destination], file.Type, "invalid type for %s", file.Destination)
 	}
 }
+
+func TestTreeWithDisown(t *testing.T) {
+	files, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source: filepath.Join("testdata", "disown"),
+				Type:   files.TypeTree,
+				DisownSubtree: []string{
+					"/disowned-dir",
+					"*/nested-disowned",
+					"owned-dir/nested-disowned/",
+					"*matched-dir",
+				},
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	expect := map[string]string{
+		"/disowned-matched-dir/":                 "implicit dir",
+		"/disowned-matched-dir/file.txt":         "file",
+		"/disowned-dir/":                         "implicit dir",
+		"/disowned-dir/nested-disowned/":         "implicit dir",
+		"/disowned-dir/nested-disowned/file.txt": "file",
+		"/disowned-dir/nested-owned/":            "dir",
+		"/disowned-dir/nested-owned/file.txt":    "file",
+		"/owned-dir/":                            "dir",
+		"/owned-dir/nested-disowned/":            "implicit dir",
+		"/owned-dir/nested-disowned/file.txt":    "file",
+		"/owned-dir/file.txt":                    "file",
+	}
+
+	for _, file := range files {
+		require.Equal(t, expect[file.Destination], file.Type, "invalid type for %s", file.Destination)
+	}
+}
