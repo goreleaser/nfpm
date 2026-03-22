@@ -68,13 +68,13 @@ const (
 // Content describes the source and destination
 // of one file to copy into a package.
 type Content struct {
-	Source            string           `yaml:"src,omitempty" json:"src,omitempty"`
-	Destination       string           `yaml:"dst" json:"dst"`
-	Type              string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=config|missingok,enum=doc,enum=license,enum=licence,enum=readme,enum=dir,enum=tree,enum=config|tree,enum=config|noreplace|tree,enum=config|missingok|tree,enum=,default="`
-	Packager          string           `yaml:"packager,omitempty" json:"packager,omitempty"`
-	FileInfo          *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
-	Expand            bool             `yaml:"expand,omitempty" json:"expand,omitempty"`
-	ForceImplicitDirs []string         `yaml:"force_implicit_dirs,omitempty" json:"force_implicit_dirs,omitempty"`
+	Source        string           `yaml:"src,omitempty" json:"src,omitempty"`
+	Destination   string           `yaml:"dst" json:"dst"`
+	Type          string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=config|missingok,enum=doc,enum=license,enum=licence,enum=readme,enum=dir,enum=tree,enum=config|tree,enum=config|noreplace|tree,enum=config|missingok|tree,enum=,default="`
+	Packager      string           `yaml:"packager,omitempty" json:"packager,omitempty"`
+	FileInfo      *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
+	Expand        bool             `yaml:"expand,omitempty" json:"expand,omitempty"`
+	DisownSubtree []string         `yaml:"disown_subtree,omitempty" json:"disown_subtree,omitempty"`
 }
 
 type ContentFileInfo struct {
@@ -507,6 +507,10 @@ func addTree(
 	}
 
 	return filepath.WalkDir(tree.Source, func(path string, d fs.DirEntry, err error) error {
+		if path == tree.Source && (tree.Destination == "/" || tree.Destination == "") {
+			return nil
+		}
+
 		if err != nil {
 			return err
 		}
@@ -533,7 +537,7 @@ func addTree(
 			c.Destination = NormalizeAbsoluteDirPath(destination)
 			c.FileInfo.Mode = info.Mode() &^ umask
 			c.FileInfo.MTime = info.ModTime()
-			if isForcedImplicitDir(c.Destination, tree.ForceImplicitDirs) || ownedByFilesystem(c.Destination) {
+			if shouldDisown(c.Destination, tree.DisownSubtree) || ownedByFilesystem(c.Destination) {
 				c.Type = TypeImplicitDir
 			}
 		case d.Type()&os.ModeSymlink != 0:
@@ -587,7 +591,7 @@ func contentCollisionError(newc *Content, present *Content) error {
 	)
 }
 
-func isForcedImplicitDir(path string, implicitPaths []string) bool {
+func shouldDisown(path string, implicitPaths []string) bool {
 	if len(implicitPaths) == 0 {
 		return false
 	}
@@ -595,6 +599,10 @@ func isForcedImplicitDir(path string, implicitPaths []string) bool {
 	path = ToNixPath(path)
 
 	for _, implicitPath := range implicitPaths {
+		if !strings.HasPrefix(implicitPath, "/") {
+			implicitPath = "/" + implicitPath
+		}
+
 		match, _ := filepath.Match(implicitPath, path)
 		if match || path == implicitPath {
 			return true
