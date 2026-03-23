@@ -17,10 +17,10 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go install github.com/goreleaser/sponsors@latest
-      - run: sponsors generate --config gh://goreleaser/sponsors/.github/sponsors/sponsors.yml .github/sponsors.json
+      - run: sponsors generate --config gh://goreleaser/.github/sponsors.yml sponsors.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: sponsors apply .github/sponsors.json gh://goreleaser/sponsors/.github/sponsors/readme.tpl.md README.md
+      - run: sponsors apply sponsors.json gh://goreleaser/.github/sponsors.tpl.md README.md
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update sponsors"
