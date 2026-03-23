@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: stable
-      - uses: go-task/setup-task@0ab1b2a65bc55236a3bc64cde78f80e20e8885c2 # v1.0.0
+      - uses: go-task/setup-task@3be4020d41929789a01026e0e427a4321ce0ad44 # v2.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: "go install github.com/santhosh-tekuri/jsonschema/cmd/jv@latest"
