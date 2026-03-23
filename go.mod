@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Masterminds/semver/v3 v3.4.0
-	github.com/ProtonMail/go-crypto v1.4.0
+	github.com/ProtonMail/go-crypto v1.4.1
 	github.com/ProtonMail/gopenpgp/v2 v2.7.1
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-version v0.2.2
@@ -14,7 +14,7 @@ require (
 	github.com/goreleaser/chglog v0.7.4
 	github.com/goreleaser/fileglob v1.4.0
 	github.com/invopop/jsonschema v0.13.0
-	github.com/klauspost/compress v1.18.4
+	github.com/klauspost/compress v1.18.5
 	github.com/klauspost/pgzip v1.2.6
 	github.com/muesli/mango-cobra v1.3.0
 	github.com/muesli/roff v0.1.0
