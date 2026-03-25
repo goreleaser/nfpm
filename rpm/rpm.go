@@ -480,13 +480,17 @@ func asRPMFile(content *files.Content, fileType rpmpack.FileType) (*rpmpack.RPMF
 func normalizeFileMode(mode fs.FileMode) uint {
 	rpmMode := uint(mode.Perm())
 
-	if mode&fs.ModeSetuid != 0 {
+	// Go's os.FileMode stores setuid/setgid/sticky at high bits
+	// (fs.ModeSetuid, etc.), but YAML-parsed octal values like 04755
+	// place them at the traditional Unix positions (0o4000, 0o2000,
+	// 0o1000). We must check both encodings.
+	if mode&fs.ModeSetuid != 0 || uint(mode)&0o4000 != 0 {
 		rpmMode |= 0o4000
 	}
-	if mode&fs.ModeSetgid != 0 {
+	if mode&fs.ModeSetgid != 0 || uint(mode)&0o2000 != 0 {
 		rpmMode |= 0o2000
 	}
-	if mode&fs.ModeSticky != 0 {
+	if mode&fs.ModeSticky != 0 || uint(mode)&0o1000 != 0 {
 		rpmMode |= 0o1000
 	}
 

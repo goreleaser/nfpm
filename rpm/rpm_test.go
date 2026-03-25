@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -1148,6 +1149,10 @@ func TestDirectories(t *testing.T) {
 }
 
 func TestTreeDirectoriesUseUnixMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not preserve Unix directory permission bits")
+	}
+
 	root := t.TempDir()
 	treeDir := filepath.Join(root, "tree")
 	nestedDir := filepath.Join(treeDir, "nested")
