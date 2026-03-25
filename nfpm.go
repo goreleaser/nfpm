@@ -278,6 +278,17 @@ func (c *Config) expandEnvVars() {
 	}
 	c.IPK.Predepends = c.expandEnvVarsStringSlice(c.IPK.Predepends)
 
+	// XBPS specific
+	c.XBPS.Arch = os.Expand(c.XBPS.Arch, c.envMappingFunc)
+	c.XBPS.ShortDesc = os.Expand(c.XBPS.ShortDesc, c.envMappingFunc)
+	c.XBPS.Tags = c.expandEnvVarsStringSlice(c.XBPS.Tags)
+	c.XBPS.Reverts = c.expandEnvVarsStringSlice(c.XBPS.Reverts)
+	for i := range c.XBPS.Alternatives {
+		c.XBPS.Alternatives[i].Group = os.Expand(c.XBPS.Alternatives[i].Group, c.envMappingFunc)
+		c.XBPS.Alternatives[i].LinkName = os.Expand(c.XBPS.Alternatives[i].LinkName, c.envMappingFunc)
+		c.XBPS.Alternatives[i].Target = os.Expand(c.XBPS.Alternatives[i].Target, c.envMappingFunc)
+	}
+
 	// RPM specific
 	c.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
 
@@ -369,6 +380,7 @@ type Overridables struct {
 	APK        APK            `yaml:"apk,omitempty" json:"apk,omitempty" jsonschema:"title=apk-specific settings"`
 	ArchLinux  ArchLinux      `yaml:"archlinux,omitempty" json:"archlinux,omitempty" jsonschema:"title=archlinux-specific settings"`
 	IPK        IPK            `yaml:"ipk,omitempty" json:"ipk,omitempty" jsonschema:"title=ipk-specific settings"`
+	XBPS       XBPS           `yaml:"xbps,omitempty" json:"xbps,omitempty" jsonschema:"title=xbps-specific settings"`
 	MSIX       MSIX           `yaml:"msix,omitempty" json:"msix,omitempty" jsonschema:"title=msix-specific settings"`
 }
 
@@ -499,6 +511,23 @@ type IPKAlternative struct {
 	LinkName string `yaml:"link_name,omitempty" json:"link_name,omitempty" jsonschema:"title=link name"`
 }
 
+// XBPS contains configs that are only available on XBPS packages.
+type XBPS struct {
+	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in xbps nomenclature"`
+	ShortDesc    string            `yaml:"short_desc,omitempty" json:"short_desc,omitempty" jsonschema:"title=short one-line package description"`
+	Preserve     bool              `yaml:"preserve,omitempty" json:"preserve,omitempty" jsonschema:"title=preserve package files on update"`
+	Tags         []string          `yaml:"tags,omitempty" json:"tags,omitempty" jsonschema:"title=package tags"`
+	Reverts      []string          `yaml:"reverts,omitempty" json:"reverts,omitempty" jsonschema:"title=versions this package reverts"`
+	Alternatives []XBPSAlternative `yaml:"alternatives,omitempty" json:"alternatives,omitempty" jsonschema:"title=xbps alternatives"`
+}
+
+// XBPSAlternative represents an alternative for an XBPS package.
+type XBPSAlternative struct {
+	Group    string `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=alternative group"`
+	LinkName string `yaml:"link_name,omitempty" json:"link_name,omitempty" jsonschema:"title=symlink path"`
+	Target   string `yaml:"target,omitempty" json:"target,omitempty" jsonschema:"title=target path"`
+}
+
 // MSIX contains configs that are only available on MSIX packages.
 type MSIX struct {
 	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msix nomenclature"`
@@ -593,6 +622,7 @@ func PrepareForPackager(info *Info, packager string) (err error) {
 		((packager == "deb" && info.Deb.Arch == "") ||
 			(packager == "rpm" && info.RPM.Arch == "") ||
 			(packager == "apk" && info.APK.Arch == "") ||
+			(packager == "xbps" && info.XBPS.Arch == "") ||
 			(packager == "msix" && info.MSIX.Arch == "")) {
 		return ErrFieldEmpty{"arch"}
 	}
@@ -617,7 +647,7 @@ func Validate(info *Info) (err error) {
 	if info.Name == "" {
 		return ErrFieldEmpty{"name"}
 	}
-	if info.Arch == "" && (info.Deb.Arch == "" || info.RPM.Arch == "" || info.APK.Arch == "") {
+	if info.Arch == "" && (info.Deb.Arch == "" || info.RPM.Arch == "" || info.APK.Arch == "" || info.XBPS.Arch == "") {
 		return ErrFieldEmpty{"arch"}
 	}
 	if info.Version == "" {

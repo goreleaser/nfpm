@@ -10,6 +10,7 @@ import (
 	_ "github.com/goreleaser/nfpm/v2/ipk"  // ipk packager
 	_ "github.com/goreleaser/nfpm/v2/msix" // msix packager
 	_ "github.com/goreleaser/nfpm/v2/rpm"  // rpm packager
+	_ "github.com/goreleaser/nfpm/v2/xbps" // xbps packager
 	"github.com/spf13/cobra"
 )
 
@@ -37,8 +38,8 @@ func newRootCmd(version goversion.Info, exit func(int)) *rootCmd {
 	}
 	cmd := &cobra.Command{
 		Use:               "nfpm",
-		Short:             "Packages apps on RPM, Deb, APK, Arch Linux, ipk, and MSIX formats based on a YAML configuration file",
-		Long:              `nFPM is a simple and 0-dependencies apk, arch, deb, ipk, msix, and rpm packager written in Go.`,
+		Short:             "Packages apps on RPM, Deb, APK, Arch Linux, ipk, MSIX, and XBPS formats based on a YAML configuration file",
+		Long:              `nFPM is a simple and 0-dependencies apk, arch, deb, ipk, msix, rpm, and xbps packager written in Go.`,
 		Version:           version.String(),
 		SilenceUsage:      true,
 		SilenceErrors:     true,
