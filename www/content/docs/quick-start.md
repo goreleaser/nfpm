@@ -47,9 +47,26 @@ Use [`nfpm package`](/docs/cmd/nfpm_package) to create your packages:
 nfpm pkg --packager deb --target /tmp/
 nfpm pkg --packager rpm --target /tmp/
 nfpm pkg --packager apk --target /tmp/
+nfpm pkg --packager xbps --target /tmp/
 ```
 
-You can also use `ipk`, `archlinux`, and `msix` as packagers.
+You can also use `ipk`, `archlinux`, `msix`, and `xbps` as packagers.
+
+### Test an XBPS package on Void Linux
+
+For XBPS packages, the usual validation path is a local repository plus the normal XBPS tools:
+
+```sh
+mkdir -p /tmp/xbps-repo
+cp /tmp/my-package.xbps /tmp/xbps-repo/
+xbps-rindex -a /tmp/xbps-repo/my-package.xbps
+sudo xbps-install -y --repository=/tmp/xbps-repo my-package
+xbps-query my-package
+sudo xbps-reconfigure -f my-package
+sudo xbps-remove -Ry my-package
+```
+
+Local repositories do not need signatures.
 
 {{% /steps %}}
 

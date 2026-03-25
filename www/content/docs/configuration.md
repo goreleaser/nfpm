@@ -324,6 +324,10 @@ overrides:
     depends:
       - baz
       - some-lib
+  xbps:
+    depends:
+      - baz>=1.2.3_1
+      - some-lib
 
 # Custom configuration applied only to the RPM packager.
 rpm:
@@ -543,6 +547,38 @@ ipk:
     - link_name: /usr/bin/editor
       target: /usr/bin/vim
       priority: 50
+
+# Custom configuration applied only to the XBPS packager.
+xbps:
+  # xbps specific architecture name that overrides "arch" without performing
+  # any replacements.
+  arch: x86_64
+
+  # Explicit short package description. If omitted, the first line of the
+  # top-level description is used.
+  short_desc: Explicit short package description
+
+  # Preserve package files on update.
+  preserve: true
+
+  # Tags for package categorization.
+  tags:
+    - cli
+    - utilities
+
+  # Versions this package reverts.
+  reverts:
+    - 1.2.2_1
+
+  # Alternatives allow this package to provide a generic command via symlinks.
+  alternatives:
+    - group: editor
+      link_name: /usr/bin/editor
+      target: /usr/bin/vim
+
+  # For XBPS, the top-level description becomes the long description.
+  # Files declared as config, config|noreplace, or config|missingok are
+  # recorded as configuration files in package metadata.
 
 # Custom configuration applied only to the MSIX packager (Windows).
 msix:

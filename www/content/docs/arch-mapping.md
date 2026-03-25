@@ -20,7 +20,7 @@ Thank you!
 
 ---
 
-{{< tabs items="Deb,RPM,APK,Arch Linux,IPK,MSIX" >}}
+{{< tabs items="Deb,RPM,APK,Arch Linux,IPK,MSIX,XBPS" >}}
 
 {{< tab >}}
 
@@ -128,6 +128,24 @@ Thank you!
 |   `arm`    |   `arm`   |
 |   `arm7`   |   `arm`   |
 |   `all`    | `neutral` |
+
+{{< /tab >}}
+
+
+{{< tab >}}
+
+|   Input   |   Value   |
+| :-------: | :-------: |
+|   `all`   | `noarch`  |
+|  `amd64`  | `x86_64`  |
+| `x86_64`  | `x86_64`  |
+|   `386`   |  `i686`   |
+|  `i386`   |  `i686`   |
+|  `i686`   |  `i686`   |
+|  `arm64`  | `aarch64` |
+| `aarch64` | `aarch64` |
+|  `arm6`   | `armv6l`  |
+|  `arm7`   | `armv7l`  |
 
 {{< /tab >}}
 
