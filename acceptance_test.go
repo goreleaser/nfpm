@@ -87,50 +87,19 @@ func TestUpgrade(t *testing.T) {
 						if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
 							t.Skip("ppc64le arch not supported in pipeline")
 						}
+						if testFormat == "xbps" {
+							t.Skip("covered by TestXBPSAcceptance")
+						}
 
-						arch := strings.ReplaceAll(testArch, "armv", "arm/")
-						oldpkg := fmt.Sprintf("tmp/%s_%s.v1.%s", testName, testArch, testFormat)
-						target := fmt.Sprintf("./testdata/acceptance/%s", oldpkg)
-						require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0o700))
-
-						config, err := nfpm.ParseFileWithEnvMapping(fmt.Sprintf("./testdata/acceptance/%s.v1.yaml", testName),
-							func(s string) string {
-								switch s {
-								case "BUILD_ARCH":
-									return strings.ReplaceAll(arch, "/", "")
-								case "SEMVER":
-									return "v1.0.0-0.1.b1+git.abcdefgh"
-								default:
-									return os.Getenv(s)
-								}
+						acceptWithOldPackage(t, testName, testFormat, testArch,
+							fmt.Sprintf("%s.v1.yaml", testName),
+							fmt.Sprintf("%s.v2.yaml", testName),
+							dockerParams{
+								File:   fmt.Sprintf("%s.dockerfile", testFormat),
+								Target: testName,
+								Arch:   testArch,
 							},
 						)
-						require.NoError(t, err)
-
-						info, err := config.Get(testFormat)
-						require.NoError(t, err)
-						require.NoError(t, nfpm.Validate(info))
-
-						pkg, err := nfpm.Get(testFormat)
-						require.NoError(t, err)
-
-						f, err := os.Create(target)
-						require.NoError(t, err)
-						t.Cleanup(func() { require.NoError(t, f.Close()) })
-						info.Target = target
-						require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
-
-						accept(t, acceptParms{
-							Name:   fmt.Sprintf("%s_%s.v2", testName, testArch),
-							Conf:   fmt.Sprintf("%s.v2.yaml", testName),
-							Format: testFormat,
-							Docker: dockerParams{
-								File:      fmt.Sprintf("%s.dockerfile", testFormat),
-								Target:    testName,
-								Arch:      testArch,
-								BuildArgs: []string{fmt.Sprintf("oldpackage=%s", oldpkg)},
-							},
-						})
 					})
 				}(t, name, format, arch)
 			}
@@ -358,6 +327,72 @@ type dockerParams struct {
 	Target    string
 	Arch      string
 	BuildArgs []string
+	NoCache   bool
+}
+
+func acceptPackageTarget(t *testing.T, stageName, packageName string) (string, string) {
+	t.Helper()
+
+	relDir := filepath.Join("tmp", stageName)
+	absDir := filepath.Join("./testdata/acceptance", relDir)
+	require.NoError(t, os.MkdirAll(absDir, 0o700))
+
+	relTarget := filepath.ToSlash(filepath.Join(relDir, packageName))
+	absTarget := filepath.Join("./testdata/acceptance", relTarget)
+	return relTarget, absTarget
+}
+
+func acceptWithOldPackage(t *testing.T, name, format, arch, oldConf, newConf string, docker dockerParams) {
+	t.Helper()
+
+	mappedArch := strings.ReplaceAll(arch, "armv", "arm/")
+	oldPackageName := fmt.Sprintf("%s_%s.v1.%s", name, arch, format)
+	require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0o700))
+
+	config, err := nfpm.ParseFileWithEnvMapping(filepath.Join("./testdata/acceptance", oldConf),
+		func(s string) string {
+			switch s {
+			case "BUILD_ARCH":
+				return strings.ReplaceAll(mappedArch, "/", "")
+			case "SEMVER":
+				return "v1.0.0-0.1.b1+git.abcdefgh"
+			default:
+				return os.Getenv(s)
+			}
+		},
+	)
+	require.NoError(t, err)
+
+	info, err := config.Get(format)
+	require.NoError(t, err)
+	require.NoError(t, nfpm.Validate(info))
+
+	pkg, err := nfpm.Get(format)
+	require.NoError(t, err)
+
+	preparedInfo := nfpm.WithDefaults(info)
+	if format == "xbps" {
+		oldPackageName = pkg.ConventionalFileName(preparedInfo)
+	}
+	oldpkg, target := acceptPackageTarget(t, fmt.Sprintf("%s_%s.v1", name, arch), oldPackageName)
+
+	f, err := os.Create(target)
+	require.NoError(t, err)
+	preparedInfo.Target = target
+	require.NoError(t, pkg.Package(preparedInfo, f))
+	require.NoError(t, f.Close())
+
+	accept(t, acceptParms{
+		Name:   fmt.Sprintf("%s_%s.v2", name, arch),
+		Conf:   newConf,
+		Format: format,
+		Docker: dockerParams{
+			File:      docker.File,
+			Target:    docker.Target,
+			Arch:      docker.Arch,
+			BuildArgs: append(append([]string{}, docker.BuildArgs...), fmt.Sprintf("oldpackage=%s", oldpkg)),
+		},
+	})
 }
 
 func accept(t *testing.T, params acceptParms) {
@@ -365,10 +400,7 @@ func accept(t *testing.T, params acceptParms) {
 
 	arch := strings.ReplaceAll(params.Docker.Arch, "armv", "arm/")
 	configFile := filepath.Join("./testdata/acceptance/", params.Conf)
-	tmp, err := filepath.Abs("./testdata/acceptance/tmp")
-	require.NoError(t, err)
 	packageName := params.Name + "." + params.Format
-	require.NoError(t, os.MkdirAll(tmp, 0o700))
 
 	envFunc := func(s string) string {
 		switch s {
@@ -394,15 +426,20 @@ func accept(t *testing.T, params acceptParms) {
 	if params.Format == "xbps" {
 		packageName = pkg.ConventionalFileName(preparedInfo)
 	}
-	target := filepath.Join(tmp, packageName)
+	relTarget, target := acceptPackageTarget(t, params.Name, packageName)
 
 	cmdArgs := []string{
 		"build", "--rm", "--force-rm",
 		"--platform", fmt.Sprintf("linux/%s", arch),
+	}
+	if params.Docker.NoCache {
+		cmdArgs = append(cmdArgs, "--no-cache")
+	}
+	cmdArgs = append(cmdArgs,
 		"-f", params.Docker.File,
 		"--target", params.Docker.Target,
-		"--build-arg", "package=" + filepath.Join("tmp", packageName),
-	}
+		"--build-arg", "package="+relTarget,
+	)
 	for _, arg := range params.Docker.BuildArgs {
 		cmdArgs = append(cmdArgs, "--build-arg", arg)
 	}
@@ -439,11 +476,38 @@ func TestXBPSAcceptance(t *testing.T) {
 				Conf:   "xbps.lifecycle.yaml",
 				Format: "xbps",
 				Docker: dockerParams{
-					File:   "xbps.dockerfile",
-					Target: "lifecycle",
-					Arch:   arch,
+					File:    "xbps.dockerfile",
+					Target:  "lifecycle",
+					Arch:    arch,
+					NoCache: true,
 				},
 			})
+		})
+		t.Run(fmt.Sprintf("xbps/%s/upgrade", arch), func(t *testing.T) {
+			t.Parallel()
+			acceptWithOldPackage(t, "xbps_upgrade", "xbps", arch,
+				"xbps.upgrade.v1.yaml",
+				"xbps.upgrade.v2.yaml",
+				dockerParams{
+					File:    "xbps.dockerfile",
+					Target:  "upgrade",
+					Arch:    arch,
+					NoCache: true,
+				},
+			)
+		})
+		t.Run(fmt.Sprintf("xbps/%s/preserve", arch), func(t *testing.T) {
+			t.Parallel()
+			acceptWithOldPackage(t, "xbps_preserve", "xbps", arch,
+				"xbps.preserve.v1.yaml",
+				"xbps.preserve.v2.yaml",
+				dockerParams{
+					File:    "xbps.dockerfile",
+					Target:  "preserve",
+					Arch:    arch,
+					NoCache: true,
+				},
+			)
 		})
 	}
 }
