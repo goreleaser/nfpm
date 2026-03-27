@@ -27,6 +27,7 @@ RUN test -L /etc/foo/whatever-link.conf
 RUN test "$(readlink /etc/foo/whatever-link.conf)" = "/etc/foo/whatever.conf"
 RUN xbps-query --repository=/var/cache/xbps foo | grep '^pkgver: foo-'
 RUN xbps-query foo | grep '^state: installed$'
+RUN grep -F '<key>architecture</key><string>x86_64</string>' /tmp/props.plist
 RUN grep -F '<key>short_desc</key><string>Foo bar</string>' /tmp/props.plist
 RUN grep -F '<key>conf_files</key><array><string>/etc/foo/whatever.conf</string></array>' /tmp/props.plist
 RUN test -f /tmp/postinstall-proof
@@ -71,6 +72,15 @@ RUN test -f /tmp/preremove-proof
 RUN grep 'Upgrade' /tmp/preremove-proof
 RUN test -f /tmp/postinstall-proof
 RUN grep 'Upgrade' /tmp/postinstall-proof
+
+
+# ---- metadata / noarch test ----
+FROM test_base AS metadata
+RUN xbps-install -yR /var/cache/xbps foo-noarch
+RUN test -f /usr/bin/foo-noarch-real
+RUN xbps-query foo-noarch | grep '^state: installed$'
+RUN grep -F '<key>architecture</key><string>noarch</string>' /tmp/props.plist
+RUN grep -F '<key>alternatives</key><dict><key>foo-noarch</key><array><string>/usr/bin/foo-noarch:/usr/bin/foo-noarch-real</string></array></dict>' /tmp/props.plist
 
 
 # ---- preserve test ----

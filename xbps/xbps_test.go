@@ -134,6 +134,14 @@ func TestEnsureValidArchOverride(t *testing.T) {
 	require.Equal(t, "ppc-musl", normalized.Arch)
 }
 
+func TestEnsureValidArchNoarchNormalized(t *testing.T) {
+	info := exampleInfo()
+	info.Arch = "noarch"
+	normalized, err := ensureValidArch(info)
+	require.NoError(t, err)
+	require.Equal(t, "noarch", normalized.Arch)
+}
+
 func TestEnsureValidArchUnknown(t *testing.T) {
 	info := exampleInfo()
 	info.Arch = "loong64"

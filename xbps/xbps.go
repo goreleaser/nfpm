@@ -28,6 +28,7 @@ func init() {
 // nolint: gochecknoglobals
 var archToXBPS = map[string]string{
 	"all":     "noarch",
+	"noarch":  "noarch",
 	"amd64":   "x86_64",
 	"x86_64":  "x86_64",
 	"386":     "i686",

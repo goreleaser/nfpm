@@ -509,6 +509,20 @@ func TestXBPSAcceptance(t *testing.T) {
 				},
 			)
 		})
+		t.Run(fmt.Sprintf("xbps/%s/metadata", arch), func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:   fmt.Sprintf("metadata_%s", arch),
+				Conf:   "xbps.noarch.yaml",
+				Format: "xbps",
+				Docker: dockerParams{
+					File:    "xbps.dockerfile",
+					Target:  "metadata",
+					Arch:    arch,
+					NoCache: true,
+				},
+			})
+		})
 	}
 }
 

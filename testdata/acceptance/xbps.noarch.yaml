@@ -1,0 +1,21 @@
+name: "foo-noarch"
+arch: "all"
+platform: "linux"
+version: "v1.2.3"
+release: "1"
+maintainer: "Foo Bar"
+description: |
+  Foo noarch acceptance package.
+
+  Exercises XBPS noarch metadata and alternatives wiring.
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/fake
+    dst: /usr/bin/foo-noarch-real
+xbps:
+  short_desc: "Foo noarch acceptance package"
+  alternatives:
+    - group: foo-noarch
+      link_name: /usr/bin/foo-noarch
+      target: /usr/bin/foo-noarch-real
