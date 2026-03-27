@@ -258,6 +258,25 @@ func TestValidate(t *testing.T) {
 			},
 		}))
 	})
+
+	t.Run("packager-specific arch override", func(t *testing.T) {
+		testCases := map[string]nfpm.Info{
+			"deb":       {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{Deb: nfpm.Deb{Arch: "amd64"}}},
+			"rpm":       {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{RPM: nfpm.RPM{Arch: "x86_64"}}},
+			"apk":       {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{APK: nfpm.APK{Arch: "x86_64"}}},
+			"archlinux": {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{ArchLinux: nfpm.ArchLinux{Arch: "x86_64"}}},
+			"ipk":       {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{IPK: nfpm.IPK{Arch: "all"}}},
+			"xbps":      {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{XBPS: nfpm.XBPS{Arch: "x86_64"}}},
+			"msix":      {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{MSIX: nfpm.MSIX{Arch: "x64"}}},
+		}
+
+		for name, info := range testCases {
+			name, info := name, info
+			t.Run(name, func(t *testing.T) {
+				require.NoError(t, nfpm.Validate(&info))
+			})
+		}
+	})
 }
 
 func TestValidateError(t *testing.T) {
