@@ -34,6 +34,12 @@ vendor: "FooBarCorp"
 homepage: "http://example.com"
 license: "MIT"
 changelog: "changelog.yml"
+xbps:
+  short_desc: "FooBar package"
+  alternatives:
+    - group: foo
+      link_name: /usr/bin/foobar
+      target: /usr/bin/foo
 contents:
   - src: ./foo
     dst: /usr/bin/foo
