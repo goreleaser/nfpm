@@ -1,0 +1,25 @@
+name: "foo-preserve"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v2.0.0"
+release: "1"
+maintainer: "Foo Bar"
+description: |
+  Foo preserve test package.
+
+  Exercises package-level preserve behavior during XBPS upgrades.
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/acceptance/xbps.preserve.v2.txt
+    dst: /usr/share/foo-preserve/preserved/v2.txt
+  - src: ./testdata/acceptance/xbps.current.v2.txt
+    dst: /usr/share/foo-preserve/current.txt
+scripts:
+  preinstall: ./testdata/acceptance/scripts/preinstall.sh
+  postinstall: ./testdata/acceptance/scripts/postinstall.sh
+  preremove: ./testdata/acceptance/scripts/preremove.sh
+  postremove: ./testdata/acceptance/scripts/postremove.sh
+xbps:
+  short_desc: "Foo preserve test package"
+  preserve: true

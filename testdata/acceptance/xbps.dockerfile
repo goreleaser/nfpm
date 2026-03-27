@@ -73,13 +73,14 @@ COPY ${oldpackage} /tmp/old/
 RUN mkdir -p /var/cache/xbps && cp /tmp/old/*.xbps /var/cache/xbps/
 RUN xbps-rindex -a /var/cache/xbps/*.xbps
 RUN xbps-install -yR /var/cache/xbps foo-preserve
-RUN grep '^version 1$' /usr/share/foo-preserve/preserved.txt
-RUN echo modified > /usr/share/foo-preserve/preserved.txt
+RUN grep '^version 1$' /usr/share/foo-preserve/preserved/v1.txt
+RUN grep '^version 1$' /usr/share/foo-preserve/current.txt
 RUN cp /tmp/new/*.xbps /var/cache/xbps/
 RUN xbps-rindex -a /var/cache/xbps/*.xbps
 RUN xbps-install -yR /var/cache/xbps foo-preserve
 RUN xbps-query foo-preserve | grep '^pkgver: foo-preserve-2.0.0_1$'
-RUN grep '^modified$' /usr/share/foo-preserve/preserved.txt
+RUN grep '^version 1$' /usr/share/foo-preserve/preserved/v1.txt
+RUN grep '^version 2$' /usr/share/foo-preserve/preserved/v2.txt
 RUN grep '^version 2$' /usr/share/foo-preserve/current.txt
 RUN mkdir -p /tmp/inspect && cd /tmp/inspect && tar -xf /tmp/new/*.xbps ./props.plist
 RUN grep -F '<key>preserve</key><true/>' /tmp/inspect/props.plist

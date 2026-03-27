@@ -1,0 +1,41 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v2.0.0"
+release: "1"
+maintainer: "Foo Bar"
+provides:
+  - fake
+replaces:
+  - foo
+conflicts:
+  - foo-old
+
+description: |
+  Foo bar
+    Multiple lines
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/whatever2.conf
+    dst: /etc/regular.conf
+    type: config
+  - src: ./testdata/whatever2.conf
+    dst: /etc/noreplace.conf
+    type: config|noreplace
+  - dst: /var/log/whatever
+    type: dir
+  - dst: /usr/share/foo
+    type: dir
+scripts:
+  preinstall: ./testdata/acceptance/scripts/preinstall.sh
+  postinstall: ./testdata/acceptance/scripts/postinstall.sh
+  preremove: ./testdata/acceptance/scripts/preremove.sh
+  postremove: ./testdata/acceptance/scripts/postremove.sh
+xbps:
+  short_desc: "Foo bar"
+  tags:
+    - cli
+    - acceptance
+  reverts:
+    - 1.2.3_1
