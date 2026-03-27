@@ -21,6 +21,8 @@ was really simple.
 
 So I created nFPM: a simpler, 0-dependency, as-little-assumptions-as-possible alternative to fpm.
 
+nFPM supports generating native packages for deb, rpm, apk, ipk, archlinux, xbps, and msix.
+
 ## Getting started
 
 - [Documentation](https://nfpm.goreleaser.com/)

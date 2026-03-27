@@ -50,9 +50,11 @@ nfpm pkg --packager apk --target /tmp/
 nfpm pkg --packager xbps --target /tmp/
 ```
 
-You can also use `ipk`, `archlinux`, `msix`, and `xbps` as packagers.
+You can also use `ipk`, `archlinux`, and `msix` as packagers.
 
 ### Test an XBPS package on Void Linux
+
+Void Linux is the primary tested runtime target for nFPM's XBPS support.
 
 For XBPS packages, the usual validation path is a local repository plus the normal XBPS tools:
 

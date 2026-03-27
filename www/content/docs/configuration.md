@@ -90,6 +90,8 @@ maintainer: Carlos Alexandro Becker <root@carlosbecker.com>
 # Defaults to `no description given`.
 # Most packagers call for a one-line synopsis of the package. Some (like deb)
 # also call for a multi-line description starting on the second line.
+# For XBPS, this becomes the long description. If `xbps.short_desc` is not set,
+# the first line of this field is used as the short description.
 description: Sample package
 
 # Vendor.
@@ -182,7 +184,9 @@ contents:
     dst: /etc
     type: tree
 
-  # Simple config file
+  # Simple config file. For XBPS, files marked `config`,
+  # `config|noreplace`, or `config|missingok` are recorded as configuration
+  # files in package metadata.
   - src: path/to/local/foo.conf
     dst: /etc/foo.conf
     type: config
@@ -207,13 +211,13 @@ contents:
     type: symlink
 
   # Corresponds to `%config(noreplace)` if the packager is rpm, otherwise it
-  # is just a config file
+  # is just a config file. For XBPS it is recorded as a configuration file.
   - src: path/to/local/bar.conf
     dst: /etc/bar.conf
     type: config|noreplace
 
   # Corresponds to `%config(missingok)` if the packager is rpm, otherwise it
-  # is just a config file
+  # is just a config file. For XBPS it is recorded as a configuration file.
   - src: path/to/local/bar.conf
     dst: /etc/bar.conf
     type: config|missingok
