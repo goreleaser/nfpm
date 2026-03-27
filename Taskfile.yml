@@ -42,6 +42,7 @@ tasks:
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p rpm -t ./dist/foo.rpm
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p apk -t ./dist/foo.apk
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p archlinux -t ./dist/foo.pkg.tar.zst
+      - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p xbps -t ./dist/foo.xbps
       - go run ./cmd/nfpm/... pkg -f {{.MSIX_SRC}} -p msix -t ./dist/foo.msix
 
   acceptance:windows:install:
@@ -51,6 +52,7 @@ tasks:
       - docker run --rm --workdir /tmp -v $PWD/dist:/tmp ubuntu dpkg -i foo.deb
       - docker run --rm --workdir /tmp -v $PWD/dist:/tmp archlinux pacman --noconfirm -U foo.pkg.tar.zst
       - docker run --rm --workdir /tmp -v $PWD/dist:/tmp alpine apk add --allow-untrusted foo.apk
+      - docker run --rm --workdir /tmp -v $PWD/dist:/tmp ghcr.io/void-linux/void-glibc-full:latest sh -ec 'mkdir -p /var/cache/xbps && cp /tmp/foo.xbps /var/cache/xbps/ && xbps-rindex -a /var/cache/xbps/*.xbps && xbps-install -yR /var/cache/xbps foo && xbps-query foo | grep "^state: installed$"'
 
   acceptance:windows:package:msix:
     desc: Build MSIX package for Windows install testing
