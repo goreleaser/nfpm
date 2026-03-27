@@ -92,6 +92,23 @@ func TestConventionalExtension(t *testing.T) {
 	require.Equal(t, ".xbps", Default.ConventionalExtension())
 }
 
+func readTarNames(t *testing.T, data []byte) []string {
+	t.Helper()
+	tr := tar.NewReader(bytes.NewReader(data))
+	var names []string
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		names = append(names, hdr.Name)
+		_, err = io.Copy(io.Discard, tr)
+		require.NoError(t, err)
+	}
+	return names
+}
+
 func TestConventionalFileName(t *testing.T) {
 	info := exampleInfo()
 	require.Equal(t, "foo-1.0.0.beta1_2.x86_64.xbps", Default.ConventionalFileName(info))
@@ -101,6 +118,12 @@ func TestConventionalFileNameDefaultRelease(t *testing.T) {
 	info := exampleInfo()
 	info.Release = ""
 	require.Equal(t, "foo-1.0.0.beta1_1.x86_64.xbps", Default.ConventionalFileName(info))
+}
+
+func TestConventionalFileNameNoArch(t *testing.T) {
+	info := exampleInfo()
+	info.Arch = "all"
+	require.Equal(t, "foo-1.0.0.beta1_2.noarch.xbps", Default.ConventionalFileName(info))
 }
 
 func TestEnsureValidArchOverride(t *testing.T) {
@@ -151,6 +174,102 @@ func TestAlternativesValidation(t *testing.T) {
 	info.XBPS.Alternatives = append(info.XBPS.Alternatives, nfpm.XBPSAlternative{Group: "broken"})
 	_, err := alternatives(info)
 	require.Error(t, err)
+}
+
+func TestPropsManifestSortsMetadataAndGroupsAlternatives(t *testing.T) {
+	info := exampleInfo()
+	info.Depends = []string{"zlib>=1.0_1", "bash>=5.0_1"}
+	info.Provides = []string{"foo-virtual-2.0_1", "foo-virtual-1.0_1"}
+	info.Conflicts = []string{"zzz<1.0", "aaa<1.0"}
+	info.Replaces = []string{"foo-old>=2.0", "foo-old>=1.0"}
+	info.XBPS.Reverts = []string{"2.0_1", "1.0_1"}
+	info.XBPS.Tags = []string{"network", "cli"}
+	info.XBPS.Alternatives = []nfpm.XBPSAlternative{
+		{Group: "pager", LinkName: "/usr/bin/pager", Target: "/usr/bin/fake"},
+		{Group: "editor", LinkName: "/usr/bin/vi", Target: "/usr/bin/fake"},
+		{Group: "editor", LinkName: "/usr/bin/editor", Target: "/usr/bin/fake"},
+	}
+
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+	props, err := propsManifest(info)
+	require.NoError(t, err)
+
+	require.Equal(t, plistArray{"bash>=5.0_1", "zlib>=1.0_1"}, props["run_depends"])
+	require.Equal(t, plistArray{"aaa<1.0", "zzz<1.0"}, props["conflicts"])
+	require.Equal(t, plistArray{"foo-virtual-1.0_1", "foo-virtual-2.0_1"}, props["provides"])
+	require.Equal(t, plistArray{"foo-old>=1.0", "foo-old>=2.0"}, props["replaces"])
+	require.Equal(t, plistArray{"1.0_1", "2.0_1"}, props["reverts"])
+	require.Equal(t, "cli network", props["tags"])
+
+	alts := props["alternatives"].(plistDict)
+	require.Equal(t, plistArray{"/usr/bin/editor:/usr/bin/fake", "/usr/bin/vi:/usr/bin/fake"}, alts["editor"])
+	require.Equal(t, plistArray{"/usr/bin/pager:/usr/bin/fake"}, alts["pager"])
+}
+
+func TestPropsManifestIncludesAllConfigVariants(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = append(info.Contents,
+		&files.Content{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/fake/a.conf",
+			Type:        files.TypeConfigNoReplace,
+		},
+		&files.Content{
+			Source:      "../testdata/whatever2.conf",
+			Destination: "/etc/fake/b.conf",
+			Type:        files.TypeConfigMissingOK,
+		},
+	)
+
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+	props, err := propsManifest(info)
+	require.NoError(t, err)
+	require.Equal(t, plistArray{"/etc/fake/a.conf", "/etc/fake/b.conf", "/etc/fake/fake.conf"}, props["conf_files"])
+}
+
+func TestFilesManifestIgnoresGhostEntries(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = append(info.Contents, &files.Content{
+		Source:      "../testdata/fake",
+		Destination: "/var/lib/foo.ghost",
+		Type:        files.TypeRPMGhost,
+	})
+
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+	manifest, err := filesManifest(info)
+	require.NoError(t, err)
+	data, err := marshalPlist(manifest)
+	require.NoError(t, err)
+	require.NotContains(t, string(data), "/var/lib/foo.ghost")
+}
+
+func TestPackageRejectsNonLinux(t *testing.T) {
+	info := exampleInfo()
+	info.Platform = "windows"
+	var buf bytes.Buffer
+	err := Default.Package(info, &buf)
+	require.ErrorContains(t, err, "invalid platform")
+}
+
+func TestPackageWithoutScriptsOmitsLifecycleWrappers(t *testing.T) {
+	info := exampleInfo()
+	info.Scripts = nfpm.Scripts{}
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	entries := readTarEntries(t, buf.Bytes())
+	require.NotContains(t, entries, "./INSTALL")
+	require.NotContains(t, entries, "./REMOVE")
+	require.Contains(t, entries, "./props.plist")
+	require.Contains(t, entries, "./files.plist")
+}
+
+func TestPackageControlEntriesComeFirst(t *testing.T) {
+	info := exampleInfo()
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	names := readTarNames(t, buf.Bytes())
+	require.GreaterOrEqual(t, len(names), 4)
+	require.Equal(t, []string{"./INSTALL", "./REMOVE", "./props.plist", "./files.plist"}, names[:4])
 }
 
 func TestPropsManifest(t *testing.T) {
