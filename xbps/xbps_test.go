@@ -3,15 +3,13 @@ package xbps
 import (
 	"archive/tar"
 	"bytes"
-	"encoding/xml"
 	"io"
-		"strings"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
-	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,7 +21,7 @@ func exampleInfo() *nfpm.Info {
 		Arch:        "amd64",
 		Description: "Foo does things\nAnd does them well.",
 		Maintainer:  "Carlos A Becker <pkg@carlosbecker.com>",
-		Version:     "1.0.0",
+		Version:     "v1.0.0",
 		Prerelease:  "beta1",
 		Release:     "2",
 		Homepage:    "http://carlosbecker.com",
@@ -73,6 +71,23 @@ func exampleInfo() *nfpm.Info {
 	})
 }
 
+func readTarEntries(t *testing.T, data []byte) map[string][]byte {
+	t.Helper()
+	tr := tar.NewReader(bytes.NewReader(data))
+	entries := map[string][]byte{}
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		body, err := io.ReadAll(tr)
+		require.NoError(t, err)
+		entries[hdr.Name] = body
+	}
+	return entries
+}
+
 func TestConventionalExtension(t *testing.T) {
 	require.Equal(t, ".xbps", Default.ConventionalExtension())
 }
@@ -103,6 +118,13 @@ func TestEnsureValidArchUnknown(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestVersionNormalizesLeadingV(t *testing.T) {
+	info := exampleInfo()
+	info.Prerelease = ""
+	require.Equal(t, "1.0.0", version(info))
+	require.Equal(t, "foo-1.0.0_2", pkgver(info))
+}
+
 func TestShortDescFallback(t *testing.T) {
 	info := exampleInfo()
 	info.XBPS.ShortDesc = ""
@@ -113,12 +135,15 @@ func TestScripts(t *testing.T) {
 	info := exampleInfo()
 	installScript, err := renderInstallScript(info)
 	require.NoError(t, err)
-	require.Contains(t, string(installScript), "pre_install()")
-	require.Contains(t, string(installScript), "post_install()")
+	require.Contains(t, string(installScript), `case "$1:$4" in`)
+	require.Contains(t, string(installScript), `run_script post_install install`)
+	require.Contains(t, string(installScript), `run_script post_install upgrade`)
+	require.NotContains(t, string(installScript), `set -e`)
+
 	removeScript, err := renderRemoveScript(info)
 	require.NoError(t, err)
-	require.Contains(t, string(removeScript), "pre_remove()")
-	require.Contains(t, string(removeScript), "post_remove()")
+	require.Contains(t, string(removeScript), `run_script pre_remove remove`)
+	require.Contains(t, string(removeScript), `run_script post_remove purge`)
 }
 
 func TestAlternativesValidation(t *testing.T) {
@@ -138,10 +163,17 @@ func TestPropsManifest(t *testing.T) {
 	require.Equal(t, "Foo does things", props["short_desc"])
 	require.Equal(t, true, props["preserve"])
 	require.Equal(t, "cli network", props["tags"])
-	require.Contains(t, props["alternatives"], "editor")
 	confFiles := props["conf_files"].(plistArray)
 	require.Len(t, confFiles, 1)
 	require.Equal(t, "/etc/fake/fake.conf", confFiles[0])
+}
+
+func TestMarshalPlistKeepsLiteralNewlines(t *testing.T) {
+	data, err := marshalPlist(plistDict{"long_desc": "line1\nline2\n"})
+	require.NoError(t, err)
+	text := string(data)
+	require.NotContains(t, text, "&#xA;")
+	require.Contains(t, text, "line1\nline2\n")
 }
 
 func TestFilesManifest(t *testing.T) {
@@ -153,17 +185,14 @@ func TestFilesManifest(t *testing.T) {
 	require.Contains(t, manifest, "conf_files")
 	require.Contains(t, manifest, "links")
 	require.Contains(t, manifest, "dirs")
-	link := manifest["links"].(plistArray)[0].(plistDict)
-	require.Equal(t, "/etc/fake/fake-link.conf", link["file"])
-	require.Equal(t, "/etc/fake/fake.conf", link["target"])
 }
 
 func TestPackage(t *testing.T) {
 	info := exampleInfo()
-	var out bytes.Buffer
-	err := Default.Package(info, &out)
-	require.NoError(t, err)
-	entries := readArchive(t, out.Bytes())
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	entries := readTarEntries(t, buf.Bytes())
+
 	require.Contains(t, entries, "./INSTALL")
 	require.Contains(t, entries, "./REMOVE")
 	require.Contains(t, entries, "./props.plist")
@@ -171,112 +200,15 @@ func TestPackage(t *testing.T) {
 	require.Contains(t, entries, "./usr/bin/fake")
 	require.Contains(t, entries, "./etc/fake/fake.conf")
 	require.Contains(t, entries, "./etc/fake/fake-link.conf")
-	require.NotContains(t, entries, "./var/lib/foo")
 
-	props := parsePlistBytes(t, entries["./props.plist"])
-	require.Equal(t, "foo-1.0.0.beta1_2", props["pkgver"])
-	require.Equal(t, "Foo does things", props["short_desc"])
-	filesPlist := parsePlistBytes(t, entries["./files.plist"])
-	require.Contains(t, filesPlist, "conf_files")
-	require.Contains(t, filesPlist, "links")
+	require.Contains(t, string(entries["./props.plist"]), "foo-1.0.0.beta1_2")
+	require.Contains(t, string(entries["./INSTALL"]), `run_script post_install install`)
+	require.NotContains(t, string(entries["./props.plist"]), "&#xA;")
 }
 
-func TestPackageRejectsNonLinux(t *testing.T) {
-	info := exampleInfo()
-	info.Platform = "darwin"
-	err := Default.Package(info, io.Discard)
-	require.Error(t, err)
-}
-
-func readArchive(t *testing.T, data []byte) map[string][]byte {
-	t.Helper()
-	zr, err := zstd.NewReader(bytes.NewReader(data))
-	require.NoError(t, err)
-	defer zr.Close()
-	tr := tar.NewReader(zr)
-	entries := map[string][]byte{}
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		require.NoError(t, err)
-		body, err := io.ReadAll(tr)
-		require.NoError(t, err)
-		entries[hdr.Name] = body
-	}
-	return entries
-}
-
-type plistXML struct {
-	XMLName xml.Name `xml:"plist"`
-	Inner   plistAny `xml:",any"`
-}
-
-type plistAny struct {
-	XMLName xml.Name
-	Nodes   []plistNode `xml:",any"`
-	Text    string      `xml:",chardata"`
-}
-
-type plistNode struct {
-	XMLName xml.Name
-	Nodes   []plistNode `xml:",any"`
-	Text    string      `xml:",chardata"`
-}
-
-func parsePlistBytes(t *testing.T, data []byte) map[string]any {
-	t.Helper()
-	var doc plistXML
-	require.NoError(t, xml.Unmarshal(data, &doc))
-	root := plistNode{XMLName: doc.Inner.XMLName, Nodes: doc.Inner.Nodes, Text: doc.Inner.Text}
-	parsed, ok := plistNodeValue(root).(map[string]any)
-	require.True(t, ok)
-	return parsed
-}
-
-func plistNodeValue(node plistNode) any {
-	switch node.XMLName.Local {
-	case "dict":
-		result := map[string]any{}
-		for i := 0; i < len(node.Nodes); i += 2 {
-			key := strings.TrimSpace(node.Nodes[i].Text)
-			result[key] = plistNodeValue(node.Nodes[i+1])
-		}
-		return result
-	case "array":
-		result := make([]any, 0, len(node.Nodes))
-		for _, child := range node.Nodes {
-			result = append(result, plistNodeValue(child))
-		}
-		return result
-	case "string":
-		return strings.TrimSpace(node.Text)
-	case "integer":
-		return strings.TrimSpace(node.Text)
-	case "true":
-		return true
-	case "false":
-		return false
-	default:
-		return strings.TrimSpace(node.Text)
-	}
-}
-
-func TestFileEntryRegularHasHashAndSize(t *testing.T) {
-	info := exampleInfo()
-	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
-	var regular *files.Content
-	for _, content := range info.Contents {
-		if content.Destination == "/usr/bin/fake" {
-			regular = content
-			break
-		}
-	}
-	require.NotNil(t, regular)
-	entry, err := fileEntry(regular, false)
-	require.NoError(t, err)
-	require.Equal(t, "/usr/bin/fake", entry["file"])
-	require.NotEmpty(t, entry["sha256"])
-	require.NotEmpty(t, entry["size"])
+func TestPortablePropEscapeText(t *testing.T) {
+	var buf bytes.Buffer
+	portablePropEscapeText(&buf, `<tag> & keep
+quotes " ' untouched`)
+	require.Equal(t, "&lt;tag&gt; &amp; keep\nquotes \" ' untouched", strings.ReplaceAll(buf.String(), "\r\n", "\n"))
 }

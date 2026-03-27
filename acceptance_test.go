@@ -19,6 +19,7 @@ import (
 	_ "github.com/goreleaser/nfpm/v2/ipk"
 	_ "github.com/goreleaser/nfpm/v2/msix"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
+	_ "github.com/goreleaser/nfpm/v2/xbps"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,6 +30,7 @@ var formatArchs = map[string][]string{
 	"ipk":       {"x86_64", "aarch64_generic"},
 	"rpm":       {"amd64", "arm64", "ppc64le"},
 	"archlinux": {"amd64"},
+	"xbps":      {"amd64"},
 }
 
 func TestCore(t *testing.T) {
@@ -366,7 +368,6 @@ func accept(t *testing.T, params acceptParms) {
 	tmp, err := filepath.Abs("./testdata/acceptance/tmp")
 	require.NoError(t, err)
 	packageName := params.Name + "." + params.Format
-	target := filepath.Join(tmp, packageName)
 	require.NoError(t, os.MkdirAll(tmp, 0o700))
 
 	envFunc := func(s string) string {
@@ -389,6 +390,12 @@ func accept(t *testing.T, params acceptParms) {
 	pkg, err := nfpm.Get(params.Format)
 	require.NoError(t, err)
 
+	preparedInfo := nfpm.WithDefaults(info)
+	if params.Format == "xbps" {
+		packageName = pkg.ConventionalFileName(preparedInfo)
+	}
+	target := filepath.Join(tmp, packageName)
+
 	cmdArgs := []string{
 		"build", "--rm", "--force-rm",
 		"--platform", fmt.Sprintf("linux/%s", arch),
@@ -403,8 +410,9 @@ func accept(t *testing.T, params acceptParms) {
 
 	f, err := os.OpenFile(target, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o764)
 	require.NoError(t, err)
-	info.Target = target
-	require.NoError(t, pkg.Package(nfpm.WithDefaults(info), f))
+	preparedInfo.Target = target
+	require.NoError(t, pkg.Package(preparedInfo, f))
+	require.NoError(t, f.Close())
 	//nolint:gosec
 	cmd := exec.Command("docker", cmdArgs...)
 	cmd.Dir = "./testdata/acceptance"
@@ -418,6 +426,26 @@ func accept(t *testing.T, params acceptParms) {
 		target,
 		string(bts),
 	)
+}
+
+func TestXBPSAcceptance(t *testing.T) {
+	t.Parallel()
+	for _, arch := range formatArchs["xbps"] {
+		arch := arch
+		t.Run(fmt.Sprintf("xbps/%s/lifecycle", arch), func(t *testing.T) {
+			t.Parallel()
+			accept(t, acceptParms{
+				Name:   fmt.Sprintf("lifecycle_%s", arch),
+				Conf:   "xbps.lifecycle.yaml",
+				Format: "xbps",
+				Docker: dockerParams{
+					File:   "xbps.dockerfile",
+					Target: "lifecycle",
+					Arch:   arch,
+				},
+			})
+		})
+	}
 }
 
 func TestMSIXStructure(t *testing.T) {

@@ -5,7 +5,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"crypto/sha256"
-	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
-	"github.com/klauspost/compress/zstd"
 )
 
 const packagerName = "xbps"
@@ -76,7 +74,9 @@ func revision(info *nfpm.Info) string {
 }
 
 func version(info *nfpm.Info) string {
-	parts := []string{strings.TrimSpace(info.Version)}
+	base := strings.TrimSpace(info.Version)
+	base = strings.TrimPrefix(base, "v")
+	parts := []string{base}
 	if pre := normalizeVersionPart(info.Prerelease); pre != "" {
 		parts = append(parts, pre)
 	}
@@ -172,67 +172,162 @@ func alternatives(info *nfpm.Info) (map[string][]string, error) {
 	return result, nil
 }
 
-func renderScriptFunction(name, source string) ([]byte, error) {
+func portablePropEscapeText(buf *bytes.Buffer, value string) {
+	for _, r := range value {
+		switch r {
+		case '&':
+			buf.WriteString("&amp;")
+		case '<':
+			buf.WriteString("&lt;")
+		case '>':
+			buf.WriteString("&gt;")
+		default:
+			buf.WriteRune(r)
+		}
+	}
+}
+
+func renderEmbeddedScript(source string) ([]byte, error) {
 	data, err := os.ReadFile(source)
 	if err != nil {
 		return nil, err
 	}
-	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "%s() {\n", name)
+	return data, nil
+}
+
+func renderInstallScript(info *nfpm.Info) ([]byte, error) {
+	preScript, err := loadOptionalScript(info.Scripts.PreInstall)
+	if err != nil {
+		return nil, err
+	}
+	postScript, err := loadOptionalScript(info.Scripts.PostInstall)
+	if err != nil {
+		return nil, err
+	}
+	if len(preScript) == 0 && len(postScript) == 0 {
+		return nil, nil
+	}
+	return wrapXBPSInstallScript(preScript, postScript), nil
+}
+
+func renderRemoveScript(info *nfpm.Info) ([]byte, error) {
+	preScript, err := loadOptionalScript(info.Scripts.PreRemove)
+	if err != nil {
+		return nil, err
+	}
+	postScript, err := loadOptionalScript(info.Scripts.PostRemove)
+	if err != nil {
+		return nil, err
+	}
+	if len(preScript) == 0 && len(postScript) == 0 {
+		return nil, nil
+	}
+	return wrapXBPSRemoveScript(preScript, postScript), nil
+}
+
+func loadOptionalScript(source string) ([]byte, error) {
+	if source == "" {
+		return nil, nil
+	}
+	return renderEmbeddedScript(source)
+}
+
+func appendHereDocScript(buf *bytes.Buffer, label string, data []byte) {
+	fmt.Fprintf(buf, "cat >\"$script_dir/%s\" <<'__NFPM_%s__'\n", label, label)
 	buf.Write(data)
 	if len(data) > 0 && data[len(data)-1] != '\n' {
 		buf.WriteByte('\n')
 	}
-	buf.WriteString("}\n\n")
-	return buf.Bytes(), nil
+	fmt.Fprintf(buf, "__NFPM_%s__\nchmod 0755 \"$script_dir/%s\"\n\n", label, label)
 }
 
-func renderInstallScript(info *nfpm.Info) ([]byte, error) {
-	var buf bytes.Buffer
-	for _, script := range []struct {
-		name string
-		path string
-	}{
-		{name: "pre_install", path: info.Scripts.PreInstall},
-		{name: "post_install", path: info.Scripts.PostInstall},
-	} {
-		if script.path == "" {
-			continue
-		}
-		data, err := renderScriptFunction(script.name, script.path)
-		if err != nil {
-			return nil, err
-		}
-		buf.Write(data)
-	}
-	if buf.Len() == 0 {
-		return nil, nil
-	}
-	return buf.Bytes(), nil
+func writeWrapperPreamble(buf *bytes.Buffer) {
+	buf.WriteString("#!/bin/sh\n\n")
+	buf.WriteString("script_dir=$(mktemp -d)\n")
+	buf.WriteString("cleanup() {\n    rm -rf \"$script_dir\"\n}\n")
+	buf.WriteString("trap cleanup EXIT INT TERM\n\n")
+	buf.WriteString(`run_script() {
+    script_name="$1"
+    semantic_action="$2"
+    shift 2
+    /bin/sh "$script_dir/$script_name" "$semantic_action" "$@"
 }
 
-func renderRemoveScript(info *nfpm.Info) ([]byte, error) {
+`)
+}
+
+func wrapXBPSInstallScript(preInstall, postInstall []byte) []byte {
 	var buf bytes.Buffer
-	for _, script := range []struct {
-		name string
-		path string
-	}{
-		{name: "pre_remove", path: info.Scripts.PreRemove},
-		{name: "post_remove", path: info.Scripts.PostRemove},
-	} {
-		if script.path == "" {
-			continue
-		}
-		data, err := renderScriptFunction(script.name, script.path)
-		if err != nil {
-			return nil, err
-		}
-		buf.Write(data)
+	writeWrapperPreamble(&buf)
+	if len(preInstall) > 0 {
+		appendHereDocScript(&buf, "pre_install", preInstall)
 	}
-	if buf.Len() == 0 {
-		return nil, nil
+	if len(postInstall) > 0 {
+		appendHereDocScript(&buf, "post_install", postInstall)
 	}
-	return buf.Bytes(), nil
+	buf.WriteString(`case "$1:$4" in
+    pre:no)
+        if [ -x "$script_dir/pre_install" ]; then
+            run_script pre_install install
+        fi
+        ;;
+    pre:yes)
+        if [ -x "$script_dir/pre_install" ]; then
+            run_script pre_install upgrade
+        fi
+        ;;
+    post:no)
+        if [ -x "$script_dir/post_install" ]; then
+            run_script post_install install
+        fi
+        ;;
+    post:yes)
+        if [ -x "$script_dir/post_install" ]; then
+            run_script post_install upgrade
+        fi
+        ;;
+esac
+
+exit 0
+`)
+	return buf.Bytes()
+}
+
+func wrapXBPSRemoveScript(preRemove, postRemove []byte) []byte {
+	var buf bytes.Buffer
+	writeWrapperPreamble(&buf)
+	if len(preRemove) > 0 {
+		appendHereDocScript(&buf, "pre_remove", preRemove)
+	}
+	if len(postRemove) > 0 {
+		appendHereDocScript(&buf, "post_remove", postRemove)
+	}
+	buf.WriteString(`case "$1:$4" in
+    pre:no)
+        if [ -x "$script_dir/pre_remove" ]; then
+            run_script pre_remove remove
+        fi
+        ;;
+    pre:yes)
+        if [ -x "$script_dir/pre_remove" ]; then
+            run_script pre_remove upgrade
+        fi
+        ;;
+    post:no)
+        if [ -x "$script_dir/post_remove" ]; then
+            run_script post_remove remove
+        fi
+        ;;
+    purge:no)
+        if [ -x "$script_dir/post_remove" ]; then
+            run_script post_remove purge
+        fi
+        ;;
+esac
+
+exit 0
+`)
+	return buf.Bytes()
 }
 
 type plistValue any
@@ -252,9 +347,7 @@ func writePlistValue(buf *bytes.Buffer, value plistValue) error {
 		sort.Strings(keys)
 		for _, key := range keys {
 			buf.WriteString("<key>")
-			if err := xml.EscapeText(buf, []byte(key)); err != nil {
-				return err
-			}
+			portablePropEscapeText(buf, key)
 			buf.WriteString("</key>")
 			if err := writePlistValue(buf, v[key]); err != nil {
 				return err
@@ -271,9 +364,7 @@ func writePlistValue(buf *bytes.Buffer, value plistValue) error {
 		buf.WriteString("</array>")
 	case string:
 		buf.WriteString("<string>")
-		if err := xml.EscapeText(buf, []byte(v)); err != nil {
-			return err
-		}
+		portablePropEscapeText(buf, v)
 		buf.WriteString("</string>")
 	case bool:
 		if v {
@@ -293,13 +384,13 @@ func writePlistValue(buf *bytes.Buffer, value plistValue) error {
 
 func marshalPlist(root plistDict) ([]byte, error) {
 	var buf bytes.Buffer
-	buf.WriteString(xml.Header)
-	buf.WriteString(`<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">` + "\n")
-	buf.WriteString(`<plist version="1.0">`)
+	buf.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+	buf.WriteString("<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n")
+	buf.WriteString("<plist version=\"1.0\">\n")
 	if err := writePlistValue(&buf, root); err != nil {
 		return nil, err
 	}
-	buf.WriteString(`</plist>`)
+	buf.WriteString("\n</plist>\n")
 	return buf.Bytes(), nil
 }
 
@@ -480,18 +571,17 @@ func (*XBPS) ConventionalExtension() string {
 	return ".xbps"
 }
 
-func writeBytesEntry(tw *tar.Writer, name string, data []byte, mode int64, mtime nfpm.Info) error {
+func writeBytesEntry(tw *tar.Writer, name string, data []byte, mode int64, info nfpm.Info) error {
 	if err := tw.WriteHeader(&tar.Header{
 		Name:     name,
 		Mode:     mode,
 		Size:     int64(len(data)),
 		Typeflag: tar.TypeReg,
-		ModTime:  mtime.MTime,
+		ModTime:  info.MTime,
 		Uname:    "root",
 		Gname:    "root",
 		Uid:      0,
 		Gid:      0,
-		Format:   tar.FormatPAX,
 	}); err != nil {
 		return err
 	}
@@ -512,7 +602,6 @@ func writeContentEntry(tw *tar.Writer, content *files.Content) error {
 			Gname:    content.FileInfo.Group,
 			Uid:      0,
 			Gid:      0,
-			Format:   tar.FormatPAX,
 		})
 	}
 	f, err := os.Open(content.Source)
@@ -530,7 +619,6 @@ func writeContentEntry(tw *tar.Writer, content *files.Content) error {
 		Gname:    content.FileInfo.Group,
 		Uid:      0,
 		Gid:      0,
-		Format:   tar.FormatPAX,
 	}); err != nil {
 		return err
 	}
@@ -574,12 +662,7 @@ func (*XBPS) Package(info *nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	zw, err := zstd.NewWriter(w, zstd.WithEncoderLevel(zstd.EncoderLevelFromZstd(9)))
-	if err != nil {
-		return err
-	}
-	defer zw.Close()
-	tw := tar.NewWriter(zw)
+	tw := tar.NewWriter(w)
 	defer tw.Close()
 	if len(installScript) > 0 {
 		if err := writeBytesEntry(tw, "./INSTALL", installScript, 0o755, *info); err != nil {
