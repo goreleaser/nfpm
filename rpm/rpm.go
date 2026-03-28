@@ -7,6 +7,7 @@ import (
 	"cmp"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"strconv"
 	"strings"
@@ -441,7 +442,7 @@ func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
 func asRPMDirectory(content *files.Content, mtime time.Time) *rpmpack.RPMFile {
 	return &rpmpack.RPMFile{
 		Name:  content.Destination,
-		Mode:  uint(content.Mode()) | tagDirectory,
+		Mode:  normalizeFileMode(content.Mode()) | tagDirectory,
 		MTime: uint32(mtime.Unix()),
 		Owner: content.FileInfo.Owner,
 		Group: content.FileInfo.Group,
@@ -468,10 +469,30 @@ func asRPMFile(content *files.Content, fileType rpmpack.FileType) (*rpmpack.RPMF
 	return &rpmpack.RPMFile{
 		Name:  content.Destination,
 		Body:  data,
-		Mode:  uint(content.FileInfo.Mode),
+		Mode:  normalizeFileMode(content.FileInfo.Mode),
 		MTime: uint32(content.FileInfo.MTime.Unix()),
 		Owner: content.FileInfo.Owner,
 		Group: content.FileInfo.Group,
 		Type:  fileType,
 	}, nil
+}
+
+func normalizeFileMode(mode fs.FileMode) uint {
+	rpmMode := uint(mode.Perm())
+
+	// Go's os.FileMode stores setuid/setgid/sticky at high bits
+	// (fs.ModeSetuid, etc.), but YAML-parsed octal values like 04755
+	// place them at the traditional Unix positions (0o4000, 0o2000,
+	// 0o1000). We must check both encodings.
+	if mode&fs.ModeSetuid != 0 || uint(mode)&0o4000 != 0 {
+		rpmMode |= 0o4000
+	}
+	if mode&fs.ModeSetgid != 0 || uint(mode)&0o2000 != 0 {
+		rpmMode |= 0o2000
+	}
+	if mode&fs.ModeSticky != 0 || uint(mode)&0o1000 != 0 {
+		rpmMode |= 0o1000
+	}
+
+	return rpmMode
 }
