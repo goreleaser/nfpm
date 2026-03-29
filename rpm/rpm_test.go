@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -1145,6 +1146,39 @@ func TestDirectories(t *testing.T) {
 	h, err = extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), "/etc/baz")
 	require.NoError(t, err)
 	require.Equal(t, h.Mode(), int(tagDirectory|0o700))
+}
+
+func TestTreeDirectoriesUseUnixMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not preserve Unix directory permission bits")
+	}
+
+	root := t.TempDir()
+	treeDir := filepath.Join(root, "tree")
+	nestedDir := filepath.Join(treeDir, "nested")
+	require.NoError(t, os.MkdirAll(nestedDir, 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(nestedDir, "file.txt"), []byte("content"), 0o640))
+
+	info := exampleInfo()
+	info.Contents = []*files.Content{
+		{
+			Source:      treeDir,
+			Destination: "/opt/demo",
+			Type:        files.TypeTree,
+		},
+	}
+
+	var rpmFileBuffer bytes.Buffer
+	err := DefaultRPM.Package(info, &rpmFileBuffer)
+	require.NoError(t, err)
+
+	h, err := extractFileHeaderFromRpm(rpmFileBuffer.Bytes(), "/opt/demo/nested")
+	require.NoError(t, err)
+
+	expected := int(tagDirectory | 0o750)
+	actual := h.Mode()
+
+	require.Equal(t, expected, actual)
 }
 
 func TestGlob(t *testing.T) {
