@@ -55,7 +55,8 @@ tasks:
       - >-
         docker run --rm --workdir /tmp -v $PWD/dist:/tmp
         ghcr.io/void-linux/void-glibc-full:latest sh -ec
-        'mkdir -p /var/cache/xbps
+        'xbps-install -Sy
+        && mkdir -p /var/cache/xbps
         && cp /tmp/foo.xbps /var/cache/xbps/
         && xbps-rindex -a /var/cache/xbps/*.xbps
         && xbps-install -yR /var/cache/xbps foo

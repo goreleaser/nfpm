@@ -56,6 +56,9 @@ func TestCore(t *testing.T) {
 						if testArch == "ppc64le" && os.Getenv("NO_TEST_PPC64LE") == "true" {
 							t.Skip("ppc64le arch not supported in pipeline")
 						}
+						if testFormat == "xbps" {
+							t.Skip("covered by TestXBPSAcceptance")
+						}
 						accept(t, acceptParms{
 							Name:   fmt.Sprintf("%s_%s", testName, testArch),
 							Conf:   fmt.Sprintf("core.%s.yaml", testName),
