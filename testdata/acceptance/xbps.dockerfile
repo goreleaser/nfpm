@@ -5,9 +5,9 @@ COPY ${package} /tmp/
 RUN mkdir -p /var/cache/xbps && cp /tmp/*.xbps /var/cache/xbps/
 RUN ls -la /var/cache/xbps/
 RUN file /var/cache/xbps/*.xbps || true
-RUN cd /tmp && tar -tf /var/cache/xbps/*.xbps 2>&1 | head -20 || true
-RUN cd /tmp && tar -xf /var/cache/xbps/*.xbps ./props.plist 2>&1 && cat /tmp/props.plist || true
-RUN cd /tmp && tar -xf /var/cache/xbps/*.xbps ./files.plist 2>&1 && cat /tmp/files.plist || true
+RUN cd /tmp && tar --zstd -tf /var/cache/xbps/*.xbps 2>&1 | head -20 || true
+RUN cd /tmp && tar --zstd -xf /var/cache/xbps/*.xbps ./props.plist 2>&1 && cat /tmp/props.plist || true
+RUN cd /tmp && tar --zstd -xf /var/cache/xbps/*.xbps ./files.plist 2>&1 && cat /tmp/files.plist || true
 RUN xbps-rindex -a /var/cache/xbps/*.xbps
 
 
@@ -61,7 +61,7 @@ RUN cp /tmp/new/*.xbps /var/cache/xbps/
 RUN xbps-rindex -a /var/cache/xbps/*.xbps
 RUN xbps-install -yR /var/cache/xbps foo
 RUN xbps-query foo | grep '^pkgver: foo-2.0.0_1$'
-RUN mkdir -p /tmp/inspect && cd /tmp/inspect && tar -xf /tmp/new/*.xbps ./props.plist
+RUN mkdir -p /tmp/inspect && cd /tmp/inspect && tar --zstd -xf /tmp/new/*.xbps ./props.plist
 RUN grep -F '<key>conflicts</key><array><string>foo-old</string></array>' /tmp/inspect/props.plist
 RUN grep -F '<key>provides</key><array><string>fake</string></array>' /tmp/inspect/props.plist
 RUN grep -F '<key>replaces</key><array><string>foo</string></array>' /tmp/inspect/props.plist
@@ -102,7 +102,7 @@ RUN xbps-query foo-preserve | grep '^pkgver: foo-preserve-2.0.0_1$'
 RUN grep '^version 1$' /usr/share/foo-preserve/preserved/v1.txt
 RUN grep '^version 2$' /usr/share/foo-preserve/preserved/v2.txt
 RUN grep '^version 2$' /usr/share/foo-preserve/current.txt
-RUN mkdir -p /tmp/inspect && cd /tmp/inspect && tar -xf /tmp/new/*.xbps ./props.plist
+RUN mkdir -p /tmp/inspect && cd /tmp/inspect && tar --zstd -xf /tmp/new/*.xbps ./props.plist
 RUN grep -F '<key>preserve</key><true/>' /tmp/inspect/props.plist
 RUN test -f /tmp/preremove-proof
 RUN grep 'Upgrade' /tmp/preremove-proof

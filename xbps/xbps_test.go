@@ -10,6 +10,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,7 +74,10 @@ func exampleInfo() *nfpm.Info {
 
 func readTarEntries(t *testing.T, data []byte) map[string][]byte {
 	t.Helper()
-	tr := tar.NewReader(bytes.NewReader(data))
+	zr, err := zstd.NewReader(bytes.NewReader(data))
+	require.NoError(t, err)
+	defer zr.Close()
+	tr := tar.NewReader(zr)
 	entries := map[string][]byte{}
 	for {
 		hdr, err := tr.Next()
@@ -94,7 +98,10 @@ func TestConventionalExtension(t *testing.T) {
 
 func readTarNames(t *testing.T, data []byte) []string {
 	t.Helper()
-	tr := tar.NewReader(bytes.NewReader(data))
+	zr, err := zstd.NewReader(bytes.NewReader(data))
+	require.NoError(t, err)
+	defer zr.Close()
+	tr := tar.NewReader(zr)
 	var names []string
 	for {
 		hdr, err := tr.Next()
@@ -153,13 +160,31 @@ func TestVersionNormalizesLeadingV(t *testing.T) {
 	info := exampleInfo()
 	info.Prerelease = ""
 	require.Equal(t, "1.0.0", version(info))
-	require.Equal(t, "foo-1.0.0_2", pkgver(info))
+	pv, err := pkgver(info)
+	require.NoError(t, err)
+	require.Equal(t, "foo-1.0.0_2", pv)
 }
 
 func TestShortDescFallback(t *testing.T) {
 	info := exampleInfo()
 	info.XBPS.ShortDesc = ""
 	require.Equal(t, "Foo does things", shortDesc(info))
+}
+
+func TestRevisionRejectsNonInteger(t *testing.T) {
+	info := exampleInfo()
+	info.Release = "rc1"
+	_, err := revision(info)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "must be a positive integer")
+}
+
+func TestRevisionDefaultsToOneWhenEmpty(t *testing.T) {
+	info := exampleInfo()
+	info.Release = ""
+	rev, err := revision(info)
+	require.NoError(t, err)
+	require.Equal(t, "1", rev)
 }
 
 func TestScripts(t *testing.T) {
@@ -259,6 +284,14 @@ func TestPackageRejectsNonLinux(t *testing.T) {
 	require.ErrorContains(t, err, "invalid platform")
 }
 
+func TestPackageRejectsNonIntegerRelease(t *testing.T) {
+	info := exampleInfo()
+	info.Release = "beta1"
+	var buf bytes.Buffer
+	err := Default.Package(info, &buf)
+	require.ErrorContains(t, err, "must be a positive integer")
+}
+
 func TestPackageWithoutScriptsOmitsLifecycleWrappers(t *testing.T) {
 	info := exampleInfo()
 	info.Scripts = nfpm.Scripts{}
@@ -331,6 +364,16 @@ func TestPackage(t *testing.T) {
 	require.Contains(t, string(entries["./props.plist"]), "foo-1.0.0.beta1_2")
 	require.Contains(t, string(entries["./INSTALL"]), `run_script post_install install`)
 	require.NotContains(t, string(entries["./props.plist"]), "&#xA;")
+}
+
+func TestPackageIsZstdCompressed(t *testing.T) {
+	info := exampleInfo()
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	data := buf.Bytes()
+	// zstd magic number: 0x28 0xB5 0x2F 0xFD
+	require.GreaterOrEqual(t, len(data), 4)
+	require.Equal(t, []byte{0x28, 0xB5, 0x2F, 0xFD}, data[:4], "output should be zstd-compressed")
 }
 
 func TestPortablePropEscapeText(t *testing.T) {

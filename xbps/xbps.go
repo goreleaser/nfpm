@@ -16,6 +16,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/klauspost/compress/zstd"
 )
 
 const packagerName = "xbps"
@@ -67,11 +68,15 @@ func normalizeVersionPart(value string) string {
 	return value
 }
 
-func revision(info *nfpm.Info) string {
-	if _, err := strconv.Atoi(info.Release); err == nil && strings.TrimSpace(info.Release) != "" {
-		return info.Release
+func revision(info *nfpm.Info) (string, error) {
+	trimmed := strings.TrimSpace(info.Release)
+	if trimmed == "" {
+		return "1", nil
 	}
-	return "1"
+	if _, err := strconv.Atoi(trimmed); err != nil {
+		return "", fmt.Errorf("xbps: release %q must be a positive integer (XBPS revision)", info.Release)
+	}
+	return trimmed, nil
 }
 
 func version(info *nfpm.Info) string {
@@ -87,8 +92,12 @@ func version(info *nfpm.Info) string {
 	return strings.Join(parts, ".")
 }
 
-func pkgver(info *nfpm.Info) string {
-	return fmt.Sprintf("%s-%s_%s", info.Name, version(info), revision(info))
+func pkgver(info *nfpm.Info) (string, error) {
+	rev, err := revision(info)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s-%s_%s", info.Name, version(info), rev), nil
 }
 
 func shortDesc(info *nfpm.Info) string {
@@ -480,11 +489,15 @@ func propsManifest(info *nfpm.Info) (plistDict, error) {
 	if err != nil {
 		return nil, err
 	}
+	pv, err := pkgver(info)
+	if err != nil {
+		return nil, err
+	}
 	manifest := plistDict{
 		"architecture":   normalized.Arch,
 		"installed_size": installedSize(info),
 		"pkgname":        info.Name,
-		"pkgver":         pkgver(info),
+		"pkgver":         pv,
 		"short_desc":     shortDesc(info),
 		"version":        version(info),
 	}
@@ -562,9 +575,17 @@ func (*XBPS) ConventionalFileName(info *nfpm.Info) string {
 	copyInfo := *info
 	normalized, err := ensureValidArch(&copyInfo)
 	if err != nil {
-		return fmt.Sprintf("%s-%s_%s.%s.xbps", info.Name, version(info), revision(info), info.Arch)
+		rev, _ := revision(info)
+		if rev == "" {
+			rev = "1"
+		}
+		return fmt.Sprintf("%s-%s_%s.%s.xbps", info.Name, version(info), rev, info.Arch)
 	}
-	return fmt.Sprintf("%s.%s.xbps", pkgver(normalized), normalized.Arch)
+	pv, err := pkgver(normalized)
+	if err != nil {
+		return fmt.Sprintf("%s-%s_1.%s.xbps", info.Name, version(info), normalized.Arch)
+	}
+	return fmt.Sprintf("%s.%s.xbps", pv, normalized.Arch)
 }
 
 // ConventionalExtension returns the file name conventionally used for XBPS packages.
@@ -663,7 +684,12 @@ func (*XBPS) Package(info *nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	tw := tar.NewWriter(w)
+	zw, err := zstd.NewWriter(w)
+	if err != nil {
+		return fmt.Errorf("xbps: create zstd writer: %w", err)
+	}
+	defer zw.Close()
+	tw := tar.NewWriter(zw)
 	defer tw.Close()
 	if len(installScript) > 0 {
 		if err := writeBytesEntry(tw, "./INSTALL", installScript, 0o755, *info); err != nil {
