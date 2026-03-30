@@ -12,12 +12,12 @@ jobs:
   sponsors:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: npx @goreleaser/sponsors generate --config gh://goreleaser/.github/sponsors.yml sponsors.json
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
       - run: npx @goreleaser/sponsors apply sponsors.json gh://goreleaser/.github/sponsors.tpl.md README.md
-      - uses: stefanzweifel/git-auto-commit-action@v5
+      - uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: update sponsors"
           file_pattern: "README.md"
