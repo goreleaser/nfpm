@@ -404,12 +404,9 @@ func marshalPlist(root plistDict) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func fileEntry(content *files.Content, mutable bool) (plistDict, error) {
+func fileEntry(content *files.Content) (plistDict, error) {
 	entry := plistDict{
 		"file": files.NormalizeAbsoluteFilePath(content.Destination),
-	}
-	if mutable {
-		entry["mutable"] = true
 	}
 	if content.Type == files.TypeSymlink {
 		entry["target"] = normalizeTargetForMetadata(content.Destination, content.Source)
@@ -443,25 +440,25 @@ func filesManifest(info *nfpm.Info) (plistDict, error) {
 		case content.Type == files.TypeRPMGhost:
 			continue
 		case content.Type == files.TypeDir || content.Type == files.TypeImplicitDir:
-			entry, err := fileEntry(content, false)
+			entry, err := fileEntry(content)
 			if err != nil {
 				return nil, err
 			}
 			dirs = append(dirs, entry)
 		case content.Type == files.TypeSymlink:
-			entry, err := fileEntry(content, false)
+			entry, err := fileEntry(content)
 			if err != nil {
 				return nil, err
 			}
 			links = append(links, entry)
 		case isConfigType(content.Type):
-			entry, err := fileEntry(content, false)
+			entry, err := fileEntry(content)
 			if err != nil {
 				return nil, err
 			}
 			configs = append(configs, entry)
 		default:
-			entry, err := fileEntry(content, false)
+			entry, err := fileEntry(content)
 			if err != nil {
 				return nil, err
 			}
@@ -481,6 +478,17 @@ func filesManifest(info *nfpm.Info) (plistDict, error) {
 		manifest["dirs"] = dirs
 	}
 	return manifest, nil
+}
+
+// normalizeDep ensures a dependency string is in valid XBPS format.
+// Bare package names (e.g. "bash") are converted to "bash>=0".
+func normalizeDep(dep string) string {
+	for _, op := range []string{">=", "<=", ">", "<"} {
+		if strings.Contains(dep, op) {
+			return dep
+		}
+	}
+	return dep + ">=0"
 }
 
 func propsManifest(info *nfpm.Info) (plistDict, error) {
@@ -519,7 +527,7 @@ func propsManifest(info *nfpm.Info) (plistDict, error) {
 	if len(info.Depends) > 0 {
 		deps := plistArray{}
 		for _, value := range sortedStrings(info.Depends) {
-			deps = append(deps, value)
+			deps = append(deps, normalizeDep(value))
 		}
 		manifest["run_depends"] = deps
 	}

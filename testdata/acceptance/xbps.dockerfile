@@ -1,4 +1,5 @@
 FROM ghcr.io/void-linux/void-glibc-full:latest AS test_base
+RUN xbps-install -Sy zstd
 ARG package
 RUN echo "${package}"
 COPY ${package} /tmp/
@@ -43,6 +44,7 @@ RUN test -f /tmp/postremove-proof
 
 # ---- upgrade test ----
 FROM ghcr.io/void-linux/void-glibc-full:latest AS upgrade
+RUN xbps-install -Sy zstd
 ARG package
 ARG oldpackage
 RUN echo "${package}" && echo "${oldpackage}"
@@ -85,6 +87,7 @@ RUN grep -F '<key>alternatives</key><dict><key>foo-noarch</key><array><string>/u
 
 # ---- preserve test ----
 FROM ghcr.io/void-linux/void-glibc-full:latest AS preserve
+RUN xbps-install -Sy zstd
 ARG package
 ARG oldpackage
 RUN echo "${package}" && echo "${oldpackage}"

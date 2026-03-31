@@ -239,6 +239,28 @@ func TestPropsManifestSortsMetadataAndGroupsAlternatives(t *testing.T) {
 	require.Equal(t, plistArray{"/usr/bin/pager:/usr/bin/fake"}, alts["pager"])
 }
 
+func TestNormalizeDep(t *testing.T) {
+	t.Parallel()
+	require.Equal(t, "bash>=0", normalizeDep("bash"))
+	require.Equal(t, "bash>=5.0_1", normalizeDep("bash>=5.0_1"))
+	require.Equal(t, "foo>1.0", normalizeDep("foo>1.0"))
+	require.Equal(t, "foo<2.0", normalizeDep("foo<2.0"))
+	require.Equal(t, "bar<=1.0", normalizeDep("bar<=1.0"))
+	require.Equal(t, "some-lib>=0", normalizeDep("some-lib"))
+}
+
+func TestPropsManifestNormalizesBareDepends(t *testing.T) {
+	t.Parallel()
+	info := exampleInfo()
+	info.Depends = []string{"bash", "zlib>=1.0_1", "curl"}
+
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+	props, err := propsManifest(info)
+	require.NoError(t, err)
+
+	require.Equal(t, plistArray{"bash>=0", "curl>=0", "zlib>=1.0_1"}, props["run_depends"])
+}
+
 func TestPropsManifestIncludesAllConfigVariants(t *testing.T) {
 	info := exampleInfo()
 	info.Contents = append(info.Contents,

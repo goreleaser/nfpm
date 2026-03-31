@@ -56,10 +56,14 @@ tasks:
         docker run --rm --workdir /tmp -v $PWD/dist:/tmp
         ghcr.io/void-linux/void-glibc-full:latest sh -ec
         'xbps-install -Sy
-        && mkdir -p /var/cache/xbps
-        && cp /tmp/foo.xbps /var/cache/xbps/
-        && xbps-rindex -a /var/cache/xbps/*.xbps
-        && xbps-install -yR /var/cache/xbps foo
+        && mkdir -p /repo && cp /tmp/foo.xbps /repo/ && cd /repo
+        && INDEX_OUT=$(xbps-rindex -a *.xbps 2>&1)
+        && PKGVER=$(printf "%s" "$INDEX_OUT" | tr "$(printf "\140\047")" "  " | awk "/added/{print \$3}" | head -1)
+        && ARCH=$(printf "%s" "$INDEX_OUT" | awk -F "[()]" "/added/{print \$2}" | head -1)
+        && mv foo.xbps "${PKGVER}.${ARCH}.xbps"
+        && rm -f *-repodata*
+        && xbps-rindex -a *.xbps
+        && xbps-install -yR /repo foo
         && xbps-query foo | grep "^state: installed$"'
 
   acceptance:windows:package:msix:
