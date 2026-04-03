@@ -12,6 +12,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
 	"github.com/stretchr/testify/require"
@@ -208,6 +209,56 @@ func TestArchOverrideArchitecture(t *testing.T) {
 	require.Equal(t, "randomarch", fields["arch"])
 }
 
+func TestArchSignature(t *testing.T) {
+	info := exampleInfo()
+	info.ArchLinux.Signature.KeyFile = "../internal/sign/testdata/privkey.asc"
+	info.ArchLinux.Signature.KeyPassphrase = "hunter2"
+
+	f, err := os.CreateTemp(t.TempDir(), info.Target)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, f.Close()) })
+	info.Target = f.Name()
+	require.NoError(t, Default.Package(info, f))
+
+	signature, err := os.ReadFile(info.Target + ".sig")
+	require.NoError(t, err)
+
+	f.Seek(0, io.SeekStart)
+	err = sign.PGPVerify(f, signature, "../internal/sign/testdata/pubkey.asc")
+	require.NoError(t, err)
+}
+
+func TestArchSignatureError(t *testing.T) {
+	info := exampleInfo()
+	info.ArchLinux.Signature.KeyFile = "/does/not/exist"
+
+	var pkg bytes.Buffer
+	err := Default.Package(info, &pkg)
+	require.Error(t, err)
+
+	var expectedError *nfpm.ErrSigningFailure
+	require.ErrorAs(t, err, &expectedError)
+}
+
+func TestArchSignatureCallback(t *testing.T) {
+	info := exampleInfo()
+	info.ArchLinux.Signature.SignFn = func(r io.Reader) ([]byte, error) {
+		return sign.PGPArmoredDetachSignWithKeyID(r, "../internal/sign/testdata/privkey.asc", "hunter2", nil)
+	}
+
+	f, err := os.CreateTemp(t.TempDir(), info.Target)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, f.Close()) })
+	info.Target = f.Name()
+	require.NoError(t, Default.Package(info, f))
+
+	signature, err := os.ReadFile(info.Target + ".sig")
+	require.NoError(t, err)
+
+	f.Seek(0, io.SeekStart)
+	err = sign.PGPVerify(f, signature, "../internal/sign/testdata/pubkey.asc")
+	require.NoError(t, err)
+}
 func makeTestPkginfo(t *testing.T, info *nfpm.Info) ([]byte, error) {
 	t.Helper()
 

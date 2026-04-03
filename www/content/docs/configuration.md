@@ -507,6 +507,18 @@ archlinux:
     # The postupgrade script runs after pacman upgrades the package
     postupgrade: ./scripts/postupgrade.sh
 
+  # The package is signed if a key_file is set
+  signature:
+    # PGP secret key, the passphrase is taken from the environment variable $NFPM_ARCHLINUX_PASSPHRASE with
+    # a fallback to $NFPM_PASSPHRASE.
+    # This will expand any env var you set in the field, e.g. key_file: ${SIGNING_KEY_FILE}
+    key_file: key.gpg
+
+    # PGP secret key id in hex format, if it is not set it will select the first subkey
+    # that has the signing flag set. You may need to set this if you want to use the primary key as the signing key.
+    # This will expand any env var you set in the field, e.g. key_id: ${ARCHLINUX_SIGNING_KEY_ID}
+    key_id: bc8acdd415bd80b3
+
 # Custom configuration applied only to the IPK packager (OpenWrt).
 ipk:
   # ipk specific architecture name that overrides "arch" without performing any replacements.
