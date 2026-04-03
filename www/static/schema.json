@@ -77,6 +77,10 @@
 						"type": "string",
 						"title": "organization that packaged the software"
 					},
+					"signature": {
+						"$ref": "#/$defs/ArchLinuxSignature",
+						"title": "archlinux signature"
+					},
 					"scripts": {
 						"$ref": "#/$defs/ArchLinuxScripts",
 						"title": "archlinux-specific scripts"
@@ -94,6 +98,26 @@
 					"postupgrade": {
 						"type": "string",
 						"title": "postupgrade script"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"ArchLinuxSignature": {
+				"properties": {
+					"key_file": {
+						"type": "string",
+						"title": "key file",
+						"examples": [
+							"key.gpg"
+						]
+					},
+					"key_id": {
+						"type": "string",
+						"title": "key id",
+						"examples": [
+							"bc8acdd415bd80b3"
+						]
 					}
 				},
 				"additionalProperties": false,
