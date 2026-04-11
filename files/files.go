@@ -523,10 +523,16 @@ func addTree(
 			c.Source = filepath.ToSlash(strings.TrimPrefix(linkDestination, filepath.VolumeName(linkDestination)))
 			c.Destination = NormalizeAbsoluteFilePath(destination)
 		default:
+			info, err := d.Info()
+			if err != nil {
+				return fmt.Errorf("get file information: %w", err)
+			}
+
 			c.Type = TypeFile
 			c.Source = path
 			c.Destination = NormalizeAbsoluteFilePath(destination)
-			c.FileInfo.Mode = d.Type() &^ umask
+			c.FileInfo.Mode = info.Mode() &^ umask
+			c.FileInfo.MTime = info.ModTime()
 		}
 
 		if tree.FileInfo != nil && tree.FileInfo.Mode != 0 && c.Type != TypeSymlink {
