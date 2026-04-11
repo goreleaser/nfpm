@@ -494,10 +494,6 @@ func addTree(
 		c := &Content{
 			FileInfo: &ContentFileInfo{},
 		}
-		if tree.FileInfo != nil && !ownedByFilesystem(c.Destination) {
-			c.FileInfo.Owner = tree.FileInfo.Owner
-			c.FileInfo.Group = tree.FileInfo.Group
-		}
 
 		switch {
 		case d.IsDir():
@@ -537,6 +533,10 @@ func addTree(
 
 		if tree.FileInfo != nil && tree.FileInfo.Mode != 0 && c.Type != TypeSymlink {
 			c.FileInfo.Mode = tree.FileInfo.Mode
+		}
+		if tree.FileInfo != nil && !ownedByFilesystem(c.Destination) {
+			c.FileInfo.Owner = tree.FileInfo.Owner
+			c.FileInfo.Group = tree.FileInfo.Group
 		}
 
 		all[c.Destination] = c.WithFileInfoDefaults(umask, mtime)
