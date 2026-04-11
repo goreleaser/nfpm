@@ -33,6 +33,7 @@ func (cmd *rootCmd) Execute(args []string) {
 		fang.WithVersion(cmd.cmd.Version),
 		fang.WithColorSchemeFunc(fang.AnsiColorScheme),
 		fang.WithNotifySignal(os.Interrupt, os.Kill),
+		fang.WithoutVersion(),
 	); err != nil {
 		cmd.exit(1)
 	}
@@ -50,6 +51,7 @@ func newRootCmd(version goversion.Info, exit func(int)) *rootCmd {
 		Args:              cobra.NoArgs,
 		ValidArgsFunction: cobra.NoFileCompletions,
 	}
+	cmd.SetVersionTemplate("{{ .Version }}")
 
 	cmd.AddCommand(
 		newInitCmd().cmd,
