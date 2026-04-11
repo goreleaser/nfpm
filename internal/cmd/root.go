@@ -50,13 +50,11 @@ func newRootCmd(version goversion.Info, exit func(int)) *rootCmd {
 		Args:              cobra.NoArgs,
 		ValidArgsFunction: cobra.NoFileCompletions,
 	}
-	cmd.SetVersionTemplate("{{.Version}}")
 
 	cmd.AddCommand(
 		newInitCmd().cmd,
 		newPackageCmd().cmd,
 		newDocsCmd().cmd,
-		newManCmd().cmd,
 		newSchemaCmd().cmd,
 	)
 
