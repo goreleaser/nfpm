@@ -29,7 +29,7 @@ jobs:
       - run: "go install github.com/santhosh-tekuri/jsonschema/cmd/jv@latest"
       - run: task docs:releases
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: task docs:generate
       - run: task schema:generate
       - run: task schema:validate
