@@ -233,7 +233,7 @@ aur_sources:
       ./${pkgname} completion zsh > "${pkgdir}/usr/share/zsh/site-functions/_${pkgname}"
       ./${pkgname} completion fish > "${pkgdir}/usr/share/fish/vendor_completions.d/${pkgname}.fish"
 
-furies:
+gemfury:
   - account: goreleaser
 
 sboms:
