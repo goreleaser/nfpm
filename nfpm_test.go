@@ -1,6 +1,7 @@
 package nfpm_test
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/mail"
@@ -610,4 +611,12 @@ func (*fakePackager) ConventionalFileName(_ *nfpm.Info) string {
 
 func (*fakePackager) Package(_ *nfpm.Info, _ io.Writer) error {
 	return nil
+}
+
+func TestErrSigningFailureUnwrap(t *testing.T) {
+	inner := fmt.Errorf("key not found")
+	err := &nfpm.ErrSigningFailure{Err: inner}
+
+	require.ErrorIs(t, err, inner)
+	require.Equal(t, inner, errors.Unwrap(err))
 }

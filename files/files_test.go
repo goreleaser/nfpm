@@ -941,6 +941,79 @@ func withoutFileInfo(contents files.Contents) files.Contents {
 	return filtered
 }
 
+func TestTreeOwnerFsOwnedDirs(t *testing.T) {
+	// When a tree maps to a destination that contains filesystem-owned
+	// directories (like /usr, /usr/local), those dirs must not inherit
+	// the tree's custom owner/group.
+	results, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source:      filepath.Join("testdata", "treefs"),
+				Destination: "/",
+				Type:        files.TypeTree,
+				FileInfo: &files.ContentFileInfo{
+					Owner: "custom",
+					Group: "custom",
+				},
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	fsOwned := map[string]bool{
+		"/usr/":           true,
+		"/usr/local/":     true,
+		"/usr/local/bin/": true,
+	}
+
+	for _, f := range results {
+		if fsOwned[f.Destination] {
+			require.Equal(t, "root", f.FileInfo.Owner,
+				"%s should have root owner", f.Destination)
+			require.Equal(t, "root", f.FileInfo.Group,
+				"%s should have root group", f.Destination)
+		} else {
+			require.Equal(t, "custom", f.FileInfo.Owner,
+				"%s should have custom owner", f.Destination)
+			require.Equal(t, "custom", f.FileInfo.Group,
+				"%s should have custom group", f.Destination)
+		}
+	}
+}
+
+func TestTreeFileMode(t *testing.T) {
+	// Verify that regular files in a tree preserve their source permissions
+	// rather than getting a zero mode from d.Type().
+	results, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source:      filepath.Join("testdata", "tree"),
+				Destination: "/base",
+				Type:        files.TypeTree,
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	for _, f := range results {
+		if f.Type != files.TypeFile {
+			continue
+		}
+		info, err := os.Stat(f.Source)
+		require.NoError(t, err)
+		require.Equal(t, info.Mode(), f.FileInfo.Mode,
+			"file %s mode should match source", f.Destination)
+	}
+}
+
 func TestAsRelativePath(t *testing.T) {
 	sep := fmt.Sprintf("%c", filepath.Separator)
 	testCases := map[string]string{
