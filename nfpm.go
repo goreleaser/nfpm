@@ -238,15 +238,18 @@ func (c *Config) expandEnvVars() {
 	c.Deb.Signature.KeyFile = os.Expand(c.Deb.Signature.KeyFile, c.envMappingFunc)
 	c.RPM.Signature.KeyFile = os.Expand(c.RPM.Signature.KeyFile, c.envMappingFunc)
 	c.APK.Signature.KeyFile = os.Expand(c.APK.Signature.KeyFile, c.envMappingFunc)
+	c.ArchLinux.Signature.KeyFile = os.Expand(c.ArchLinux.Signature.KeyFile, c.envMappingFunc)
 	c.Deb.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.Deb.Signature.KeyID), c.envMappingFunc))
 	c.RPM.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.RPM.Signature.KeyID), c.envMappingFunc))
 	c.APK.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.APK.Signature.KeyID), c.envMappingFunc))
+	c.ArchLinux.Signature.KeyID = pointer.ToString(os.Expand(pointer.GetString(c.ArchLinux.Signature.KeyID), c.envMappingFunc))
 
 	// Package signing passphrase
 	generalPassphrase := os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
 	c.Deb.Signature.KeyPassphrase = generalPassphrase
 	c.RPM.Signature.KeyPassphrase = generalPassphrase
 	c.APK.Signature.KeyPassphrase = generalPassphrase
+	c.ArchLinux.Signature.KeyPassphrase = generalPassphrase
 
 	debPassphrase := os.Expand("$NFPM_DEB_PASSPHRASE", c.envMappingFunc)
 	if debPassphrase != "" {
@@ -261,6 +264,11 @@ func (c *Config) expandEnvVars() {
 	apkPassphrase := os.Expand("$NFPM_APK_PASSPHRASE", c.envMappingFunc)
 	if apkPassphrase != "" {
 		c.APK.Signature.KeyPassphrase = apkPassphrase
+	}
+
+	archlinuxPassphrase := os.Expand("$NFPM_ARCHLINUX_PASSPHRASE", c.envMappingFunc)
+	if archlinuxPassphrase != "" {
+		c.ArchLinux.Signature.KeyPassphrase = archlinuxPassphrase
 	}
 
 	// RPM specific
@@ -373,10 +381,15 @@ type Overridables struct {
 }
 
 type ArchLinux struct {
-	Pkgbase  string           `yaml:"pkgbase,omitempty" json:"pkgbase,omitempty" jsonschema:"title=explicitly specify the name used to refer to a split package, defaults to name"`
-	Arch     string           `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in archlinux nomenclature"`
-	Packager string           `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that packaged the software"`
-	Scripts  ArchLinuxScripts `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=archlinux-specific scripts"`
+	Pkgbase   string             `yaml:"pkgbase,omitempty" json:"pkgbase,omitempty" jsonschema:"title=explicitly specify the name used to refer to a split package, defaults to name"`
+	Arch      string             `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in archlinux nomenclature"`
+	Packager  string             `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that packaged the software"`
+	Signature ArchLinuxSignature `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=archlinux signature"`
+	Scripts   ArchLinuxScripts   `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=archlinux-specific scripts"`
+}
+
+type ArchLinuxSignature struct {
+	PackageSignature `yaml:",inline" json:",inline"`
 }
 
 type ArchLinuxScripts struct {
@@ -410,7 +423,7 @@ type PackageSignature struct {
 	KeyID         *string `yaml:"key_id,omitempty" json:"key_id,omitempty" jsonschema:"title=key id,example=bc8acdd415bd80b3"`
 	KeyPassphrase string  `yaml:"-" json:"-"` // populated from environment variable
 	// SignFn, if set, will be called with the package-specific data to sign.
-	// For deb and rpm packages, data is the full package content.
+	// For deb, rpm and archlinux packages, data is the full package content.
 	// For apk packages, data is the SHA1 digest of control tgz.
 	//
 	// This allows for signing implementations other than using a local file
