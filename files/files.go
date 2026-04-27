@@ -335,11 +335,14 @@ func isRelevantForPackager(packager string, content *Content) bool {
 	}
 
 	if packager != "rpm" &&
-		(content.Type == TypeRPMDoc || content.Type == TypeRPMLicence ||
-			content.Type == TypeRPMLicense || content.Type == TypeRPMReadme ||
-			content.Type == TypeRPMGhost) {
+		content.Type == TypeRPMGhost {
+		// Ghost files only apply to RPM; exclude from other packagers.
 		return false
 	}
+
+	// RPM-specific document types (doc, licence, license, readme) are treated
+	// as normal files by non-RPM packagers per documentation, so they are NOT
+	// excluded here.
 
 	if packager != "deb" && content.Type == TypeDebChangelog {
 		return false
