@@ -324,6 +324,8 @@ func TestParseFile(t *testing.T) {
 	require.Equal(t, "my/rpm/key/file", config.RPM.Signature.KeyFile)
 	require.Equal(t, "hard/coded/file", config.Deb.Signature.KeyFile)
 	require.Empty(t, config.APK.Signature.KeyFile)
+	_, err = parseAndValidate("./testdata/overrides-missing.yaml")
+	require.NoError(t, err)
 }
 
 func TestParseEnhancedFile(t *testing.T) {
