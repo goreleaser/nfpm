@@ -1,0 +1,32 @@
+# Configuration file used to test that missing overrides don't cause a
+# segmentation fault.  See `overrides.deb` below.
+name: "foo"
+arch: "amd64"
+mtime: 2023-01-02
+version: "v1.2.3"
+contents:
+  - src: ./testdata/whatever.conf
+    dst: /etc/foo/whatever.conf
+    type: config
+  - src: ./testdata/whatever.conf
+    dst: /deb/path.conf
+    type: config
+    packager: deb
+  - src: ./testdata/whatever.conf
+    dst: /rpm/path.conf
+    type: config
+    packager: rpm
+  - src: ./testdata/whatever.conf
+    dst: /apk/path.conf
+    type: config
+    packager: apk
+rpm:
+  group: foo
+overrides:
+  deb:
+  rpm:
+    depends:
+      - rpm_depend
+  apk:
+    depends:
+      - apk_depend
