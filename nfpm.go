@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"slices"
 	"sort"
@@ -213,16 +212,15 @@ func (c *Config) expandEnvVars() {
 	c.Arch = os.Expand(c.Arch, c.envMappingFunc)
 	for or := range c.Overrides {
 		if c.Overrides[or] == nil {
-			log.Printf("warning: override '%s' is empty; ignoring", or)
-		} else {
-			c.Overrides[or].Conflicts = c.expandEnvVarsStringSlice(c.Overrides[or].Conflicts)
-			c.Overrides[or].Depends = c.expandEnvVarsStringSlice(c.Overrides[or].Depends)
-			c.Overrides[or].Replaces = c.expandEnvVarsStringSlice(c.Overrides[or].Replaces)
-			c.Overrides[or].Recommends = c.expandEnvVarsStringSlice(c.Overrides[or].Recommends)
-			c.Overrides[or].Provides = c.expandEnvVarsStringSlice(c.Overrides[or].Provides)
-			c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
-			c.Overrides[or].Contents = c.expandEnvVarsContents(c.Overrides[or].Contents)
+			continue
 		}
+		c.Overrides[or].Conflicts = c.expandEnvVarsStringSlice(c.Overrides[or].Conflicts)
+		c.Overrides[or].Depends = c.expandEnvVarsStringSlice(c.Overrides[or].Depends)
+		c.Overrides[or].Replaces = c.expandEnvVarsStringSlice(c.Overrides[or].Replaces)
+		c.Overrides[or].Recommends = c.expandEnvVarsStringSlice(c.Overrides[or].Recommends)
+		c.Overrides[or].Provides = c.expandEnvVarsStringSlice(c.Overrides[or].Provides)
+		c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
+		c.Overrides[or].Contents = c.expandEnvVarsContents(c.Overrides[or].Contents)
 	}
 	c.Conflicts = c.expandEnvVarsStringSlice(c.Conflicts)
 	c.Depends = c.expandEnvVarsStringSlice(c.Depends)
