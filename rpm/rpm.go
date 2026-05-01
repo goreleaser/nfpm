@@ -143,6 +143,9 @@ func (r *RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 	if meta, err = buildRPMMeta(info); err != nil {
 		return err
 	}
+	if r.format == formatSRPM {
+		meta.SourceRPM = true
+	}
 	if rpm, err = rpmpack.NewRPM(*meta); err != nil {
 		return err
 	}
