@@ -331,14 +331,14 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	if info.RPM.Scripts.PreTrans != "" {
 		data, err := os.ReadFile(info.RPM.Scripts.PreTrans)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot read pretrans script %s: %w", info.RPM.Scripts.PreTrans, err)
 		}
 		rpm.AddPretrans(string(data))
 	}
 	if info.Scripts.PreInstall != "" {
 		data, err := os.ReadFile(info.Scripts.PreInstall)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot read preinstall script %s: %w", info.Scripts.PreInstall, err)
 		}
 		rpm.AddPrein(string(data))
 	}
@@ -346,7 +346,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	if info.Scripts.PreRemove != "" {
 		data, err := os.ReadFile(info.Scripts.PreRemove)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot read preremove script %s: %w", info.Scripts.PreRemove, err)
 		}
 		rpm.AddPreun(string(data))
 	}
@@ -354,7 +354,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	if info.Scripts.PostInstall != "" {
 		data, err := os.ReadFile(info.Scripts.PostInstall)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot read postinstall script %s: %w", info.Scripts.PostInstall, err)
 		}
 		rpm.AddPostin(string(data))
 	}
@@ -362,7 +362,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	if info.Scripts.PostRemove != "" {
 		data, err := os.ReadFile(info.Scripts.PostRemove)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot read postremove script %s: %w", info.Scripts.PostRemove, err)
 		}
 		rpm.AddPostun(string(data))
 	}
@@ -370,7 +370,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	if info.RPM.Scripts.PostTrans != "" {
 		data, err := os.ReadFile(info.RPM.Scripts.PostTrans)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot read posttrans script %s: %w", info.RPM.Scripts.PostTrans, err)
 		}
 		rpm.AddPosttrans(string(data))
 	}
@@ -378,7 +378,7 @@ func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
 	if info.RPM.Scripts.Verify != "" {
 		data, err := os.ReadFile(info.RPM.Scripts.Verify)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot read verify script %s: %w", info.RPM.Scripts.Verify, err)
 		}
 		rpm.AddVerifyScript(string(data))
 	}
@@ -463,7 +463,7 @@ func asRPMSymlink(content *files.Content) *rpmpack.RPMFile {
 func asRPMFile(content *files.Content, fileType rpmpack.FileType) (*rpmpack.RPMFile, error) {
 	data, err := os.ReadFile(content.Source)
 	if err != nil && content.Type != files.TypeRPMGhost {
-		return nil, err
+		return nil, fmt.Errorf("cannot read %s: %w", content.Source, err)
 	}
 
 	return &rpmpack.RPMFile{
