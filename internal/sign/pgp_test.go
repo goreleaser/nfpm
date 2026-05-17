@@ -63,6 +63,37 @@ func TestPGPSignerAndVerify(t *testing.T) {
 	}
 }
 
+func TestDetachSignAndVerify(t *testing.T) {
+	data := []byte("testdata")
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			armoredPublicKey := fmt.Sprintf("%s.asc", testCase.pubKeyFile)
+			gpgPublicKey := fmt.Sprintf("%s.gpg", testCase.pubKeyFile)
+			sig, err := PGPDetachedSignWithKeyID(
+				bytes.NewReader(data),
+				testCase.privKeyFile,
+				testCase.pass,
+				testCase.keyID,
+			)
+			require.NoError(t, err)
+
+			err = PGPVerify(bytes.NewReader(data), sig, armoredPublicKey)
+			require.NoError(t, err)
+
+			err = PGPVerify(bytes.NewReader(data), sig, gpgPublicKey)
+			require.NoError(t, err)
+			if testCase.keyID != nil {
+				var pgpSignature *crypto.PGPSignature
+				pgpSignature = crypto.NewPGPSignature(sig)
+
+				sigID, _ := pgpSignature.GetSignatureKeyIDs()
+				require.Len(t, sigID, 1)
+				require.Equal(t, *testCase.keyID, fmt.Sprintf("%x", sigID[0]))
+			}
+		})
+	}
+}
+
 func TestArmoredDetachSignAndVerify(t *testing.T) {
 	data := []byte("testdata")
 	for _, testCase := range testCases {

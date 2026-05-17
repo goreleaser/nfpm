@@ -20,32 +20,37 @@ import (
 // signature and is compatible with rpmpack's signature API.
 func PGPSignerWithKeyID(keyFile, passphrase string, hexKeyID *string) func([]byte) ([]byte, error) {
 	return func(data []byte) ([]byte, error) {
-		keyID, err := parseKeyID(hexKeyID)
-		if err != nil {
-			return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyID, err)
-		}
-
-		key, err := readSigningKey(keyFile, passphrase)
+		sig, err := PGPArmoredDetachSignWithKeyID(bytes.NewReader(data), keyFile, passphrase, hexKeyID)
 		if err != nil {
 			return nil, &nfpm.ErrSigningFailure{Err: err}
 		}
-
-		var signature bytes.Buffer
-
-		if err := openpgp.DetachSign(
-			&signature,
-			key,
-			bytes.NewReader(data),
-			&packet.Config{
-				SigningKeyId: keyID,
-				DefaultHash:  crypto.SHA256,
-			},
-		); err != nil {
-			return nil, &nfpm.ErrSigningFailure{Err: err}
-		}
-
-		return signature.Bytes(), nil
+		return sig, nil
 	}
+}
+
+// PGPDetachedSignWithKeyID creates a detached signature.
+func PGPDetachedSignWithKeyID(message io.Reader, keyFile, passphrase string, hexKeyID *string) ([]byte, error) {
+	keyID, err := parseKeyID(hexKeyID)
+	if err != nil {
+		return nil, fmt.Errorf("%v is not a valid key id: %w", hexKeyID, err)
+	}
+
+	key, err := readSigningKey(keyFile, passphrase)
+	if err != nil {
+		return nil, fmt.Errorf("detach sign: %w", err)
+	}
+
+	var signature bytes.Buffer
+
+	err = openpgp.DetachSign(&signature, key, message, &packet.Config{
+		SigningKeyId: keyID,
+		DefaultHash:  crypto.SHA256,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("detach sign: %w", err)
+	}
+
+	return signature.Bytes(), nil
 }
 
 // PGPArmoredDetachSign creates an ASCII-armored detached signature.

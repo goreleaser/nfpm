@@ -3,6 +3,7 @@ package arch
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
@@ -19,6 +20,7 @@ import (
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/maps"
 	"github.com/goreleaser/nfpm/v2/internal/modtime"
+	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
 )
@@ -134,10 +136,8 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer zw.Close()
 
 	tw := tar.NewWriter(zw)
-	defer tw.Close()
 
 	entries, totalSize, err := createFilesInTar(info, tw)
 	if err != nil {
@@ -157,7 +157,32 @@ func (ArchLinux) Package(info *nfpm.Info, w io.Writer) error {
 		return fmt.Errorf("create mtree: %w", err)
 	}
 
-	return createScripts(info, tw)
+	err = createScripts(info, tw)
+	if err != nil {
+		return fmt.Errorf("create scripts: %w", err)
+	}
+
+	// finalize the tar/zstd writer before creating the signature
+	tw.Close()
+	zw.Close()
+
+	if info.ArchLinux.Signature.KeyFile != "" || info.ArchLinux.Signature.SignFn != nil {
+		sig, err := createSignature(info)
+		if err != nil {
+			return &nfpm.ErrSigningFailure{
+				Err: fmt.Errorf("create signature: %w", err),
+			}
+		}
+
+		err = createSignatureFile(info, sig)
+		if err != nil {
+			return &nfpm.ErrSigningFailure{
+				Err: fmt.Errorf("create signature file: %w", err),
+			}
+		}
+	}
+
+	return nil
 }
 
 // ConventionalExtension returns the file name conventionally used for Arch Linux packages
@@ -400,6 +425,42 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		MD5:         md5Hash.Sum(nil),
 		SHA256:      sha256Hash.Sum(nil),
 	}, nil
+}
+
+func createSignature(info *nfpm.Info) ([]byte, error) {
+	f, err := os.Open(info.Target)
+	if err != nil {
+		return nil, fmt.Errorf("open package for signing: %w", err)
+	}
+	defer f.Close()
+
+	data := bufio.NewReader(f)
+
+	var sig []byte
+	if signFn := info.ArchLinux.Signature.SignFn; signFn != nil {
+		sig, err = signFn(data)
+	} else {
+		sig, err = sign.PGPDetachedSignWithKeyID(data, info.ArchLinux.Signature.KeyFile, info.ArchLinux.Signature.KeyPassphrase, info.ArchLinux.Signature.KeyID)
+		if err != nil {
+			return nil, fmt.Errorf("create signature: %w", err)
+		}
+	}
+	return sig, nil
+}
+
+func createSignatureFile(info *nfpm.Info, sig []byte) error {
+	sigFile, err := os.Create(info.Target + ".sig")
+	if err != nil {
+		return fmt.Errorf("create signature file: %w", err)
+	}
+	defer sigFile.Close()
+
+	_, err = sigFile.Write(sig)
+	if err != nil {
+		return fmt.Errorf("write signature to file: %w", err)
+	}
+
+	return nil
 }
 
 func writeKVPairs(w io.Writer, pairs map[string]string) error {
