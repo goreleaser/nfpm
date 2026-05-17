@@ -96,3 +96,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.1 // indirect
 )
+
+replace github.com/google/rpmpack => github.com/alexma233/rpmpack v0.7.2-0.20260501025250-ba11ef02e94a
