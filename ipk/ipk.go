@@ -32,19 +32,21 @@ func init() {
 // nolint: gochecknoglobals
 var archToIPK = map[string]string{
 	// all --> all
-	"386":      "i386",
-	"amd64":    "x86_64",
-	"arm64":    "arm64",
-	"arm5":     "armel",
-	"arm6":     "armhf",
-	"arm7":     "armhf",
-	"mips64le": "mips64el",
-	"mipsle":   "mipsel",
-	"ppc64le":  "ppc64el",
-	"s390":     "s390x",
-	"x86_64":   "x86_64",
-	"aarch64":  "arm64",
-	"i386":     "i386",
+	"386":       "i386",
+	"amd64":     "x86_64",
+	"arm64":     "arm64",
+	"arm5":      "armel",
+	"arm6":      "armhf",
+	"arm7":      "armhf",
+	"mips64le":  "mips64el",
+	"mipsle":    "mipsel",
+	"ppc64le":   "ppc64el",
+	"s390":      "s390x",
+	"x86_64":    "x86_64",
+	"aarch64":   "arm64",
+	"i386":      "i386",
+	"riscv64":   "riscv64",
+	"riscv64gc": "riscv64_gc"
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
