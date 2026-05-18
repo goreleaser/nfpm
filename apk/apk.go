@@ -74,7 +74,7 @@ var archToAlpine = map[string]string{
 	"x86_64":    "x86_64",
 	"i386":      "x86",
 	"i686":      "x86",
-	"risvc64":   "riscv64",
+	"riscv64":   "riscv64",
 	"riscv64gc": "riscv64"
 }
 
