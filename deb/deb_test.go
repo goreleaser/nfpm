@@ -111,7 +111,7 @@ func TestConventionalExtension(t *testing.T) {
 }
 
 func TestDeb(t *testing.T) {
-	for _, arch := range []string{"386", "amd64"} {
+	for _, arch := range []string{"386", "amd64", "riscv64"} {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
