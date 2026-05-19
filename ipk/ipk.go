@@ -45,8 +45,8 @@ var archToIPK = map[string]string{
 	"x86_64":    "x86_64",
 	"aarch64":   "arm64",
 	"i386":      "i386",
-	"riscv64":   "riscv64",
-	"riscv64gc": "riscv64_gc"
+	"riscv64":   "riscv64_generic",
+	"riscv64gc": "riscv64_generic"
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {

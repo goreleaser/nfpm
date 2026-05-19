@@ -104,23 +104,23 @@ Thank you!
 
 {{< tab >}}
 
-|    Input    |    Value     |
-| :---------: | :----------: |
-|   `amd64`   |   `x86_64`   |
-|  `x86_64`   |   `x86_64`   |
-|    `386`    |    `i386`    |
-|   `i386`    |    `i386`    |
-|   `arm64`   |   `arm64`    |
-|  `aarch64`  |   `arm64`    |
-|   `arm5`    |   `armel`    |
-|   `arm6`    |   `armhf`    |
-|   `arm7`    |   `armhf`    |
-|  `mipsle`   |   `mipsel`   |
-| `mips64le`  |  `mips64el`  |
-|  `ppc64le`  |  `ppc64el`   |
-|   `s390`    |   `s390x`    |
-|  `riscv64`  |  `riscv64`   |
-| `riscv64gc` | `riscv64_gc` |
+|    Input    |       Value       |
+| :---------: | :---------------: |
+|   `amd64`   |     `x86_64`      |
+|  `x86_64`   |     `x86_64`      |
+|    `386`    |      `i386`       |
+|   `i386`    |      `i386`       |
+|   `arm64`   |      `arm64`      |
+|  `aarch64`  |      `arm64`      |
+|   `arm5`    |      `armel`      |
+|   `arm6`    |      `armhf`      |
+|   `arm7`    |      `armhf`      |
+|  `mipsle`   |     `mipsel`      |
+| `mips64le`  |    `mips64el`     |
+|  `ppc64le`  |     `ppc64el`     |
+|   `s390`    |      `s390x`      |
+|  `riscv64`  | `riscv64_generic` |
+| `riscv64gc` | `riscv64_generic` |
 
 {{< /tab >}}
 
