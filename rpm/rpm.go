@@ -30,6 +30,9 @@ const (
 	tagChangelogText = 1082
 	// https://github.com/rpm-software-management/rpm/blob/master/include/rpm/rpmtag.h#L183
 	tagSourcePackage = 1106
+	// RPMSENSE_SCRIPT_POST marks a dependency as Requires(post).
+	// https://github.com/rpm-software-management/rpm/blob/master/include/rpm/rpmds.h
+	rpmSenseScriptPost = 1 << 10
 
 	// Symbolic link
 	tagLink = 0o120000
@@ -247,6 +250,9 @@ func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
 	if depends, err = toRelation(info.Depends); err != nil {
 		return nil, err
 	}
+	if err = addPostRequires(&depends, info.RPM.Requires.Post); err != nil {
+		return nil, err
+	}
 	if recommends, err = toRelation(info.Recommends); err != nil {
 		return nil, err
 	}
@@ -325,6 +331,19 @@ func toRelation(items []string) (rpmpack.Relations, error) {
 	}
 
 	return relations, nil
+}
+
+func addPostRequires(relations *rpmpack.Relations, items []string) error {
+	for idx := range items {
+		relation, err := rpmpack.NewRelation(items[idx])
+		if err != nil {
+			return err
+		}
+		relation.Sense |= rpmSenseScriptPost
+		*relations = append(*relations, relation)
+	}
+
+	return nil
 }
 
 func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {

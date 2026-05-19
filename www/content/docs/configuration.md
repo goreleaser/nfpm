@@ -340,6 +340,12 @@ rpm:
     # The verify script runs when verifying packages using `rpm -V`.
     verify: ./scripts/verify.sh
 
+  # RPM specific qualified Requires dependencies.
+  requires:
+    # Adds `Requires(post): systemd`.
+    post:
+      - systemd
+
   # The package group. This option is deprecated by most distros
   # but required by old distros like CentOS 5 / EL 5 and earlier.
   group: Unspecified
