@@ -17,7 +17,7 @@ name: foo
 # to the platform specific equivalent. In order to manually set the architecture
 # to a platform specific value, set `{format}.arch`.
 # Examples: `all`, `amd64`, `386`, `arm5`, `arm6`, `arm7`, `arm64`, `mips`,
-# `mipsle`, `mips64le`, `ppc64le`, `s390`
+# `mipsle`, `mips64le`, `ppc64le`, `s390`, `riscv64`, `riscv64gc`
 arch: amd64
 
 # Platform.
