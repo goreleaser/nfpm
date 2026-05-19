@@ -17,6 +17,7 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
+	"github.com/google/rpmpack"
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/require"
@@ -1307,4 +1308,47 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 	}
 
 	return nil, os.ErrNotExist
+}
+
+func TestWriterPathErrorsAreWrapped(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func() error
+		want error
+	}{
+		{
+			name: "asRPMFile read error",
+			fn: func() error {
+				content := &files.Content{Source: "/nonexistent/path", Destination: "/dest"}
+				_, err := asRPMFile(content, rpmpack.GenericFile)
+				return err
+			},
+			want: os.ErrNotExist,
+		},
+		{
+			name: "addScriptFiles read error",
+			fn: func() error {
+				info := &nfpm.Info{
+					Overridables: nfpm.Overridables{
+						Scripts: nfpm.Scripts{
+							PreInstall: "/nonexistent/path",
+						},
+					},
+				}
+				rpmPkg, err := rpmpack.NewRPM(rpmpack.RPMMetaData{Name: "test"})
+				if err != nil {
+					return err
+				}
+				return addScriptFiles(info, rpmPkg)
+			},
+			want: os.ErrNotExist,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.fn()
+			require.ErrorIs(t, err, tt.want)
+		})
+	}
 }

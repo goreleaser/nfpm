@@ -324,8 +324,10 @@ func addArFile(w *ar.Writer, name string, body []byte, date time.Time) error {
 	if err := w.WriteHeader(&header); err != nil {
 		return fmt.Errorf("cannot write file header: %w", err)
 	}
-	_, err := w.Write(body)
-	return err
+	if _, err := w.Write(body); err != nil {
+		return fmt.Errorf("cannot write %s body to deb: %w", name, err)
+	}
+	return nil
 }
 
 type nopCloser struct {
@@ -715,7 +717,7 @@ func newFileInsideTar(out *tar.Writer, name string, content []byte, modtime time
 func newFilePathInsideTar(out *tar.Writer, path, dest string, mode int64, modtime time.Time) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot read %s: %w", path, err)
 	}
 	return newItemInsideTar(out, content, &tar.Header{
 		Name:     files.AsExplicitRelativePath(dest),
