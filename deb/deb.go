@@ -55,7 +55,6 @@ var archToDebian = map[string]string{
 	"x86_64":    "amd64",
 	"aarch64":   "arm64",
 	"riscv64":   "riscv64",
-	"riscv64gc": "riscv64",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
