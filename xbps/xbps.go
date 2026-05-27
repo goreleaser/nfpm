@@ -16,6 +16,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
 )
 
@@ -549,6 +550,39 @@ func writeBytesEntry(tw *tar.Writer, name string, data []byte, mode int64, info 
 	return err
 }
 
+func packageShouldBeSigned(info *nfpm.Info) bool {
+	return info.XBPS.Signature.KeyFile != "" || info.XBPS.Signature.SignFn != nil
+}
+
+func requireSignatureTarget(info *nfpm.Info) error {
+	if strings.TrimSpace(info.Target) == "" {
+		return &nfpm.ErrSigningFailure{Err: fmt.Errorf("xbps: target path required for signature sidecar")}
+	}
+	return nil
+}
+
+func signPackageDigest(info *nfpm.Info, digest []byte) ([]byte, error) {
+	if info.XBPS.Signature.SignFn != nil {
+		signature, err := info.XBPS.Signature.SignFn(bytes.NewReader(digest))
+		if err != nil {
+			return nil, fmt.Errorf("sign package digest: %w", err)
+		}
+		return signature, nil
+	}
+	return sign.RSASignSHA256Digest(digest, info.XBPS.Signature.KeyFile, info.XBPS.Signature.KeyPassphrase)
+}
+
+func writeSignatureSidecar(info *nfpm.Info, digest []byte) error {
+	signature, err := signPackageDigest(info, digest)
+	if err != nil {
+		return &nfpm.ErrSigningFailure{Err: err}
+	}
+	if err := os.WriteFile(info.Target+".sig2", signature, 0o644); err != nil {
+		return &nfpm.ErrSigningFailure{Err: fmt.Errorf("write signature sidecar: %w", err)}
+	}
+	return nil
+}
+
 func writeContentEntry(tw *tar.Writer, content *files.Content) error {
 	name := files.AsExplicitRelativePath(content.Destination)
 	switch content.Type {
@@ -640,7 +674,18 @@ func (*XBPS) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
-	zw, err := zstd.NewWriter(w)
+	packageWriter := w
+	var packageDigest func() []byte
+	if packageShouldBeSigned(info) {
+		if err := requireSignatureTarget(info); err != nil {
+			return err
+		}
+		h := sha256.New()
+		packageWriter = io.MultiWriter(w, h)
+		packageDigest = func() []byte { return h.Sum(nil) }
+	}
+
+	zw, err := zstd.NewWriter(packageWriter)
 	if err != nil {
 		return fmt.Errorf("xbps: create zstd writer: %w", err)
 	}
@@ -685,6 +730,11 @@ func (*XBPS) Package(info *nfpm.Info, w io.Writer) error {
 	}
 	if err := zw.Close(); err != nil {
 		return fmt.Errorf("xbps: close zstd writer: %w", err)
+	}
+	if packageDigest != nil {
+		if err := writeSignatureSidecar(info, packageDigest()); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -293,6 +293,16 @@ func (c *Config) expandEnvVars() {
 		c.XBPS.Alternatives[i].LinkName = os.Expand(c.XBPS.Alternatives[i].LinkName, c.envMappingFunc)
 		c.XBPS.Alternatives[i].Target = os.Expand(c.XBPS.Alternatives[i].Target, c.envMappingFunc)
 	}
+	c.XBPS.Signature.KeyFile = os.Expand(c.XBPS.Signature.KeyFile, c.envMappingFunc)
+	c.XBPS.Signature.KeyPassphrase = generalPassphrase
+	xbpsPassphrase := os.Expand("$XBPS_PASSPHRASE", c.envMappingFunc)
+	if xbpsPassphrase != "" {
+		c.XBPS.Signature.KeyPassphrase = xbpsPassphrase
+	}
+	nfpmXBPSPassphrase := os.Expand("$NFPM_XBPS_PASSPHRASE", c.envMappingFunc)
+	if nfpmXBPSPassphrase != "" {
+		c.XBPS.Signature.KeyPassphrase = nfpmXBPSPassphrase
+	}
 
 	// MSIX specific
 	c.MSIX.Signature.PFXFile = os.Expand(c.MSIX.Signature.PFXFile, c.envMappingFunc)
@@ -527,6 +537,7 @@ type XBPS struct {
 	Tags         []string          `yaml:"tags,omitempty" json:"tags,omitempty" jsonschema:"title=package tags"`
 	Reverts      []string          `yaml:"reverts,omitempty" json:"reverts,omitempty" jsonschema:"title=versions this package reverts"`
 	Alternatives []XBPSAlternative `yaml:"alternatives,omitempty" json:"alternatives,omitempty" jsonschema:"title=xbps alternatives"`
+	Signature    XBPSSignature     `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=xbps signature"`
 }
 
 // XBPSAlternative represents an alternative for an XBPS package.
@@ -534,6 +545,13 @@ type XBPSAlternative struct {
 	Group    string `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=alternative group"`
 	LinkName string `yaml:"link_name,omitempty" json:"link_name,omitempty" jsonschema:"title=symlink path"`
 	Target   string `yaml:"target,omitempty" json:"target,omitempty" jsonschema:"title=target path"`
+}
+
+// XBPSSignature contains signing configs that are only available on XBPS packages.
+type XBPSSignature struct {
+	KeyFile       string                               `yaml:"key_file,omitempty" json:"key_file,omitempty" jsonschema:"title=RSA private key file"`
+	KeyPassphrase string                               `yaml:"-" json:"-"`
+	SignFn        func(data io.Reader) ([]byte, error) `yaml:"-" json:"-"`
 }
 
 // MSIX contains configs that are only available on MSIX packages.

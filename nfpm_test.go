@@ -397,6 +397,8 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		debPass         = "password123"
 		rpmPass         = "secret"
 		apkPass         = "foobar"
+		xbpsPass        = "xbps-secret"
+		nfpmXBPSPass    = "nfpm-xbps-secret"
 		platform        = "linux"
 		arch            = "amd64"
 		release         = "3"
@@ -480,6 +482,15 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		require.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.XBPS.Signature.KeyPassphrase)
+	})
+
+	t.Run("xbps passphrase", func(t *testing.T) {
+		t.Setenv("NFPM_PASSPHRASE", globalPass)
+		t.Setenv("XBPS_PASSPHRASE", xbpsPass)
+		info, err := nfpm.Parse(strings.NewReader("name: foo"))
+		require.NoError(t, err)
+		require.Equal(t, xbpsPass, info.XBPS.Signature.KeyPassphrase)
 	})
 
 	t.Run("specific passphrases", func(t *testing.T) {
@@ -487,11 +498,14 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		t.Setenv("NFPM_DEB_PASSPHRASE", debPass)
 		t.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
 		t.Setenv("NFPM_APK_PASSPHRASE", apkPass)
+		t.Setenv("XBPS_PASSPHRASE", xbpsPass)
+		t.Setenv("NFPM_XBPS_PASSPHRASE", nfpmXBPSPass)
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, nfpmXBPSPass, info.XBPS.Signature.KeyPassphrase)
 	})
 
 	t.Run("packager", func(t *testing.T) {
@@ -595,6 +609,7 @@ overrides:
 		t.Setenv("ALT_GROUP", "editor")
 		t.Setenv("ALT_LINK", "/usr/bin/editor")
 		t.Setenv("ALT_TARGET", "/usr/bin/foo")
+		t.Setenv("XBPS_KEY_FILE", "/keys/xbps.pem")
 		info, err := nfpm.Parse(strings.NewReader(`
 name: foo
 xbps:
@@ -609,6 +624,8 @@ xbps:
     - group: $ALT_GROUP
       link_name: $ALT_LINK
       target: $ALT_TARGET
+  signature:
+    key_file: $XBPS_KEY_FILE
 `))
 		require.NoError(t, err)
 		require.Equal(t, "x86_64", info.XBPS.Arch)
@@ -619,6 +636,7 @@ xbps:
 		require.Equal(t, "editor", info.XBPS.Alternatives[0].Group)
 		require.Equal(t, "/usr/bin/editor", info.XBPS.Alternatives[0].LinkName)
 		require.Equal(t, "/usr/bin/foo", info.XBPS.Alternatives[0].Target)
+		require.Equal(t, "/keys/xbps.pem", info.XBPS.Signature.KeyFile)
 	})
 
 }

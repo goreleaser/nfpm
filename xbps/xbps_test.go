@@ -3,6 +3,7 @@ package xbps
 import (
 	"archive/tar"
 	"bytes"
+	"crypto/sha256"
 	"io"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
 )
@@ -108,6 +110,38 @@ func writeTempScript(t *testing.T, dir, name, body string) string {
 	target := filepath.Join(dir, name)
 	require.NoError(t, os.WriteFile(target, []byte(body), 0o755))
 	return target
+}
+
+func packageToTargetWithError(t *testing.T, info *nfpm.Info) (string, error) {
+	t.Helper()
+	target := filepath.Join(t.TempDir(), Default.ConventionalFileName(info))
+	info.Target = target
+	f, err := os.Create(target)
+	require.NoError(t, err)
+	packageErr := Default.Package(info, f)
+	closeErr := f.Close()
+	if packageErr != nil {
+		return target, packageErr
+	}
+	return target, closeErr
+}
+
+func packageToTarget(t *testing.T, info *nfpm.Info) string {
+	t.Helper()
+	target, err := packageToTargetWithError(t, info)
+	require.NoError(t, err)
+	return target
+}
+
+func requireSignatureSidecarVerifies(t *testing.T, target, publicKey string) {
+	t.Helper()
+	packageData, err := os.ReadFile(target)
+	require.NoError(t, err)
+	digest := sha256.Sum256(packageData)
+	signature, err := os.ReadFile(target + ".sig2")
+	require.NoError(t, err)
+	require.NotEmpty(t, signature)
+	require.NoError(t, sign.RSAVerifySHA256Digest(digest[:], signature, publicKey))
 }
 
 func TestRegistered(t *testing.T) {
@@ -313,6 +347,87 @@ func TestPackageReturnsLifecycleScriptReadError(t *testing.T) {
 
 	err := Default.Package(info, &bytes.Buffer{})
 	require.ErrorContains(t, err, "missing-preinstall.sh")
+}
+
+func TestPackageDoesNotWriteSignatureSidecarWhenUnsigned(t *testing.T) {
+	info := exampleInfo()
+	target := packageToTarget(t, info)
+
+	_, err := os.Stat(target + ".sig2")
+	require.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestPackageWritesSignatureSidecar(t *testing.T) {
+	info := exampleInfo()
+	info.XBPS.Signature.KeyFile = "../internal/sign/testdata/rsa_unprotected.priv"
+
+	target := packageToTarget(t, info)
+	requireSignatureSidecarVerifies(t, target, "../internal/sign/testdata/rsa_unprotected.pub")
+}
+
+func TestPackageWritesEncryptedSignatureSidecar(t *testing.T) {
+	info := exampleInfo()
+	info.XBPS.Signature.KeyFile = "../internal/sign/testdata/rsa.priv"
+	info.XBPS.Signature.KeyPassphrase = "hunter2"
+
+	target := packageToTarget(t, info)
+	requireSignatureSidecarVerifies(t, target, "../internal/sign/testdata/rsa.pub")
+}
+
+func TestPackageWritesSignatureSidecarWithInjectedSigner(t *testing.T) {
+	info := exampleInfo()
+	var signedDigest []byte
+	info.XBPS.Signature.SignFn = func(data io.Reader) ([]byte, error) {
+		var err error
+		signedDigest, err = io.ReadAll(data)
+		return []byte("injected-signature"), err
+	}
+
+	target := packageToTarget(t, info)
+	packageData, err := os.ReadFile(target)
+	require.NoError(t, err)
+	digest := sha256.Sum256(packageData)
+	require.Equal(t, digest[:], signedDigest)
+
+	sidecar, err := os.ReadFile(target + ".sig2")
+	require.NoError(t, err)
+	require.Equal(t, "injected-signature", string(sidecar))
+}
+
+func TestPackageRequiresTargetPathForSignatureSidecar(t *testing.T) {
+	info := exampleInfo()
+	info.XBPS.Signature.KeyFile = "../internal/sign/testdata/rsa_unprotected.priv"
+
+	err := Default.Package(info, &bytes.Buffer{})
+	var signingErr *nfpm.ErrSigningFailure
+	require.ErrorAs(t, err, &signingErr)
+	require.ErrorContains(t, err, "target path required for signature sidecar")
+}
+
+func TestPackageReturnsSigningFailure(t *testing.T) {
+	invalidKey := filepath.Join(t.TempDir(), "invalid.pem")
+	require.NoError(t, os.WriteFile(invalidKey, []byte("not a pem"), 0o600))
+
+	testCases := map[string]struct {
+		keyFile string
+		wantErr string
+	}{
+		"missing key": {filepath.Join(t.TempDir(), "missing.pem"), "reading key file"},
+		"invalid key": {invalidKey, "no PEM block found"},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+		t.Run(name, func(t *testing.T) {
+			info := exampleInfo()
+			info.XBPS.Signature.KeyFile = testCase.keyFile
+
+			_, err := packageToTargetWithError(t, info)
+			var signingErr *nfpm.ErrSigningFailure
+			require.ErrorAs(t, err, &signingErr)
+			require.ErrorContains(t, err, testCase.wantErr)
+		})
+	}
 }
 
 func TestPropsManifestUsesGenericMetadata(t *testing.T) {
