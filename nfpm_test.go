@@ -278,7 +278,6 @@ func TestValidate(t *testing.T) {
 			})
 		}
 	})
-
 }
 
 func TestValidateError(t *testing.T) {
@@ -638,7 +637,6 @@ xbps:
 		require.Equal(t, "/usr/bin/foo", info.XBPS.Alternatives[0].Target)
 		require.Equal(t, "/keys/xbps.pem", info.XBPS.Signature.KeyFile)
 	})
-
 }
 
 func TestOverrides(t *testing.T) {
