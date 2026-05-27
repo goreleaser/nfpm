@@ -565,6 +565,42 @@ overrides:
 		require.Equal(t, "/debian/usr/bin/foo", content3.Destination)
 		require.Equal(t, "foo_amd64", content3.Source)
 	})
+
+	t.Run("xbps fields", func(t *testing.T) {
+		t.Setenv("XBPS_ARCH", "x86_64")
+		t.Setenv("SHORT_DESC", "short description")
+		t.Setenv("TAG1", "network")
+		t.Setenv("TAG2", "cli")
+		t.Setenv("REVERT1", "1.0_1")
+		t.Setenv("ALT_GROUP", "editor")
+		t.Setenv("ALT_LINK", "/usr/bin/editor")
+		t.Setenv("ALT_TARGET", "/usr/bin/foo")
+		info, err := nfpm.Parse(strings.NewReader(`
+name: foo
+xbps:
+  arch: $XBPS_ARCH
+  short_desc: $SHORT_DESC
+  tags:
+    - $TAG1
+    - $TAG2
+  reverts:
+    - $REVERT1
+  alternatives:
+    - group: $ALT_GROUP
+      link_name: $ALT_LINK
+      target: $ALT_TARGET
+`))
+		require.NoError(t, err)
+		require.Equal(t, "x86_64", info.XBPS.Arch)
+		require.Equal(t, "short description", info.XBPS.ShortDesc)
+		require.Equal(t, []string{"network", "cli"}, info.XBPS.Tags)
+		require.Equal(t, []string{"1.0_1"}, info.XBPS.Reverts)
+		require.Len(t, info.XBPS.Alternatives, 1)
+		require.Equal(t, "editor", info.XBPS.Alternatives[0].Group)
+		require.Equal(t, "/usr/bin/editor", info.XBPS.Alternatives[0].LinkName)
+		require.Equal(t, "/usr/bin/foo", info.XBPS.Alternatives[0].Target)
+	})
+
 }
 
 func TestOverrides(t *testing.T) {
