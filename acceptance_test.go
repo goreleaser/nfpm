@@ -19,6 +19,7 @@ import (
 	_ "github.com/goreleaser/nfpm/v2/ipk"
 	_ "github.com/goreleaser/nfpm/v2/msix"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
+	_ "github.com/goreleaser/nfpm/v2/xbps"
 	"github.com/stretchr/testify/require"
 )
 
@@ -344,6 +345,112 @@ func TestDebSign(t *testing.T) {
 			}(t, sigtype, arch)
 		}
 	}
+}
+
+func TestXBPSSpecific(t *testing.T) {
+	t.Parallel()
+	format := "xbps"
+	arch := "amd64"
+
+	for _, testCase := range []struct {
+		name      string
+		conf      string
+		pkgfile   string
+		buildArgs []string
+	}{
+		{
+			name:      "lifecycle",
+			conf:      "xbps.lifecycle.yaml",
+			pkgfile:   "foo-1.2.3_1.x86_64.xbps",
+			buildArgs: []string{"scenario=lifecycle"},
+		},
+		{
+			name:      "metadata",
+			conf:      "xbps.metadata.yaml",
+			pkgfile:   "foo-1.2.3_1.x86_64.xbps",
+			buildArgs: []string{"scenario=metadata"},
+		},
+		{
+			name:      "noarch",
+			conf:      "xbps.noarch.yaml",
+			pkgfile:   "foo-1.2.3_1.noarch.xbps",
+			buildArgs: []string{"scenario=noarch"},
+		},
+	} {
+		testCase := testCase
+		t.Run(fmt.Sprintf("%s/%s/%s", format, arch, testCase.name), func(t *testing.T) {
+			t.Parallel()
+			generatedPackage := fmt.Sprintf("tmp/xbps_%s_%s.%s", testCase.name, arch, format)
+			buildArgs := append([]string{}, testCase.buildArgs...)
+			buildArgs = append(buildArgs,
+				fmt.Sprintf("pkgfile=%s", testCase.pkgfile),
+				fmt.Sprintf("oldpackage=%s", generatedPackage),
+				fmt.Sprintf("oldpkgfile=%s", testCase.pkgfile),
+			)
+			accept(t, acceptParms{
+				Name:   fmt.Sprintf("xbps_%s_%s", testCase.name, arch),
+				Conf:   testCase.conf,
+				Format: format,
+				Docker: dockerParams{
+					File:      "xbps.dockerfile",
+					Target:    "scenario",
+					Arch:      arch,
+					BuildArgs: buildArgs,
+				},
+			})
+		})
+	}
+
+	t.Run(fmt.Sprintf("%s/%s/upgrade", format, arch), func(t *testing.T) {
+		t.Parallel()
+		testArch := arch
+		oldpkg := fmt.Sprintf("tmp/xbps_upgrade_%s.v1.%s", testArch, format)
+		target := fmt.Sprintf("./testdata/acceptance/%s", oldpkg)
+		repoTmp := "./testdata/acceptance/tmp"
+		require.NoError(t, os.MkdirAll(repoTmp, 0o700))
+
+		config, err := nfpm.ParseFileWithEnvMapping("./testdata/acceptance/xbps.upgrade.v1.yaml", func(s string) string {
+			switch s {
+			case "BUILD_ARCH":
+				return testArch
+			default:
+				return os.Getenv(s)
+			}
+		})
+		require.NoError(t, err)
+
+		info, err := config.Get(format)
+		require.NoError(t, err)
+		require.NoError(t, nfpm.Validate(info))
+
+		pkg, err := nfpm.Get(format)
+		require.NoError(t, err)
+
+		f, err := os.Create(target)
+		require.NoError(t, err)
+		info.Target = target
+		packageErr := pkg.Package(nfpm.WithDefaults(info), f)
+		closeErr := f.Close()
+		require.NoError(t, packageErr)
+		require.NoError(t, closeErr)
+
+		accept(t, acceptParms{
+			Name:   fmt.Sprintf("xbps_upgrade_%s.v2", testArch),
+			Conf:   "xbps.upgrade.v2.yaml",
+			Format: format,
+			Docker: dockerParams{
+				File:   "xbps.dockerfile",
+				Target: "scenario",
+				Arch:   testArch,
+				BuildArgs: []string{
+					"scenario=upgrade",
+					fmt.Sprintf("oldpackage=%s", oldpkg),
+					"oldpkgfile=foo-1.2.3_1.x86_64.xbps",
+					"pkgfile=foo-1.2.4_1.x86_64.xbps",
+				},
+			},
+		})
+	})
 }
 
 type acceptParms struct {
