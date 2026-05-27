@@ -13,11 +13,11 @@ nfpm package [flags]
 ```
   -f, --config string     config file to be used (default "nfpm.yaml")
   -h, --help              help for package
-  -p, --packager string   which packager implementation to use [apk|archlinux|deb|ipk|msix|rpm|srpm]
+  -p, --packager string   which packager implementation to use [apk|archlinux|deb|ipk|msix|rpm|srpm|xbps]
   -t, --target string     where to save the generated package (filename, folder or empty for current folder)
 ```
 
 ## See also
 
-* [nfpm](/docs/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK, Arch Linux, ipk, and MSIX formats based on a YAML configuration file
+* [nfpm](/docs/cmd/nfpm/)	 - Packages apps on RPM, Deb, APK, Arch Linux, ipk, MSIX, and XBPS formats based on a YAML configuration file
 

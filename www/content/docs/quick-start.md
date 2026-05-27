@@ -47,9 +47,33 @@ Use [`nfpm package`](/docs/cmd/nfpm_package) to create your packages:
 nfpm pkg --packager deb --target /tmp/
 nfpm pkg --packager rpm --target /tmp/
 nfpm pkg --packager apk --target /tmp/
+nfpm pkg --packager xbps --target /tmp/
 ```
 
-You can also use `ipk`, `archlinux`, and `msix` as packagers.
+You can also use `ipk`, `archlinux`, `msix`, and `xbps` as packagers.
+
+### Verify an XBPS package on Void Linux
+
+nFPM generates XBPS packages natively. Compatibility is tested primarily against
+Void Linux; other XBPS-based environments may also work, but they are secondary
+targets.
+
+In a disposable Void environment, a local repository smoke check can use the
+standard XBPS tooling:
+
+```sh
+repo="$(mktemp -d)"
+nfpm pkg --packager xbps --target "$repo/"
+xbps-rindex -a "$repo"/*.xbps
+xbps-install -i -R "$repo" -y foo
+xbps-query -p pkgver foo
+xbps-remove -y foo
+```
+
+When `xbps.signature.key_file` is configured, nFPM writes an adjacent
+`<package>.xbps.sig2` sidecar for the generated package. This does not create or
+sign repository metadata, publish repositories, manage remote repositories, or
+orchestrate `xbps-rindex --sign`.
 
 {{% /steps %}}
 
