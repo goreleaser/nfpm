@@ -337,6 +337,55 @@ func TestPropsManifestUsesGenericMetadata(t *testing.T) {
 	require.Equal(t, plistArray{"/etc/fake/fake.conf"}, props["conf_files"])
 }
 
+func TestPropsManifestUsesXBPSMetadata(t *testing.T) {
+	info := exampleInfo()
+	info.XBPS.ShortDesc = "Explicit XBPS summary"
+	info.XBPS.Preserve = true
+	info.XBPS.Tags = []string{"utilities", "cli"}
+	info.XBPS.Reverts = []string{"1.2.2_1", "1.2.1_1"}
+	info.XBPS.Alternatives = []nfpm.XBPSAlternative{
+		{Group: "editor", LinkName: "/usr/bin/view", Target: "/usr/bin/foo-view"},
+		{Group: "editor", LinkName: "/usr/bin/edit", Target: "/usr/bin/foo"},
+		{Group: "pager", LinkName: "/usr/bin/page", Target: "/usr/bin/foo-page"},
+	}
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+	props, err := propsManifest(info)
+	require.NoError(t, err)
+	require.Equal(t, "Explicit XBPS summary", props["short_desc"])
+	require.Equal(t, true, props["preserve"])
+	require.Equal(t, "cli utilities", props["tags"])
+	require.Equal(t, plistArray{"1.2.1_1", "1.2.2_1"}, props["reverts"])
+	require.Equal(t, plistDict{
+		"editor": plistArray{"/usr/bin/edit:/usr/bin/foo", "/usr/bin/view:/usr/bin/foo-view"},
+		"pager":  plistArray{"/usr/bin/page:/usr/bin/foo-page"},
+	}, props["alternatives"])
+}
+
+func TestPropsManifestRejectsMalformedAlternatives(t *testing.T) {
+	testCases := map[string]nfpm.XBPSAlternative{
+		"empty group":      {LinkName: "/usr/bin/foo", Target: "/usr/bin/foo-tool"},
+		"group delimiter":  {Group: "foo:bar", LinkName: "/usr/bin/foo", Target: "/usr/bin/foo-tool"},
+		"group whitespace": {Group: "foo bar", LinkName: "/usr/bin/foo", Target: "/usr/bin/foo-tool"},
+		"empty link":       {Group: "foo", Target: "/usr/bin/foo-tool"},
+		"link delimiter":   {Group: "foo", LinkName: "/usr/bin/foo:alt", Target: "/usr/bin/foo-tool"},
+		"empty target":     {Group: "foo", LinkName: "/usr/bin/foo"},
+		"target delimiter": {Group: "foo", LinkName: "/usr/bin/foo", Target: "/usr/bin/foo:tool"},
+	}
+
+	for name, alt := range testCases {
+		name, alt := name, alt
+		t.Run(name, func(t *testing.T) {
+			info := exampleInfo()
+			info.XBPS.Alternatives = []nfpm.XBPSAlternative{alt}
+			require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+			_, err := propsManifest(info)
+			require.ErrorContains(t, err, "xbps: invalid alternative")
+		})
+	}
+}
+
 func TestPropsManifestIncludesAllConfigVariants(t *testing.T) {
 	info := exampleInfo()
 	info.Contents = append(info.Contents,

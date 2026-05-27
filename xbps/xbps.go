@@ -105,6 +105,9 @@ func pkgver(info *nfpm.Info) (string, error) {
 }
 
 func shortDesc(info *nfpm.Info) string {
+	if desc := strings.TrimSpace(info.XBPS.ShortDesc); desc != "" {
+		return desc
+	}
 	first, _, _ := strings.Cut(strings.TrimSpace(info.Description), "\n")
 	return strings.TrimSpace(first)
 }
@@ -157,6 +160,58 @@ func configFiles(info *nfpm.Info) []string {
 		}
 	}
 	return result
+}
+
+func stringsToPlistArray(values []string) plistArray {
+	items := plistArray{}
+	for _, value := range sortedStrings(values) {
+		items = append(items, value)
+	}
+	return items
+}
+
+func invalidAlternativePart(value string) bool {
+	return value == "" || strings.ContainsAny(value, ": \t\n\r")
+}
+
+func validateAlternative(alt nfpm.XBPSAlternative) error {
+	switch {
+	case invalidAlternativePart(alt.Group):
+		return fmt.Errorf("xbps: invalid alternative group %q", alt.Group)
+	case invalidAlternativePart(alt.LinkName):
+		return fmt.Errorf("xbps: invalid alternative link_name %q", alt.LinkName)
+	case invalidAlternativePart(alt.Target):
+		return fmt.Errorf("xbps: invalid alternative target %q", alt.Target)
+	default:
+		return nil
+	}
+}
+
+func sortedAlternatives(values []nfpm.XBPSAlternative) []nfpm.XBPSAlternative {
+	result := slices.Clone(values)
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Group != result[j].Group {
+			return result[i].Group < result[j].Group
+		}
+		if result[i].LinkName != result[j].LinkName {
+			return result[i].LinkName < result[j].LinkName
+		}
+		return result[i].Target < result[j].Target
+	})
+	return result
+}
+
+func alternativesMetadata(info *nfpm.Info) (plistDict, error) {
+	result := plistDict{}
+	for _, alt := range sortedAlternatives(info.XBPS.Alternatives) {
+		if err := validateAlternative(alt); err != nil {
+			return nil, err
+		}
+		item := fmt.Sprintf("%s:%s", alt.LinkName, alt.Target)
+		items, _ := result[alt.Group].(plistArray)
+		result[alt.Group] = append(items, item)
+	}
+	return result, nil
 }
 
 func normalizeTargetForMetadata(dst, src string) string {
@@ -277,32 +332,34 @@ func propsManifest(info *nfpm.Info) (plistDict, error) {
 		manifest["maintainer"] = info.Maintainer
 	}
 	if len(info.Depends) > 0 {
-		deps := plistArray{}
-		for _, value := range sortedStrings(info.Depends) {
-			deps = append(deps, value)
-		}
-		manifest["run_depends"] = deps
+		manifest["run_depends"] = stringsToPlistArray(info.Depends)
 	}
 	if confs := configFiles(info); len(confs) > 0 {
-		items := plistArray{}
-		for _, value := range confs {
-			items = append(items, value)
-		}
-		manifest["conf_files"] = items
+		manifest["conf_files"] = stringsToPlistArray(confs)
 	}
 	for key, values := range map[string][]string{
 		"conflicts": info.Conflicts,
 		"provides":  info.Provides,
 		"replaces":  info.Replaces,
+		"reverts":   info.XBPS.Reverts,
 	} {
 		if len(values) == 0 {
 			continue
 		}
-		items := plistArray{}
-		for _, value := range sortedStrings(values) {
-			items = append(items, value)
+		manifest[key] = stringsToPlistArray(values)
+	}
+	if len(info.XBPS.Tags) > 0 {
+		manifest["tags"] = strings.Join(sortedStrings(info.XBPS.Tags), " ")
+	}
+	if info.XBPS.Preserve {
+		manifest["preserve"] = true
+	}
+	if len(info.XBPS.Alternatives) > 0 {
+		alternatives, err := alternativesMetadata(info)
+		if err != nil {
+			return nil, err
 		}
-		manifest[key] = items
+		manifest["alternatives"] = alternatives
 	}
 	return manifest, nil
 }
