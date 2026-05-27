@@ -42,6 +42,7 @@ tasks:
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p rpm -t ./dist/foo.rpm
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p apk -t ./dist/foo.apk
       - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p archlinux -t ./dist/foo.pkg.tar.zst
+      - go run ./cmd/nfpm/... pkg -f {{.SRC}} -p xbps -t ./dist/foo.xbps
       - go run ./cmd/nfpm/... pkg -f {{.MSIX_SRC}} -p msix -t ./dist/foo.msix
 
   acceptance:windows:install:
