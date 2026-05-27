@@ -3,6 +3,7 @@ package sign
 import (
 	"bytes"
 	"crypto/sha1" // nolint:gosec
+	"crypto/sha256"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -104,4 +105,42 @@ func TestRSAVerifyWrongSecretKeyFormat(t *testing.T) {
 
 	_, err := rsaSign(bytes.NewReader(digest), "testdata/wrong_key_format.priv", "")
 	require.Error(t, err)
+}
+
+func TestRSASignAndVerifySHA256Digest(t *testing.T) {
+	testData := []byte("test")
+	digest := sha256.Sum256(testData)
+	testCases := []struct {
+		name       string
+		privKey    string
+		pubKey     string
+		passphrase string
+	}{
+		{"unprotected pkcs1", "testdata/rsa_unprotected.priv", "testdata/rsa_unprotected.pub", ""},
+		{"protected pkcs1", "testdata/rsa.priv", "testdata/rsa.pub", pass},
+		{"unprotected pkcs8", "testdata/rsa_pkcs8.priv", "testdata/rsa_pkcs8.pub", ""},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			sig, err := RSASignSHA256Digest(digest[:], testCase.privKey, testCase.passphrase)
+			require.NoError(t, err)
+			require.NoError(t, RSAVerifySHA256Digest(digest[:], sig, testCase.pubKey))
+		})
+	}
+}
+
+func TestInvalidSHA256Hash(t *testing.T) {
+	invalidDigest := []byte("test")
+	_, err := RSASignSHA256Digest(invalidDigest, "testdata/rsa.priv", "hunter2")
+	require.EqualError(t, err, "digest is not a SHA256 hash")
+
+	err = RSAVerifySHA256Digest(invalidDigest, []byte{}, "testdata/rsa.pub")
+	require.EqualError(t, err, "digest is not a SHA256 hash")
+}
+
+func TestRSAVerifySHA256WrongSignature(t *testing.T) {
+	digest := sha256.Sum256([]byte("test"))
+	err := RSAVerifySHA256Digest(digest[:], []byte{}, "testdata/rsa.pub")
+	require.EqualError(t, err, "verify PKCS1v15 signature: crypto/rsa: verification error")
 }
