@@ -4,6 +4,8 @@ import (
 	"archive/tar"
 	"bytes"
 	"io"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -99,6 +101,13 @@ func readTarNames(t *testing.T, data []byte) []string {
 		require.NoError(t, err)
 	}
 	return names
+}
+
+func writeTempScript(t *testing.T, dir, name, body string) string {
+	t.Helper()
+	target := filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(target, []byte(body), 0o755))
+	return target
 }
 
 func TestRegistered(t *testing.T) {
@@ -254,6 +263,56 @@ func TestPackageControlEntriesComeFirst(t *testing.T) {
 	require.Equal(t, []string{"./props.plist", "./files.plist"}, names[:2])
 	payload := append([]string(nil), names[2:]...)
 	require.True(t, sort.StringsAreSorted(payload), "payload entries should be sorted after control entries: %v", payload)
+}
+
+func TestPackageWritesLifecycleScripts(t *testing.T) {
+	info := exampleInfo()
+	dir := t.TempDir()
+	info.Scripts.PreInstall = writeTempScript(t, dir, "preinstall.sh", "echo preinstall\n")
+	info.Scripts.PostInstall = writeTempScript(t, dir, "postinstall.sh", "echo postinstall\n")
+	info.Scripts.PreRemove = writeTempScript(t, dir, "preremove.sh", "echo preremove\n")
+	info.Scripts.PostRemove = writeTempScript(t, dir, "postremove.sh", "echo postremove\n")
+
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+
+	entries := readTarEntries(t, buf.Bytes())
+	install := string(entries["./INSTALL"])
+	remove := string(entries["./REMOVE"])
+
+	require.Contains(t, install, "#!/bin/sh")
+	require.Contains(t, install, "preinstall()")
+	require.Contains(t, install, "postinstall()")
+	require.Contains(t, install, "pre)")
+	require.Contains(t, install, "post)")
+	require.Contains(t, install, "echo preinstall")
+	require.Contains(t, install, "echo postinstall")
+
+	require.Contains(t, remove, "#!/bin/sh")
+	require.Contains(t, remove, "preremove()")
+	require.Contains(t, remove, "postremove()")
+	require.Contains(t, remove, "pre)")
+	require.Contains(t, remove, "post)")
+	require.Contains(t, remove, "echo preremove")
+	require.Contains(t, remove, "echo postremove")
+}
+
+func TestPackageOmitsLifecycleScriptsWhenUnset(t *testing.T) {
+	info := exampleInfo()
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+
+	entries := readTarEntries(t, buf.Bytes())
+	require.NotContains(t, entries, "./INSTALL")
+	require.NotContains(t, entries, "./REMOVE")
+}
+
+func TestPackageReturnsLifecycleScriptReadError(t *testing.T) {
+	info := exampleInfo()
+	info.Scripts.PreInstall = filepath.Join(t.TempDir(), "missing-preinstall.sh")
+
+	err := Default.Package(info, &bytes.Buffer{})
+	require.ErrorContains(t, err, "missing-preinstall.sh")
 }
 
 func TestPropsManifestUsesGenericMetadata(t *testing.T) {

@@ -386,6 +386,74 @@ func filesManifest(info *nfpm.Info) (plistDict, error) {
 	return manifest, nil
 }
 
+type xbpsScriptlet struct {
+	action string
+	name   string
+	source string
+}
+
+func loadOptionalScript(source string) ([]byte, error) {
+	if source == "" {
+		return nil, nil
+	}
+	return os.ReadFile(source)
+}
+
+func appendScriptFunction(buf *bytes.Buffer, name string, data []byte) {
+	fmt.Fprintf(buf, "%s() {\n", name)
+	buf.Write(data)
+	if len(data) > 0 && data[len(data)-1] != '\n' {
+		buf.WriteByte('\n')
+	}
+	buf.WriteString("}\n\n")
+}
+
+func renderXBPSActionScript(scriptlets []xbpsScriptlet) ([]byte, error) {
+	var loaded []xbpsScriptlet
+	bodies := map[string][]byte{}
+	for _, scriptlet := range scriptlets {
+		data, err := loadOptionalScript(scriptlet.source)
+		if err != nil {
+			return nil, err
+		}
+		if len(data) == 0 {
+			continue
+		}
+		loaded = append(loaded, scriptlet)
+		bodies[scriptlet.name] = data
+	}
+	if len(loaded) == 0 {
+		return nil, nil
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("#!/bin/sh\n\n")
+	for _, scriptlet := range loaded {
+		appendScriptFunction(&buf, scriptlet.name, bodies[scriptlet.name])
+	}
+
+	buf.WriteString("case \"$1\" in\n")
+	for _, scriptlet := range loaded {
+		fmt.Fprintf(&buf, "%s)\n\t%s\n\t;;\n", scriptlet.action, scriptlet.name)
+	}
+	buf.WriteString("esac\n")
+	return buf.Bytes(), nil
+}
+
+func renderInstallScript(info *nfpm.Info) ([]byte, error) {
+	return renderXBPSActionScript([]xbpsScriptlet{
+		{action: "pre", name: "preinstall", source: info.Scripts.PreInstall},
+		{action: "post", name: "postinstall", source: info.Scripts.PostInstall},
+	})
+}
+
+func renderRemoveScript(info *nfpm.Info) ([]byte, error) {
+	return renderXBPSActionScript([]xbpsScriptlet{
+		{action: "pre", name: "preremove", source: info.Scripts.PreRemove},
+		{action: "post", name: "postremove", source: info.Scripts.PostRemove},
+	})
+}
+
 // ConventionalFileName returns a file name according to XBPS package conventions.
 func (*XBPS) ConventionalFileName(info *nfpm.Info) string {
 	copyInfo := *info
@@ -506,6 +574,14 @@ func (*XBPS) Package(info *nfpm.Info, w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	installScript, err := renderInstallScript(info)
+	if err != nil {
+		return err
+	}
+	removeScript, err := renderRemoveScript(info)
+	if err != nil {
+		return err
+	}
 
 	zw, err := zstd.NewWriter(w)
 	if err != nil {
@@ -521,6 +597,20 @@ func (*XBPS) Package(info *nfpm.Info, w io.Writer) error {
 		_ = tw.Close()
 		_ = zw.Close()
 		return err
+	}
+	if len(installScript) > 0 {
+		if err := writeBytesEntry(tw, "./INSTALL", installScript, 0o755, info); err != nil {
+			_ = tw.Close()
+			_ = zw.Close()
+			return err
+		}
+	}
+	if len(removeScript) > 0 {
+		if err := writeBytesEntry(tw, "./REMOVE", removeScript, 0o755, info); err != nil {
+			_ = tw.Close()
+			_ = zw.Close()
+			return err
+		}
 	}
 	for _, content := range sortedContents(info) {
 		if content.Type == files.TypeRPMGhost {
