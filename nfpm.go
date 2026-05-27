@@ -654,7 +654,7 @@ func Validate(info *Info) (err error) {
 	if info.Name == "" {
 		return ErrFieldEmpty{"name"}
 	}
-	if info.Arch == "" && (info.Deb.Arch == "" || info.RPM.Arch == "" || info.APK.Arch == "") {
+	if !hasAnyArch(info) {
 		return ErrFieldEmpty{"arch"}
 	}
 	if info.Version == "" {
@@ -675,6 +675,17 @@ func Validate(info *Info) (err error) {
 	}
 
 	return nil
+}
+
+func hasAnyArch(info *Info) bool {
+	return info.Arch != "" ||
+		info.Deb.Arch != "" ||
+		info.RPM.Arch != "" ||
+		info.APK.Arch != "" ||
+		info.ArchLinux.Arch != "" ||
+		info.IPK.Arch != "" ||
+		info.XBPS.Arch != "" ||
+		info.MSIX.Arch != ""
 }
 
 // WithDefaults set some sane defaults into the given Info.
