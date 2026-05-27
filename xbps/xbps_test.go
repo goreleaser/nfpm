@@ -1,13 +1,21 @@
 package xbps
 
 import (
+	"archive/tar"
 	"bytes"
-	"errors"
+	"io"
+	"sort"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
 )
+
+var testMTime = time.Date(2023, 11, 5, 23, 15, 17, 0, time.UTC)
 
 func exampleInfo() *nfpm.Info {
 	return nfpm.WithDefaults(&nfpm.Info{
@@ -17,7 +25,80 @@ func exampleInfo() *nfpm.Info {
 		Prerelease:      "beta-1",
 		VersionMetadata: "git-1",
 		Release:         "2",
+		Description:     "Foo does things\nAnd does them well.",
+		Maintainer:      "Carlos A Becker <pkg@carlosbecker.com>",
+		Homepage:        "https://example.com/foo",
+		License:         "MIT",
+		MTime:           testMTime,
+		Overridables: nfpm.Overridables{
+			Depends:   []string{"zlib>=1.0_1", "bash"},
+			Provides:  []string{"foo-virtual-1.0_1"},
+			Replaces:  []string{"foo-old>=1.0"},
+			Conflicts: []string{"bar<2.0"},
+			Contents: []*files.Content{
+				{
+					Source:      "../testdata/fake",
+					Destination: "/usr/bin/fake",
+				},
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/etc/fake/fake.conf",
+					Type:        files.TypeConfig,
+				},
+				{
+					Destination: "/var/lib/foo",
+					Type:        files.TypeDir,
+				},
+				{
+					Source:      "/etc/fake/fake.conf",
+					Destination: "/etc/fake/fake-link.conf",
+					Type:        files.TypeSymlink,
+				},
+			},
+		},
 	})
+}
+
+func readTarEntries(t *testing.T, data []byte) map[string][]byte {
+	t.Helper()
+	zr, err := zstd.NewReader(bytes.NewReader(data))
+	require.NoError(t, err)
+	defer zr.Close()
+
+	tr := tar.NewReader(zr)
+	entries := map[string][]byte{}
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		body, err := io.ReadAll(tr)
+		require.NoError(t, err)
+		entries[hdr.Name] = body
+	}
+	return entries
+}
+
+func readTarNames(t *testing.T, data []byte) []string {
+	t.Helper()
+	zr, err := zstd.NewReader(bytes.NewReader(data))
+	require.NoError(t, err)
+	defer zr.Close()
+
+	tr := tar.NewReader(zr)
+	var names []string
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		names = append(names, hdr.Name)
+		_, err = io.Copy(io.Discard, tr)
+		require.NoError(t, err)
+	}
+	return names
 }
 
 func TestRegistered(t *testing.T) {
@@ -134,7 +215,111 @@ func TestPackageRejectsUnknownArch(t *testing.T) {
 	require.ErrorContains(t, err, `unsupported architecture "loong64"`)
 }
 
-func TestPackagePlaceholder(t *testing.T) {
-	err := Default.Package(exampleInfo(), &bytes.Buffer{})
-	require.True(t, errors.Is(err, errPackageWriterNotImplemented))
+func TestPackageRejectsNonPositiveRelease(t *testing.T) {
+	info := exampleInfo()
+	info.Release = "0"
+
+	err := Default.Package(info, &bytes.Buffer{})
+	require.ErrorContains(t, err, "must be a positive integer revision")
+}
+
+func TestPackageWritesZstdArchive(t *testing.T) {
+	info := exampleInfo()
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+
+	data := buf.Bytes()
+	require.GreaterOrEqual(t, len(data), 4)
+	require.Equal(t, []byte{0x28, 0xB5, 0x2F, 0xFD}, data[:4])
+
+	entries := readTarEntries(t, data)
+	require.Contains(t, entries, "./props.plist")
+	require.Contains(t, entries, "./files.plist")
+	require.Contains(t, entries, "./usr/bin/fake")
+	require.Contains(t, entries, "./etc/fake/fake.conf")
+	require.Contains(t, entries, "./etc/fake/fake-link.conf")
+	require.Contains(t, entries, "./var/lib/foo/")
+	require.Contains(t, string(entries["./props.plist"]), "foo-1.2.3.beta-1.git-1_2")
+	require.Contains(t, string(entries["./props.plist"]), "Foo does things")
+	require.Contains(t, string(entries["./files.plist"]), "/etc/fake/fake.conf")
+}
+
+func TestPackageControlEntriesComeFirst(t *testing.T) {
+	info := exampleInfo()
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+
+	names := readTarNames(t, buf.Bytes())
+	require.GreaterOrEqual(t, len(names), 4)
+	require.Equal(t, []string{"./props.plist", "./files.plist"}, names[:2])
+	payload := append([]string(nil), names[2:]...)
+	require.True(t, sort.StringsAreSorted(payload), "payload entries should be sorted after control entries: %v", payload)
+}
+
+func TestPropsManifestUsesGenericMetadata(t *testing.T) {
+	info := exampleInfo()
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+	props, err := propsManifest(info)
+	require.NoError(t, err)
+	require.Equal(t, "x86_64", props["architecture"])
+	require.Equal(t, "foo", props["pkgname"])
+	require.Equal(t, "foo-1.2.3.beta-1.git-1_2", props["pkgver"])
+	require.Equal(t, "1.2.3.beta-1.git-1", props["version"])
+	require.Equal(t, "Foo does things", props["short_desc"])
+	require.Equal(t, "Foo does things\nAnd does them well.", props["long_desc"])
+	require.Equal(t, "https://example.com/foo", props["homepage"])
+	require.Equal(t, "MIT", props["license"])
+	require.Equal(t, "Carlos A Becker <pkg@carlosbecker.com>", props["maintainer"])
+	require.Equal(t, plistArray{"bash", "zlib>=1.0_1"}, props["run_depends"])
+	require.Equal(t, plistArray{"bar<2.0"}, props["conflicts"])
+	require.Equal(t, plistArray{"foo-virtual-1.0_1"}, props["provides"])
+	require.Equal(t, plistArray{"foo-old>=1.0"}, props["replaces"])
+	require.Equal(t, plistArray{"/etc/fake/fake.conf"}, props["conf_files"])
+}
+
+func TestPropsManifestIncludesAllConfigVariants(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = append(info.Contents,
+		&files.Content{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/fake/a.conf",
+			Type:        files.TypeConfigNoReplace,
+		},
+		&files.Content{
+			Source:      "../testdata/whatever2.conf",
+			Destination: "/etc/fake/b.conf",
+			Type:        files.TypeConfigMissingOK,
+		},
+	)
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+	props, err := propsManifest(info)
+	require.NoError(t, err)
+	require.Equal(t, plistArray{"/etc/fake/a.conf", "/etc/fake/b.conf", "/etc/fake/fake.conf"}, props["conf_files"])
+}
+
+func TestFilesManifestClassifiesPayloadEntries(t *testing.T) {
+	info := exampleInfo()
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+	manifest, err := filesManifest(info)
+	require.NoError(t, err)
+	require.Contains(t, manifest, "files")
+	require.Contains(t, manifest, "conf_files")
+	require.Contains(t, manifest, "links")
+	require.Contains(t, manifest, "dirs")
+
+	links := manifest["links"].(plistArray)
+	require.Contains(t, links, plistDict{"file": "/etc/fake/fake-link.conf", "target": "/etc/fake/fake.conf"})
+}
+
+func TestMarshalPlistEscapesXMLDelimitersOnly(t *testing.T) {
+	data, err := marshalPlist(plistDict{"long_desc": `<tag> & keep
+quotes " ' untouched`})
+	require.NoError(t, err)
+	text := strings.ReplaceAll(string(data), "\r\n", "\n")
+	require.Contains(t, text, "&lt;tag&gt; &amp; keep")
+	require.Contains(t, text, `quotes " ' untouched`)
+	require.NotContains(t, text, "&#xA;")
 }

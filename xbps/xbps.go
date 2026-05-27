@@ -2,18 +2,24 @@
 package xbps
 
 import (
-	"errors"
+	"archive/tar"
+	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"io"
+	"os"
+	"path"
+	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/klauspost/compress/zstd"
 )
 
 const packagerName = "xbps"
-
-var errPackageWriterNotImplemented = errors.New("xbps: package writer is not implemented")
 
 // nolint: gochecknoinits
 func init() {
@@ -98,6 +104,288 @@ func pkgver(info *nfpm.Info) (string, error) {
 	return fmt.Sprintf("%s-%s_%s", info.Name, version(info), rev), nil
 }
 
+func shortDesc(info *nfpm.Info) string {
+	first, _, _ := strings.Cut(strings.TrimSpace(info.Description), "\n")
+	return strings.TrimSpace(first)
+}
+
+func sortedContents(info *nfpm.Info) files.Contents {
+	contents := slices.Clone(info.Contents)
+	sort.Sort(contents)
+	return contents
+}
+
+func sortedStrings(values []string) []string {
+	result := slices.Clone(values)
+	sort.Strings(result)
+	return result
+}
+
+func isConfigType(contentType string) bool {
+	switch contentType {
+	case files.TypeConfig, files.TypeConfigNoReplace, files.TypeConfigMissingOK:
+		return true
+	default:
+		return false
+	}
+}
+
+func isPayloadFileType(contentType string) bool {
+	switch contentType {
+	case files.TypeDir, files.TypeImplicitDir, files.TypeSymlink, files.TypeRPMGhost:
+		return false
+	default:
+		return true
+	}
+}
+
+func installedSize(info *nfpm.Info) uint64 {
+	var total uint64
+	for _, content := range sortedContents(info) {
+		if isPayloadFileType(content.Type) {
+			total += uint64(content.Size())
+		}
+	}
+	return total
+}
+
+func configFiles(info *nfpm.Info) []string {
+	var result []string
+	for _, content := range sortedContents(info) {
+		if isConfigType(content.Type) {
+			result = append(result, files.NormalizeAbsoluteFilePath(content.Destination))
+		}
+	}
+	return result
+}
+
+func normalizeTargetForMetadata(dst, src string) string {
+	if strings.HasPrefix(src, "/") {
+		return files.NormalizeAbsoluteFilePath(src)
+	}
+	return files.NormalizeAbsoluteFilePath(path.Join(path.Dir(dst), src))
+}
+
+type plistValue any
+
+type plistDict map[string]plistValue
+
+type plistArray []plistValue
+
+func portablePlistEscape(buf *bytes.Buffer, value string) {
+	for _, r := range value {
+		switch r {
+		case '&':
+			buf.WriteString("&amp;")
+		case '<':
+			buf.WriteString("&lt;")
+		case '>':
+			buf.WriteString("&gt;")
+		default:
+			buf.WriteRune(r)
+		}
+	}
+}
+
+func writePlistValue(buf *bytes.Buffer, value plistValue) error {
+	switch v := value.(type) {
+	case plistDict:
+		buf.WriteString("<dict>")
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			buf.WriteString("<key>")
+			portablePlistEscape(buf, key)
+			buf.WriteString("</key>")
+			if err := writePlistValue(buf, v[key]); err != nil {
+				return err
+			}
+		}
+		buf.WriteString("</dict>")
+	case plistArray:
+		buf.WriteString("<array>")
+		for _, item := range v {
+			if err := writePlistValue(buf, item); err != nil {
+				return err
+			}
+		}
+		buf.WriteString("</array>")
+	case string:
+		buf.WriteString("<string>")
+		portablePlistEscape(buf, v)
+		buf.WriteString("</string>")
+	case bool:
+		if v {
+			buf.WriteString("<true/>")
+		} else {
+			buf.WriteString("<false/>")
+		}
+	case int64:
+		fmt.Fprintf(buf, "<integer>%d</integer>", v)
+	case uint64:
+		fmt.Fprintf(buf, "<integer>%d</integer>", v)
+	default:
+		return fmt.Errorf("xbps: unsupported plist value type %T", value)
+	}
+	return nil
+}
+
+func marshalPlist(root plistDict) ([]byte, error) {
+	var buf bytes.Buffer
+	buf.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+	buf.WriteString("<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n")
+	buf.WriteString("<plist version=\"1.0\">\n")
+	if err := writePlistValue(&buf, root); err != nil {
+		return nil, err
+	}
+	buf.WriteString("\n</plist>\n")
+	return buf.Bytes(), nil
+}
+
+func propsManifest(info *nfpm.Info) (plistDict, error) {
+	copyInfo := *info
+	normalized, err := ensureValidArch(&copyInfo)
+	if err != nil {
+		return nil, err
+	}
+	pv, err := pkgver(info)
+	if err != nil {
+		return nil, err
+	}
+
+	manifest := plistDict{
+		"architecture":   normalized.Arch,
+		"installed_size": installedSize(info),
+		"pkgname":        info.Name,
+		"pkgver":         pv,
+		"short_desc":     shortDesc(info),
+		"version":        version(info),
+	}
+	if info.Description != "" {
+		manifest["long_desc"] = info.Description
+	}
+	if info.Homepage != "" {
+		manifest["homepage"] = info.Homepage
+	}
+	if info.License != "" {
+		manifest["license"] = info.License
+	}
+	if info.Maintainer != "" {
+		manifest["maintainer"] = info.Maintainer
+	}
+	if len(info.Depends) > 0 {
+		deps := plistArray{}
+		for _, value := range sortedStrings(info.Depends) {
+			deps = append(deps, value)
+		}
+		manifest["run_depends"] = deps
+	}
+	if confs := configFiles(info); len(confs) > 0 {
+		items := plistArray{}
+		for _, value := range confs {
+			items = append(items, value)
+		}
+		manifest["conf_files"] = items
+	}
+	for key, values := range map[string][]string{
+		"conflicts": info.Conflicts,
+		"provides":  info.Provides,
+		"replaces":  info.Replaces,
+	} {
+		if len(values) == 0 {
+			continue
+		}
+		items := plistArray{}
+		for _, value := range sortedStrings(values) {
+			items = append(items, value)
+		}
+		manifest[key] = items
+	}
+	return manifest, nil
+}
+
+func fileEntry(content *files.Content) (plistDict, error) {
+	entry := plistDict{
+		"file": files.NormalizeAbsoluteFilePath(content.Destination),
+	}
+	if content.Type == files.TypeSymlink {
+		entry["target"] = normalizeTargetForMetadata(content.Destination, content.Source)
+		return entry, nil
+	}
+	if content.Type == files.TypeDir || content.Type == files.TypeImplicitDir {
+		return entry, nil
+	}
+
+	f, err := os.Open(content.Source)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return nil, err
+	}
+	entry["sha256"] = fmt.Sprintf("%x", h.Sum(nil))
+	entry["size"] = uint64(content.Size())
+	return entry, nil
+}
+
+func filesManifest(info *nfpm.Info) (plistDict, error) {
+	manifest := plistDict{}
+	var regular plistArray
+	var configs plistArray
+	var links plistArray
+	var dirs plistArray
+
+	for _, content := range sortedContents(info) {
+		switch {
+		case content.Type == files.TypeRPMGhost:
+			continue
+		case content.Type == files.TypeDir || content.Type == files.TypeImplicitDir:
+			entry, err := fileEntry(content)
+			if err != nil {
+				return nil, err
+			}
+			dirs = append(dirs, entry)
+		case content.Type == files.TypeSymlink:
+			entry, err := fileEntry(content)
+			if err != nil {
+				return nil, err
+			}
+			links = append(links, entry)
+		case isConfigType(content.Type):
+			entry, err := fileEntry(content)
+			if err != nil {
+				return nil, err
+			}
+			configs = append(configs, entry)
+		default:
+			entry, err := fileEntry(content)
+			if err != nil {
+				return nil, err
+			}
+			regular = append(regular, entry)
+		}
+	}
+	if len(regular) > 0 {
+		manifest["files"] = regular
+	}
+	if len(configs) > 0 {
+		manifest["conf_files"] = configs
+	}
+	if len(links) > 0 {
+		manifest["links"] = links
+	}
+	if len(dirs) > 0 {
+		manifest["dirs"] = dirs
+	}
+	return manifest, nil
+}
+
 // ConventionalFileName returns a file name according to XBPS package conventions.
 func (*XBPS) ConventionalFileName(info *nfpm.Info) string {
 	copyInfo := *info
@@ -118,12 +406,81 @@ func (*XBPS) ConventionalExtension() string {
 	return ".xbps"
 }
 
-// Package currently validates the XBPS skeleton inputs and returns a placeholder until native writing lands.
-func (*XBPS) Package(info *nfpm.Info, _ io.Writer) error {
+func writeBytesEntry(tw *tar.Writer, name string, data []byte, mode int64, info *nfpm.Info) error {
+	if err := tw.WriteHeader(&tar.Header{
+		Name:     name,
+		Mode:     mode,
+		Size:     int64(len(data)),
+		Typeflag: tar.TypeReg,
+		ModTime:  info.MTime,
+		Uname:    "root",
+		Gname:    "root",
+		Uid:      0,
+		Gid:      0,
+	}); err != nil {
+		return err
+	}
+	_, err := tw.Write(data)
+	return err
+}
+
+func writeContentEntry(tw *tar.Writer, content *files.Content) error {
+	name := files.AsExplicitRelativePath(content.Destination)
+	switch content.Type {
+	case files.TypeDir, files.TypeImplicitDir:
+		return tw.WriteHeader(&tar.Header{
+			Name:     name,
+			Mode:     int64(content.Mode()),
+			Typeflag: tar.TypeDir,
+			ModTime:  content.ModTime(),
+			Uname:    content.FileInfo.Owner,
+			Gname:    content.FileInfo.Group,
+			Uid:      0,
+			Gid:      0,
+		})
+	case files.TypeSymlink:
+		return tw.WriteHeader(&tar.Header{
+			Name:     name,
+			Mode:     0o777,
+			Typeflag: tar.TypeSymlink,
+			Linkname: content.Source,
+			ModTime:  content.ModTime(),
+			Uname:    content.FileInfo.Owner,
+			Gname:    content.FileInfo.Group,
+			Uid:      0,
+			Gid:      0,
+		})
+	default:
+		f, err := os.Open(content.Source)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		if err := tw.WriteHeader(&tar.Header{
+			Name:     name,
+			Mode:     int64(content.Mode()),
+			Size:     content.Size(),
+			Typeflag: tar.TypeReg,
+			ModTime:  content.ModTime(),
+			Uname:    content.FileInfo.Owner,
+			Gname:    content.FileInfo.Group,
+			Uid:      0,
+			Gid:      0,
+		}); err != nil {
+			return err
+		}
+		_, err = io.Copy(tw, f)
+		return err
+	}
+}
+
+// Package writes a new xbps package to the given writer using the given info.
+func (*XBPS) Package(info *nfpm.Info, w io.Writer) error {
 	if info.Platform != "linux" {
 		return fmt.Errorf("invalid platform: %s", info.Platform)
 	}
-	if _, err := ensureValidArch(info); err != nil {
+	var err error
+	if info, err = ensureValidArch(info); err != nil {
 		return err
 	}
 	if _, err := pkgver(info); err != nil {
@@ -132,5 +489,55 @@ func (*XBPS) Package(info *nfpm.Info, _ io.Writer) error {
 	if err := nfpm.PrepareForPackager(info, packagerName); err != nil {
 		return err
 	}
-	return errPackageWriterNotImplemented
+
+	props, err := propsManifest(info)
+	if err != nil {
+		return err
+	}
+	propsData, err := marshalPlist(props)
+	if err != nil {
+		return err
+	}
+	manifest, err := filesManifest(info)
+	if err != nil {
+		return err
+	}
+	manifestData, err := marshalPlist(manifest)
+	if err != nil {
+		return err
+	}
+
+	zw, err := zstd.NewWriter(w)
+	if err != nil {
+		return fmt.Errorf("xbps: create zstd writer: %w", err)
+	}
+	tw := tar.NewWriter(zw)
+	if err := writeBytesEntry(tw, "./props.plist", propsData, 0o644, info); err != nil {
+		_ = tw.Close()
+		_ = zw.Close()
+		return err
+	}
+	if err := writeBytesEntry(tw, "./files.plist", manifestData, 0o644, info); err != nil {
+		_ = tw.Close()
+		_ = zw.Close()
+		return err
+	}
+	for _, content := range sortedContents(info) {
+		if content.Type == files.TypeRPMGhost {
+			continue
+		}
+		if err := writeContentEntry(tw, content); err != nil {
+			_ = tw.Close()
+			_ = zw.Close()
+			return err
+		}
+	}
+	if err := tw.Close(); err != nil {
+		_ = zw.Close()
+		return fmt.Errorf("xbps: close tar writer: %w", err)
+	}
+	if err := zw.Close(); err != nil {
+		return fmt.Errorf("xbps: close zstd writer: %w", err)
+	}
+	return nil
 }
