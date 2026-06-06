@@ -134,7 +134,8 @@ func TestArchConventionalFileName(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
 			name := Default.ConventionalFileName(info)
-			require.Equal(t,
+			require.Equal(
+				t,
 				"foo-test-1.0.0beta_1-1-"+archToArchLinux[arch]+".pkg.tar.zst",
 				name,
 			)

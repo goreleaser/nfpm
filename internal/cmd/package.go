@@ -43,7 +43,8 @@ func newPackageCmd() *packageCmd {
 
 	cmd.Flags().StringVarP(&root.packager, "packager", "p", "",
 		fmt.Sprintf("which packager implementation to use [%s]", strings.Join(pkgs, "|")))
-	_ = cmd.RegisterFlagCompletionFunc("packager", cobra.FixedCompletions(pkgs,
+	_ = cmd.RegisterFlagCompletionFunc("packager", cobra.FixedCompletions(
+		pkgs,
 		cobra.ShellCompDirectiveNoFileComp,
 	))
 

@@ -43,18 +43,18 @@ func init() {
 // https://wiki.debian.org/ArchitectureSpecificsMemo
 // nolint: gochecknoglobals
 var archToDebian = map[string]string{
-	"386":       "i386",
-	"arm64":     "arm64",
-	"arm5":      "armel",
-	"arm6":      "armhf",
-	"arm7":      "armhf",
-	"mips64le":  "mips64el",
-	"mipsle":    "mipsel",
-	"ppc64le":   "ppc64el",
-	"s390":      "s390x",
-	"x86_64":    "amd64",
-	"aarch64":   "arm64",
-	"riscv64":   "riscv64",
+	"386":      "i386",
+	"arm64":    "arm64",
+	"arm5":     "armel",
+	"arm6":     "armhf",
+	"arm7":     "armhf",
+	"mips64le": "mips64el",
+	"mipsle":   "mipsel",
+	"ppc64le":  "ppc64el",
+	"s390":     "s390x",
+	"x86_64":   "amd64",
+	"aarch64":  "arm64",
+	"riscv64":  "riscv64",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
@@ -877,7 +877,8 @@ func tarHeader(content *files.Content, preferredModTimes ...time.Time) (*tar.Hea
 	h := &tar.Header{
 		Name: content.Name(),
 		ModTime: modtime.Get(
-			append(preferredModTimes, content.ModTime())...),
+			append(preferredModTimes, content.ModTime())...,
+		),
 		Mode:   int64(fm & 0o7777),
 		Uname:  content.FileInfo.Owner,
 		Gname:  content.FileInfo.Group,
