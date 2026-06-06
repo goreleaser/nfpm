@@ -138,7 +138,7 @@ func TestDefaultWithArch(t *testing.T) {
 		"etc/fake/fake2.conf":         "96c335dc28122b5f09a4cef74b156cd24c23784c",
 		"etc/fake/fake3.conf":         "96c335dc28122b5f09a4cef74b156cd24c23784c",
 	}
-	for _, arch := range []string{"386", "amd64"} {
+	for _, arch := range []string{"386", "amd64", "riscv64"} {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch

@@ -77,17 +77,18 @@ type RPM struct {
 // https://github.com/rpm-software-management/rpm/blob/4a9b7b5908d8b463a836b51322242677677bd8b7/lib/rpmrc.cc#L1167
 // nolint: gochecknoglobals
 var archToRPM = map[string]string{
-	"all":      "noarch",
-	"amd64":    "x86_64",
-	"386":      "i386",
-	"arm64":    "aarch64",
-	"arm5":     "armv5tel",
-	"arm6":     "armv6hl",
-	"arm7":     "armv7hl",
-	"mips64le": "mips64el",
-	"mipsle":   "mipsel",
-	"mips":     "mips",
-	"loong64":  "loongarch64",
+	"all":       "noarch",
+	"amd64":     "x86_64",
+	"386":       "i386",
+	"arm64":     "aarch64",
+	"arm5":      "armv5tel",
+	"arm6":      "armv6hl",
+	"arm7":      "armv7hl",
+	"mips64le":  "mips64el",
+	"mipsle":    "mipsel",
+	"mips":      "mips",
+	"loong64":   "loongarch64",
+	"riscv64":   "riscv64",
 }
 
 func setDefaults(info *nfpm.Info) *nfpm.Info {

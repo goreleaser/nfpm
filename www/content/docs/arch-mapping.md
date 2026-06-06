@@ -39,6 +39,7 @@ Thank you!
 | `mips64le` | `mips64el` |
 | `ppc64le`  | `ppc64el`  |
 |   `s390`   |  `s390x`   |
+| `riscv64`  | `riscv64`  |
 
 {{< /tab >}}
 
@@ -56,6 +57,7 @@ Thank you!
 |  `mipsle`  |   `mipsel`    |
 | `mips64le` |  `mips64el`   |
 | `loong64`  | `loongarch64` |
+| `riscv64`  |   `riscv64`   |
 
 {{< /tab >}}
 
@@ -75,6 +77,7 @@ Thank you!
 | `ppc64le` |   `ppc64le`   |
 |  `s390`   |    `s390x`    |
 | `loong64` | `loongarch64` |
+| `riscv64` |   `riscv64`   |
 
 {{< /tab >}}
 
@@ -91,43 +94,45 @@ Thank you!
 |  `arm5`   |   `arm`   |
 |  `arm6`   | `armv6h`  |
 |  `arm7`   | `armv7h`  |
+| `riscv64` | `riscv64` |
 
 {{< /tab >}}
 
 {{< tab >}}
 
-|   Input    |   Value    |
-| :--------: | :--------: |
-|  `amd64`   |  `x86_64`  |
-|  `x86_64`  |  `x86_64`  |
-|   `386`    |   `i386`   |
-|  `i386`    |   `i386`   |
-|  `arm64`   |  `arm64`   |
-| `aarch64`  |  `arm64`   |
-|   `arm5`   |  `armel`   |
-|   `arm6`   |  `armhf`   |
-|   `arm7`   |  `armhf`   |
-|  `mipsle`  |  `mipsel`  |
-| `mips64le` | `mips64el` |
-| `ppc64le`  | `ppc64el`  |
-|   `s390`   |  `s390x`   |
+|   Input    |       Value       |
+| :--------: | :---------------: |
+|  `amd64`   |     `x86_64`      |
+|  `x86_64`  |     `x86_64`      |
+|   `386`    |      `i386`       |
+|   `i386`   |      `i386`       |
+|  `arm64`   |      `arm64`      |
+| `aarch64`  |      `arm64`      |
+|   `arm5`   |      `armel`      |
+|   `arm6`   |      `armhf`      |
+|   `arm7`   |      `armhf`      |
+|  `mipsle`  |     `mipsel`      |
+| `mips64le` |    `mips64el`     |
+| `ppc64le`  |     `ppc64el`     |
+|   `s390`   |      `s390x`      |
+| `riscv64`  | `riscv64_generic` |
 
 {{< /tab >}}
 
 {{< tab >}}
 
-|   Input    |   Value   |
-| :--------: | :-------: |
-|  `amd64`   |   `x64`   |
-|  `x86_64`  |   `x64`   |
-|   `386`    |   `x86`   |
-|  `i386`    |   `x86`   |
-|  `i686`    |   `x86`   |
-|  `arm64`   |  `arm64`  |
-| `aarch64`  |  `arm64`  |
-|   `arm`    |   `arm`   |
-|   `arm7`   |   `arm`   |
-|   `all`    | `neutral` |
+|   Input   |   Value   |
+| :-------: | :-------: |
+|  `amd64`  |   `x64`   |
+| `x86_64`  |   `x64`   |
+|   `386`   |   `x86`   |
+|  `i386`   |   `x86`   |
+|  `i686`   |   `x86`   |
+|  `arm64`  |  `arm64`  |
+| `aarch64` |  `arm64`  |
+|   `arm`   |   `arm`   |
+|  `arm7`   |   `arm`   |
+|   `all`   | `neutral` |
 
 {{< /tab >}}
 
