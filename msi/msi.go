@@ -3,6 +3,7 @@
 package msi
 
 import (
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -125,12 +126,22 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 		WithVersion(convertToMSIVersion(info.Version)).
 		WithAllUsers(*info.MSI.AllUsers)
 
-	if info.MSI.ProductCode != "" {
-		b = b.WithProductCode(info.MSI.ProductCode)
+	// ProductCode must always be present. When omitted we derive a stable GUID
+	// from the product name (kept constant across versions so it does not change
+	// on every version bump).
+	productCode := info.MSI.ProductCode
+	if productCode == "" {
+		productCode = deriveGUID("product|" + info.MSI.ProductName)
 	}
-	if info.MSI.UpgradeCode != "" {
-		b = b.WithUpgradeCode(info.MSI.UpgradeCode)
+	b = b.WithProductCode(productCode)
+
+	// UpgradeCode stays stable across versions; derive it from the product name
+	// alone when omitted so upgrades work out of the box.
+	upgradeCode := info.MSI.UpgradeCode
+	if upgradeCode == "" {
+		upgradeCode = deriveGUID("upgrade|" + info.MSI.ProductName)
 	}
+	b = b.WithUpgradeCode(upgradeCode)
 	for k, v := range info.MSI.Properties {
 		b = b.WithProperty(k, v)
 	}
@@ -556,6 +567,19 @@ func sanitizeID(s string) string {
 
 func looksLikeGUID(s string) bool {
 	return strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}")
+}
+
+// deriveGUID produces a stable, braced uppercase GUID (RFC 4122 v5 style) from
+// the given seed. The same seed always yields the same GUID, keeping builds
+// reproducible.
+func deriveGUID(seed string) string {
+	h := sha1.Sum([]byte("nfpm-msi:" + seed))
+	var b [16]byte
+	copy(b[:], h[:16])
+	b[6] = (b[6] & 0x0f) | 0x50 // version 5
+	b[8] = (b[8] & 0x3f) | 0x80 // RFC 4122 variant
+	s := fmt.Sprintf("%X", b[:])
+	return fmt.Sprintf("{%s-%s-%s-%s-%s}", s[0:8], s[8:12], s[12:16], s[16:20], s[20:32])
 }
 
 // convertToMSIVersion converts a semver-style version to MSI's

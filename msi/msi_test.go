@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -166,6 +167,26 @@ func TestExplicitGUIDs(t *testing.T) {
 	info.MSI.ProductCode = "{12345678-1234-1234-1234-123456789ABC}"
 	info.MSI.UpgradeCode = "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
 	packageAndValidate(t, info)
+}
+
+// TestDerivedProductCode guards against shipping an MSI without a ProductCode
+// (msiexec fails such installs with error 1605). When the config omits the
+// codes, a derived braced GUID must be written into the package.
+func TestDerivedProductCode(t *testing.T) {
+	info := exampleInfo()
+	require.Empty(t, info.MSI.ProductCode)
+	require.Empty(t, info.MSI.UpgradeCode)
+
+	var buf bytes.Buffer
+	require.NoError(t, msi.Default.Package(info, &buf))
+
+	guid := regexp.MustCompile(`\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}`)
+	require.True(t, guid.Match(buf.Bytes()), "a derived GUID must be present in the package")
+
+	// Derivation must be reproducible.
+	var buf2 bytes.Buffer
+	require.NoError(t, msi.Default.Package(exampleInfo(), &buf2))
+	require.Equal(t, buf.Bytes(), buf2.Bytes(), "builds with identical input must be reproducible")
 }
 
 func TestShortcut(t *testing.T) {

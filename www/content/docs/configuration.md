@@ -634,10 +634,12 @@ msi:
   # Manufacturer/author of the product. (required)
   manufacturer: "My Company"
 
-  # Product code GUID. Auto-derived (stable) when omitted.
+  # Product code GUID. When omitted, a stable GUID is derived from the product
+  # name (kept constant across versions).
   product_code: "{12345678-1234-1234-1234-123456789ABC}"
 
-  # Upgrade code GUID. Recommended so future versions upgrade in place.
+  # Upgrade code GUID. When omitted, a stable GUID is derived from the product
+  # name (kept constant across versions so upgrades work).
   upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
 
   # Name of the default install folder (defaults to product_name).
