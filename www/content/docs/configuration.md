@@ -618,10 +618,11 @@ msix:
     # Passphrase is read from the NFPM_MSIX_PASSPHRASE environment variable.
 
 # Custom configuration applied only to the MSI packager (Windows).
-# The MSI packager produces a real Windows Installer database. File destinations
-# are honored: well-known prefixes such as `C:/Program Files`, `C:/ProgramData`
-# and `C:/Windows/System32` are mapped to the matching Windows Installer system
-# folders; anything else is installed under the product's install folder.
+# The MSI packager produces a real Windows Installer database. Use unix-style
+# destinations (a leading "/", no drive letter). Well-known prefixes such as
+# `/Program Files`, `/ProgramData` and `/Windows/System32` are mapped to the
+# matching Windows Installer system folders; anything else is installed under the
+# product's install folder.
 msi:
   # msi specific architecture name that overrides "arch" without performing
   # any replacements.
@@ -666,7 +667,7 @@ msi:
   # destinations.
   shortcuts:
     - name: "My Application"
-      target: "C:/Program Files/My Application/myapp.exe"
+      target: "/Program Files/My Application/myapp.exe"
       # Standard folder ID the shortcut is created in.
       # Defaults to ProgramMenuFolder; e.g. DesktopFolder.
       directory: ProgramMenuFolder
@@ -679,7 +680,7 @@ msi:
   services:
     - name: MyService
       display_name: "My Service"
-      executable: "C:/Program Files/My Application/svc.exe"
+      executable: "/Program Files/My Application/svc.exe"
       description: "My background service"
       # auto | demand | disabled | boot | system (defaults to demand).
       start_type: auto

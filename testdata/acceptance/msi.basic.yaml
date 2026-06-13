@@ -6,9 +6,9 @@ maintainer: "Foo Bar"
 description: "A test MSI package"
 contents:
   - src: ./testdata/fake
-    dst: "C:/Program Files/TestApp/app.exe"
+    dst: "/Program Files/TestApp/app.exe"
   - src: ./testdata/acceptance/testapp/logo.png
-    dst: "C:/Program Files/TestApp/assets/logo.png"
+    dst: "/Program Files/TestApp/assets/logo.png"
   - src: ./testdata/whatever.conf
     dst: config.conf
 msi:
@@ -16,7 +16,7 @@ msi:
   upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
   shortcuts:
     - name: "Test App"
-      target: "C:/Program Files/TestApp/app.exe"
+      target: "/Program Files/TestApp/app.exe"
       description: "Launch Test App"
   registry:
     - root: HKLM
