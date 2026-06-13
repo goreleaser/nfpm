@@ -17,9 +17,11 @@ import (
 	_ "github.com/goreleaser/nfpm/v2/arch"
 	_ "github.com/goreleaser/nfpm/v2/deb"
 	_ "github.com/goreleaser/nfpm/v2/ipk"
+	_ "github.com/goreleaser/nfpm/v2/msi"
 	_ "github.com/goreleaser/nfpm/v2/msix"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
 	"github.com/stretchr/testify/require"
+	gomsi "go.digitalxero.dev/go-msi"
 )
 
 // nolint: gochecknoglobals
@@ -489,6 +491,56 @@ func TestMSIXStructure(t *testing.T) {
 
 			// Verify payload file exists
 			require.True(t, fileNames["app/fake.exe"], "payload file app/fake.exe must exist")
+		})
+	}
+}
+
+func TestMSIStructure(t *testing.T) {
+	t.Parallel()
+	for _, arch := range []string{"amd64", "arm64"} {
+		arch := arch
+		t.Run(arch, func(t *testing.T) {
+			t.Parallel()
+
+			configFile := "./testdata/acceptance/msi.basic.yaml"
+			envFunc := func(s string) string {
+				switch s {
+				case "BUILD_ARCH":
+					return arch
+				case "SEMVER":
+					return "v1.0.0-0.1.b1+git.abcdefgh"
+				default:
+					return os.Getenv(s)
+				}
+			}
+
+			config, err := nfpm.ParseFileWithEnvMapping(configFile, envFunc)
+			require.NoError(t, err)
+
+			info, err := config.Get("msi")
+			require.NoError(t, err)
+			require.NoError(t, nfpm.Validate(info))
+
+			pkg, err := nfpm.Get("msi")
+			require.NoError(t, err)
+
+			var buf bytes.Buffer
+			require.NoError(t, pkg.Package(nfpm.WithDefaults(info), &buf))
+
+			// An MSI is an OLE Compound File (CFB) container.
+			cfbMagic := []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}
+			require.True(t, bytes.HasPrefix(buf.Bytes(), cfbMagic), "output must be a CFB container")
+
+			// The package must pass ICE validation with no error-severity findings.
+			v, err := gomsi.NewValidator().WithAllICEs().Build()
+			require.NoError(t, err)
+			findings, err := v.Validate(bytes.NewReader(buf.Bytes()))
+			require.NoError(t, err)
+			for _, f := range findings {
+				if f.Severity() == gomsi.SeverityError {
+					t.Errorf("ICE error finding %s: %s", f.ICE(), f.Message())
+				}
+			}
 		})
 	}
 }

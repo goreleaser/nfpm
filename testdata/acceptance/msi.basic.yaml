@@ -1,0 +1,28 @@
+name: TestApp
+arch: "${BUILD_ARCH}"
+version: 1.2.3
+license: MIT
+maintainer: "Foo Bar"
+description: "A test MSI package"
+contents:
+  - src: ./testdata/fake
+    dst: "C:/Program Files/TestApp/app.exe"
+  - src: ./testdata/acceptance/testapp/logo.png
+    dst: "C:/Program Files/TestApp/assets/logo.png"
+  - src: ./testdata/whatever.conf
+    dst: config.conf
+msi:
+  manufacturer: "Test Company"
+  upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
+  shortcuts:
+    - name: "Test App"
+      target: "C:/Program Files/TestApp/app.exe"
+      description: "Launch Test App"
+  registry:
+    - root: HKLM
+      key: 'Software\TestCo\TestApp'
+      name: InstallPath
+      value: "C:\\Program Files\\TestApp"
+  upgrade:
+    enabled: true
+    downgrade_error_message: "A newer version of TestApp is already installed."
