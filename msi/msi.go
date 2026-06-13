@@ -289,9 +289,13 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info) (map[string]placement, e
 		dest := normalizeDest(content.Destination)
 		rootID, rootDefault, rel := mapDestination(dest, is64bit(info.Arch))
 
-		// Ensure the root directory exists.
+		// Ensure the root directory exists. Standard Windows Installer folders
+		// (ProgramFiles64Folder, etc.) must be rooted at TARGETDIR; declaring
+		// them as bare roots would leave them unparented and break source
+		// resolution (error 2704). INSTALLFOLDER is pre-declared in Package and
+		// reparented by go-msi.
 		if !createdDirs[rootID] {
-			b.RootDirectory(rootID, rootDefault)
+			b.Directory("TARGETDIR").Subdirectory(rootID, rootDefault)
 			createdDirs[rootID] = true
 		}
 
