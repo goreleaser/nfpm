@@ -587,8 +587,8 @@ type MSI struct {
 	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msi nomenclature"`
 	ProductName  string            `yaml:"product_name,omitempty" json:"product_name,omitempty" jsonschema:"title=product name,description=defaults to the package name"`
 	Manufacturer string            `yaml:"manufacturer" json:"manufacturer" jsonschema:"title=manufacturer/author of the product,example=My Company"`
-	ProductCode  string            `yaml:"product_code,omitempty" json:"product_code,omitempty" jsonschema:"title=product code GUID,description=auto-derived when empty,example={12345678-1234-1234-1234-123456789ABC}"`
-	UpgradeCode  string            `yaml:"upgrade_code,omitempty" json:"upgrade_code,omitempty" jsonschema:"title=upgrade code GUID,description=recommended for upgrades,example={ABCDEF01-2345-6789-ABCD-EF0123456789}"`
+	ProductCode  string            `yaml:"product_code,omitempty" json:"product_code,omitempty" jsonschema:"title=product code GUID,description=derived from the product name (stable across versions) when empty,example={12345678-1234-1234-1234-123456789ABC}"`
+	UpgradeCode  string            `yaml:"upgrade_code,omitempty" json:"upgrade_code,omitempty" jsonschema:"title=upgrade code GUID,description=derived from the product name when empty,example={ABCDEF01-2345-6789-ABCD-EF0123456789}"`
 	InstallDir   string            `yaml:"install_dir,omitempty" json:"install_dir,omitempty" jsonschema:"title=default install folder name,description=defaults to the product name"`
 	AllUsers     *bool             `yaml:"all_users,omitempty" json:"all_users,omitempty" jsonschema:"title=per-machine install,description=defaults to true"`
 	Properties   map[string]string `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=arbitrary MSI Property rows"`
