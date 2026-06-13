@@ -290,6 +290,14 @@ func (c *Config) expandEnvVars() {
 	if msixPassphrase != "" {
 		c.MSIX.Signature.KeyPassphrase = msixPassphrase
 	}
+
+	// MSI specific
+	c.MSI.Signature.PFXFile = os.Expand(c.MSI.Signature.PFXFile, c.envMappingFunc)
+	c.MSI.Manufacturer = os.Expand(c.MSI.Manufacturer, c.envMappingFunc)
+	msiPassphrase := os.Expand("$NFPM_MSI_PASSPHRASE", c.envMappingFunc)
+	if msiPassphrase != "" {
+		c.MSI.Signature.KeyPassphrase = msiPassphrase
+	}
 }
 
 // Info contains information about a single package.
@@ -372,6 +380,7 @@ type Overridables struct {
 	ArchLinux  ArchLinux      `yaml:"archlinux,omitempty" json:"archlinux,omitempty" jsonschema:"title=archlinux-specific settings"`
 	IPK        IPK            `yaml:"ipk,omitempty" json:"ipk,omitempty" jsonschema:"title=ipk-specific settings"`
 	MSIX       MSIX           `yaml:"msix,omitempty" json:"msix,omitempty" jsonschema:"title=msix-specific settings"`
+	MSI        MSI            `yaml:"msi,omitempty" json:"msi,omitempty" jsonschema:"title=msi-specific settings"`
 }
 
 type ArchLinux struct {
@@ -571,6 +580,70 @@ type MSIXCapabilities struct {
 type MSIXSignature struct {
 	PFXFile       string `yaml:"pfx_file,omitempty" json:"pfx_file,omitempty" jsonschema:"title=PFX certificate file"`
 	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSIX_PASSPHRASE env var
+}
+
+// MSI contains configs that are only available on MSI packages.
+type MSI struct {
+	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msi nomenclature"`
+	ProductName  string            `yaml:"product_name,omitempty" json:"product_name,omitempty" jsonschema:"title=product name,description=defaults to the package name"`
+	Manufacturer string            `yaml:"manufacturer" json:"manufacturer" jsonschema:"title=manufacturer/author of the product,example=My Company"`
+	ProductCode  string            `yaml:"product_code,omitempty" json:"product_code,omitempty" jsonschema:"title=product code GUID,description=auto-derived when empty,example={12345678-1234-1234-1234-123456789ABC}"`
+	UpgradeCode  string            `yaml:"upgrade_code,omitempty" json:"upgrade_code,omitempty" jsonschema:"title=upgrade code GUID,description=recommended for upgrades,example={ABCDEF01-2345-6789-ABCD-EF0123456789}"`
+	InstallDir   string            `yaml:"install_dir,omitempty" json:"install_dir,omitempty" jsonschema:"title=default install folder name,description=defaults to the product name"`
+	AllUsers     *bool             `yaml:"all_users,omitempty" json:"all_users,omitempty" jsonschema:"title=per-machine install,description=defaults to true"`
+	Properties   map[string]string `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=arbitrary MSI Property rows"`
+	License      string            `yaml:"license,omitempty" json:"license,omitempty" jsonschema:"title=path to a license text file shown by the UI"`
+	MinimalUI    bool              `yaml:"minimal_ui,omitempty" json:"minimal_ui,omitempty" jsonschema:"title=install the canned minimal install wizard"`
+	Upgrade      MSIUpgrade        `yaml:"upgrade,omitempty" json:"upgrade,omitempty" jsonschema:"title=major upgrade behavior"`
+	Shortcuts    []MSIShortcut     `yaml:"shortcuts,omitempty" json:"shortcuts,omitempty" jsonschema:"title=shortcuts to create"`
+	Services     []MSIService      `yaml:"services,omitempty" json:"services,omitempty" jsonschema:"title=windows services to install"`
+	Registry     []MSIRegistry     `yaml:"registry,omitempty" json:"registry,omitempty" jsonschema:"title=registry entries to create"`
+	Signature    MSISignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=msi signature"`
+}
+
+// MSIUpgrade contains major-upgrade configuration for MSI packages.
+type MSIUpgrade struct {
+	Enabled               bool   `yaml:"enabled,omitempty" json:"enabled,omitempty" jsonschema:"title=enable WiX-style major upgrade handling"`
+	DowngradeErrorMessage string `yaml:"downgrade_error_message,omitempty" json:"downgrade_error_message,omitempty" jsonschema:"title=message shown when a newer version is already installed"`
+}
+
+// MSIShortcut describes an advertised shortcut in an MSI package.
+type MSIShortcut struct {
+	Name        string `yaml:"name" json:"name" jsonschema:"title=shortcut display name"`
+	Target      string `yaml:"target" json:"target" jsonschema:"title=destination path of an installed file the shortcut points to"`
+	Directory   string `yaml:"directory,omitempty" json:"directory,omitempty" jsonschema:"title=standard folder ID,default=ProgramMenuFolder,example=DesktopFolder"`
+	Arguments   string `yaml:"arguments,omitempty" json:"arguments,omitempty" jsonschema:"title=command-line arguments"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"title=shortcut description"`
+	Icon        string `yaml:"icon,omitempty" json:"icon,omitempty" jsonschema:"title=path to an icon file"`
+}
+
+// MSIService describes a Windows service to install from an MSI package.
+type MSIService struct {
+	Name         string   `yaml:"name" json:"name" jsonschema:"title=service name"`
+	DisplayName  string   `yaml:"display_name,omitempty" json:"display_name,omitempty" jsonschema:"title=service display name"`
+	Executable   string   `yaml:"executable" json:"executable" jsonschema:"title=destination path of the installed service executable"`
+	Description  string   `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"title=service description"`
+	StartType    string   `yaml:"start_type,omitempty" json:"start_type,omitempty" jsonschema:"title=service start type,enum=auto,enum=demand,enum=disabled,enum=boot,enum=system,default=demand"`
+	Account      string   `yaml:"account,omitempty" json:"account,omitempty" jsonschema:"title=account the service runs as"`
+	Arguments    string   `yaml:"arguments,omitempty" json:"arguments,omitempty" jsonschema:"title=service arguments"`
+	Dependencies []string `yaml:"dependencies,omitempty" json:"dependencies,omitempty" jsonschema:"title=service dependencies"`
+	Start        bool     `yaml:"start,omitempty" json:"start,omitempty" jsonschema:"title=start the service on install"`
+	Stop         bool     `yaml:"stop,omitempty" json:"stop,omitempty" jsonschema:"title=stop and delete the service on uninstall"`
+}
+
+// MSIRegistry describes a registry entry to create from an MSI package.
+type MSIRegistry struct {
+	Root  string `yaml:"root" json:"root" jsonschema:"title=registry root,enum=HKLM,enum=HKCU,enum=HKCR,enum=HKMU,enum=HKU"`
+	Key   string `yaml:"key" json:"key" jsonschema:"title=registry key path"`
+	Name  string `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"title=value name"`
+	Value string `yaml:"value,omitempty" json:"value,omitempty" jsonschema:"title=value data"`
+}
+
+// MSISignature contains signing configuration for MSI packages.
+type MSISignature struct {
+	PFXFile       string `yaml:"pfx_file,omitempty" json:"pfx_file,omitempty" jsonschema:"title=PFX certificate file"`
+	TimestampURL  string `yaml:"timestamp_url,omitempty" json:"timestamp_url,omitempty" jsonschema:"title=RFC3161 timestamp URL"`
+	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSI_PASSPHRASE env var
 }
 
 // Scripts contains information about maintainer scripts for packages.

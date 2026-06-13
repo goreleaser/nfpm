@@ -1,0 +1,17 @@
+name: TestApp
+arch: amd64
+version: 1.0.0
+license: MIT
+maintainer: "Test Company"
+description: "A test MSI package for Windows installation"
+contents:
+  - src: ./dist/testapp.exe
+    dst: "C:/Program Files/NfpmMsiTest/testapp.exe"
+msi:
+  product_name: NfpmMsiTest
+  manufacturer: "Test Company"
+  upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
+  shortcuts:
+    - name: "NfpmMsiTest"
+      target: "C:/Program Files/NfpmMsiTest/testapp.exe"
+      description: "Launch NfpmMsiTest"
