@@ -50,7 +50,7 @@ nfpm pkg --packager apk --target /tmp/
 nfpm pkg --packager xbps --target /tmp/
 ```
 
-You can also use `ipk`, `archlinux`, `msix`, and `xbps` as packagers.
+You can also use `ipk`, `archlinux`, and `msix` as packagers.
 
 ### Verify an XBPS package on Void Linux
 

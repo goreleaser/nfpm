@@ -503,7 +503,8 @@ func TestPropsManifestRejectsMalformedAlternatives(t *testing.T) {
 
 func TestPropsManifestIncludesAllConfigVariants(t *testing.T) {
 	info := exampleInfo()
-	info.Contents = append(info.Contents,
+	info.Contents = append(
+		info.Contents,
 		&files.Content{
 			Source:      "../testdata/whatever.conf",
 			Destination: "/etc/fake/a.conf",
@@ -545,4 +546,34 @@ quotes " ' untouched`})
 	require.Contains(t, text, "&lt;tag&gt; &amp; keep")
 	require.Contains(t, text, `quotes " ' untouched`)
 	require.NotContains(t, text, "&#xA;")
+}
+
+func TestSymlinkMetadataMatchesTarPayload(t *testing.T) {
+	// Regression test: for a relative symlink target the files.plist
+	// "target" must equal the value written into the tar header
+	// (Linkname: content.Source). Previously the metadata was normalized
+	// to an absolute path while the payload kept the raw relative target,
+	// which made xbps-pkgdb report the link as modified.
+	for _, src := range []string{"../lib/libfoo.so.1", "/usr/lib/libfoo.so.1", "libfoo.so.1"} {
+		content := &files.Content{
+			Source:      src,
+			Destination: "/usr/lib/foo/libfoo.so",
+			Type:        files.TypeSymlink,
+			FileInfo:    &files.ContentFileInfo{MTime: testMTime},
+		}
+
+		entry, err := fileEntry(content)
+		require.NoError(t, err)
+		require.Equal(t, src, entry["target"], "files.plist target must equal raw Source")
+
+		var buf bytes.Buffer
+		tw := tar.NewWriter(&buf)
+		require.NoError(t, writeContentEntry(tw, content))
+		require.NoError(t, tw.Close())
+
+		tr := tar.NewReader(&buf)
+		hdr, err := tr.Next()
+		require.NoError(t, err)
+		require.Equal(t, hdr.Linkname, entry["target"], "tar Linkname and files.plist target must agree")
+	}
 }

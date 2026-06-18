@@ -87,9 +87,9 @@ func loadPrivateKey(keyFile, passphrase string) (crypto.Signer, error) {
 		if err != nil {
 			return nil, fmt.Errorf("parse PKCS#8 private key: %w", err)
 		}
-		priv, ok := privAny.(crypto.Signer)
+		priv, ok := privAny.(*rsa.PrivateKey)
 		if !ok {
-			return nil, fmt.Errorf("cannot sign with given private key")
+			return nil, errNoRSAKey
 		}
 		return priv, nil
 	default:

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"slices"
 	"sort"
 	"strconv"
@@ -215,13 +214,6 @@ func alternativesMetadata(info *nfpm.Info) (plistDict, error) {
 	return result, nil
 }
 
-func normalizeTargetForMetadata(dst, src string) string {
-	if strings.HasPrefix(src, "/") {
-		return files.NormalizeAbsoluteFilePath(src)
-	}
-	return files.NormalizeAbsoluteFilePath(path.Join(path.Dir(dst), src))
-}
-
 type plistValue any
 
 type plistDict map[string]plistValue
@@ -370,7 +362,11 @@ func fileEntry(content *files.Content) (plistDict, error) {
 		"file": files.NormalizeAbsoluteFilePath(content.Destination),
 	}
 	if content.Type == files.TypeSymlink {
-		entry["target"] = normalizeTargetForMetadata(content.Destination, content.Source)
+		// Record the symlink target exactly as it is written into the tar
+		// header (writeContentEntry sets Linkname: content.Source), so the
+		// files.plist metadata never disagrees with the payload for relative
+		// targets. This matches the arch packager's MTREE handling.
+		entry["target"] = content.Source
 		return entry, nil
 	}
 	if content.Type == files.TypeDir || content.Type == files.TypeImplicitDir {
