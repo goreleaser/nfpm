@@ -17,7 +17,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
-	msi "go.digitalxero.dev/go-msi"
+	"go.digitalxero.dev/go-msi"
 )
 
 const packagerName = "msi"
@@ -546,6 +546,7 @@ func mapDestination(dest string, is64 bool) (rootID, rootDefault, rel string) {
 // makeID builds a stable, MSI-valid identifier from a prefix and a seed string.
 func makeID(prefix, seed string) string {
 	h := fnv.New32a()
+	// nolint:gocritic //hash.Hash32 does not have WriteString
 	_, _ = h.Write([]byte(seed))
 
 	readable := sanitizeID(path.Base(strings.TrimRight(seed, "/")))
