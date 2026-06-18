@@ -185,7 +185,7 @@ func TestRPMPostRequires(t *testing.T) {
 	require.True(t, ok)
 
 	requireRPMRequire(t, names, versions, flags, "systemd", "", rpmSenseScriptPost)
-	requireRPMRequire(t, names, versions, flags, "coreutils", "9.0", rpmSenseScriptPost|4)
+	requireRPMRequire(t, names, versions, flags, "coreutils", "9.0", rpmSenseScriptPost|4|8)
 }
 
 func requireRPMRequire(

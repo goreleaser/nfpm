@@ -974,6 +974,10 @@
 						"$ref": "#/$defs/RPMScripts",
 						"title": "rpm-specific scripts"
 					},
+					"requires": {
+						"$ref": "#/$defs/RPMRequires",
+						"title": "rpm-specific requires"
+					},
 					"group": {
 						"type": "string",
 						"title": "package group",
@@ -1010,6 +1014,22 @@
 						},
 						"type": "array",
 						"title": "Prefixes for relocatable packages"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"RPMRequires": {
+				"properties": {
+					"post": {
+						"items": {
+							"type": "string",
+							"examples": [
+								"nfpm"
+							]
+						},
+						"type": "array",
+						"title": "post requires directive"
 					}
 				},
 				"additionalProperties": false,
