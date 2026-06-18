@@ -45,6 +45,7 @@ var archToIPK = map[string]string{
 	"x86_64":   "x86_64",
 	"aarch64":  "arm64",
 	"i386":     "i386",
+	"riscv64":  "riscv64_generic",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
@@ -126,7 +127,8 @@ func (d *IPK) Package(info *nfpm.Info, ipk io.Writer) error {
 	// Strip out any custom fields that are disallowed.
 	stripDisallowedFields(info)
 
-	contents, err := newTGZ("ipk",
+	contents, err := newTGZ(
+		"ipk",
 		func(tw *tar.Writer) error {
 			return createIPK(info, tw)
 		},
@@ -144,7 +146,8 @@ func (d *IPK) Package(info *nfpm.Info, ipk io.Writer) error {
 func createIPK(info *nfpm.Info, ipk *tar.Writer) error {
 	var installSize int64
 
-	data, err := newTGZ("data.tar.gz",
+	data, err := newTGZ(
+		"data.tar.gz",
 		func(tw *tar.Writer) error {
 			var err error
 			installSize, err = populateDataTar(info, tw)
@@ -155,7 +158,8 @@ func createIPK(info *nfpm.Info, ipk *tar.Writer) error {
 		return err
 	}
 
-	control, err := newTGZ("control.tar.gz",
+	control, err := newTGZ(
+		"control.tar.gz",
 		func(tw *tar.Writer) error {
 			return populateControlTar(info, tw, installSize)
 		},
@@ -198,7 +202,8 @@ func populateDataTar(info *nfpm.Info, tw *tar.Writer) (instSize int64, err error
 					Mode:     int64(file.FileInfo.Mode),
 					Uname:    file.FileInfo.Owner,
 					Gname:    file.FileInfo.Group,
-				})
+				},
+			)
 		case files.TypeSymlink:
 			err = tw.WriteHeader(
 				&tar.Header{
@@ -207,7 +212,8 @@ func populateDataTar(info *nfpm.Info, tw *tar.Writer) (instSize int64, err error
 					Format:   tar.FormatGNU,
 					ModTime:  modtime.Get(info.MTime),
 					Linkname: file.Source,
-				})
+				},
+			)
 		case files.TypeFile, files.TypeTree, files.TypeConfig, files.TypeConfigNoReplace, files.TypeConfigMissingOK:
 			size, err = writeFile(tw, file)
 		default:

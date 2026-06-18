@@ -54,6 +54,7 @@ var archToDebian = map[string]string{
 	"s390":     "s390x",
 	"x86_64":   "amd64",
 	"aarch64":  "arm64",
+	"riscv64":  "riscv64",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
@@ -876,7 +877,8 @@ func tarHeader(content *files.Content, preferredModTimes ...time.Time) (*tar.Hea
 	h := &tar.Header{
 		Name: content.Name(),
 		ModTime: modtime.Get(
-			append(preferredModTimes, content.ModTime())...),
+			append(preferredModTimes, content.ModTime())...,
+		),
 		Mode:   int64(fm & 0o7777),
 		Uname:  content.FileInfo.Owner,
 		Gname:  content.FileInfo.Group,

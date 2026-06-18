@@ -553,8 +553,9 @@ func contentCollisionError(newc *Content, present *Content) error {
 		presentSource = " with source " + present.Source
 	}
 
-	return fmt.Errorf("adding %s at destination %s: "+
-		"%s%s is already present at this destination: %w",
+	return fmt.Errorf(
+		"adding %s at destination %s: "+
+			"%s%s is already present at this destination: %w",
 		newc.Type, newc.Destination, present.Type, presentSource, ErrContentCollision,
 	)
 }

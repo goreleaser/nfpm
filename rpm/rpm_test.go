@@ -204,6 +204,52 @@ func requireRPMRequire(
 	require.Failf(t, "RPM require not found", "name=%s version=%s flag=%d", name, version, flag)
 }
 
+func TestRPMRiscv64(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "test-riscv.rpm")
+	require.NoError(t, err)
+	info := exampleInfo()
+	info.Arch = "riscv64"
+	require.NoError(t, DefaultRPM.Package(info, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
+	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		require.NoError(t, err)
+	}()
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	arch, err := rpm.Header.GetString(rpmutils.ARCH)
+	require.NoError(t, err)
+	require.Equal(t, archToRPM["riscv64"], arch)
+}
+
+func TestSRPMRiscv64(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "test-riscv.src.rpm")
+	require.NoError(t, err)
+	info := exampleInfo()
+	info.Arch = "riscv64"
+	require.NoError(t, DefaultSRPM.Package(info, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
+	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		require.NoError(t, err)
+	}()
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	arch, err := rpm.Header.GetString(rpmutils.ARCH)
+	require.NoError(t, err)
+	require.Equal(t, archToRPM["riscv64"], arch)
+}
+
 func TestIssue952(t *testing.T) {
 	info := exampleInfo()
 	info.MTime = time.Time{}

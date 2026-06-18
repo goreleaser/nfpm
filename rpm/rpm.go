@@ -91,6 +91,7 @@ var archToRPM = map[string]string{
 	"mipsle":   "mipsel",
 	"mips":     "mips",
 	"loong64":  "loongarch64",
+	"riscv64":  "riscv64",
 }
 
 func setDefaults(info *nfpm.Info) *nfpm.Info {

@@ -91,7 +91,8 @@ func TestUpgrade(t *testing.T) {
 						target := fmt.Sprintf("./testdata/acceptance/%s", oldpkg)
 						require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0o700))
 
-						config, err := nfpm.ParseFileWithEnvMapping(fmt.Sprintf("./testdata/acceptance/%s.v1.yaml", testName),
+						config, err := nfpm.ParseFileWithEnvMapping(
+							fmt.Sprintf("./testdata/acceptance/%s.v1.yaml", testName),
 							func(s string) string {
 								switch s {
 								case "BUILD_ARCH":
