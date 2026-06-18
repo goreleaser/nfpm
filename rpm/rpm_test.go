@@ -22,6 +22,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	tagRequireFlags   = 1048
+	tagRequireName    = 1049
+	tagRequireVersion = 1050
+)
+
 func exampleInfo() *nfpm.Info {
 	return setDefaults(nfpm.WithDefaults(&nfpm.Info{
 		Name:        "foo",
@@ -152,6 +158,50 @@ func TestRPM(t *testing.T) {
 	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
 	require.NoError(t, err)
 	require.Equal(t, "Foo does things", description)
+}
+
+func TestRPMPostRequires(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.Requires.Post = []string{"systemd", "coreutils >= 9.0"}
+
+	var buf bytes.Buffer
+	err := DefaultRPM.Package(info, &buf)
+	require.NoError(t, err)
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+
+	namesRaw, err := rpm.Header.Get(tagRequireName)
+	require.NoError(t, err)
+	names, ok := namesRaw.([]string)
+	require.True(t, ok)
+	versionsRaw, err := rpm.Header.Get(tagRequireVersion)
+	require.NoError(t, err)
+	versions, ok := versionsRaw.([]string)
+	require.True(t, ok)
+	flagsRaw, err := rpm.Header.Get(tagRequireFlags)
+	require.NoError(t, err)
+	flags, ok := flagsRaw.([]uint32)
+	require.True(t, ok)
+
+	requireRPMRequire(t, names, versions, flags, "systemd", "", rpmSenseScriptPost)
+	requireRPMRequire(t, names, versions, flags, "coreutils", "9.0", rpmSenseScriptPost|4|8)
+}
+
+func requireRPMRequire(
+	t *testing.T,
+	names, versions []string,
+	flags []uint32,
+	name, version string,
+	flag uint32,
+) {
+	t.Helper()
+	for idx := range names {
+		if names[idx] == name && versions[idx] == version && flags[idx] == flag {
+			return
+		}
+	}
+	require.Failf(t, "RPM require not found", "name=%s version=%s flag=%d", name, version, flag)
 }
 
 func TestRPMRiscv64(t *testing.T) {

@@ -220,6 +220,7 @@ func (c *Config) expandEnvVars() {
 		c.Overrides[or].Recommends = c.expandEnvVarsStringSlice(c.Overrides[or].Recommends)
 		c.Overrides[or].Provides = c.expandEnvVarsStringSlice(c.Overrides[or].Provides)
 		c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
+		c.Overrides[or].RPM.Requires.Post = c.expandEnvVarsStringSlice(c.Overrides[or].RPM.Requires.Post)
 		c.Overrides[or].Contents = c.expandEnvVarsContents(c.Overrides[or].Contents)
 	}
 	c.Conflicts = c.expandEnvVarsStringSlice(c.Conflicts)
@@ -228,6 +229,7 @@ func (c *Config) expandEnvVars() {
 	c.Recommends = c.expandEnvVarsStringSlice(c.Recommends)
 	c.Provides = c.expandEnvVarsStringSlice(c.Provides)
 	c.Suggests = c.expandEnvVarsStringSlice(c.Suggests)
+	c.RPM.Requires.Post = c.expandEnvVarsStringSlice(c.RPM.Requires.Post)
 	c.Contents = c.expandEnvVarsContents(c.Contents)
 
 	// Basic metadata fields
@@ -392,6 +394,7 @@ type RPM struct {
 	Arch        string       `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in rpm nomenclature"`
 	BuildHost   string       `yaml:"buildhost,omitempty" json:"buildhost,omitempty" jsonschema:"title=host name of the build environment, default=os.Hostname()"`
 	Scripts     RPMScripts   `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=rpm-specific scripts"`
+	Requires    RPMRequires  `yaml:"requires,omitempty" json:"requires,omitempty" jsonschema:"title=rpm-specific requires"`
 	Group       string       `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=package group,example=Unspecified"`
 	Summary     string       `yaml:"summary,omitempty" json:"summary,omitempty" jsonschema:"title=package summary"`
 	Compression string       `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=lzma,enum=xz,enum=zstd,default=gzip:-1"`
@@ -405,6 +408,11 @@ type RPMScripts struct {
 	PreTrans  string `yaml:"pretrans,omitempty" json:"pretrans,omitempty" jsonschema:"title=pretrans script"`
 	PostTrans string `yaml:"posttrans,omitempty" json:"posttrans,omitempty" jsonschema:"title=posttrans script"`
 	Verify    string `yaml:"verify,omitempty" json:"verify,omitempty" jsonschema:"title=verify script"`
+}
+
+// RPMRequires represents qualified RPM Requires dependencies.
+type RPMRequires struct {
+	Post []string `yaml:"post,omitempty" json:"post,omitempty" jsonschema:"title=post requires directive,example=nfpm"`
 }
 
 type PackageSignature struct {

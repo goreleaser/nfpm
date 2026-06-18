@@ -226,3 +226,9 @@ FROM min AS verify
 RUN rpm -V foo
 RUN rm /tmp/postinstall-proof
 RUN ! rpm -V foo
+
+# ---- postrequires test ----
+FROM min AS postrequires
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^bash 1024 ?$'
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^coreutils 1036 9\.0$'
