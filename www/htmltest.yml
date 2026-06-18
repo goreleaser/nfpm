@@ -5,7 +5,6 @@ CheckAnchors: true
 CheckLinks: true
 CheckImages: true
 CheckScripts: true
-# XXX: change this once https://github.com/wjdp/htmltest/pull/243 is fixed.
 CheckFavicon: false
 CheckOpengraph: false
 CheckMetaRefresh: true
@@ -17,6 +16,7 @@ IgnoreURLs:
   - "https://github.com/goreleaser/nfpm/releases"
   - "https://becker.software/nfpm.png"
   - "https://opencollective.com/"
+  - "https://wiki.alpinelinux.org/"
 IgnoreAltMissing: true
 IgnoreInternalEmptyHash: true
 LogLevel: 2
