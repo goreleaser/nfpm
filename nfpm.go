@@ -283,9 +283,6 @@ func (c *Config) expandEnvVars() {
 	}
 	c.IPK.Predepends = c.expandEnvVarsStringSlice(c.IPK.Predepends)
 
-	// RPM specific
-	c.RPM.Packager = os.Expand(c.RPM.Packager, c.envMappingFunc)
-
 	// MSIX specific
 	c.MSIX.Signature.PFXFile = os.Expand(c.MSIX.Signature.PFXFile, c.envMappingFunc)
 	c.MSIX.Publisher = os.Expand(c.MSIX.Publisher, c.envMappingFunc)
