@@ -196,13 +196,10 @@ tasks:
       - echo {{.NEXT}}
       - git push origin --tags
 
-  nix:flake:update-vendor:
-    desc: update default flake package vendor hash
+  release:watch:
+    vars:
+      RUN_ID:
+        sh: "gh run list --workflow=release.yml --limit 1 --json databaseId | jq -r '.[] | .databaseId'"
     cmds:
-      - bash ./scripts/nix-update-flake.sh
-    generates:
-      - flake.nix
-    sources:
-      - flake.lock
-      - go.mod
-      - go.sum
+      - gh run watch {{.RUN_ID}}
+      - printf '\a'
