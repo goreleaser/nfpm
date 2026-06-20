@@ -75,8 +75,12 @@ RUN test ! -d /usr/foo/bar/something
 
 # ---- signed test ----
 FROM min AS signed
-RUN echo "Arch Linux has no signature support"
-
+COPY ${package}.sig /tmp/foo.pkg.tar.zst.sig
+COPY keys/pubkey.asc /tmp/pubkey.asc
+RUN pacman-key --init
+RUN pacman-key --add /tmp/pubkey.asc
+RUN pacman-key --lsign-key 866F6C83BAB3E49381ADE4C1BC8ACDD415BD80B3
+RUN pacman-key --verify /tmp/foo.pkg.tar.zst.sig 2>&1 | grep "gpg: Good signature from \"nfpm test key <test@example.com>\" \[full\]"
 
 # ---- overrides test ----
 FROM min AS overrides
