@@ -577,3 +577,79 @@ func TestSymlinkMetadataMatchesTarPayload(t *testing.T) {
 		require.Equal(t, hdr.Linkname, entry["target"], "tar Linkname and files.plist target must agree")
 	}
 }
+
+func TestWritePlistValueScalarTypes(t *testing.T) {
+	var buf bytes.Buffer
+	root := plistDict{
+		"flagTrue":  true,
+		"flagFalse": false,
+		"count":     int64(7),
+		"size":      uint64(42),
+		"list":      plistArray{int64(1), "two"},
+	}
+	require.NoError(t, writePlistValue(&buf, root))
+	out := buf.String()
+	require.Contains(t, out, "<true/>")
+	require.Contains(t, out, "<false/>")
+	require.Contains(t, out, "<integer>7</integer>")
+	require.Contains(t, out, "<integer>42</integer>")
+	require.Contains(t, out, "<array><integer>1</integer><string>two</string></array>")
+}
+
+func TestWritePlistValueUnsupportedType(t *testing.T) {
+	var buf bytes.Buffer
+	require.ErrorContains(t, writePlistValue(&buf, 3.14), "unsupported plist value type")
+}
+
+func TestWritePlistValueErrorPropagatesThroughContainers(t *testing.T) {
+	var buf bytes.Buffer
+	require.ErrorContains(t, writePlistValue(&buf, plistArray{3.14}), "unsupported plist value type")
+
+	buf.Reset()
+	require.ErrorContains(t, writePlistValue(&buf, plistDict{"bad": 3.14}), "unsupported plist value type")
+}
+
+func TestFileEntryDirectoryOmitsChecksum(t *testing.T) {
+	entry, err := fileEntry(&files.Content{
+		Destination: "/var/lib/foo",
+		Type:        files.TypeDir,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "/var/lib/foo", entry["file"])
+	require.NotContains(t, entry, "sha256")
+	require.NotContains(t, entry, "size")
+}
+
+func TestFileEntryReturnsOpenError(t *testing.T) {
+	_, err := fileEntry(&files.Content{
+		Source:      filepath.Join(t.TempDir(), "missing"),
+		Destination: "/usr/bin/foo",
+	})
+	require.Error(t, err)
+}
+
+func TestWriteContentEntryDirectory(t *testing.T) {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	require.NoError(t, writeContentEntry(tw, &files.Content{
+		Destination: "/var/lib/foo",
+		Type:        files.TypeDir,
+		FileInfo:    &files.ContentFileInfo{MTime: testMTime},
+	}))
+	require.NoError(t, tw.Close())
+
+	hdr, err := tar.NewReader(&buf).Next()
+	require.NoError(t, err)
+	require.Equal(t, byte(tar.TypeDir), hdr.Typeflag)
+}
+
+func TestWriteContentEntryReturnsOpenError(t *testing.T) {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	err := writeContentEntry(tw, &files.Content{
+		Source:      filepath.Join(t.TempDir(), "missing"),
+		Destination: "/usr/bin/foo",
+		FileInfo:    &files.ContentFileInfo{MTime: testMTime},
+	})
+	require.Error(t, err)
+}
