@@ -1225,8 +1225,13 @@ func TestCompressionAlgorithms(t *testing.T) {
 func TestDefaultCompressionMatchesExplicitGzip(t *testing.T) {
 	// When compression is unset, it should default to gzip at the same level
 	// as explicitly setting compression to "gzip", producing identical output.
+	// Use a fixed MTime so both builds embed identical timestamps; otherwise
+	// each build calls time.Now() and the differing timestamps compress to
+	// slightly different sizes, making this comparison flaky.
+	mtime := time.Unix(1700000000, 0)
 	buildDeb := func(compression string) []byte {
 		info := exampleInfo()
+		info.MTime = mtime
 		info.Deb.Compression = compression
 
 		var deb bytes.Buffer
