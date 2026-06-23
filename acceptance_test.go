@@ -292,23 +292,20 @@ func TestIPKSpecific(t *testing.T) {
 }
 
 func TestRPMSign(t *testing.T) {
-	for _, dist := range []struct {
-		name       string
-		dockerfile string
-	}{
-		{name: "centos9", dockerfile: "rpm_centos9.dockerfile"},
-		{name: "centos10", dockerfile: "rpm_centos10.dockerfile"},
-		{name: "fedora40", dockerfile: "rpm_fedora40.dockerfile"},
-		{name: "fedora_modern", dockerfile: "rpm_fedora_modern.dockerfile"},
+	for _, os := range []string{
+		"centos9",
+		"centos10",
+		"fedora40",
+		"fedora41",
 	} {
-		dist := dist
-		t.Run(fmt.Sprintf("rpm/amd64/sign/%s", dist.name), func(t *testing.T) {
+		os := os
+		t.Run(fmt.Sprintf("rpm/amd64/sign/%s", os), func(t *testing.T) {
 			accept(t, acceptParms{
-				Name:   fmt.Sprintf("sign_%s_amd64", dist.name),
+				Name:   fmt.Sprintf("sign_%s_amd64", os),
 				Conf:   "core.signed.yaml",
 				Format: "rpm",
 				Docker: dockerParams{
-					File:   dist.dockerfile,
+					File:   fmt.Sprintf("rpm_%s.dockerfile", os),
 					Target: "signed",
 					Arch:   "amd64",
 				},
