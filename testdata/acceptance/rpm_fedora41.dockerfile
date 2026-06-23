@@ -1,3 +1,4 @@
+# fedora 41+
 FROM fedora:44 AS test_base
 RUN yum install -y createrepo yum-utils
 ARG package
@@ -17,4 +18,3 @@ RUN rm -rf /etc/yum.repos.d/*.repo
 COPY keys/test.rpm.repo /etc/yum.repos.d/test.rpm.repo
 RUN createrepo /tmp
 RUN yum install -y foo
-
