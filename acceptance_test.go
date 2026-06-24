@@ -228,6 +228,25 @@ func TestRPMSpecific(t *testing.T) {
 	}
 }
 
+func TestSRPM(t *testing.T) {
+	t.Parallel()
+	// The source package is architecture-independent (arch "src"); a single
+	// amd64 rebuild exercises the whole generate-spec → rpmbuild → install path.
+	t.Run("srpm/amd64/rebuild", func(t *testing.T) {
+		t.Parallel()
+		accept(t, acceptParms{
+			Name:   "rebuild_amd64",
+			Conf:   "srpm.rebuild.yaml",
+			Format: "srpm",
+			Docker: dockerParams{
+				File:   "srpm.dockerfile",
+				Target: "rebuild",
+				Arch:   "amd64",
+			},
+		})
+	})
+}
+
 func TestDebSpecific(t *testing.T) {
 	t.Parallel()
 	format := "deb"

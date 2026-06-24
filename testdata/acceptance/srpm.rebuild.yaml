@@ -1,0 +1,38 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar <foo@bar.com>"
+release: "4"
+epoch: "1"
+description: |
+  Foo bar
+    Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+depends:
+  - bash
+provides:
+  - foo-tool
+contents:
+  - src: ./testdata/fake
+    dst: /usr/bin/fake
+  - src: ./testdata/whatever.conf
+    dst: /etc/foo/whatever.conf
+    type: config|noreplace
+  - src: ./testdata/fake
+    dst: /usr/share/doc/foo/README
+    type: doc
+  - dst: /var/log/whatever
+    type: dir
+  - src: /usr/bin/fake
+    dst: /usr/bin/fake-link
+    type: symlink
+  - dst: /var/lib/foo/state
+    type: ghost
+scripts:
+  postinstall: ./testdata/scripts/postinstall.sh
+rpm:
+  group: "Application/Misc"
+  summary: "foo summary"
