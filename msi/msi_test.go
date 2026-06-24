@@ -154,18 +154,39 @@ func TestNoManufacturer(t *testing.T) {
 }
 
 func TestInvalidProductCode(t *testing.T) {
-	info := exampleInfo()
-	info.MSI.ProductCode = "not-a-guid"
-	var buf bytes.Buffer
-	err := msi.Default.Package(info, &buf)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "product_code")
+	for _, code := range []string{
+		"not-a-guid",                              // no braces
+		"{not-a-guid}",                            // braced but not hex {8-4-4-4-12}
+		"{12345678-1234-1234-1234-123456789AB}",   // node too short
+		"{12345678-1234-1234-1234-123456789ABCD}", // node too long
+		"{12345678-1234-1234-1234-123456789ABG}",  // non-hex digit
+		"12345678-1234-1234-1234-123456789ABC",    // missing braces
+	} {
+		t.Run(code, func(t *testing.T) {
+			info := exampleInfo()
+			info.MSI.ProductCode = code
+			var buf bytes.Buffer
+			err := msi.Default.Package(info, &buf)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "product_code")
+		})
+	}
 }
 
 func TestExplicitGUIDs(t *testing.T) {
 	info := exampleInfo()
 	info.MSI.ProductCode = "{12345678-1234-1234-1234-123456789ABC}"
 	info.MSI.UpgradeCode = "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
+	packageAndValidate(t, info)
+}
+
+// TestLowercaseGUIDs proves that a canonical but lowercase GUID is accepted:
+// validation is case-insensitive and the codes are normalized to uppercase
+// before go-msi (which requires uppercase) sees them.
+func TestLowercaseGUIDs(t *testing.T) {
+	info := exampleInfo()
+	info.MSI.ProductCode = "{12345678-1234-1234-1234-123456789abc}"
+	info.MSI.UpgradeCode = "{abcdef01-2345-6789-abcd-ef0123456789}"
 	packageAndValidate(t, info)
 }
 

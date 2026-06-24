@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -129,7 +130,9 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 	// ProductCode must always be present. When omitted we derive a stable GUID
 	// from the product name (kept constant across versions so it does not change
 	// on every version bump).
-	productCode := info.MSI.ProductCode
+	// go-msi requires braced uppercase GUIDs; validation accepts either case, so
+	// normalize the user-provided value here.
+	productCode := strings.ToUpper(info.MSI.ProductCode)
 	if productCode == "" {
 		productCode = deriveGUID("product|" + info.MSI.ProductName)
 	}
@@ -137,7 +140,7 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 
 	// UpgradeCode stays stable across versions; derive it from the product name
 	// alone when omitted so upgrades work out of the box.
-	upgradeCode := info.MSI.UpgradeCode
+	upgradeCode := strings.ToUpper(info.MSI.UpgradeCode)
 	if upgradeCode == "" {
 		upgradeCode = deriveGUID("upgrade|" + info.MSI.ProductName)
 	}
@@ -281,7 +284,7 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info) (map[string]placement, e
 			continue
 		}
 
-		data, err := os.ReadFile(content.Source)
+		src, err := msi.FileSourceFromPath(content.Source)
 		if err != nil {
 			return nil, fmt.Errorf("reading file %s: %w", content.Source, err)
 		}
@@ -324,7 +327,7 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info) (map[string]placement, e
 		if attrs := componentAttributes(rootID, is64bit(info.Arch)); attrs != 0 {
 			comp = comp.WithAttributes(attrs)
 		}
-		comp.WithFile(fileName, data)
+		comp.WithFile(fileName, src)
 		comp.AssociateToFeature(mainFeature)
 
 		placed[dest] = placement{componentID: compID, rootID: rootID}
@@ -350,12 +353,12 @@ func addShortcuts(b msi.PackageBuilder, info *nfpm.Info, placed map[string]place
 			sc = sc.Arguments(s.Arguments)
 		}
 		if s.Icon != "" {
-			iconData, err := os.ReadFile(s.Icon)
+			iconSrc, err := msi.FileSourceFromPath(s.Icon)
 			if err != nil {
 				return fmt.Errorf("reading shortcut icon %s: %w", s.Icon, err)
 			}
 			iconName := makeID("ico", s.Icon) + path.Ext(s.Icon)
-			b.Icon(iconName, iconData)
+			b.Icon(iconName, iconSrc)
 			sc.Icon(iconName, 0)
 		}
 	}
@@ -546,8 +549,7 @@ func mapDestination(dest string, is64 bool) (rootID, rootDefault, rel string) {
 // makeID builds a stable, MSI-valid identifier from a prefix and a seed string.
 func makeID(prefix, seed string) string {
 	h := fnv.New32a()
-	// nolint:gocritic //hash.Hash32 does not have WriteString
-	_, _ = h.Write([]byte(seed))
+	_, _ = io.WriteString(h, seed)
 
 	readable := sanitizeID(path.Base(strings.TrimRight(seed, "/")))
 	if len(readable) > 40 {
@@ -570,8 +572,13 @@ func sanitizeID(s string) string {
 	return sb.String()
 }
 
+// guidPattern matches a canonical braced GUID ({8-4-4-4-12} hexadecimal),
+// accepting either letter case.
+var guidPattern = regexp.MustCompile(
+	`^\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}$`)
+
 func looksLikeGUID(s string) bool {
-	return strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}")
+	return guidPattern.MatchString(s)
 }
 
 // deriveGUID produces a stable, braced uppercase GUID (RFC 4122 v5 style) from
