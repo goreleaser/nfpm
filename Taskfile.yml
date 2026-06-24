@@ -71,6 +71,7 @@ tasks:
     desc: Build MSI package for Windows install testing
     platforms: [windows]
     cmds:
+      - mkdir -p ./dist
       - go build -o ./dist/testapp.exe ./testdata/acceptance/testapp/
       - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.install.yaml -p msi -t ./dist/foo.msi
 
