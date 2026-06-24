@@ -26,6 +26,7 @@ const (
 	tagRequireFlags   = 1048
 	tagRequireName    = 1049
 	tagRequireVersion = 1050
+	tagFileLangs      = 1097
 )
 
 func exampleInfo() *nfpm.Info {
@@ -254,6 +255,73 @@ func TestIssue952(t *testing.T) {
 	require.Equal(t, "/etc/link", f.Name())
 	require.Equal(t, "/file-that-does-not-exist", f.Linkname())
 	require.Positive(t, f.Mtime())
+}
+
+func TestRPMLang(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = files.Contents{
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/usr/share/locale/en/LC_MESSAGES/foo.mo",
+			FileInfo: &files.ContentFileInfo{
+				Lang: "en",
+			},
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/usr/bin/fake",
+		},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(nfpm.WithDefaults(info), &buf))
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+
+	rpmFiles, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+	langs, err := rpm.Header.GetStrings(tagFileLangs)
+	require.NoError(t, err)
+	require.Len(t, langs, len(rpmFiles))
+
+	byName := map[string]string{}
+	for i, f := range rpmFiles {
+		byName[f.Name()] = langs[i]
+	}
+	require.Equal(t, "en", byName["/usr/share/locale/en/LC_MESSAGES/foo.mo"])
+	require.Empty(t, byName["/usr/bin/fake"])
+}
+
+func TestRPMConfigTree(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = files.Contents{
+		{
+			Source:      "../files/testdata/tree",
+			Destination: "/etc/foo",
+			Type:        files.TypeConfigTree,
+		},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(nfpm.WithDefaults(info), &buf))
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+
+	rpmFiles, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+
+	const sIFMT = 0o170000
+	var sawFile bool
+	for _, f := range rpmFiles {
+		if f.Mode()&sIFMT != cpio.S_ISREG {
+			continue
+		}
+		sawFile = true
+		require.NotZero(t, f.Flags()&rpmutils.RPMFILE_CONFIG, "%s should be a config file", f.Name())
+	}
+	require.True(t, sawFile, "expected at least one regular file in the tree")
 }
 
 func TestRPMMandatoryFieldsOnly(t *testing.T) {

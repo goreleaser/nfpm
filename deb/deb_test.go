@@ -457,6 +457,34 @@ func TestConffiles(t *testing.T) {
 	require.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
 }
 
+func TestConffilesFromConfigTree(t *testing.T) {
+	info := nfpm.WithDefaults(&nfpm.Info{
+		Name:        "minimal",
+		Arch:        "arm64",
+		Description: "Minimal does nothing",
+		Priority:    "extra",
+		Version:     "1.0.0",
+		Section:     "default",
+		Maintainer:  "maintainer",
+		Overridables: nfpm.Overridables{
+			Contents: []*files.Content{
+				{
+					Source:      "../files/testdata/tree/files",
+					Destination: "/etc/fake",
+					Type:        files.TypeConfigTree,
+				},
+			},
+		},
+	})
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
+	require.NoError(t, err)
+	out, ok := conffiles(info)
+	require.True(t, ok)
+	// Every regular file in the tree must be registered as a conffile.
+	require.Contains(t, string(out), "/etc/fake/a\n")
+	require.Contains(t, string(out), "/etc/fake/b/c\n")
+}
+
 func TestNoConffiles(t *testing.T) {
 	info := nfpm.WithDefaults(&nfpm.Info{
 		Name:        "minimal",

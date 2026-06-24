@@ -62,6 +62,9 @@ func addRegularFile(b rpm.PackageBuilder, content *files.Content, dest string, f
 	if ftype != rpm.GenericFile {
 		fb.WithType(ftype)
 	}
+	if content.FileInfo.Lang != "" {
+		fb.WithLang(content.FileInfo.Lang)
+	}
 	fb.Add()
 }
 

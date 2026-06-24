@@ -137,6 +137,14 @@ func specFileLine(content *files.Content) string {
 	owner := defaultTo(content.FileInfo.Owner, "root")
 	group := defaultTo(content.FileInfo.Group, "root")
 
+	// %lang() is orthogonal to the file directive and prefixes the file-bearing
+	// entries (config/doc/license/readme/generic). It is meaningless for
+	// directories, symlinks and ghosts, which never carry a language tag.
+	langPrefix := ""
+	if content.FileInfo.Lang != "" {
+		langPrefix = fmt.Sprintf("%%lang(%s) ", content.FileInfo.Lang)
+	}
+
 	switch content.Type {
 	case files.TypeImplicitDir:
 		return ""
@@ -145,17 +153,17 @@ func specFileLine(content *files.Content) string {
 	case files.TypeDir:
 		return fmt.Sprintf("%%dir %s", attrPath(content.Mode(), owner, group, dest))
 	case files.TypeConfig:
-		return "%config " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%config " + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeConfigNoReplace:
-		return "%config(noreplace) " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%config(noreplace) " + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeConfigMissingOK:
-		return "%config(missingok) " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%config(missingok) " + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeRPMDoc:
-		return "%doc " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%doc " + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeRPMLicence, files.TypeRPMLicense:
-		return "%license " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%license " + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeRPMReadme:
-		return "%doc " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%doc " + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeRPMGhost:
 		mode := content.FileInfo.Mode
 		if mode == 0 {
@@ -163,7 +171,7 @@ func specFileLine(content *files.Content) string {
 		}
 		return "%ghost " + attrPath(mode, owner, group, dest)
 	default:
-		return attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + attrPath(content.FileInfo.Mode, owner, group, dest)
 	}
 }
 

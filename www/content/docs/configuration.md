@@ -182,6 +182,15 @@ contents:
     dst: /etc
     type: tree
 
+  # Like 'tree', but every regular file discovered while walking the directory
+  # is also marked as a config file (equivalent to setting 'type: config' on
+  # each of them). Directories and symlinks keep their natural type.
+  # 'config|noreplace|tree' and 'config|missingok|tree' behave the same but mark
+  # the files with the respective RPM directive.
+  - src: some/config-directory/
+    dst: /etc/myapp
+    type: config|tree
+
   # Simple config file
   - src: path/to/local/foo.conf
     dst: /etc/foo.conf
@@ -262,6 +271,15 @@ contents:
       mtime: 2008-01-02T15:04:05Z
       owner: notRoot
       group: notRoot
+
+  # The 'lang' field marks a file with an RPM language tag (RPMTAG_FILELANGS),
+  # rendered as `%lang(en)` in the spec. This lets RPM-based distributions honor
+  # `%_install_langs` and avoids rpmlint's `file-not-in-%lang` warning. It is
+  # ignored by all other packagers.
+  - src: path/to/locale/en/LC_MESSAGES/myapp.mo
+    dst: /usr/share/locale/en/LC_MESSAGES/myapp.mo
+    file_info:
+      lang: en
 
   # Using the type 'dir', empty directories can be created. When building RPMs, however, this
   # type has another important purpose: Claiming ownership of that folder. This is important

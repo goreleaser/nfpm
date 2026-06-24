@@ -164,3 +164,38 @@ func TestSRPMGenerateSpecFileDirectives(t *testing.T) {
 	require.Contains(t, spec, "/var/lib/spectest")
 	require.Contains(t, spec, `%attr(-, root, root) "/usr/bin/fakelink"`)
 }
+
+func TestSRPMGenerateSpecLang(t *testing.T) {
+	info := nfpm.WithDefaults(&nfpm.Info{
+		Name:        "langtest",
+		Arch:        "amd64",
+		Version:     "1.0.0",
+		Description: "lang directive coverage",
+		Maintainer:  "maintainer",
+		Overridables: nfpm.Overridables{
+			Contents: []*files.Content{
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/usr/share/locale/en/LC_MESSAGES/langtest.mo",
+					FileInfo:    &files.ContentFileInfo{Lang: "en"},
+				},
+				{
+					Source:      "../testdata/whatever.conf",
+					Destination: "/etc/langtest.conf",
+					Type:        files.TypeConfig,
+					FileInfo:    &files.ContentFileInfo{Lang: "fr"},
+				},
+			},
+		},
+	})
+	info = setDefaults(info)
+	require.NoError(t, nfpm.PrepareForPackager(info, "rpm"))
+
+	spec, err := generateSpec(info, "langtest-1.0.0.tar.gz")
+	require.NoError(t, err)
+
+	require.Contains(t, spec, "%lang(en) %attr")
+	require.Contains(t, spec, "/usr/share/locale/en/LC_MESSAGES/langtest.mo")
+	require.Contains(t, spec, "%lang(fr) %config %attr")
+	require.Contains(t, spec, "/etc/langtest.conf")
+}
