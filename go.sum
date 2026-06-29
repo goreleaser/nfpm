@@ -205,8 +205,8 @@ github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e/go.mod h1:RbqR21r5mrJu
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 gitlab.com/digitalxero/go-conventional-commit v1.0.7 h1:8/dO6WWG+98PMhlZowt/YjuiKhqhGlOCwlIV8SqqGh8=
 gitlab.com/digitalxero/go-conventional-commit v1.0.7/go.mod h1:05Xc2BFsSyC5tKhK0y+P3bs0AwUtNuTp+mTpbCU/DZ0=
-go.digitalxero.dev/go-msix v0.3.1 h1:V5E8PuFkA3Fr3VFYX6pTUutriogYC9sgxIWhzf9sSKw=
-go.digitalxero.dev/go-msix v0.3.1/go.mod h1:QbUpFs0AUd1zk7e9fy17suiqEAF90TR3jZY+LCI2K+c=
+go.digitalxero.dev/go-msix v1.0.0 h1:9qaOqvAgjgVswPEmrcynroo6/GEdGpQXLU/rDsxTz+0=
+go.digitalxero.dev/go-msix v1.0.0/go.mod h1:lsGjKne37diRcY+7cyuAWFtFF2itmzJNUVbVoDH3saw=
 go.mozilla.org/pkcs7 v0.9.0 h1:yM4/HS9dYv7ri2biPtxt8ikvB37a980dg69/pKmS+eI=
 go.mozilla.org/pkcs7 v0.9.0/go.mod h1:SNgMg+EgDFwmvSmLRTNKC5fegJjB7v23qTQ0XLGUNHk=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
