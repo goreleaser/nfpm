@@ -1665,3 +1665,55 @@ func verifyDpkgSigFileHashes(arFiles map[string][]byte, msg string) error {
 	}
 	return nil
 }
+
+type failAfterNWriter struct {
+	n   int
+	err error
+}
+
+func (w *failAfterNWriter) Write(p []byte) (int, error) {
+	if w.n <= 0 {
+		return 0, w.err
+	}
+	if len(p) > w.n {
+		p = p[:w.n]
+	}
+	w.n -= len(p)
+	return len(p), nil
+}
+
+func TestWriterPathErrorsAreWrapped(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func() error
+		want error
+	}{
+		{
+			name: "addArFile write error",
+			fn: func() error {
+				fw := &failAfterNWriter{n: 68, err: os.ErrClosed}
+				w := ar.NewWriter(fw)
+				if err := w.WriteGlobalHeader(); err != nil {
+					return err
+				}
+				return addArFile(w, "test", []byte("body"), time.Now())
+			},
+			want: os.ErrClosed,
+		},
+		{
+			name: "newFilePathInsideTar read error",
+			fn: func() error {
+				tw := tar.NewWriter(io.Discard)
+				return newFilePathInsideTar(tw, "/nonexistent/path", "dest", 0o644, time.Now())
+			},
+			want: os.ErrNotExist,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.fn()
+			require.ErrorIs(t, err, tt.want)
+		})
+	}
+}
