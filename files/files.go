@@ -399,10 +399,14 @@ func sortedParents(dst string) []string {
 	paths := []string{}
 	base := strings.Trim(dst, "/")
 	for {
-		base = filepath.Dir(base)
-		if base == "." {
+		parent := filepath.Dir(base)
+		// Stop at the filesystem root ("." for relative paths) and at volume
+		// roots such as Windows "C:/", where filepath.Dir stops making progress
+		// and would otherwise loop forever (e.g. for drive-letter destinations).
+		if parent == "." || parent == base {
 			break
 		}
+		base = parent
 		paths = append(paths, ToNixPath(base))
 	}
 

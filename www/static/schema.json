@@ -200,6 +200,10 @@
 						"$ref": "#/$defs/MSIX",
 						"title": "msix-specific settings"
 					},
+					"msi": {
+						"$ref": "#/$defs/MSI",
+						"title": "msi-specific settings"
+					},
 					"name": {
 						"type": "string",
 						"title": "package name"
@@ -652,6 +656,261 @@
 				"additionalProperties": false,
 				"type": "object"
 			},
+			"MSI": {
+				"properties": {
+					"arch": {
+						"type": "string",
+						"title": "architecture in msi nomenclature"
+					},
+					"product_name": {
+						"type": "string",
+						"title": "product name",
+						"description": "defaults to the package name"
+					},
+					"manufacturer": {
+						"type": "string",
+						"title": "manufacturer/author of the product",
+						"examples": [
+							"My Company"
+						]
+					},
+					"product_code": {
+						"type": "string",
+						"title": "product code GUID",
+						"description": "derived from the product name (stable across versions) when empty",
+						"examples": [
+							"{12345678-1234-1234-1234-123456789ABC}"
+						]
+					},
+					"upgrade_code": {
+						"type": "string",
+						"title": "upgrade code GUID",
+						"description": "derived from the product name when empty",
+						"examples": [
+							"{ABCDEF01-2345-6789-ABCD-EF0123456789}"
+						]
+					},
+					"install_dir": {
+						"type": "string",
+						"title": "default install folder name",
+						"description": "defaults to the product name"
+					},
+					"all_users": {
+						"type": "boolean",
+						"title": "per-machine install",
+						"description": "defaults to true"
+					},
+					"properties": {
+						"additionalProperties": {
+							"type": "string"
+						},
+						"type": "object",
+						"title": "arbitrary MSI Property rows"
+					},
+					"license": {
+						"type": "string",
+						"title": "path to a license text file shown by the UI"
+					},
+					"minimal_ui": {
+						"type": "boolean",
+						"title": "install the canned minimal install wizard"
+					},
+					"upgrade": {
+						"$ref": "#/$defs/MSIUpgrade",
+						"title": "major upgrade behavior"
+					},
+					"shortcuts": {
+						"items": {
+							"$ref": "#/$defs/MSIShortcut"
+						},
+						"type": "array",
+						"title": "shortcuts to create"
+					},
+					"services": {
+						"items": {
+							"$ref": "#/$defs/MSIService"
+						},
+						"type": "array",
+						"title": "windows services to install"
+					},
+					"registry": {
+						"items": {
+							"$ref": "#/$defs/MSIRegistry"
+						},
+						"type": "array",
+						"title": "registry entries to create"
+					},
+					"signature": {
+						"$ref": "#/$defs/MSISignature",
+						"title": "msi signature"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"manufacturer"
+				]
+			},
+			"MSIRegistry": {
+				"properties": {
+					"root": {
+						"type": "string",
+						"enum": [
+							"HKLM",
+							"HKCU",
+							"HKCR",
+							"HKMU",
+							"HKU"
+						],
+						"title": "registry root"
+					},
+					"key": {
+						"type": "string",
+						"title": "registry key path"
+					},
+					"name": {
+						"type": "string",
+						"title": "value name"
+					},
+					"value": {
+						"type": "string",
+						"title": "value data"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"root",
+					"key"
+				]
+			},
+			"MSIService": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "service name"
+					},
+					"display_name": {
+						"type": "string",
+						"title": "service display name"
+					},
+					"executable": {
+						"type": "string",
+						"title": "destination path of the installed service executable"
+					},
+					"description": {
+						"type": "string",
+						"title": "service description"
+					},
+					"start_type": {
+						"type": "string",
+						"enum": [
+							"auto",
+							"demand",
+							"disabled",
+							"boot",
+							"system"
+						],
+						"title": "service start type",
+						"default": "demand"
+					},
+					"account": {
+						"type": "string",
+						"title": "account the service runs as"
+					},
+					"arguments": {
+						"type": "string",
+						"title": "service arguments"
+					},
+					"dependencies": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"title": "service dependencies"
+					},
+					"start": {
+						"type": "boolean",
+						"title": "start the service on install"
+					},
+					"stop": {
+						"type": "boolean",
+						"title": "stop and delete the service on uninstall"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"name",
+					"executable"
+				]
+			},
+			"MSIShortcut": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "shortcut display name"
+					},
+					"target": {
+						"type": "string",
+						"title": "destination path of an installed file the shortcut points to"
+					},
+					"directory": {
+						"type": "string",
+						"title": "standard folder ID",
+						"default": "ProgramMenuFolder",
+						"examples": [
+							"DesktopFolder"
+						]
+					},
+					"arguments": {
+						"type": "string",
+						"title": "command-line arguments"
+					},
+					"description": {
+						"type": "string",
+						"title": "shortcut description"
+					},
+					"icon": {
+						"type": "string",
+						"title": "path to an icon file"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"name",
+					"target"
+				]
+			},
+			"MSISignature": {
+				"properties": {
+					"pfx_file": {
+						"type": "string",
+						"title": "PFX certificate file"
+					},
+					"timestamp_url": {
+						"type": "string",
+						"title": "RFC3161 timestamp URL"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"MSIUpgrade": {
+				"properties": {
+					"enabled": {
+						"type": "boolean",
+						"title": "enable WiX-style major upgrade handling"
+					},
+					"downgrade_error_message": {
+						"type": "string",
+						"title": "message shown when a newer version is already installed"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
 			"MSIX": {
 				"properties": {
 					"arch": {
@@ -955,6 +1214,10 @@
 					"msix": {
 						"$ref": "#/$defs/MSIX",
 						"title": "msix-specific settings"
+					},
+					"msi": {
+						"$ref": "#/$defs/MSI",
+						"title": "msi-specific settings"
 					}
 				},
 				"additionalProperties": false,

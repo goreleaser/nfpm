@@ -616,6 +616,99 @@ msix:
     # Path to the PFX certificate file.
     pfx_file: certificate.pfx
     # Passphrase is read from the NFPM_MSIX_PASSPHRASE environment variable.
+
+# Custom configuration applied only to the MSI packager (Windows).
+# The MSI packager produces a real Windows Installer database. Use unix-style
+# destinations (a leading "/", no drive letter). Well-known prefixes such as
+# `/Program Files`, `/ProgramData` and `/Windows/System32` are mapped to the
+# matching Windows Installer system folders; anything else is installed under the
+# product's install folder.
+msi:
+  # msi specific architecture name that overrides "arch" without performing
+  # any replacements.
+  arch: x64
+
+  # Product name (defaults to the package name).
+  product_name: "My Application"
+
+  # Manufacturer/author of the product. (required)
+  manufacturer: "My Company"
+
+  # Product code GUID. When omitted, a stable GUID is derived from the product
+  # name (kept constant across versions).
+  product_code: "{12345678-1234-1234-1234-123456789ABC}"
+
+  # Upgrade code GUID. When omitted, a stable GUID is derived from the product
+  # name (kept constant across versions so upgrades work).
+  upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
+
+  # Name of the default install folder (defaults to product_name).
+  install_dir: "My Application"
+
+  # Per-machine install (defaults to true).
+  all_users: true
+
+  # Arbitrary MSI Property rows.
+  properties:
+    MYPROPERTY: "value"
+
+  # Path to a license text file shown by the install wizard.
+  license: ./LICENSE.txt
+
+  # Install the canned minimal install wizard.
+  minimal_ui: true
+
+  # Major upgrade behavior.
+  upgrade:
+    # Enable WiX-style major upgrade handling (remove older, block downgrade).
+    enabled: true
+    # Message shown when a newer version is already installed.
+    downgrade_error_message: "A newer version is already installed."
+
+  # Advertised shortcuts. The target must match one of the contents
+  # destinations.
+  shortcuts:
+    - name: "My Application"
+      target: "/Program Files/My Application/myapp.exe"
+      # Standard folder ID the shortcut is created in.
+      # Defaults to ProgramMenuFolder; e.g. DesktopFolder.
+      directory: ProgramMenuFolder
+      arguments: ""
+      description: "Launch My Application"
+      icon: ./assets/app.ico
+
+  # Windows services to install. The executable must match one of the contents
+  # destinations.
+  services:
+    - name: MyService
+      display_name: "My Service"
+      executable: "/Program Files/My Application/svc.exe"
+      description: "My background service"
+      # auto | demand | disabled | boot | system (defaults to demand).
+      start_type: auto
+      account: ""
+      arguments: ""
+      dependencies: []
+      # Start the service on install.
+      start: true
+      # Stop and delete the service on uninstall.
+      stop: true
+
+  # Registry entries to create.
+  registry:
+    - root: HKLM # HKLM | HKCU | HKCR | HKMU | HKU
+      key: 'Software\MyCompany\MyApp'
+      name: InstallPath
+      value: "C:\\Program Files\\My Application"
+
+  # MSI signing configuration (Authenticode).
+  # Uses PFX certificates (not PGP like Linux packagers).
+  signature:
+    # Path to the PFX certificate file.
+    pfx_file: certificate.pfx
+    # Optional RFC3161 timestamp URL.
+    timestamp_url: "http://timestamp.digicert.com"
+    # Passphrase is read from the NFPM_MSI_PASSPHRASE environment variable.
 ```
 
 ## Templating

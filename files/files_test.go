@@ -611,6 +611,34 @@ func TestImplicitDirectories(t *testing.T) {
 	require.Equal(t, expected, withoutFileInfo(results))
 }
 
+// TestDriveLetterDestinationTerminates guards against the parent-directory walk
+// looping forever on a Windows drive-letter destination (filepath.Dir gets
+// stuck at the volume root), which previously caused an out-of-memory crash.
+func TestDriveLetterDestinationTerminates(t *testing.T) {
+	results, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source:      "./testdata/globtest/a.txt",
+				Destination: "C:/Program Files/App/a.txt",
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	var file *files.Content
+	for _, c := range results {
+		if c.Type == files.TypeFile {
+			file = c
+		}
+	}
+	require.NotNil(t, file)
+	require.Equal(t, "testdata/globtest/a.txt", file.Source)
+}
+
 func TestRelevantFiles(t *testing.T) {
 	contents := files.Contents{
 		{

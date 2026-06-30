@@ -22,6 +22,8 @@ github.com/ProtonMail/go-mime v0.0.0-20230322103455-7d82a3887f2f h1:tCbYj7/299ek
 github.com/ProtonMail/go-mime v0.0.0-20230322103455-7d82a3887f2f/go.mod h1:gcr0kNtGBqin9zDW9GOHcVntrwnjrK+qdJ06mWYBybw=
 github.com/ProtonMail/gopenpgp/v2 v2.7.1 h1:Awsg7MPc2gD3I7IFac2qE3Gdls0lZW8SzrFZ3k1oz0s=
 github.com/ProtonMail/gopenpgp/v2 v2.7.1/go.mod h1:/BU5gfAVwqyd8EfC3Eu7zmuhwYQpKs+cGD8M//iiaxs=
+github.com/abemedia/go-cfb v0.2.0 h1:amLvu7/DX65XtcmMuc0an/t09W36gMOrnYwLxGGmwX8=
+github.com/abemedia/go-cfb v0.2.0/go.mod h1:ytSRuNKf2VMDQDs8TSZ/VmkVfS4giAdc4xl5XOnpKKA=
 github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be h1:9AeTilPcZAjCFIImctFaOjnTIavg87rW78vTPkQqLI8=
 github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be/go.mod h1:ySMOLuWl6zY27l47sB3qLNK6tF2fkHG55UZxx8oIVo4=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
@@ -205,6 +207,8 @@ github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e/go.mod h1:RbqR21r5mrJu
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 gitlab.com/digitalxero/go-conventional-commit v1.0.7 h1:8/dO6WWG+98PMhlZowt/YjuiKhqhGlOCwlIV8SqqGh8=
 gitlab.com/digitalxero/go-conventional-commit v1.0.7/go.mod h1:05Xc2BFsSyC5tKhK0y+P3bs0AwUtNuTp+mTpbCU/DZ0=
+go.digitalxero.dev/go-msi v0.2.0 h1:ch1gOlRkwv+AvqmbEmXI0zcZSFGOSbP13qbRn41k720=
+go.digitalxero.dev/go-msi v0.2.0/go.mod h1:KmoYF1YR3JjpaZmRmiZunTpQ4fKJsnYGgFmTN6gqlgE=
 go.digitalxero.dev/go-msix v0.3.1 h1:V5E8PuFkA3Fr3VFYX6pTUutriogYC9sgxIWhzf9sSKw=
 go.digitalxero.dev/go-msix v0.3.1/go.mod h1:QbUpFs0AUd1zk7e9fy17suiqEAF90TR3jZY+LCI2K+c=
 go.mozilla.org/pkcs7 v0.9.0 h1:yM4/HS9dYv7ri2biPtxt8ikvB37a980dg69/pKmS+eI=
