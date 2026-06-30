@@ -1,5 +1,5 @@
-// Package rpm implements nfpm.Packager providing .rpm bindings using
-// google/rpmpack.
+// Package rpm implements nfpm.Packager providing .rpm and .src.rpm bindings
+// using go.digitalxero.dev/rpm.
 package rpm
 
 import (
@@ -7,44 +7,12 @@ import (
 	"cmp"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/google/rpmpack"
-	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
-	"github.com/goreleaser/nfpm/v2/files"
-	"github.com/goreleaser/nfpm/v2/internal/modtime"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
-)
-
-const (
-	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L152
-	tagChangelogTime = 1080
-	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L153
-	tagChangelogName = 1081
-	// https://github.com/rpm-software-management/rpm/blob/master/lib/rpmtag.h#L154
-	tagChangelogText = 1082
-	// https://github.com/rpm-software-management/rpm/blob/master/include/rpm/rpmtag.h#L183
-	tagSourcePackage = 1106
-	// RPMSENSE_SCRIPT_POST marks a dependency as Requires(post).
-	// https://github.com/rpm-software-management/rpm/blob/master/include/rpm/rpmds.h
-	rpmSenseScriptPost = 1 << 10
-
-	// Symbolic link
-	tagLink = 0o120000
-	// Directory
-	tagDirectory = 0o40000
-
-	changelogNotesTemplate = `
-{{- range .Changes }}{{$note := splitList "\n" .Note}}
-- {{ first $note }}
-{{- range $i,$n := (rest $note) }}{{- if ne (trim $n) ""}}
-{{$n}}{{end}}
-{{- end}}{{- end}}`
 )
 
 // nolint: gochecknoinits
@@ -112,6 +80,18 @@ func setDefaults(info *nfpm.Info) *nfpm.Info {
 func (r *RPM) ConventionalFileName(info *nfpm.Info) string {
 	info = setDefaults(info)
 
+	// Source packages carry their arch (src) in the extension, so they are named
+	// name-version-release.src.rpm without a separate architecture component.
+	if r.format == formatSRPM {
+		return fmt.Sprintf(
+			"%s-%s-%s%s",
+			info.Name,
+			formatVersion(info),
+			defaultTo(info.Release, "1"),
+			r.ConventionalExtension(),
+		)
+	}
+
 	// name-version-release.architecture.rpm
 	return fmt.Sprintf(
 		"%s-%s-%s.%s%s",
@@ -131,175 +111,24 @@ func (r *RPM) ConventionalExtension() string {
 	return ".rpm"
 }
 
+// contentPackager is the packager name used to select and prepare contents.
+// Both .rpm and .src.rpm use "rpm": a source package bundles the very contents
+// that build the binary rpm, and RPM-specific content types (doc/ghost/license/
+// readme) are only retained by files.PrepareForPackager for the "rpm" packager.
+const contentPackager = "rpm"
+
 // Package writes a new RPM package to the given writer using the given info.
 func (r *RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
-	var (
-		meta *rpmpack.RPMMetaData
-		rpm  *rpmpack.RPM
-	)
 	info = setDefaults(info)
 
-	err = nfpm.PrepareForPackager(info, "rpm")
-	if err != nil {
-		return err
-	}
-
-	if meta, err = buildRPMMeta(info); err != nil {
-		return err
-	}
-	if rpm, err = rpmpack.NewRPM(*meta); err != nil {
+	if err = nfpm.PrepareForPackager(info, contentPackager); err != nil {
 		return err
 	}
 
 	if r.format == formatSRPM {
-		rpm.AddCustomTag(tagSourcePackage, rpmpack.EntryUint32([]uint32{1}))
+		return r.packageSRPM(info, w)
 	}
-
-	if info.RPM.Signature.KeyFile != "" {
-		rpm.SetPGPSigner(sign.PGPSignerWithKeyID(
-			info.RPM.Signature.KeyFile,
-			info.RPM.Signature.KeyPassphrase,
-			info.RPM.Signature.KeyID,
-		))
-	}
-	if signFn := info.RPM.Signature.SignFn; signFn != nil {
-		rpm.SetPGPSigner(func(data []byte) ([]byte, error) {
-			return signFn(bytes.NewReader(data))
-		})
-	}
-
-	if err = createFilesInsideRPM(info, rpm); err != nil {
-		return err
-	}
-
-	if err = addScriptFiles(info, rpm); err != nil {
-		return err
-	}
-
-	if info.Changelog != "" {
-		if err = addChangeLog(info, rpm); err != nil {
-			return err
-		}
-	}
-
-	return rpm.Write(w)
-}
-
-func addChangeLog(info *nfpm.Info, rpm *rpmpack.RPM) error {
-	changelog, err := info.GetChangeLog()
-	if err != nil {
-		return fmt.Errorf("reading changelog: %w", err)
-	}
-
-	if len(changelog.Entries) == 0 {
-		// no nothing because creating empty tags
-		// would result in an invalid package
-		return nil
-	}
-
-	tpl, err := chglog.LoadTemplateData(changelogNotesTemplate)
-	if err != nil {
-		return fmt.Errorf("parsing RPM changelog template: %w", err)
-	}
-
-	changes := make([]string, len(changelog.Entries))
-	titles := make([]string, len(changelog.Entries))
-	times := make([]uint32, len(changelog.Entries))
-	for idx, entry := range changelog.Entries {
-		var formattedNotes bytes.Buffer
-
-		err := tpl.Execute(&formattedNotes, entry)
-		if err != nil {
-			return fmt.Errorf("formatting changelog notes: %w", err)
-		}
-
-		changes[idx] = strings.TrimSpace(formattedNotes.String())
-		times[idx] = uint32(entry.Date.Unix())
-		titles[idx] = fmt.Sprintf("%s - %s", entry.Packager, entry.Semver)
-	}
-
-	rpm.AddCustomTag(tagChangelogTime, rpmpack.EntryUint32(times))
-	rpm.AddCustomTag(tagChangelogName, rpmpack.EntryStringSlice(titles))
-	rpm.AddCustomTag(tagChangelogText, rpmpack.EntryStringSlice(changes))
-
-	return nil
-}
-
-//nolint:funlen
-func buildRPMMeta(info *nfpm.Info) (*rpmpack.RPMMetaData, error) {
-	var (
-		err   error
-		epoch uint64
-		provides,
-		depends,
-		recommends,
-		replaces,
-		suggests,
-		conflicts rpmpack.Relations
-	)
-
-	if info.Epoch == "" {
-		epoch = uint64(rpmpack.NoEpoch)
-	} else {
-		if epoch, err = strconv.ParseUint(info.Epoch, 10, 32); err != nil {
-			return nil, err
-		}
-	}
-	if provides, err = toRelation(info.Provides); err != nil {
-		return nil, err
-	}
-	if depends, err = toRelation(info.Depends); err != nil {
-		return nil, err
-	}
-	if err = addPostRequires(&depends, info.RPM.Requires.Post); err != nil {
-		return nil, err
-	}
-	if recommends, err = toRelation(info.Recommends); err != nil {
-		return nil, err
-	}
-	if replaces, err = toRelation(info.Replaces); err != nil {
-		return nil, err
-	}
-	if suggests, err = toRelation(info.Suggests); err != nil {
-		return nil, err
-	}
-	if conflicts, err = toRelation(info.Conflicts); err != nil {
-		return nil, err
-	}
-
-	hostname := info.RPM.BuildHost
-	if hostname == "" {
-		hostname, err = os.Hostname()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &rpmpack.RPMMetaData{
-		Name:        info.Name,
-		Summary:     defaultTo(info.RPM.Summary, strings.Split(info.Description, "\n")[0]),
-		Description: info.Description,
-		Version:     formatVersion(info),
-		Release:     defaultTo(info.Release, "1"),
-		Epoch:       uint32(epoch),
-		Arch:        info.Arch,
-		OS:          info.Platform,
-		Licence:     info.License,
-		URL:         info.Homepage,
-		Vendor:      info.Vendor,
-		Packager:    defaultTo(info.RPM.Packager, info.Maintainer),
-		Prefixes:    info.RPM.Prefixes,
-		Group:       info.RPM.Group,
-		Provides:    provides,
-		Recommends:  recommends,
-		Requires:    depends,
-		Obsoletes:   replaces,
-		Suggests:    suggests,
-		Conflicts:   conflicts,
-		Compressor:  info.RPM.Compression,
-		BuildTime:   modtime.Get(info.MTime),
-		BuildHost:   hostname,
-	}, nil
+	return r.packageRPM(info, w)
 }
 
 func formatVersion(info *nfpm.Info) string {
@@ -323,196 +152,42 @@ func defaultTo(in, def string) string {
 	return in
 }
 
-func toRelation(items []string) (rpmpack.Relations, error) {
-	relations := make(rpmpack.Relations, 0)
-	for idx := range items {
-		if err := relations.Set(items[idx]); err != nil {
-			return nil, err
-		}
+// parseEpoch parses the configured epoch. The boolean result reports whether an
+// epoch was configured at all; an unset epoch must not be written to the header.
+func parseEpoch(info *nfpm.Info) (uint32, bool, error) {
+	if info.Epoch == "" {
+		return 0, false, nil
 	}
-
-	return relations, nil
+	epoch, err := strconv.ParseUint(info.Epoch, 10, 32)
+	if err != nil {
+		return 0, false, err
+	}
+	return uint32(epoch), true, nil
 }
 
-func addPostRequires(relations *rpmpack.Relations, items []string) error {
-	for idx := range items {
-		relation, err := rpmpack.NewRelation(items[idx])
-		if err != nil {
-			return err
-		}
-		relation.Sense |= rpmSenseScriptPost
-		*relations = append(*relations, relation)
+// buildHost returns the configured build host, defaulting to the OS hostname.
+func buildHost(info *nfpm.Info) (string, error) {
+	if info.RPM.BuildHost != "" {
+		return info.RPM.BuildHost, nil
 	}
+	return os.Hostname()
+}
 
+// signFunc returns the PGP signing function for the package, or nil when signing
+// is not configured. A custom SignFn takes precedence over a key file, matching
+// the previous behavior where it was registered last.
+func signFunc(info *nfpm.Info) func([]byte) ([]byte, error) {
+	if signFn := info.RPM.Signature.SignFn; signFn != nil {
+		return func(data []byte) ([]byte, error) {
+			return signFn(bytes.NewReader(data))
+		}
+	}
+	if info.RPM.Signature.KeyFile != "" {
+		return sign.PGPSignerWithKeyID(
+			info.RPM.Signature.KeyFile,
+			info.RPM.Signature.KeyPassphrase,
+			info.RPM.Signature.KeyID,
+		)
+	}
 	return nil
-}
-
-func addScriptFiles(info *nfpm.Info, rpm *rpmpack.RPM) error {
-	if info.RPM.Scripts.PreTrans != "" {
-		data, err := os.ReadFile(info.RPM.Scripts.PreTrans)
-		if err != nil {
-			return err
-		}
-		rpm.AddPretrans(string(data))
-	}
-	if info.Scripts.PreInstall != "" {
-		data, err := os.ReadFile(info.Scripts.PreInstall)
-		if err != nil {
-			return err
-		}
-		rpm.AddPrein(string(data))
-	}
-
-	if info.Scripts.PreRemove != "" {
-		data, err := os.ReadFile(info.Scripts.PreRemove)
-		if err != nil {
-			return err
-		}
-		rpm.AddPreun(string(data))
-	}
-
-	if info.Scripts.PostInstall != "" {
-		data, err := os.ReadFile(info.Scripts.PostInstall)
-		if err != nil {
-			return err
-		}
-		rpm.AddPostin(string(data))
-	}
-
-	if info.Scripts.PostRemove != "" {
-		data, err := os.ReadFile(info.Scripts.PostRemove)
-		if err != nil {
-			return err
-		}
-		rpm.AddPostun(string(data))
-	}
-
-	if info.RPM.Scripts.PostTrans != "" {
-		data, err := os.ReadFile(info.RPM.Scripts.PostTrans)
-		if err != nil {
-			return err
-		}
-		rpm.AddPosttrans(string(data))
-	}
-
-	if info.RPM.Scripts.Verify != "" {
-		data, err := os.ReadFile(info.RPM.Scripts.Verify)
-		if err != nil {
-			return err
-		}
-		rpm.AddVerifyScript(string(data))
-	}
-
-	return nil
-}
-
-// TODO: pass mtime down in all content types
-func createFilesInsideRPM(info *nfpm.Info, rpm *rpmpack.RPM) (err error) {
-	mtime := modtime.Get(info.MTime)
-	for _, content := range info.Contents {
-		if content.Packager != "" && content.Packager != "rpm" {
-			continue
-		}
-
-		var file *rpmpack.RPMFile
-
-		switch content.Type {
-		case files.TypeConfig:
-			file, err = asRPMFile(content, rpmpack.ConfigFile)
-		case files.TypeConfigNoReplace:
-			file, err = asRPMFile(content, rpmpack.ConfigFile|rpmpack.NoReplaceFile)
-		case files.TypeConfigMissingOK:
-			file, err = asRPMFile(content, rpmpack.ConfigFile|rpmpack.MissingOkFile)
-		case files.TypeRPMGhost:
-			if content.FileInfo.Mode == 0 {
-				content.FileInfo.Mode = os.FileMode(0o644)
-			}
-
-			file, err = asRPMFile(content, rpmpack.GhostFile)
-		case files.TypeRPMDoc:
-			file, err = asRPMFile(content, rpmpack.DocFile)
-		case files.TypeRPMLicence, files.TypeRPMLicense:
-			file, err = asRPMFile(content, rpmpack.LicenceFile)
-		case files.TypeRPMReadme:
-			file, err = asRPMFile(content, rpmpack.ReadmeFile)
-		case files.TypeSymlink:
-			file = asRPMSymlink(content)
-		case files.TypeDir:
-			file = asRPMDirectory(content, mtime)
-		case files.TypeImplicitDir:
-			// we don't need to add imlicit directories to RPMs
-			continue
-		default:
-			file, err = asRPMFile(content, rpmpack.GenericFile)
-		}
-
-		if err != nil {
-			return err
-		}
-
-		// clean assures that even folders do not have a trailing slash
-		file.Name = files.ToNixPath(file.Name)
-		rpm.AddFile(*file)
-
-	}
-
-	return nil
-}
-
-func asRPMDirectory(content *files.Content, mtime time.Time) *rpmpack.RPMFile {
-	return &rpmpack.RPMFile{
-		Name:  content.Destination,
-		Mode:  normalizeFileMode(content.Mode()) | tagDirectory,
-		MTime: uint32(mtime.Unix()),
-		Owner: content.FileInfo.Owner,
-		Group: content.FileInfo.Group,
-	}
-}
-
-func asRPMSymlink(content *files.Content) *rpmpack.RPMFile {
-	return &rpmpack.RPMFile{
-		Name:  content.Destination,
-		Body:  []byte(content.Source),
-		Mode:  uint(tagLink),
-		MTime: uint32(content.FileInfo.MTime.Unix()),
-		Owner: content.FileInfo.Owner,
-		Group: content.FileInfo.Group,
-	}
-}
-
-func asRPMFile(content *files.Content, fileType rpmpack.FileType) (*rpmpack.RPMFile, error) {
-	data, err := os.ReadFile(content.Source)
-	if err != nil && content.Type != files.TypeRPMGhost {
-		return nil, err
-	}
-
-	return &rpmpack.RPMFile{
-		Name:  content.Destination,
-		Body:  data,
-		Mode:  normalizeFileMode(content.FileInfo.Mode),
-		MTime: uint32(content.FileInfo.MTime.Unix()),
-		Owner: content.FileInfo.Owner,
-		Group: content.FileInfo.Group,
-		Type:  fileType,
-	}, nil
-}
-
-func normalizeFileMode(mode fs.FileMode) uint {
-	rpmMode := uint(mode.Perm())
-
-	// Go's os.FileMode stores setuid/setgid/sticky at high bits
-	// (fs.ModeSetuid, etc.), but YAML-parsed octal values like 04755
-	// place them at the traditional Unix positions (0o4000, 0o2000,
-	// 0o1000). We must check both encodings.
-	if mode&fs.ModeSetuid != 0 || uint(mode)&0o4000 != 0 {
-		rpmMode |= 0o4000
-	}
-	if mode&fs.ModeSetgid != 0 || uint(mode)&0o2000 != 0 {
-		rpmMode |= 0o2000
-	}
-	if mode&fs.ModeSticky != 0 || uint(mode)&0o1000 != 0 {
-		rpmMode |= 0o1000
-	}
-
-	return rpmMode
 }

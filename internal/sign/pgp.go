@@ -17,7 +17,7 @@ import (
 )
 
 // PGPSignerWithKeyID returns a PGP signer that creates a detached non-ASCII-armored
-// signature and is compatible with rpmpack's signature API.
+// signature, suitable for the RPM packager's WithPGPSignFunc hook.
 func PGPSignerWithKeyID(keyFile, passphrase string, hexKeyID *string) func([]byte) ([]byte, error) {
 	return func(data []byte) ([]byte, error) {
 		keyID, err := parseKeyID(hexKeyID)

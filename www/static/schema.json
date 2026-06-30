@@ -359,8 +359,16 @@
 							"ghost",
 							"config",
 							"config|noreplace",
+							"config|missingok",
+							"doc",
+							"license",
+							"licence",
+							"readme",
 							"dir",
 							"tree",
+							"config|tree",
+							"config|noreplace|tree",
+							"config|missingok|tree",
 							""
 						],
 						"default": ""
@@ -395,6 +403,12 @@
 					"mtime": {
 						"type": "string",
 						"format": "date-time"
+					},
+					"lang": {
+						"type": "string",
+						"examples": [
+							"en"
+						]
 					}
 				},
 				"additionalProperties": false,
