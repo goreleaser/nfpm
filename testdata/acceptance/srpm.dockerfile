@@ -32,6 +32,9 @@ RUN rpm -qp --qf '[%{FILENAMES} %{FILEFLAGS}\n]' /tmp/foo.rpm | grep -E '^/var/l
 RUN test "$(rpm -qp --provides /tmp/foo.rpm | grep '^foo-tool$')" = "foo-tool"
 RUN rpm -qp --requires /tmp/foo.rpm | grep -E '^bash$'
 RUN rpm -qp --scripts /tmp/foo.rpm | grep -E 'postinstall scriptlet'
+# %-sequences in scriptlets must survive the rebuild literally; without the
+# spec escaping, ${host%%.*} would be silently mangled to ${host%.*}.
+RUN rpm -qp --scripts /tmp/foo.rpm | grep -F '${host%%.*}'
 
 # Install it and verify the payload landed on disk.
 RUN rpm -ivh /tmp/foo.rpm
