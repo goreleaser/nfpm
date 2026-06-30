@@ -20,7 +20,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/ulikunitz/xz v0.5.15
-	go.digitalxero.dev/go-msix v0.3.1
+	go.digitalxero.dev/go-msix v1.0.0
 	go.digitalxero.dev/rpm v0.2.1
 	go.yaml.in/yaml/v3 v3.0.4
 )
