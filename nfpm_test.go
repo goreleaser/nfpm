@@ -259,6 +259,25 @@ func TestValidate(t *testing.T) {
 			},
 		}))
 	})
+
+	t.Run("packager-specific arch override", func(t *testing.T) {
+		testCases := map[string]nfpm.Info{
+			"deb":       {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{Deb: nfpm.Deb{Arch: "amd64"}}},
+			"rpm":       {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{RPM: nfpm.RPM{Arch: "x86_64"}}},
+			"apk":       {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{APK: nfpm.APK{Arch: "x86_64"}}},
+			"archlinux": {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{ArchLinux: nfpm.ArchLinux{Arch: "x86_64"}}},
+			"ipk":       {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{IPK: nfpm.IPK{Arch: "all"}}},
+			"xbps":      {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{XBPS: nfpm.XBPS{Arch: "x86_64"}}},
+			"msix":      {Name: "pkg", Version: "1.2.3", Overridables: nfpm.Overridables{MSIX: nfpm.MSIX{Arch: "x64"}}},
+		}
+
+		for name, info := range testCases {
+			name, info := name, info
+			t.Run(name, func(t *testing.T) {
+				require.NoError(t, nfpm.Validate(&info))
+			})
+		}
+	})
 }
 
 func TestValidateError(t *testing.T) {
@@ -377,6 +396,8 @@ func TestOptionsFromEnvironment(t *testing.T) {
 		debPass         = "password123"
 		rpmPass         = "secret"
 		apkPass         = "foobar"
+		xbpsPass        = "xbps-secret"
+		nfpmXBPSPass    = "nfpm-xbps-secret"
 		platform        = "linux"
 		arch            = "amd64"
 		release         = "3"
@@ -460,6 +481,15 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		require.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.XBPS.Signature.KeyPassphrase)
+	})
+
+	t.Run("xbps passphrase", func(t *testing.T) {
+		t.Setenv("NFPM_PASSPHRASE", globalPass)
+		t.Setenv("XBPS_PASSPHRASE", xbpsPass)
+		info, err := nfpm.Parse(strings.NewReader("name: foo"))
+		require.NoError(t, err)
+		require.Equal(t, xbpsPass, info.XBPS.Signature.KeyPassphrase)
 	})
 
 	t.Run("specific passphrases", func(t *testing.T) {
@@ -467,11 +497,14 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		t.Setenv("NFPM_DEB_PASSPHRASE", debPass)
 		t.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
 		t.Setenv("NFPM_APK_PASSPHRASE", apkPass)
+		t.Setenv("XBPS_PASSPHRASE", xbpsPass)
+		t.Setenv("NFPM_XBPS_PASSPHRASE", nfpmXBPSPass)
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, nfpmXBPSPass, info.XBPS.Signature.KeyPassphrase)
 	})
 
 	t.Run("packager", func(t *testing.T) {
@@ -564,6 +597,45 @@ overrides:
 		content3 := info.Overrides["deb"].Contents[0]
 		require.Equal(t, "/debian/usr/bin/foo", content3.Destination)
 		require.Equal(t, "foo_amd64", content3.Source)
+	})
+
+	t.Run("xbps fields", func(t *testing.T) {
+		t.Setenv("XBPS_ARCH", "x86_64")
+		t.Setenv("SHORT_DESC", "short description")
+		t.Setenv("TAG1", "network")
+		t.Setenv("TAG2", "cli")
+		t.Setenv("REVERT1", "1.0_1")
+		t.Setenv("ALT_GROUP", "editor")
+		t.Setenv("ALT_LINK", "/usr/bin/editor")
+		t.Setenv("ALT_TARGET", "/usr/bin/foo")
+		t.Setenv("XBPS_KEY_FILE", "/keys/xbps.pem")
+		info, err := nfpm.Parse(strings.NewReader(`
+name: foo
+xbps:
+  arch: $XBPS_ARCH
+  short_desc: $SHORT_DESC
+  tags:
+    - $TAG1
+    - $TAG2
+  reverts:
+    - $REVERT1
+  alternatives:
+    - group: $ALT_GROUP
+      link_name: $ALT_LINK
+      target: $ALT_TARGET
+  signature:
+    key_file: $XBPS_KEY_FILE
+`))
+		require.NoError(t, err)
+		require.Equal(t, "x86_64", info.XBPS.Arch)
+		require.Equal(t, "short description", info.XBPS.ShortDesc)
+		require.Equal(t, []string{"network", "cli"}, info.XBPS.Tags)
+		require.Equal(t, []string{"1.0_1"}, info.XBPS.Reverts)
+		require.Len(t, info.XBPS.Alternatives, 1)
+		require.Equal(t, "editor", info.XBPS.Alternatives[0].Group)
+		require.Equal(t, "/usr/bin/editor", info.XBPS.Alternatives[0].LinkName)
+		require.Equal(t, "/usr/bin/foo", info.XBPS.Alternatives[0].Target)
+		require.Equal(t, "/keys/xbps.pem", info.XBPS.Signature.KeyFile)
 	})
 }
 

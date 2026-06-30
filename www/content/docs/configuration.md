@@ -550,6 +550,48 @@ ipk:
       target: /usr/bin/vim
       priority: 50
 
+# Custom configuration applied only to the XBPS packager.
+xbps:
+  # xbps specific architecture name that overrides "arch" without performing any replacements.
+  arch: x86_64
+
+  # XBPS short package description. If unset, the first line of the generic
+  # description is used. The generic description maps to the XBPS long
+  # description.
+  short_desc: Explicit short description for the package
+
+  # Preserve package files on update.
+  preserve: true
+
+  # Package tags.
+  tags:
+    - cli
+    - utilities
+
+  # Versions this package reverts.
+  reverts:
+    - 1.2.2_1
+
+  # Alternatives allow this package to provide a generic command via symlinks.
+  alternatives:
+    - group: editor
+      link_name: /usr/bin/editor
+      target: /usr/bin/foo
+
+  # XBPS config-file metadata is derived from contents with type `config`,
+  # `config|noreplace`, or `config|missingok`; there is no separate XBPS
+  # config-files list.
+
+  # XBPS package signature sidecar output. When key_file is set, nFPM writes
+  # an adjacent <package>.xbps.sig2 file for the generated package.
+  # The passphrase is taken from NFPM_XBPS_PASSPHRASE, with fallbacks to
+  # XBPS_PASSPHRASE and NFPM_PASSPHRASE.
+  # This does not create or sign repository metadata, publish repositories,
+  # manage remote repositories, or orchestrate xbps-rindex --sign.
+  signature:
+    # RSA private key in PEM format.
+    key_file: key.pem
+
 # Custom configuration applied only to the MSIX packager (Windows).
 msix:
   # msix specific architecture name that overrides "arch" without performing

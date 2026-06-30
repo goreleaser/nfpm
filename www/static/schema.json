@@ -196,6 +196,10 @@
 						"$ref": "#/$defs/IPK",
 						"title": "ipk-specific settings"
 					},
+					"xbps": {
+						"$ref": "#/$defs/XBPS",
+						"title": "xbps-specific settings"
+					},
 					"msix": {
 						"$ref": "#/$defs/MSIX",
 						"title": "msix-specific settings"
@@ -952,6 +956,10 @@
 						"$ref": "#/$defs/IPK",
 						"title": "ipk-specific settings"
 					},
+					"xbps": {
+						"$ref": "#/$defs/XBPS",
+						"title": "xbps-specific settings"
+					},
 					"msix": {
 						"$ref": "#/$defs/MSIX",
 						"title": "msix-specific settings"
@@ -1090,6 +1098,77 @@
 					"postremove": {
 						"type": "string",
 						"title": "post remove"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"XBPS": {
+				"properties": {
+					"arch": {
+						"type": "string",
+						"title": "architecture in xbps nomenclature"
+					},
+					"short_desc": {
+						"type": "string",
+						"title": "short one-line package description"
+					},
+					"preserve": {
+						"type": "boolean",
+						"title": "preserve package files on update"
+					},
+					"tags": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"title": "package tags"
+					},
+					"reverts": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"title": "versions this package reverts"
+					},
+					"alternatives": {
+						"items": {
+							"$ref": "#/$defs/XBPSAlternative"
+						},
+						"type": "array",
+						"title": "xbps alternatives"
+					},
+					"signature": {
+						"$ref": "#/$defs/XBPSSignature",
+						"title": "xbps signature"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"XBPSAlternative": {
+				"properties": {
+					"group": {
+						"type": "string",
+						"title": "alternative group"
+					},
+					"link_name": {
+						"type": "string",
+						"title": "symlink path"
+					},
+					"target": {
+						"type": "string",
+						"title": "target path"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"XBPSSignature": {
+				"properties": {
+					"key_file": {
+						"type": "string",
+						"title": "RSA private key file"
 					}
 				},
 				"additionalProperties": false,
