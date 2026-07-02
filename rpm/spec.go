@@ -28,7 +28,7 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 
 	writeField := func(key, value string) {
 		if value != "" {
-			fmt.Fprintf(&b, "%s: %s\n", key, value)
+			fmt.Fprintf(&b, "%s: %s\n", key, escapeSpecText(value))
 		}
 	}
 
@@ -76,7 +76,7 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 
 	fmt.Fprintf(&b, "Source0: %s\n", sourceName)
 
-	fmt.Fprintf(&b, "\n%%description\n%s\n", description)
+	fmt.Fprintf(&b, "\n%%description\n%s\n", escapeSpecText(description))
 
 	b.WriteString("\n%prep\n")
 	b.WriteString("\n%build\n")
@@ -114,6 +114,7 @@ func writeScriptSection(b *strings.Builder, section, body string) {
 	if body == "" {
 		return
 	}
+	body = escapeSpecText(body)
 	fmt.Fprintf(b, "\n%%%s\n%s", section, body)
 	if !strings.HasSuffix(body, "\n") {
 		b.WriteString("\n")
@@ -133,7 +134,7 @@ func writeFilesSection(b *strings.Builder, info *nfpm.Info) {
 }
 
 func specFileLine(content *files.Content) string {
-	dest := files.ToNixPath(content.Destination)
+	dest := escapeSpecText(files.ToNixPath(content.Destination))
 	owner := defaultTo(content.FileInfo.Owner, "root")
 	group := defaultTo(content.FileInfo.Group, "root")
 
@@ -179,4 +180,12 @@ func specFileLine(content *files.Content) string {
 // section, normalizing the mode to its octal RPM representation.
 func attrPath(mode fs.FileMode, owner, group, dest string) string {
 	return fmt.Sprintf("%%attr(%04o, %s, %s) %q", normalizeFileMode(mode), owner, group, dest)
+}
+
+// escapeSpecText doubles every percent sign so that rpmbuild treats the value
+// as literal text when the generated SRPM is rebuilt, instead of expanding
+// %macro / %(command) / %% sequences. Apply it to user-controlled content only,
+// never to the spec directives nfpm itself emits.
+func escapeSpecText(s string) string {
+	return strings.ReplaceAll(s, "%", "%%")
 }

@@ -102,8 +102,8 @@ func renderSpecChangelog(info *nfpm.Info) (string, error) {
 	var b strings.Builder
 	b.WriteString("\n%changelog\n")
 	for _, e := range entries {
-		fmt.Fprintf(&b, "* %s %s\n", e.when.Format("Mon Jan 02 2006"), e.title)
-		b.WriteString(e.notes)
+		fmt.Fprintf(&b, "* %s %s\n", e.when.Format("Mon Jan 02 2006"), escapeSpecText(e.title))
+		b.WriteString(escapeSpecText(e.notes))
 		b.WriteString("\n\n")
 	}
 	return b.String(), nil

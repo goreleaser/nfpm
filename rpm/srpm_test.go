@@ -2,6 +2,8 @@ package rpm
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/goreleaser/nfpm/v2"
@@ -198,4 +200,49 @@ func TestSRPMGenerateSpecLang(t *testing.T) {
 	require.Contains(t, spec, "/usr/share/locale/en/LC_MESSAGES/langtest.mo")
 	require.Contains(t, spec, "%lang(fr) %config %attr")
 	require.Contains(t, spec, "/etc/langtest.conf")
+}
+
+// TestSRPMGenerateSpecEscapesPercent guards against user content being
+// reinterpreted by rpmbuild on rebuild: every percent sign in scriptlets,
+// free-text fields and file paths must be doubled so it stays literal.
+func TestSRPMGenerateSpecEscapesPercent(t *testing.T) {
+	dir := t.TempDir()
+	script := filepath.Join(dir, "postinstall.sh")
+	// ${HOST%%.*} is the common longest-suffix-strip idiom; %{_libdir} and
+	// %(id -u) are macro/command forms. All must survive a rebuild verbatim.
+	require.NoError(t, os.WriteFile(script,
+		[]byte("#!/bin/sh\nshort=${HOST%%.*}\necho %{_libdir} %(id -u)\n"), 0o755))
+
+	info := nfpm.WithDefaults(&nfpm.Info{
+		Name:        "esc",
+		Arch:        "amd64",
+		Version:     "1.0.0",
+		Description: "desc with %{_libdir} and %(echo hi)",
+		Maintainer:  "maintainer",
+		Overridables: nfpm.Overridables{
+			Scripts: nfpm.Scripts{PostInstall: script},
+			RPM:     nfpm.RPM{Summary: "summary 50% off"},
+			Contents: []*files.Content{
+				{Source: "../testdata/whatever.conf", Destination: "/etc/foo%bar.conf"},
+			},
+		},
+	})
+	info = setDefaults(info)
+	require.NoError(t, nfpm.PrepareForPackager(info, "rpm"))
+
+	spec, err := generateSpec(info, "esc-1.0.0.tar.gz")
+	require.NoError(t, err)
+
+	// Percent signs in user content are doubled; the bare ${HOST%.*} would
+	// silently strip the shortest suffix instead of the longest on rebuild.
+	require.Contains(t, spec, "short=${HOST%%%%.*}")
+	require.Contains(t, spec, "echo %%{_libdir} %%(id -u)")
+	require.Contains(t, spec, "Summary: summary 50%% off")
+	require.Contains(t, spec, "%description\ndesc with %%{_libdir} and %%(echo hi)")
+	require.Contains(t, spec, `/etc/foo%%bar.conf`)
+	require.NotContains(t, spec, "short=${HOST%.*}")
+
+	// Directives nfpm emits itself stay single-percent and functional.
+	require.Contains(t, spec, "%global debug_package %{nil}")
+	require.Contains(t, spec, "tar -C %{buildroot} -xf %{SOURCE0}")
 }

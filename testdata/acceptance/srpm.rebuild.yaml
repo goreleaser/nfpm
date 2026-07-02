@@ -32,7 +32,7 @@ contents:
   - dst: /var/lib/foo/state
     type: ghost
 scripts:
-  postinstall: ./testdata/scripts/postinstall.sh
+  postinstall: ./testdata/scripts/srpm-rebuild-postinstall.sh
 rpm:
   group: "Application/Misc"
   summary: "foo summary"
