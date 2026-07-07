@@ -14,7 +14,7 @@ require (
 	github.com/goreleaser/chglog v0.7.4
 	github.com/goreleaser/fileglob v1.4.0
 	github.com/invopop/jsonschema v0.14.0
-	github.com/klauspost/compress v1.18.6
+	github.com/klauspost/compress v1.19.0
 	github.com/klauspost/pgzip v1.2.6
 	github.com/sassoftware/go-rpmutils v0.4.0
 	github.com/spf13/cobra v1.10.2
