@@ -39,7 +39,9 @@ FROM test_base AS complex
 RUN rpm --prefix=/opt -ivh /tmp/foo.rpm
 RUN test "$(rpm -qp --recommends /tmp/foo.rpm)" = "fish"
 RUN test "$(rpm -qp --suggests /tmp/foo.rpm)" = "zsh"
-RUN test "$(rpm -qp --requires /tmp/foo.rpm)" = "bash"
+# The package declares a single explicit dependency (bash); the remaining
+# entries are the standard rpmlib() feature requirements.
+RUN rpm -qp --requires /tmp/foo.rpm | grep -E '^bash$'
 RUN test -e /opt/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /usr/share/whatever/folder

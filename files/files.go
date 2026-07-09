@@ -39,6 +39,16 @@ const (
 	// that is respected by RPM-based distributions.
 	// For all other package formats it is handled exactly like TypeConfig.
 	TypeConfigMissingOK = "config|missingok"
+	// TypeConfigTree is like TypeTree but every regular file discovered while
+	// walking the directory tree is marked as a configuration file
+	// (equivalent to TypeConfig).
+	TypeConfigTree = "config|tree"
+	// TypeConfigNoReplaceTree is like TypeConfigTree but the discovered files are
+	// marked with the noreplace directive (equivalent to TypeConfigNoReplace).
+	TypeConfigNoReplaceTree = "config|noreplace|tree"
+	// TypeConfigMissingOKTree is like TypeConfigTree but the discovered files are
+	// marked with the missingok directive (equivalent to TypeConfigMissingOK).
+	TypeConfigMissingOKTree = "config|missingok|tree"
 	// TypeGhost is the type of an RPM ghost file which is ignored by other packagers.
 	TypeRPMGhost = "ghost"
 	// TypeRPMDoc is the type of an RPM doc file which is ignored by other packagers.
@@ -60,7 +70,7 @@ const (
 type Content struct {
 	Source      string           `yaml:"src,omitempty" json:"src,omitempty"`
 	Destination string           `yaml:"dst" json:"dst"`
-	Type        string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=dir,enum=tree,enum=,default="`
+	Type        string           `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=symlink,enum=ghost,enum=config,enum=config|noreplace,enum=config|missingok,enum=doc,enum=license,enum=licence,enum=readme,enum=dir,enum=tree,enum=config|tree,enum=config|noreplace|tree,enum=config|missingok|tree,enum=,default="`
 	Packager    string           `yaml:"packager,omitempty" json:"packager,omitempty"`
 	FileInfo    *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
 	Expand      bool             `yaml:"expand,omitempty" json:"expand,omitempty"`
@@ -71,7 +81,11 @@ type ContentFileInfo struct {
 	Group string      `yaml:"group,omitempty" json:"group,omitempty"`
 	Mode  os.FileMode `yaml:"mode,omitempty" json:"mode,omitempty"`
 	MTime time.Time   `yaml:"mtime,omitempty" json:"mtime,omitempty"`
-	Size  int64       `yaml:"-" json:"-"`
+	// Lang marks the file with an RPM language tag (RPMTAG_FILELANGS), rendered
+	// as %lang(<lang>) in the generated spec. It is honored by RPM-based
+	// distributions and ignored by all other package formats.
+	Lang string `yaml:"lang,omitempty" json:"lang,omitempty" jsonschema:"example=en"`
+	Size int64  `yaml:"-" json:"-"`
 }
 
 // Contents list of Content to process.
@@ -292,8 +306,19 @@ func PrepareForPackager(
 			cc.Destination = NormalizeAbsoluteFilePath(cc.Destination)
 			contentMap[cc.Destination] = cc
 		case TypeTree:
-			err := addTree(contentMap, content, umask, mtime)
-			if err != nil {
+			if err := addTree(contentMap, content, umask, mtime, TypeFile); err != nil {
+				return nil, fmt.Errorf("add tree: %w", err)
+			}
+		case TypeConfigTree:
+			if err := addTree(contentMap, content, umask, mtime, TypeConfig); err != nil {
+				return nil, fmt.Errorf("add tree: %w", err)
+			}
+		case TypeConfigNoReplaceTree:
+			if err := addTree(contentMap, content, umask, mtime, TypeConfigNoReplace); err != nil {
+				return nil, fmt.Errorf("add tree: %w", err)
+			}
+		case TypeConfigMissingOKTree:
+			if err := addTree(contentMap, content, umask, mtime, TypeConfigMissingOK); err != nil {
 				return nil, fmt.Errorf("add tree: %w", err)
 			}
 		case TypeConfig, TypeConfigNoReplace, TypeConfigMissingOK, TypeFile, "":
@@ -470,6 +495,7 @@ func addTree(
 	tree *Content,
 	umask os.FileMode,
 	mtime time.Time,
+	fileType string,
 ) error {
 	if tree.Destination != "/" && tree.Destination != "" {
 		presentContent, destinationOccupied := all[NormalizeAbsoluteDirPath(tree.Destination)]
@@ -528,7 +554,7 @@ func addTree(
 				return fmt.Errorf("get file information: %w", err)
 			}
 
-			c.Type = TypeFile
+			c.Type = fileType
 			c.Source = path
 			c.Destination = NormalizeAbsoluteFilePath(destination)
 			c.FileInfo.Mode = info.Mode() &^ umask
