@@ -145,8 +145,8 @@ func (c *Config) Get(format string) (info *Info, err error) {
 		return nil, fmt.Errorf("failed to merge config into info: %w", err)
 	}
 	override, ok := c.Overrides[format]
-	if !ok {
-		// no overrides
+	if !ok || override == nil {
+		// no overrides, or an empty override clause (e.g. "overrides:\n  deb:")
 		return info, nil
 	}
 	if err = mergo.Merge(&info.Overridables, override, mergo.WithOverride); err != nil {

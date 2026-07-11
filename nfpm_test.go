@@ -324,7 +324,10 @@ func TestParseFile(t *testing.T) {
 	require.Equal(t, "my/rpm/key/file", config.RPM.Signature.KeyFile)
 	require.Equal(t, "hard/coded/file", config.Deb.Signature.KeyFile)
 	require.Empty(t, config.APK.Signature.KeyFile)
-	_, err = parseAndValidate("./testdata/overrides-missing.yaml")
+	missing, err := parseAndValidate("./testdata/overrides-missing.yaml")
+	require.NoError(t, err)
+	// an empty override clause (overrides.deb) must not panic when resolved
+	_, err = missing.Get("deb")
 	require.NoError(t, err)
 }
 
