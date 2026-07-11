@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -614,6 +615,82 @@ func TestDirectories(t *testing.T) {
 	require.Equal(t, "test", h.Uname)
 	h = extractFileHeaderFromTar(t, buf.Bytes(), "/etc/baz")
 	require.Equal(t, h.Typeflag, byte(tar.TypeDir))
+}
+
+func TestTreeDirectoryMode(t *testing.T) {
+	source := t.TempDir()
+	require.NoError(t, os.Chmod(source, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(source, "hello.txt"), []byte("hello\n"), 0o644))
+
+	info := exampleInfo()
+	info.Contents = []*files.Content{
+		{
+			Source:      source,
+			Destination: "/usr/lib/repro",
+			Type:        files.TypeTree,
+		},
+	}
+	require.NoError(t, nfpm.PrepareForPackager(info, "apk"))
+
+	var buf bytes.Buffer
+	size := int64(0)
+	tw := tar.NewWriter(&buf)
+	require.NoError(t, createFilesInsideTarGz(info, tw, &size))
+	require.NoError(t, tw.Close())
+
+	header := extractFileHeaderFromTar(t, buf.Bytes(), "/usr/lib/repro")
+	sourceInfo, err := os.Stat(source)
+	require.NoError(t, err)
+	require.Equal(t, byte(tar.TypeDir), header.Typeflag)
+	require.Equal(t, int64(sourceInfo.Mode().Perm()), header.Mode)
+	require.NotEqual(t, tar.FormatGNU, header.Format)
+}
+
+func TestNormalizeFileMode(t *testing.T) {
+	tests := map[string]struct {
+		mode fs.FileMode
+		want fs.FileMode
+	}{
+		"permissions":          {mode: 0o755, want: 0o755},
+		"directory type":       {mode: fs.ModeDir | 0o755, want: 0o755},
+		"Go setuid":            {mode: fs.ModeSetuid | 0o755, want: 0o4755},
+		"Go setgid":            {mode: fs.ModeSetgid | 0o755, want: 0o2755},
+		"Go sticky":            {mode: fs.ModeSticky | 0o755, want: 0o1755},
+		"octal special bits":   {mode: 0o7755, want: 0o7755},
+		"unrelated type flags": {mode: fs.ModeSymlink | 0o777, want: 0o777},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, tt.want, normalizeFileMode(tt.mode))
+		})
+	}
+}
+
+func TestCopyToTarAndDigestNormalizesSpecialModeBits(t *testing.T) {
+	contents := []byte("hello\n")
+	source := filepath.Join(t.TempDir(), "hello.txt")
+	require.NoError(t, os.WriteFile(source, contents, 0o644))
+
+	file := &files.Content{
+		Source:      source,
+		Destination: "/usr/bin/hello",
+		Type:        files.TypeFile,
+		FileInfo: &files.ContentFileInfo{
+			Mode: fs.ModeSetuid | fs.ModeSetgid | fs.ModeSticky | 0o755,
+			Size: int64(len(contents)),
+		},
+	}
+
+	var buf bytes.Buffer
+	size := int64(0)
+	tw := tar.NewWriter(&buf)
+	require.NoError(t, copyToTarAndDigest(file, tw, &size))
+	require.NoError(t, tw.Close())
+
+	header := extractFileHeaderFromTar(t, buf.Bytes(), file.Destination)
+	require.Equal(t, fs.FileMode(0o7755), fs.FileMode(header.Mode))
+	require.Equal(t, int64(len(contents)), size)
 }
 
 func TestNoDuplicateAutocreatedDirectories(t *testing.T) {
