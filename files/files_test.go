@@ -782,6 +782,34 @@ func TestRelevantFiles(t *testing.T) {
 			},
 		}, withoutFileInfo(results))
 	})
+
+	t.Run("msi", func(t *testing.T) {
+		results, err := files.PrepareForPackager(
+			contents,
+			0,
+			"msi",
+			false,
+			mtime,
+		)
+		require.NoError(t, err)
+		require.Equal(t, files.Contents{
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/1allpackagers",
+				Type:        files.TypeFile,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/7licence",
+				Type:        files.TypeRPMLicence,
+			},
+			{
+				Source:      "testdata/globtest/a.txt",
+				Destination: "/8license",
+				Type:        files.TypeRPMLicense,
+			},
+		}, withoutFileInfo(results))
+	})
 }
 
 func TestTreeOwner(t *testing.T) {

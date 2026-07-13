@@ -1,0 +1,3 @@
+Test License
+
+Permission is granted to use this test fixture for nfpm acceptance tests.

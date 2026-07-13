@@ -3,16 +3,25 @@ arch: "${BUILD_ARCH}"
 version: 1.2.3
 license: MIT
 maintainer: "Foo Bar"
+vendor: "Test Company"
+homepage: "https://example.com/testapp"
 description: "A test MSI package"
 contents:
   - src: ./testdata/fake
     dst: "/Program Files/TestApp/app.exe"
   - src: ./testdata/acceptance/testapp/logo.png
     dst: "/Program Files/TestApp/assets/logo.png"
+  - src: ./testdata/acceptance/testapp/LICENSE.txt
+    dst: "/Program Files/TestApp/LICENSE.txt"
+    type: license
   - src: ./testdata/whatever.conf
     dst: config.conf
+scripts:
+  preinstall: ./testdata/acceptance/testapp/preinstall.ps1
+  postinstall: ./testdata/acceptance/testapp/postinstall.ps1
+  preremove: ./testdata/acceptance/testapp/preremove.ps1
+  postremove: ./testdata/acceptance/testapp/postremove.ps1
 msi:
-  manufacturer: "Test Company"
   upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
   shortcuts:
     - name: "Test App"

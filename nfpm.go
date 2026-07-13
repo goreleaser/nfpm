@@ -286,6 +286,7 @@ func (c *Config) expandEnvVars() {
 	// MSIX specific
 	c.MSIX.Signature.PFXFile = os.Expand(c.MSIX.Signature.PFXFile, c.envMappingFunc)
 	c.MSIX.Publisher = os.Expand(c.MSIX.Publisher, c.envMappingFunc)
+	c.MSIX.Signature.KeyPassphrase = generalPassphrase
 	msixPassphrase := os.Expand("$NFPM_MSIX_PASSPHRASE", c.envMappingFunc)
 	if msixPassphrase != "" {
 		c.MSIX.Signature.KeyPassphrase = msixPassphrase
@@ -294,6 +295,7 @@ func (c *Config) expandEnvVars() {
 	// MSI specific
 	c.MSI.Signature.PFXFile = os.Expand(c.MSI.Signature.PFXFile, c.envMappingFunc)
 	c.MSI.Manufacturer = os.Expand(c.MSI.Manufacturer, c.envMappingFunc)
+	c.MSI.Signature.KeyPassphrase = generalPassphrase
 	msiPassphrase := os.Expand("$NFPM_MSI_PASSPHRASE", c.envMappingFunc)
 	if msiPassphrase != "" {
 		c.MSI.Signature.KeyPassphrase = msiPassphrase
@@ -519,7 +521,7 @@ type IPKAlternative struct {
 // MSIX contains configs that are only available on MSIX packages.
 type MSIX struct {
 	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msix nomenclature"`
-	Publisher    string            `yaml:"publisher" json:"publisher" jsonschema:"title=publisher identity,example=CN=MyCompany\\, O=MyCompany\\, C=US"`
+	Publisher    string            `yaml:"publisher,omitempty" json:"publisher,omitempty" jsonschema:"title=publisher identity,description=defaults to the signing certificate subject when signing or CN=<vendor or maintainer>,example=CN=MyCompany\\, O=MyCompany\\, C=US"`
 	Identity     MSIXIdentity      `yaml:"identity,omitempty" json:"identity,omitempty" jsonschema:"title=package identity"`
 	Properties   MSIXProperties    `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=package properties"`
 	Applications []MSIXApplication `yaml:"applications" json:"applications" jsonschema:"title=applications in the package"`
@@ -586,13 +588,12 @@ type MSIXSignature struct {
 type MSI struct {
 	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msi nomenclature"`
 	ProductName  string            `yaml:"product_name,omitempty" json:"product_name,omitempty" jsonschema:"title=product name,description=defaults to the package name"`
-	Manufacturer string            `yaml:"manufacturer" json:"manufacturer" jsonschema:"title=manufacturer/author of the product,example=My Company"`
+	Manufacturer string            `yaml:"manufacturer,omitempty" json:"manufacturer,omitempty" jsonschema:"title=manufacturer/author of the product,description=defaults to the vendor or maintainer,example=My Company"`
 	ProductCode  string            `yaml:"product_code,omitempty" json:"product_code,omitempty" jsonschema:"title=product code GUID,description=derived from the product name (stable across versions) when empty,example={12345678-1234-1234-1234-123456789ABC}"`
 	UpgradeCode  string            `yaml:"upgrade_code,omitempty" json:"upgrade_code,omitempty" jsonschema:"title=upgrade code GUID,description=derived from the product name when empty,example={ABCDEF01-2345-6789-ABCD-EF0123456789}"`
 	InstallDir   string            `yaml:"install_dir,omitempty" json:"install_dir,omitempty" jsonschema:"title=default install folder name,description=defaults to the product name"`
 	AllUsers     *bool             `yaml:"all_users,omitempty" json:"all_users,omitempty" jsonschema:"title=per-machine install,description=defaults to true"`
 	Properties   map[string]string `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=arbitrary MSI Property rows"`
-	License      string            `yaml:"license,omitempty" json:"license,omitempty" jsonschema:"title=path to a license text file shown by the UI"`
 	MinimalUI    bool              `yaml:"minimal_ui,omitempty" json:"minimal_ui,omitempty" jsonschema:"title=install the canned minimal install wizard"`
 	Upgrade      MSIUpgrade        `yaml:"upgrade,omitempty" json:"upgrade,omitempty" jsonschema:"title=major upgrade behavior"`
 	Shortcuts    []MSIShortcut     `yaml:"shortcuts,omitempty" json:"shortcuts,omitempty" jsonschema:"title=shortcuts to create"`
@@ -674,7 +675,8 @@ func PrepareForPackager(info *Info, packager string) (err error) {
 		((packager == "deb" && info.Deb.Arch == "") ||
 			(packager == "rpm" && info.RPM.Arch == "") ||
 			(packager == "apk" && info.APK.Arch == "") ||
-			(packager == "msix" && info.MSIX.Arch == "")) {
+			(packager == "msix" && info.MSIX.Arch == "") ||
+			(packager == "msi" && info.MSI.Arch == "")) {
 		return ErrFieldEmpty{"arch"}
 	}
 	if info.Version == "" {

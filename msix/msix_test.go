@@ -1,12 +1,24 @@
 package msix
 
 import (
+	"archive/zip"
 	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"io"
+	"log"
+	"math/big"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/stretchr/testify/require"
+	pkcs12 "software.sslmate.com/src/go-pkcs12"
 )
 
 func exampleInfo() *nfpm.Info {
@@ -138,13 +150,139 @@ func TestNoInfo(t *testing.T) {
 	require.Error(t, err)
 }
 
+// readManifest extracts AppxManifest.xml from a built package.
+func readManifest(t *testing.T, raw []byte) string {
+	t.Helper()
+	zr, err := zip.NewReader(bytes.NewReader(raw), int64(len(raw)))
+	require.NoError(t, err)
+	f, err := zr.Open("AppxManifest.xml")
+	require.NoError(t, err)
+	defer f.Close()
+	b, err := io.ReadAll(f)
+	require.NoError(t, err)
+	return string(b)
+}
+
+// TestMissingPublisher proves the package builds without an explicit publisher
+// by falling back to a CN= DN derived from the root vendor.
 func TestMissingPublisher(t *testing.T) {
 	info := exampleInfo()
 	info.MSIX.Publisher = ""
 	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	require.Contains(t, readManifest(t, buf.Bytes()), `Publisher="CN=TestCo"`)
+}
+
+func TestNoPublisherVendorOrMaintainer(t *testing.T) {
+	info := exampleInfo()
+	info.MSIX.Publisher = ""
+	info.Vendor = ""
+	info.Maintainer = ""
+	var buf bytes.Buffer
 	err := Default.Package(info, &buf)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "msix.publisher")
+	require.Contains(t, err.Error(), "msix.publisher, vendor, or maintainer")
+}
+
+func TestPublisherDefaults(t *testing.T) {
+	tests := []struct {
+		name   string
+		vendor string
+		want   string
+	}{
+		{"plain vendor", "TestCo", "CN=TestCo"},
+		{"vendor with comma escaped", "TestCo, Inc", `CN=TestCo\, Inc`},
+		{"vendor already a DN", "CN=TestCo, O=TestCo, C=US", "CN=TestCo, O=TestCo, C=US"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info := exampleInfo()
+			info.MSIX.Publisher = ""
+			info.Vendor = tt.vendor
+			var buf bytes.Buffer
+			require.NoError(t, Default.Package(info, &buf))
+			require.Contains(t, readManifest(t, buf.Bytes()), `Publisher="`+tt.want+`"`)
+		})
+	}
+}
+
+func TestPublisherFromMaintainer(t *testing.T) {
+	info := exampleInfo()
+	info.MSIX.Publisher = ""
+	info.Vendor = ""
+	info.Maintainer = "Jane Doe <jane@example.com>"
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	require.Contains(t, readManifest(t, buf.Bytes()), `Publisher="CN=Jane Doe"`)
+}
+
+// TestPublisherFromSigningCert proves that when signing is configured and no
+// publisher is set, the identity publisher is the certificate subject, which
+// Windows requires to match on signed packages.
+func TestPublisherFromSigningCert(t *testing.T) {
+	pfxPath, passphrase := makeTestPFX(t)
+
+	info := exampleInfo()
+	info.MSIX.Publisher = ""
+	info.MSIX.Signature = nfpm.MSIXSignature{
+		PFXFile:       pfxPath,
+		KeyPassphrase: passphrase,
+	}
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	require.Contains(t, readManifest(t, buf.Bytes()), `Publisher="CN=nfpm-msix-test"`)
+}
+
+// TestPublisherDisplayNameFallback proves the display name prefers the root
+// vendor over the package name.
+func TestPublisherDisplayNameFallback(t *testing.T) {
+	info := exampleInfo()
+	info.MSIX.Properties.PublisherDisplayName = ""
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	require.Contains(t, readManifest(t, buf.Bytes()), "<PublisherDisplayName>TestCo</PublisherDisplayName>")
+}
+
+func TestScriptsWarning(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	defer log.SetOutput(os.Stderr)
+
+	info := exampleInfo()
+	info.Scripts.PostInstall = "whatever.ps1"
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	require.Contains(t, logs.String(), "does not support install scripts")
+}
+
+// makeTestPFX generates a self-signed code-signing cert and writes it as a
+// password-protected PKCS#12 file, returning its path and passphrase.
+func makeTestPFX(t *testing.T) (string, string) {
+	t.Helper()
+
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "nfpm-msix-test"},
+		NotBefore:    time.Unix(0, 0),
+		NotAfter:     time.Unix(0, 0).AddDate(20, 0, 0),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	require.NoError(t, err)
+	cert, err := x509.ParseCertificate(der)
+	require.NoError(t, err)
+
+	const passphrase = "test123"
+	pfx, err := pkcs12.Modern.Encode(key, cert, nil, passphrase)
+	require.NoError(t, err)
+
+	path := filepath.Join(t.TempDir(), "test.pfx")
+	require.NoError(t, os.WriteFile(path, pfx, 0o600))
+	return path, passphrase
 }
 
 func TestMissingLogo(t *testing.T) {
