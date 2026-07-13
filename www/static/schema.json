@@ -684,6 +684,7 @@
 					"manufacturer": {
 						"type": "string",
 						"title": "manufacturer/author of the product",
+						"description": "defaults to the vendor or maintainer",
 						"examples": [
 							"My Company"
 						]
@@ -721,10 +722,6 @@
 						"type": "object",
 						"title": "arbitrary MSI Property rows"
 					},
-					"license": {
-						"type": "string",
-						"title": "path to a license text file shown by the UI"
-					},
 					"minimal_ui": {
 						"type": "boolean",
 						"title": "install the canned minimal install wizard"
@@ -760,10 +757,7 @@
 					}
 				},
 				"additionalProperties": false,
-				"type": "object",
-				"required": [
-					"manufacturer"
-				]
+				"type": "object"
 			},
 			"MSIRegistry": {
 				"properties": {
@@ -934,6 +928,7 @@
 					"publisher": {
 						"type": "string",
 						"title": "publisher identity",
+						"description": "defaults to the signing certificate subject when signing or CN=\u003cvendor or maintainer\u003e",
 						"examples": [
 							"CN=MyCompany, O=MyCompany, C=US"
 						]
@@ -969,7 +964,6 @@
 				"additionalProperties": false,
 				"type": "object",
 				"required": [
-					"publisher",
 					"applications"
 				]
 			},

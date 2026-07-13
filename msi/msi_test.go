@@ -111,9 +111,9 @@ func TestVersionConversion(t *testing.T) {
 	}
 }
 
-// packageAndValidate builds an MSI and asserts it is a structurally valid,
-// ICE-clean Windows Installer database.
-func packageAndValidate(t *testing.T, info *nfpm.Info) {
+// packageAndValidate builds an MSI, asserts it is a structurally valid,
+// ICE-clean Windows Installer database, and returns the raw package bytes.
+func packageAndValidate(t *testing.T, info *nfpm.Info) []byte {
 	t.Helper()
 	var buf bytes.Buffer
 	require.NoError(t, msi.Default.Package(info, &buf))
@@ -129,6 +129,7 @@ func packageAndValidate(t *testing.T, info *nfpm.Info) {
 			t.Errorf("ICE error finding %s: %s", f.ICE(), f.Message())
 		}
 	}
+	return buf.Bytes()
 }
 
 func TestPackageMinimal(t *testing.T) {
@@ -144,13 +145,50 @@ func TestPackageWithContents(t *testing.T) {
 	packageAndValidate(t, info)
 }
 
+// TestManufacturerFallback proves an MSI builds without any msi-specific
+// manufacturer: the root vendor is embedded instead.
+func TestManufacturerFallback(t *testing.T) {
+	info := exampleInfo()
+	info.MSI.Manufacturer = ""
+	raw := packageAndValidate(t, info)
+	require.True(t, bytes.Contains(raw, []byte("TestCo")), "vendor must be embedded as the manufacturer")
+}
+
 func TestNoManufacturer(t *testing.T) {
 	info := exampleInfo()
 	info.MSI.Manufacturer = ""
+	info.Vendor = ""
+	info.Maintainer = ""
 	var buf bytes.Buffer
 	err := msi.Default.Package(info, &buf)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "msi.manufacturer")
+	require.Contains(t, err.Error(), "msi.manufacturer, vendor, or maintainer")
+}
+
+func TestManufacturerDefaults(t *testing.T) {
+	tests := []struct {
+		name         string
+		vendor       string
+		maintainer   string
+		manufacturer string
+		want         string
+	}{
+		{"explicit wins", "TestCo", "Jane Doe <jane@example.com>", "Explicit Co", "Explicit Co"},
+		{"vendor", "TestCo", "Jane Doe <jane@example.com>", "", "TestCo"},
+		{"maintainer email stripped", "", "Jane Doe <jane@example.com>", "", "Jane Doe"},
+		{"maintainer without email", "", "Jane Doe", "", "Jane Doe"},
+		{"all empty", "", "", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info := exampleInfo()
+			info.Vendor = tt.vendor
+			info.Maintainer = tt.maintainer
+			info.MSI.Manufacturer = tt.manufacturer
+			msi.Default.SetPackagerDefaults(info)
+			require.Equal(t, tt.want, info.MSI.Manufacturer)
+		})
+	}
 }
 
 func TestInvalidProductCode(t *testing.T) {
@@ -305,24 +343,34 @@ func TestMajorUpgrade(t *testing.T) {
 	packageAndValidate(t, info)
 }
 
-func TestMinimalUIWithLicense(t *testing.T) {
+// TestLicenseContent proves a shared contents entry of type license is both
+// installed as a file and used as the install-UI license text.
+func TestLicenseContent(t *testing.T) {
 	dir := t.TempDir()
 	license := filepath.Join(dir, "LICENSE.txt")
 	require.NoError(t, os.WriteFile(license, []byte("Test license text"), 0o600))
 
 	info := exampleInfo()
 	info.MSI.MinimalUI = true
-	info.MSI.License = license
-	packageAndValidate(t, info)
+	info.Contents = append(info.Contents, &files.Content{
+		Source:      license,
+		Destination: "/Program Files/TestApp/LICENSE.txt",
+		Type:        files.TypeRPMLicense,
+	})
+	raw := packageAndValidate(t, info)
+	require.True(t, bytes.Contains(raw, []byte("Test license text")), "license text must be embedded for the UI")
 }
 
 func TestMissingLicenseFile(t *testing.T) {
 	info := exampleInfo()
-	info.MSI.License = "/does/not/exist.txt"
+	info.Contents = append(info.Contents, &files.Content{
+		Source:      "/does/not/exist/LICENSE.txt",
+		Destination: "/Program Files/TestApp/LICENSE.txt",
+		Type:        files.TypeRPMLicense,
+	})
 	var buf bytes.Buffer
 	err := msi.Default.Package(info, &buf)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "license")
 }
 
 func TestSetPackagerDefaults(t *testing.T) {
@@ -339,11 +387,88 @@ func TestSetPackagerDefaults(t *testing.T) {
 	msi.Default.SetPackagerDefaults(info)
 
 	require.Equal(t, "MyApp", info.MSI.ProductName)
+	require.Equal(t, "Co", info.MSI.Manufacturer)
 	require.Equal(t, "MyApp", info.MSI.InstallDir)
 	require.NotNil(t, info.MSI.AllUsers)
 	require.True(t, *info.MSI.AllUsers)
 	require.Equal(t, "demand", info.MSI.Services[0].StartType)
 	require.Equal(t, "ProgramMenuFolder", info.MSI.Shortcuts[0].Directory)
+}
+
+// TestRootFieldProperties proves shared root metadata lands in the standard
+// ARP property rows.
+func TestRootFieldProperties(t *testing.T) {
+	raw := packageAndValidate(t, exampleInfo())
+	require.True(t, bytes.Contains(raw, []byte("ARPCOMMENTS")))
+	require.True(t, bytes.Contains(raw, []byte("Test application")))
+	require.True(t, bytes.Contains(raw, []byte("ARPURLINFOABOUT")))
+	require.True(t, bytes.Contains(raw, []byte("https://example.com")))
+}
+
+func TestRootFieldPropertiesUserOverride(t *testing.T) {
+	info := exampleInfo()
+	info.MSI.Properties = map[string]string{"ARPCOMMENTS": "custom comment"}
+	raw := packageAndValidate(t, info)
+	require.True(t, bytes.Contains(raw, []byte("custom comment")))
+	require.False(t, bytes.Contains(raw, []byte("Test application")),
+		"root description must not override the user-provided property")
+}
+
+func TestScriptsCustomActions(t *testing.T) {
+	dir := t.TempDir()
+	ps1 := filepath.Join(dir, "hook.ps1")
+	bat := filepath.Join(dir, "hook.bat")
+	require.NoError(t, os.WriteFile(ps1, []byte("Write-Output 'hello'\n"), 0o600))
+	require.NoError(t, os.WriteFile(bat, []byte("@echo off\r\necho hello\r\n"), 0o600))
+
+	info := exampleInfo()
+	info.Scripts = nfpm.Scripts{
+		PreInstall:  ps1,
+		PostInstall: bat,
+		PreRemove:   ps1,
+		PostRemove:  ps1,
+	}
+	raw := packageAndValidate(t, info)
+	for _, id := range []string{"NfpmPreInstall", "NfpmPostInstall", "NfpmPreRemove", "NfpmPostRemove"} {
+		require.True(t, bytes.Contains(raw, []byte(id)), "custom action %s must be present", id)
+	}
+	require.True(t, bytes.Contains(raw, []byte("UPGRADINGPRODUCTCODE")),
+		"remove hooks must be conditioned on the major-upgrade guard")
+}
+
+func TestScriptUnsupportedExtension(t *testing.T) {
+	dir := t.TempDir()
+	sh := filepath.Join(dir, "hook.sh")
+	require.NoError(t, os.WriteFile(sh, []byte("#!/bin/sh\n"), 0o600))
+
+	info := exampleInfo()
+	info.Scripts.PreInstall = sh
+	var buf bytes.Buffer
+	err := msi.Default.Package(info, &buf)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), ".ps1, .bat, or .cmd")
+}
+
+func TestScriptMissingFile(t *testing.T) {
+	info := exampleInfo()
+	info.Scripts.PostInstall = "/does/not/exist.ps1"
+	var buf bytes.Buffer
+	err := msi.Default.Package(info, &buf)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "scripts.postinstall")
+}
+
+func TestScriptTooLarge(t *testing.T) {
+	dir := t.TempDir()
+	big := filepath.Join(dir, "big.ps1")
+	require.NoError(t, os.WriteFile(big, bytes.Repeat([]byte("# padding\n"), 1000), 0o600))
+
+	info := exampleInfo()
+	info.Scripts.PreRemove = big
+	var buf bytes.Buffer
+	err := msi.Default.Package(info, &buf)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "at most")
 }
 
 func TestSigning(t *testing.T) {

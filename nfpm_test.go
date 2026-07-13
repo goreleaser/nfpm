@@ -280,6 +280,22 @@ func TestValidateError(t *testing.T) {
 	}
 }
 
+func TestPrepareForPackagerArchRequired(t *testing.T) {
+	t.Run("msi", func(t *testing.T) {
+		info := &nfpm.Info{Name: "foo", Version: "1.0.0"}
+		require.EqualError(t, nfpm.PrepareForPackager(info, "msi"), "package arch must be provided")
+		info.MSI.Arch = "x64"
+		require.NoError(t, nfpm.PrepareForPackager(info, "msi"))
+	})
+
+	t.Run("msix", func(t *testing.T) {
+		info := &nfpm.Info{Name: "foo", Version: "1.0.0"}
+		require.EqualError(t, nfpm.PrepareForPackager(info, "msix"), "package arch must be provided")
+		info.MSIX.Arch = "x64"
+		require.NoError(t, nfpm.PrepareForPackager(info, "msix"))
+	})
+}
+
 func parseAndValidate(filename string) (nfpm.Config, error) {
 	config, err := nfpm.ParseFile(filename)
 	if err != nil {
@@ -460,6 +476,8 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		require.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.MSI.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.MSIX.Signature.KeyPassphrase)
 	})
 
 	t.Run("specific passphrases", func(t *testing.T) {
@@ -467,11 +485,15 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		t.Setenv("NFPM_DEB_PASSPHRASE", debPass)
 		t.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
 		t.Setenv("NFPM_APK_PASSPHRASE", apkPass)
+		t.Setenv("NFPM_MSI_PASSPHRASE", "msiPass")
+		t.Setenv("NFPM_MSIX_PASSPHRASE", "msixPass")
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, "msiPass", info.MSI.Signature.KeyPassphrase)
+		require.Equal(t, "msixPass", info.MSIX.Signature.KeyPassphrase)
 	})
 
 	t.Run("packager", func(t *testing.T) {

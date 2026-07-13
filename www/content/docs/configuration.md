@@ -244,6 +244,14 @@ contents:
   - dst: /var/log/boo.log
     type: ghost
 
+  # License files are installed like regular files and additionally marked as
+  # `%license` in RPM packages. For MSI packages the first license content is
+  # also used as the license text shown by the install wizard. Other packagers
+  # ignore this type. ('licence' is accepted as an alternate spelling.)
+  - src: LICENSE
+    dst: /usr/share/licenses/myapp/LICENSE
+    type: license
+
   # You can use the packager field to add files that are unique to a specific
   # packager
   - src: path/to/rpm/file.conf
@@ -314,6 +322,11 @@ contents:
 umask: 0o002
 
 # Scripts to run at specific stages. (overridable)
+#
+# For MSI packages the scripts run as elevated deferred custom actions and must
+# be PowerShell (.ps1) or batch (.bat/.cmd) files, at most 8 KiB each; a
+# non-zero exit rolls back the installer transaction (including on uninstall).
+# MSIX packages are declarative and ignore scripts (a warning is printed).
 scripts:
   preinstall: ./scripts/preinstall.sh
   postinstall: ./scripts/postinstall.sh
@@ -569,13 +582,19 @@ ipk:
       priority: 50
 
 # Custom configuration applied only to the MSIX packager (Windows).
+# MSIX is declarative: the root `scripts` are ignored (with a warning) and the
+# root `homepage` cannot be represented in the AppxManifest.
 msix:
   # msix specific architecture name that overrides "arch" without performing
   # any replacements.
   arch: x64
 
-  # Publisher identity. (required)
+  # Publisher identity.
   # Must match the subject of the signing certificate if signing is used.
+  # When omitted it defaults to the signing certificate's subject (if a
+  # signature is configured), otherwise to "CN=<vendor>" (falling back to the
+  # maintainer name). Set it explicitly if your certificate has an unusual
+  # subject that stringifies differently.
   publisher: "CN=MyCompany, O=MyCompany, C=US"
 
   # Package identity settings.
@@ -587,7 +606,8 @@ msix:
   properties:
     # Display name shown to users (defaults to package name).
     display_name: "My Application"
-    # Publisher display name (defaults to package name).
+    # Publisher display name (defaults to the vendor or maintainer name,
+    # falling back to the package name).
     publisher_display_name: "My Company"
     # Path to a logo file in the package.
     logo: "Assets/logo.png"
@@ -633,7 +653,8 @@ msix:
   signature:
     # Path to the PFX certificate file.
     pfx_file: certificate.pfx
-    # Passphrase is read from the NFPM_MSIX_PASSPHRASE environment variable.
+    # The passphrase is taken from the environment variable
+    # $NFPM_MSIX_PASSPHRASE with a fallback to $NFPM_PASSPHRASE.
 
 # Custom configuration applied only to the MSI packager (Windows).
 # The MSI packager produces a real Windows Installer database. Use unix-style
@@ -641,6 +662,18 @@ msix:
 # `/Program Files`, `/ProgramData` and `/Windows/System32` are mapped to the
 # matching Windows Installer system folders; anything else is installed under the
 # product's install folder.
+#
+# Shared root fields are reused where MSI has a place for them:
+# - `description` becomes the ARPCOMMENTS property (shown in Add/Remove
+#   Programs) and `homepage` becomes ARPURLINFOABOUT; both can be overridden
+#   by setting the property explicitly in `msi.properties`.
+# - the first contents entry with `type: license` is shown as the license text
+#   by the install wizard (see `minimal_ui`).
+# - the root `scripts` run as elevated deferred custom actions: preinstall/
+#   postinstall around file installation (also during major upgrades), and
+#   preremove/postremove around file removal on uninstall (skipped while a
+#   major upgrade replaces the product). Scripts must be .ps1, .bat or .cmd
+#   and at most 8 KiB; a non-zero exit rolls back the transaction.
 msi:
   # msi specific architecture name that overrides "arch" without performing
   # any replacements.
@@ -649,7 +682,8 @@ msi:
   # Product name (defaults to the package name).
   product_name: "My Application"
 
-  # Manufacturer/author of the product. (required)
+  # Manufacturer/author of the product.
+  # Defaults to the vendor, falling back to the maintainer name.
   manufacturer: "My Company"
 
   # Product code GUID. When omitted, a stable GUID is derived from the product
@@ -666,14 +700,13 @@ msi:
   # Per-machine install (defaults to true).
   all_users: true
 
-  # Arbitrary MSI Property rows.
+  # Arbitrary MSI Property rows. Setting ARPCOMMENTS or ARPURLINFOABOUT here
+  # overrides the values derived from the root description and homepage.
   properties:
     MYPROPERTY: "value"
 
-  # Path to a license text file shown by the install wizard.
-  license: ./LICENSE.txt
-
-  # Install the canned minimal install wizard.
+  # Install the canned minimal install wizard. The license text it shows comes
+  # from the first contents entry with `type: license`.
   minimal_ui: true
 
   # Major upgrade behavior.
@@ -726,7 +759,8 @@ msi:
     pfx_file: certificate.pfx
     # Optional RFC3161 timestamp URL.
     timestamp_url: "http://timestamp.digicert.com"
-    # Passphrase is read from the NFPM_MSI_PASSPHRASE environment variable.
+    # The passphrase is taken from the environment variable
+    # $NFPM_MSI_PASSPHRASE with a fallback to $NFPM_PASSPHRASE.
 ```
 
 ## Templating

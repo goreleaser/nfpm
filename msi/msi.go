@@ -84,10 +84,26 @@ func (*MSI) ConventionalExtension() string {
 	return ".msi"
 }
 
+// vendorOrMaintainer returns info.Vendor, falling back to the name part of
+// info.Maintainer ("Jane Doe <jane@example.com>" -> "Jane Doe").
+func vendorOrMaintainer(info *nfpm.Info) string {
+	if info.Vendor != "" {
+		return info.Vendor
+	}
+	m := info.Maintainer
+	if i := strings.IndexByte(m, '<'); i >= 0 {
+		m = m[:i]
+	}
+	return strings.TrimSpace(m)
+}
+
 // SetPackagerDefaults sets default values for MSI-specific fields.
 func (*MSI) SetPackagerDefaults(info *nfpm.Info) {
 	if info.MSI.ProductName == "" {
 		info.MSI.ProductName = info.Name
+	}
+	if info.MSI.Manufacturer == "" {
+		info.MSI.Manufacturer = vendorOrMaintainer(info)
 	}
 	if info.MSI.InstallDir == "" {
 		info.MSI.InstallDir = info.MSI.ProductName
@@ -149,6 +165,17 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 		b = b.WithProperty(k, v)
 	}
 
+	// Map shared root metadata onto the standard ARP properties, unless the
+	// user already set the property explicitly.
+	for k, v := range map[string]string{
+		"ARPCOMMENTS":     info.Description,
+		"ARPURLINFOABOUT": info.Homepage,
+	} {
+		if _, ok := info.MSI.Properties[k]; v != "" && !ok {
+			b = b.WithProperty(k, v)
+		}
+	}
+
 	// Declare INSTALLFOLDER explicitly so its DefaultDir is the configured
 	// install directory name (otherwise go-msi derives it from the product name).
 	b.RootDirectory("INSTALLFOLDER", info.MSI.InstallDir)
@@ -176,15 +203,12 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 		}
 	}
 
+	if err := addScripts(b, info); err != nil {
+		return err
+	}
+
 	if info.MSI.MinimalUI {
 		b.WithMinimalUI()
-	}
-	if info.MSI.License != "" {
-		text, err := os.ReadFile(info.MSI.License)
-		if err != nil {
-			return fmt.Errorf("reading license file %s: %w", info.MSI.License, err)
-		}
-		b.WithLicenseText(string(text))
 	}
 
 	if info.MSI.Signature.PFXFile != "" {
@@ -210,7 +234,10 @@ type placement struct {
 
 func validate(info *nfpm.Info) error {
 	if info.MSI.Manufacturer == "" {
-		return fmt.Errorf("package %s must be provided", "msi.manufacturer")
+		return fmt.Errorf("package msi.manufacturer, vendor, or maintainer must be provided")
+	}
+	if err := validateScripts(info); err != nil {
+		return err
 	}
 	if info.MSI.ProductCode != "" && !looksLikeGUID(info.MSI.ProductCode) {
 		return fmt.Errorf("package msi.product_code %q must be a braced GUID", info.MSI.ProductCode)
@@ -270,6 +297,7 @@ func validate(info *nfpm.Info) error {
 func addContents(b msi.PackageBuilder, info *nfpm.Info) (map[string]placement, error) {
 	placed := map[string]placement{}
 	createdDirs := map[string]bool{"INSTALLFOLDER": true}
+	licenseSet := false
 
 	for _, content := range info.Contents {
 		switch content.Type {
@@ -282,6 +310,21 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info) (map[string]placement, e
 		}
 		if content.Source == "" {
 			continue
+		}
+
+		// License contents are installed like any other file and additionally
+		// feed the install UI license screen (first one wins).
+		if content.Type == files.TypeRPMLicence || content.Type == files.TypeRPMLicense {
+			if licenseSet {
+				log.Printf("warning: multiple license contents, %s is not used for the install UI", content.Source)
+			} else {
+				text, err := os.ReadFile(content.Source)
+				if err != nil {
+					return nil, fmt.Errorf("reading license file %s: %w", content.Source, err)
+				}
+				b.WithLicenseText(string(text))
+				licenseSet = true
+			}
 		}
 
 		src, err := msi.FileSourceFromPath(content.Source)

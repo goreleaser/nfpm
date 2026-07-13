@@ -7,6 +7,11 @@ description: "A test MSI package for Windows installation"
 contents:
   - src: ./dist/testapp.exe
     dst: "/Program Files/NfpmMsiTest/testapp.exe"
+scripts:
+  preinstall: ./testdata/acceptance/testapp/preinstall.ps1
+  postinstall: ./testdata/acceptance/testapp/postinstall.ps1
+  preremove: ./testdata/acceptance/testapp/preremove.ps1
+  postremove: ./testdata/acceptance/testapp/postremove.ps1
 msi:
   product_name: NfpmMsiTest
   manufacturer: "Test Company"
