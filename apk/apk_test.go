@@ -642,7 +642,7 @@ func TestTreeDirectoryMode(t *testing.T) {
 	sourceInfo, err := os.Stat(source)
 	require.NoError(t, err)
 	require.Equal(t, byte(tar.TypeDir), header.Typeflag)
-	require.Equal(t, int64(sourceInfo.Mode().Perm()), header.Mode)
+	require.Equal(t, int64(sourceInfo.Mode().Perm()&^info.Umask), header.Mode)
 	require.NotEqual(t, tar.FormatGNU, header.Format)
 }
 
