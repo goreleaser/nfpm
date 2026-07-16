@@ -6,10 +6,16 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"errors"
+	"io"
+	"log"
 	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"testing"
 	"time"
 
@@ -458,6 +464,20 @@ func TestScriptMissingFile(t *testing.T) {
 	require.Contains(t, err.Error(), "scripts.postinstall")
 }
 
+// TestScriptUnreadable covers the read failure in addScripts. A directory named
+// hook.ps1 clears validateScripts — it stats fine, is under the size limit and
+// has a supported extension — then fails when the body is read.
+func TestScriptUnreadable(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "hook.ps1")
+	require.NoError(t, os.Mkdir(dir, 0o700))
+
+	info := exampleInfo()
+	info.Scripts.PreInstall = dir
+	err := msi.Default.Package(info, io.Discard)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "scripts.preinstall")
+}
+
 func TestScriptTooLarge(t *testing.T) {
 	dir := t.TempDir()
 	big := filepath.Join(dir, "big.ps1")
@@ -495,6 +515,356 @@ func TestSigningMissingPFX(t *testing.T) {
 	err := msi.Default.Package(info, &buf)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "PFX file not found")
+}
+
+// TestSigningWrongPassphrase proves a PFX that exists but cannot be opened
+// surfaces as a signing failure rather than a generic error.
+func TestSigningWrongPassphrase(t *testing.T) {
+	pfxPath, _ := makeTestPFX(t)
+
+	info := exampleInfo()
+	info.MSI.Signature = nfpm.MSISignature{
+		PFXFile:       pfxPath,
+		KeyPassphrase: "wrong-passphrase",
+	}
+
+	var buf bytes.Buffer
+	err := msi.Default.Package(info, &buf)
+	require.Error(t, err)
+
+	var expectedError *nfpm.ErrSigningFailure
+	require.ErrorAs(t, err, &expectedError)
+}
+
+// TestSigningPFXNotAccessible covers the stat failure that is not ErrNotExist:
+// a path whose parent is a regular file yields ENOTDIR on unix. Windows reports
+// that as ERROR_PATH_NOT_FOUND, which maps to fs.ErrNotExist and takes the
+// not-found branch instead, so the distinction only exists off Windows.
+func TestSigningPFXNotAccessible(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("windows maps a non-directory path component to ErrNotExist")
+	}
+
+	info := exampleInfo()
+	info.MSI.Signature.PFXFile = filepath.Join("../testdata/whatever.conf", "nope.pfx")
+
+	var buf bytes.Buffer
+	err := msi.Default.Package(info, &buf)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unable to access PFX file")
+}
+
+// TestSigningWithTimestampURL exercises the timestamp branch of the signer
+// build. Building the signer does not contact the network; the URL is only
+// fetched later, while writing the package, so a stub server that rejects the
+// request proves the URL was plumbed through and reached.
+func TestSigningWithTimestampURL(t *testing.T) {
+	pfxPath, passphrase := makeTestPFX(t)
+
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits++
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(srv.Close)
+
+	info := exampleInfo()
+	info.MSI.Signature = nfpm.MSISignature{
+		PFXFile:       pfxPath,
+		KeyPassphrase: passphrase,
+		TimestampURL:  srv.URL,
+	}
+
+	err := msi.Default.Package(info, io.Discard)
+	require.Error(t, err, "a failing timestamp authority must fail the package")
+	require.Positive(t, hits, "the configured timestamp URL must actually be requested")
+}
+
+// errWriter fails every write, to exercise the package-writing error path.
+type errWriter struct{}
+
+func (errWriter) Write([]byte) (int, error) {
+	return 0, errors.New("write failed")
+}
+
+func TestWriteMSIError(t *testing.T) {
+	err := msi.Default.Package(exampleInfo(), errWriter{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "write failed")
+}
+
+func TestValidateErrors(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		mutate func(*nfpm.Info)
+		expect string
+	}{
+		{
+			name: "no manufacturer, vendor or maintainer",
+			mutate: func(info *nfpm.Info) {
+				info.MSI.Manufacturer = ""
+				info.Vendor = ""
+				info.Maintainer = ""
+			},
+			expect: "must be provided",
+		},
+		{
+			name: "shortcut without a name",
+			mutate: func(info *nfpm.Info) {
+				info.MSI.Shortcuts = []nfpm.MSIShortcut{
+					{Target: "/Program Files/TestApp/app.exe"},
+				}
+			},
+			expect: "msi.shortcuts[0].name",
+		},
+		{
+			name: "shortcut without a target",
+			mutate: func(info *nfpm.Info) {
+				info.MSI.Shortcuts = []nfpm.MSIShortcut{{Name: "Test App"}}
+			},
+			expect: "msi.shortcuts[0].target",
+		},
+		{
+			name: "service without a name",
+			mutate: func(info *nfpm.Info) {
+				info.MSI.Services = []nfpm.MSIService{
+					{Executable: "/Program Files/TestApp/app.exe", StartType: "demand"},
+				}
+			},
+			expect: "msi.services[0].name",
+		},
+		{
+			name: "service without an executable",
+			mutate: func(info *nfpm.Info) {
+				info.MSI.Services = []nfpm.MSIService{{Name: "TestSvc", StartType: "demand"}}
+			},
+			expect: "msi.services[0].executable",
+		},
+		{
+			name: "registry entry without a key",
+			mutate: func(info *nfpm.Info) {
+				info.MSI.Registry = []nfpm.MSIRegistry{{Root: "HKLM", Name: "x", Value: "y"}}
+			},
+			expect: "msi.registry[0].key",
+		},
+		{
+			name: "invalid upgrade code",
+			mutate: func(info *nfpm.Info) {
+				info.MSI.UpgradeCode = "not-a-guid"
+			},
+			expect: "msi.upgrade_code",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			info := exampleInfo()
+			tt.mutate(info)
+			err := msi.Default.Package(info, io.Discard)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.expect)
+		})
+	}
+}
+
+// TestPackage386 builds a 32-bit package, covering the 32-bit arms of the
+// architecture-dependent helpers in one pass: the ProgramFilesFolder mapping,
+// the component attributes, and the [SystemFolder] script interpreter path.
+func TestPackage386(t *testing.T) {
+	dir := t.TempDir()
+	ps1 := filepath.Join(dir, "hook.ps1")
+	require.NoError(t, os.WriteFile(ps1, []byte("Write-Output 'hi'\n"), 0o600))
+
+	info := exampleInfo()
+	info.Arch = "386"
+	info.Scripts.PreInstall = ps1
+
+	raw := packageAndValidate(t, info)
+	require.True(t, bytes.Contains(raw, []byte("ProgramFilesFolder")))
+	require.False(t, bytes.Contains(raw, []byte("ProgramFiles64Folder")),
+		"a 32-bit package must not reference the 64-bit program files folder")
+}
+
+// TestPackageSystemDir proves files installed into a Windows system directory
+// are marked permanent, which ICE09 requires.
+func TestPackageSystemDir(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = append(info.Contents, &files.Content{
+		Source:      "../testdata/fake",
+		Destination: "/Windows/System32/testapp.dll",
+	})
+	raw := packageAndValidate(t, info)
+	require.True(t, bytes.Contains(raw, []byte("System64Folder")))
+}
+
+func TestSymlinkSkipped(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	info := exampleInfo()
+	info.Contents = append(info.Contents, &files.Content{
+		Source:      "/Program Files/TestApp/app.exe",
+		Destination: "/Program Files/TestApp/link.exe",
+		Type:        files.TypeSymlink,
+	})
+	packageAndValidate(t, info)
+	require.Contains(t, logs.String(), "msi does not support symlinks")
+}
+
+func TestDirectoryContentSkipped(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = append(info.Contents, &files.Content{
+		Destination: "/Program Files/TestApp/data",
+		Type:        files.TypeDir,
+	})
+	packageAndValidate(t, info)
+}
+
+// TestMultipleLicenses proves the first license wins for the install UI and the
+// rest are still installed as ordinary files.
+func TestMultipleLicenses(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	dir := t.TempDir()
+	first := filepath.Join(dir, "LICENSE.txt")
+	second := filepath.Join(dir, "LICENSE2.txt")
+	require.NoError(t, os.WriteFile(first, []byte("First license text"), 0o600))
+	require.NoError(t, os.WriteFile(second, []byte("Second license text"), 0o600))
+
+	info := exampleInfo()
+	info.MSI.MinimalUI = true
+	info.Contents = append(info.Contents,
+		&files.Content{
+			Source:      first,
+			Destination: "/Program Files/TestApp/LICENSE.txt",
+			Type:        files.TypeRPMLicense,
+		},
+		&files.Content{
+			Source:      second,
+			Destination: "/Program Files/TestApp/LICENSE2.txt",
+			Type:        files.TypeRPMLicense,
+		},
+	)
+
+	raw := packageAndValidate(t, info)
+	require.True(t, bytes.Contains(raw, []byte("First license text")), "the first license feeds the UI")
+	require.Contains(t, logs.String(), "multiple license contents")
+}
+
+func TestMissingContentSource(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = append(info.Contents, &files.Content{
+		Source:      "/does/not/exist/app.exe",
+		Destination: "/Program Files/TestApp/missing.exe",
+	})
+	err := msi.Default.Package(info, io.Discard)
+	require.Error(t, err)
+}
+
+// TestShortcutOptionalFields exercises the optional shortcut fields, including
+// an icon, which adds an Icon row to the package.
+func TestShortcutOptionalFields(t *testing.T) {
+	info := exampleInfo()
+	info.MSI.Shortcuts = []nfpm.MSIShortcut{
+		{
+			Name:        "Test App",
+			Target:      "/Program Files/TestApp/app.exe",
+			Directory:   "DesktopFolder",
+			Description: "Launch Test App",
+			Arguments:   "--verbose",
+			Icon:        "../testdata/fake",
+		},
+	}
+	raw := packageAndValidate(t, info)
+	require.True(t, bytes.Contains(raw, []byte("--verbose")))
+	require.True(t, bytes.Contains(raw, []byte("DesktopFolder")))
+}
+
+func TestShortcutMissingIcon(t *testing.T) {
+	info := exampleInfo()
+	info.MSI.Shortcuts = []nfpm.MSIShortcut{
+		{
+			Name:   "Test App",
+			Target: "/Program Files/TestApp/app.exe",
+			Icon:   "/does/not/exist.ico",
+		},
+	}
+	err := msi.Default.Package(info, io.Discard)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "shortcut icon")
+}
+
+// TestServiceOptionalFields exercises every optional ServiceInstall field, and
+// the install-only ServiceControl arm (Start without Stop).
+func TestServiceOptionalFields(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = append(info.Contents, &files.Content{
+		Source:      "../testdata/fake",
+		Destination: "/Program Files/TestApp/svc.exe",
+	})
+	info.MSI.Services = []nfpm.MSIService{
+		{
+			Name:         "TestSvc",
+			DisplayName:  "Test Service",
+			Executable:   "/Program Files/TestApp/svc.exe",
+			Description:  "A test service",
+			StartType:    "auto",
+			Account:      "NT AUTHORITY\\LocalService",
+			Arguments:    "--serve",
+			Dependencies: []string{"Tcpip", "Dnscache"},
+			Start:        true,
+		},
+	}
+	raw := packageAndValidate(t, info)
+	require.True(t, bytes.Contains(raw, []byte("Test Service")))
+	require.True(t, bytes.Contains(raw, []byte("--serve")))
+}
+
+// TestServiceStopOnly covers the uninstall-only ServiceControl arm.
+func TestServiceStopOnly(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = append(info.Contents, &files.Content{
+		Source:      "../testdata/fake",
+		Destination: "/Program Files/TestApp/svc.exe",
+	})
+	info.MSI.Services = []nfpm.MSIService{
+		{
+			Name:       "TestSvc",
+			Executable: "/Program Files/TestApp/svc.exe",
+			StartType:  "demand",
+			Stop:       true,
+		},
+	}
+	packageAndValidate(t, info)
+}
+
+// TestServiceNoStartNoStop covers the arm where no ServiceControl row is added.
+func TestServiceNoStartNoStop(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = append(info.Contents, &files.Content{
+		Source:      "../testdata/fake",
+		Destination: "/Program Files/TestApp/svc.exe",
+	})
+	info.MSI.Services = []nfpm.MSIService{
+		{
+			Name:       "TestSvc",
+			Executable: "/Program Files/TestApp/svc.exe",
+			StartType:  "demand",
+		},
+	}
+	packageAndValidate(t, info)
+}
+
+// TestNoRootMetadata covers the arms where the ARP properties are skipped
+// because the corresponding root fields are empty.
+func TestNoRootMetadata(t *testing.T) {
+	info := exampleInfo()
+	info.Description = ""
+	info.Homepage = ""
+	raw := packageAndValidate(t, info)
+	require.False(t, bytes.Contains(raw, []byte("ARPCOMMENTS")))
+	require.False(t, bytes.Contains(raw, []byte("ARPURLINFOABOUT")))
 }
 
 // makeTestPFX generates a self-signed code-signing cert and writes it as a
