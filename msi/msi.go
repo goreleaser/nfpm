@@ -655,9 +655,6 @@ func convertToMSIVersion(version string) string {
 				if n > 65535 {
 					n = 65535
 				}
-				if n < 0 {
-					n = 0
-				}
 				result[i] = strconv.Itoa(n)
 			}
 		}
