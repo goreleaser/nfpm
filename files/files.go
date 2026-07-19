@@ -53,7 +53,8 @@ const (
 	TypeRPMGhost = "ghost"
 	// TypeRPMDoc is the type of an RPM doc file which is ignored by other packagers.
 	TypeRPMDoc = "doc"
-	// TypeRPMLicence is the type of an RPM licence file which is ignored by other packagers.
+	// TypeRPMLicence is the type of a licence file, used by rpm (%license) and
+	// msi (install-UI license text) and ignored by other packagers.
 	TypeRPMLicence = "licence"
 	// TypeRPMLicense a different spelling of TypeRPMLicence.
 	TypeRPMLicense = "license"
@@ -359,9 +360,13 @@ func isRelevantForPackager(packager string, content *Content) bool {
 		return false
 	}
 
+	if packager != "rpm" && packager != "msi" &&
+		(content.Type == TypeRPMLicence || content.Type == TypeRPMLicense) {
+		return false
+	}
+
 	if packager != "rpm" &&
-		(content.Type == TypeRPMDoc || content.Type == TypeRPMLicence ||
-			content.Type == TypeRPMLicense || content.Type == TypeRPMReadme ||
+		(content.Type == TypeRPMDoc || content.Type == TypeRPMReadme ||
 			content.Type == TypeRPMGhost) {
 		return false
 	}
@@ -424,10 +429,14 @@ func sortedParents(dst string) []string {
 	paths := []string{}
 	base := strings.Trim(dst, "/")
 	for {
-		base = filepath.Dir(base)
-		if base == "." {
+		parent := filepath.Dir(base)
+		// Stop at the filesystem root ("." for relative paths) and at volume
+		// roots such as Windows "C:/", where filepath.Dir stops making progress
+		// and would otherwise loop forever (e.g. for drive-letter destinations).
+		if parent == "." || parent == base {
 			break
 		}
+		base = parent
 		paths = append(paths, ToNixPath(base))
 	}
 

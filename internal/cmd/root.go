@@ -10,6 +10,7 @@ import (
 	_ "github.com/goreleaser/nfpm/v2/arch" // archlinux packager
 	_ "github.com/goreleaser/nfpm/v2/deb"  // deb packager
 	_ "github.com/goreleaser/nfpm/v2/ipk"  // ipk packager
+	_ "github.com/goreleaser/nfpm/v2/msi"  // msi packager
 	_ "github.com/goreleaser/nfpm/v2/msix" // msix packager
 	_ "github.com/goreleaser/nfpm/v2/rpm"  // rpm packager
 	"github.com/spf13/cobra"

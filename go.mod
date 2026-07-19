@@ -20,9 +20,11 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/ulikunitz/xz v0.5.15
+	go.digitalxero.dev/go-msi v0.2.0
 	go.digitalxero.dev/go-msix v1.0.0
 	go.digitalxero.dev/rpm v0.2.1
 	go.yaml.in/yaml/v3 v3.0.4
+	software.sslmate.com/src/go-pkcs12 v0.7.2
 )
 
 require (
@@ -32,6 +34,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-mime v0.0.0-20230322103455-7d82a3887f2f // indirect
+	github.com/abemedia/go-cfb v0.2.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.2.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
@@ -92,5 +95,4 @@ require (
 	golang.org/x/text v0.38.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	software.sslmate.com/src/go-pkcs12 v0.7.2 // indirect
 )
