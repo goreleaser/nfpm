@@ -358,6 +358,19 @@ rpm:
     # The verify script runs when verifying packages using `rpm -V`.
     verify: ./scripts/verify.sh
 
+  # RPM package triggers.
+  triggers:
+    # The supported kinds are prein, in, un, and postun.
+    - kind: in
+      script: ./scripts/trigger-in.sh
+      # Defaults to /bin/sh.
+      interpreter: /bin/bash
+      # Optional. Conditions use RPM dependency syntax and may contain multiple entries.
+      # No trigger is added when this list is empty.
+      conditions:
+        - another-package >= 2.0
+        - another-capability
+
   # RPM specific qualified Requires dependencies.
   requires:
     # Adds `Requires(post): systemd`.
