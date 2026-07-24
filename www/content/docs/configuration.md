@@ -360,8 +360,8 @@ rpm:
 
   # RPM package triggers.
   triggers:
-    # The supported kinds are prein, in, un, and postun.
-    - kind: in
+    # The supported types are prein, in, un, and postun.
+    - type: in
       script: ./scripts/trigger-in.sh
       # Defaults to /bin/sh.
       interpreter: /bin/bash
