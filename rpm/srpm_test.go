@@ -89,8 +89,18 @@ func TestSRPMArchAlwaysSrc(t *testing.T) {
 }
 
 func TestSRPMSpecContents(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.Triggers = []nfpm.RPMTrigger{
+		{
+			Type:        "in",
+			Script:      "../testdata/scripts/postinstall.sh",
+			Interpreter: "/bin/bash",
+			Conditions:  []string{"target >= 2.0", "capability"},
+		},
+	}
+
 	var buf bytes.Buffer
-	require.NoError(t, DefaultSRPM.Package(exampleInfo(), &buf))
+	require.NoError(t, DefaultSRPM.Package(info, &buf))
 
 	specBytes, err := extractFileFromRpm(buf.Bytes(), "/foo.spec")
 	require.NoError(t, err)
@@ -131,6 +141,8 @@ func TestSRPMSpecContents(t *testing.T) {
 	require.Contains(t, spec, "%posttrans\n")
 	require.Contains(t, spec, "%verifyscript\n")
 	require.Contains(t, spec, `echo "Preinstall"`)
+	require.Contains(t, spec, "%triggerin -p /bin/bash -- target >= 2.0, capability\n")
+	require.Contains(t, spec, `echo "Postinstall"`)
 }
 
 func TestSRPMGenerateSpecFileDirectives(t *testing.T) {
