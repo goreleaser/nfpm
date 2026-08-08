@@ -381,6 +381,12 @@
 					},
 					"expand": {
 						"type": "boolean"
+					},
+					"disown_subtree": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
 					}
 				},
 				"additionalProperties": false,
