@@ -36,6 +36,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/fs"
 	"net/mail"
 	"os"
 	"strings"
@@ -419,7 +420,7 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, sizep *int64) (err 
 		case files.TypeDir, files.TypeImplicitDir:
 			err = tw.WriteHeader(&tar.Header{
 				Name:     file.Destination,
-				Mode:     int64(file.FileInfo.Mode),
+				Mode:     int64(normalizeFileMode(file.FileInfo.Mode)),
 				Typeflag: tar.TypeDir,
 				Uname:    file.FileInfo.Owner,
 				Gname:    file.FileInfo.Group,
@@ -453,9 +454,9 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 		return err
 	}
 
-	// tar.FileInfoHeader only uses file.Mode().Perm() which masks the mode with
-	// 0o777 which we don't want because we want to be able to set the suid bit.
-	header.Mode = int64(file.Mode())
+	// Preserve Unix special bits without leaking Go's file type flags into the
+	// tar mode field.
+	header.Mode = int64(normalizeFileMode(file.Mode()))
 	header.Name = files.AsRelativePath(file.Destination)
 	header.Uname = file.FileInfo.Owner
 	header.Gname = file.FileInfo.Group
@@ -465,6 +466,20 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 
 	*sizep += file.Size()
 	return nil
+}
+
+func normalizeFileMode(mode fs.FileMode) fs.FileMode {
+	result := mode & 0o7777
+	if mode&fs.ModeSetuid != 0 {
+		result |= 0o4000
+	}
+	if mode&fs.ModeSetgid != 0 {
+		result |= 0o2000
+	}
+	if mode&fs.ModeSticky != 0 {
+		result |= 0o1000
+	}
+	return result
 }
 
 // reference: https://wiki.adelielinux.org/wiki/APK_internals#.PKGINFO
