@@ -697,12 +697,15 @@ msi:
   # Defaults to the vendor, falling back to the maintainer name.
   manufacturer: "My Company"
 
-  # Product code GUID. When omitted, a stable GUID is derived from the product
-  # name (kept constant across versions).
+  # Product code GUID. When omitted, a GUID is derived from the manufacturer,
+  # product name, architecture, and version, so it changes on every release
+  # (required by Windows Installer for major upgrades).
   product_code: "{12345678-1234-1234-1234-123456789ABC}"
 
-  # Upgrade code GUID. When omitted, a stable GUID is derived from the product
-  # name (kept constant across versions so upgrades work).
+  # Upgrade code GUID. When omitted, a stable GUID is derived from the
+  # manufacturer, product name, and architecture, so it stays constant across
+  # releases and upgrades work. Pin it explicitly if the product or
+  # manufacturer name may change between releases.
   upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
 
   # Name of the default install folder (defaults to product_name).
@@ -746,7 +749,7 @@ msi:
       display_name: "My Service"
       executable: "/Program Files/My Application/svc.exe"
       description: "My background service"
-      # auto | demand | disabled | boot | system (defaults to demand).
+      # auto | demand | disabled (defaults to demand).
       start_type: auto
       account: ""
       arguments: ""

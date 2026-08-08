@@ -143,22 +143,25 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 		WithVersion(convertToMSIVersion(info.Version)).
 		WithAllUsers(*info.MSI.AllUsers)
 
-	// ProductCode must always be present. When omitted we derive a stable GUID
-	// from the product name (kept constant across versions so it does not change
-	// on every version bump).
+	// ProductCode must always be present. Windows Installer requires a new
+	// ProductCode for every release for major upgrades to work, so the derived
+	// default is namespaced by manufacturer, product name, architecture, and
+	// the version as MSI compares it.
 	// go-msi requires braced uppercase GUIDs; validation accepts either case, so
 	// normalize the user-provided value here.
 	productCode := strings.ToUpper(info.MSI.ProductCode)
 	if productCode == "" {
-		productCode = deriveGUID("product|" + info.MSI.ProductName)
+		productCode = deriveProductCode(info)
 	}
 	b = b.WithProductCode(productCode)
 
-	// UpgradeCode stays stable across versions; derive it from the product name
-	// alone when omitted so upgrades work out of the box.
+	// UpgradeCode must stay stable across releases of the same product so the
+	// Upgrade table can find older installs; namespace it by manufacturer,
+	// product name, and architecture (per-arch products, no cross-arch
+	// upgrades).
 	upgradeCode := strings.ToUpper(info.MSI.UpgradeCode)
 	if upgradeCode == "" {
-		upgradeCode = deriveGUID("upgrade|" + info.MSI.ProductName)
+		upgradeCode = deriveUpgradeCode(info)
 	}
 	b = b.WithUpgradeCode(upgradeCode)
 	for k, v := range info.MSI.Properties {
@@ -484,13 +487,14 @@ func configureSigning(b msi.PackageBuilder, info *nfpm.Info) error {
 	return nil
 }
 
+// startTypes are the start types the ServiceInstall table supports. The
+// remaining Windows start types (boot and system) are driver-only and are
+// rejected by CreateService for the Win32 own-process services emitted here.
 // nolint: gochecknoglobals
 var startTypes = map[string]msi.ServiceStartType{
 	"auto":     msi.ServiceStartAuto,
 	"demand":   msi.ServiceStartDemand,
 	"disabled": msi.ServiceStartDisabled,
-	"boot":     msi.ServiceStartBoot,
-	"system":   msi.ServiceStartSystem,
 }
 
 // nolint: gochecknoglobals
@@ -635,6 +639,21 @@ func deriveGUID(seed string) string {
 	b[8] = (b[8] & 0x3f) | 0x80 // RFC 4122 variant
 	s := fmt.Sprintf("%X", b[:])
 	return fmt.Sprintf("{%s-%s-%s-%s-%s}", s[0:8], s[8:12], s[12:16], s[16:20], s[20:32])
+}
+
+// deriveProductCode derives the default ProductCode. Its namespace includes
+// the version (as MSI compares it), so every release gets a new ProductCode —
+// a Windows Installer requirement for major upgrades to trigger.
+func deriveProductCode(info *nfpm.Info) string {
+	return deriveGUID("product|" + info.MSI.Manufacturer + "|" + info.MSI.ProductName + "|" + info.Arch + "|" + convertToMSIVersion(info.Version))
+}
+
+// deriveUpgradeCode derives the default UpgradeCode. It excludes the version,
+// so it stays stable across releases of the same product and the Upgrade table
+// can find older installs. Architecture is included: each arch is its own
+// product line (no cross-arch upgrades).
+func deriveUpgradeCode(info *nfpm.Info) string {
+	return deriveGUID("upgrade|" + info.MSI.Manufacturer + "|" + info.MSI.ProductName + "|" + info.Arch)
 }
 
 // convertToMSIVersion converts a semver-style version to MSI's

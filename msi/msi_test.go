@@ -309,14 +309,34 @@ func TestServiceTargetNotInContents(t *testing.T) {
 }
 
 func TestServiceInvalidStartType(t *testing.T) {
-	info := exampleInfo()
-	info.MSI.Services = []nfpm.MSIService{
-		{Name: "TestSvc", Executable: "/Program Files/TestApp/app.exe", StartType: "bogus"},
+	// boot and system are driver-only start types; the ServiceInstall table
+	// always emits Win32 own-process services, for which CreateService rejects
+	// them, so they must not be accepted.
+	for _, startType := range []string{"bogus", "boot", "system"} {
+		t.Run(startType, func(t *testing.T) {
+			info := exampleInfo()
+			info.MSI.Services = []nfpm.MSIService{
+				{Name: "TestSvc", Executable: "/Program Files/TestApp/app.exe", StartType: startType},
+			}
+			var buf bytes.Buffer
+			err := msi.Default.Package(info, &buf)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "start_type")
+		})
 	}
-	var buf bytes.Buffer
-	err := msi.Default.Package(info, &buf)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "start_type")
+}
+
+func TestServiceValidStartTypes(t *testing.T) {
+	for _, startType := range []string{"auto", "demand", "disabled", "AUTO"} {
+		t.Run(startType, func(t *testing.T) {
+			info := exampleInfo()
+			info.MSI.Services = []nfpm.MSIService{
+				{Name: "TestSvc", Executable: "/Program Files/TestApp/app.exe", StartType: startType},
+			}
+			var buf bytes.Buffer
+			require.NoError(t, msi.Default.Package(info, &buf))
+		})
+	}
 }
 
 func TestRegistry(t *testing.T) {

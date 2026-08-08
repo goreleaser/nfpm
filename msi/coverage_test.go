@@ -228,6 +228,68 @@ func TestDeriveGUID(t *testing.T) {
 	require.NotEqual(t, got, deriveGUID("upgrade|TestApp"))
 }
 
+func derivationInfo(manufacturer, name, arch, version string) *nfpm.Info {
+	return &nfpm.Info{
+		Name:    name,
+		Arch:    arch,
+		Version: version,
+		Overridables: nfpm.Overridables{
+			MSI: nfpm.MSI{
+				ProductName:  name,
+				Manufacturer: manufacturer,
+			},
+		},
+	}
+}
+
+// TestDerivedCodeNamespaces pins the properties Windows Installer relies on:
+// the ProductCode must change on every release and differ per manufacturer,
+// product, and arch, while the UpgradeCode must stay stable across releases
+// but still differ per manufacturer, product, and arch.
+func TestDerivedCodeNamespaces(t *testing.T) {
+	base := derivationInfo("TestCo", "TestApp", "x64", "1.2.3")
+
+	for _, code := range []string{deriveProductCode(base), deriveUpgradeCode(base)} {
+		require.True(t, looksLikeGUID(code), "derived code %q must be a braced GUID", code)
+	}
+	require.NotEqual(t, deriveProductCode(base), deriveUpgradeCode(base))
+
+	t.Run("new version", func(t *testing.T) {
+		next := derivationInfo("TestCo", "TestApp", "x64", "2.0.0")
+		require.NotEqual(t, deriveProductCode(base), deriveProductCode(next),
+			"ProductCode must change on every release for major upgrades to work")
+		require.Equal(t, deriveUpgradeCode(base), deriveUpgradeCode(next),
+			"UpgradeCode must stay stable across releases")
+	})
+
+	t.Run("same MSI version", func(t *testing.T) {
+		// Pre-release/metadata are dropped by convertToMSIVersion, so versions
+		// MSI cannot tell apart must share a ProductCode.
+		same := derivationInfo("TestCo", "TestApp", "x64", "v1.2.3-rc1+meta")
+		require.Equal(t, deriveProductCode(base), deriveProductCode(same))
+	})
+
+	t.Run("other arch", func(t *testing.T) {
+		arm := derivationInfo("TestCo", "TestApp", "arm64", "1.2.3")
+		require.NotEqual(t, deriveProductCode(base), deriveProductCode(arm))
+		require.NotEqual(t, deriveUpgradeCode(base), deriveUpgradeCode(arm),
+			"each arch is its own product line")
+	})
+
+	t.Run("other manufacturer", func(t *testing.T) {
+		other := derivationInfo("OtherCo", "TestApp", "x64", "1.2.3")
+		require.NotEqual(t, deriveProductCode(base), deriveProductCode(other),
+			"unrelated vendors sharing a product name must not collide")
+		require.NotEqual(t, deriveUpgradeCode(base), deriveUpgradeCode(other))
+	})
+
+	t.Run("other product", func(t *testing.T) {
+		other := derivationInfo("TestCo", "OtherApp", "x64", "1.2.3")
+		require.NotEqual(t, deriveProductCode(base), deriveProductCode(other))
+		require.NotEqual(t, deriveUpgradeCode(base), deriveUpgradeCode(other))
+	})
+}
+
 // TestAddContentsSkipsEmptySource covers the empty-source guard. Package cannot
 // reach it: the only content type with no source is TypeRPMGhost, which the
 // files package filters out for msi before addContents ever runs.

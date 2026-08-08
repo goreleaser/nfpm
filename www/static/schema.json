@@ -698,7 +698,7 @@
 					"product_code": {
 						"type": "string",
 						"title": "product code GUID",
-						"description": "derived from the product name (stable across versions) when empty",
+						"description": "derived from manufacturer/product name/arch/version (changes every release) when empty",
 						"examples": [
 							"{12345678-1234-1234-1234-123456789ABC}"
 						]
@@ -706,7 +706,7 @@
 					"upgrade_code": {
 						"type": "string",
 						"title": "upgrade code GUID",
-						"description": "derived from the product name when empty",
+						"description": "derived from manufacturer/product name/arch (stable across releases) when empty",
 						"examples": [
 							"{ABCDEF01-2345-6789-ABCD-EF0123456789}"
 						]
@@ -821,9 +821,7 @@
 						"enum": [
 							"auto",
 							"demand",
-							"disabled",
-							"boot",
-							"system"
+							"disabled"
 						],
 						"title": "service start type",
 						"default": "demand"
