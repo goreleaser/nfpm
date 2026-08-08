@@ -587,6 +587,7 @@ type MSIXSignature struct {
 // MSI contains configs that are only available on MSI packages.
 type MSI struct {
 	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msi nomenclature"`
+	Version      string            `yaml:"version,omitempty" json:"version,omitempty" jsonschema:"title=version in msi nomenclature,description=overrides \"version\"; still normalized to major.minor.build and bounded to 255.255.65535,example=24.1.0"`
 	ProductName  string            `yaml:"product_name,omitempty" json:"product_name,omitempty" jsonschema:"title=product name,description=defaults to the package name"`
 	Manufacturer string            `yaml:"manufacturer,omitempty" json:"manufacturer,omitempty" jsonschema:"title=manufacturer/author of the product,description=defaults to the vendor or maintainer,example=My Company"`
 	ProductCode  string            `yaml:"product_code,omitempty" json:"product_code,omitempty" jsonschema:"title=product code GUID,description=derived from manufacturer/product name/arch/version (changes every release) when empty,example={12345678-1234-1234-1234-123456789ABC}"`

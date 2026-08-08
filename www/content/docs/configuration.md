@@ -688,7 +688,33 @@ msix:
 msi:
   # msi specific architecture name that overrides "arch" without performing
   # any replacements.
+  #
+  # Windows Installer targets exactly five architectures, so this must be one of
+  # `x86`, `x64`, `arm`, `arm64`, or `intel64` (Itanium — note this is NOT
+  # x86-64). "arch" is mapped onto them automatically: amd64/x86_64 -> x64,
+  # 386/i386/i686 -> x86, arm/arm7 -> arm, arm64/aarch64 -> arm64, ia64 ->
+  # intel64. Any other architecture is an error, since it cannot produce a
+  # package Windows can install; there is no arch-independent MSI.
+  #
+  # The architecture is recorded in the package as its target platform and also
+  # decides whether files go to the 64-bit or 32-bit system folders.
   arch: x64
+
+  # msi specific version that overrides "version".
+  #
+  # Windows Installer bounds the ProductVersion property per field: the major
+  # and minor versions may not exceed 255 and the build may not exceed 65535.
+  # nFPM normalizes whatever version it is given to major.minor.build and clamps
+  # each field to those limits, warning when it has to.
+  #
+  # Clamping keeps the package installable but flattens ordering, so calendar
+  # versions such as 2024.1.0 and 2025.1.0 would both become 255.1.0 and
+  # upgrades between them would stop being detected. Set this to map the version
+  # onto the supported range yourself, e.g. 2024.1.0 -> 24.1.0.
+  #
+  # This is used for the ProductVersion property, the derived product code, and
+  # the package file name.
+  version: 24.1.0
 
   # Product name (defaults to the package name).
   product_name: "My Application"

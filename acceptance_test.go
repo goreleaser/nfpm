@@ -531,6 +531,12 @@ func TestMSIStructure(t *testing.T) {
 			cfbMagic := []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}
 			require.True(t, bytes.HasPrefix(buf.Bytes(), cfbMagic), "output must be a CFB container")
 
+			// The package must declare the platform it was built for rather
+			// than defaulting to x64.
+			platform := map[string]string{"amd64": "x64;", "arm64": "Arm64;"}[arch]
+			require.True(t, bytes.Contains(buf.Bytes(), []byte(platform)),
+				"package must declare the %q platform", platform)
+
 			// The package must pass ICE validation with no error-severity findings.
 			v, err := gomsi.NewValidator().WithAllICEs().Build()
 			require.NoError(t, err)

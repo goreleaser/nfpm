@@ -682,6 +682,14 @@
 						"type": "string",
 						"title": "architecture in msi nomenclature"
 					},
+					"version": {
+						"type": "string",
+						"title": "version in msi nomenclature",
+						"description": "overrides \"version\"; still normalized to major.minor.build and bounded to 255.255.65535",
+						"examples": [
+							"24.1.0"
+						]
+					},
 					"product_name": {
 						"type": "string",
 						"title": "product name",

@@ -3,6 +3,7 @@
 package msi
 
 import (
+	"cmp"
 	"crypto/sha1"
 	"errors"
 	"fmt"
@@ -50,7 +51,7 @@ var archToMSI = map[string]string{
 	"aarch64": "arm64",
 	"arm":     "arm",
 	"arm7":    "arm",
-	"all":     "neutral",
+	"ia64":    "intel64",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
@@ -62,10 +63,31 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	return info
 }
 
+// msiPlatforms maps an MSI architecture name to the Windows Installer platform
+// recorded in the package. These are the only architectures Windows Installer
+// supports, so an architecture missing from this map cannot be packaged as an
+// MSI at all. Note that Intel64 means Itanium, not x86-64.
+// nolint: gochecknoglobals
+var msiPlatforms = map[string]msi.Platform{
+	"x86":     msi.Platform_Intel,
+	"intel":   msi.Platform_Intel,
+	"x64":     msi.Platform_x64,
+	"arm":     msi.Platform_Arm,
+	"arm64":   msi.Platform_Arm64,
+	"intel64": msi.Platform_Intel64,
+}
+
+// platformFor resolves an (already MSI-normalized) architecture to its Windows
+// Installer platform.
+func platformFor(arch string) (msi.Platform, bool) {
+	p, ok := msiPlatforms[strings.ToLower(arch)]
+	return p, ok
+}
+
 // is64bit reports whether the (already MSI-normalized) architecture is 64-bit.
 func is64bit(arch string) bool {
-	switch arch {
-	case "x64", "arm64":
+	switch p, _ := platformFor(arch); p {
+	case msi.Platform_x64, msi.Platform_Arm64, msi.Platform_Intel64:
 		return true
 	default:
 		return false
@@ -75,8 +97,7 @@ func is64bit(arch string) bool {
 // ConventionalFileName returns the conventional file name for an MSI package.
 func (m *MSI) ConventionalFileName(info *nfpm.Info) string {
 	info = ensureValidArch(info)
-	version := convertToMSIVersion(info.Version)
-	return fmt.Sprintf("%s_%s_%s.msi", info.Name, version, info.Arch)
+	return fmt.Sprintf("%s_%s_%s.msi", info.Name, msiVersion(info), info.Arch)
 }
 
 // ConventionalExtension returns the file extension for MSI packages.
@@ -137,10 +158,24 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
+	version, clamped := msiVersionClamped(info)
+	if clamped {
+		log.Printf(
+			"warning: msi: version %q exceeds the Windows Installer ProductVersion limits "+
+				"(major and minor at most 255, build at most 65535) and was clamped to %q; "+
+				"set msi.version to choose the version the package declares",
+			cmp.Or(info.MSI.Version, info.Version), version)
+	}
+
+	// validate rejects an architecture with no Windows Installer platform, so
+	// the lookup cannot fail here.
+	platform, _ := platformFor(info.Arch)
+
 	b := msi.NewPackage().
 		WithProductName(info.MSI.ProductName).
 		WithManufacturer(info.MSI.Manufacturer).
-		WithVersion(convertToMSIVersion(info.Version)).
+		WithVersion(version).
+		WithPlatform(platform).
 		WithAllUsers(*info.MSI.AllUsers)
 
 	// ProductCode must always be present. Windows Installer requires a new
@@ -238,6 +273,15 @@ type placement struct {
 func validate(info *nfpm.Info) error {
 	if info.MSI.Manufacturer == "" {
 		return fmt.Errorf("package msi.manufacturer, vendor, or maintainer must be provided")
+	}
+	// The architecture is not just a label here: it is written to the package as
+	// the target platform and decides where files land, so an architecture
+	// Windows Installer has no platform for cannot produce a working package.
+	if _, ok := platformFor(info.Arch); !ok {
+		return fmt.Errorf(
+			"package msi arch %q is not supported by Windows Installer, which targets only "+
+				"x86, x64, arm, arm64, and intel64; set msi.arch to one of those",
+			info.Arch)
 	}
 	if err := validateScripts(info); err != nil {
 		return err
@@ -540,6 +584,11 @@ const (
 	msidbComponentAttributesPermanent int16 = 0x10
 )
 
+// componentAttributes builds a component's attribute bits. The 64-bit bit is
+// set here rather than left to go-msi: go-msi only applies it to components
+// whose attributes the caller never set, so a component that needs Permanent
+// would otherwise lose it. Components with no attributes at all (registry
+// components, for instance) are left alone and go-msi handles them.
 func componentAttributes(rootID string, is64 bool) int16 {
 	var attrs int16
 	if is64 {
@@ -645,7 +694,7 @@ func deriveGUID(seed string) string {
 // the version (as MSI compares it), so every release gets a new ProductCode —
 // a Windows Installer requirement for major upgrades to trigger.
 func deriveProductCode(info *nfpm.Info) string {
-	return deriveGUID("product|" + info.MSI.Manufacturer + "|" + info.MSI.ProductName + "|" + info.Arch + "|" + convertToMSIVersion(info.Version))
+	return deriveGUID("product|" + info.MSI.Manufacturer + "|" + info.MSI.ProductName + "|" + info.Arch + "|" + msiVersion(info))
 }
 
 // deriveUpgradeCode derives the default UpgradeCode. It excludes the version,
@@ -656,11 +705,26 @@ func deriveUpgradeCode(info *nfpm.Info) string {
 	return deriveGUID("upgrade|" + info.MSI.Manufacturer + "|" + info.MSI.ProductName + "|" + info.Arch)
 }
 
+// msiVersionMaxima are the per-field maxima Windows Installer enforces on the
+// ProductVersion property: Major.Minor.Build, capped at 255.255.65535. A value
+// outside them makes the package uninstallable.
+// nolint: gochecknoglobals
+var msiVersionMaxima = [3]int{255, 255, 65535}
+
 // convertToMSIVersion converts a semver-style version to MSI's
-// Major.Minor.Build format. Each field is numeric and clamped to 65535.
+// Major.Minor.Build format. Each field is numeric and clamped to the maximum
+// Windows Installer accepts for it.
 func convertToMSIVersion(version string) string {
+	converted, _ := convertToMSIVersionClamped(version)
+	return converted
+}
+
+// convertToMSIVersionClamped is convertToMSIVersion, additionally reporting
+// whether any field had to be clamped to stay within the ProductVersion limits.
+func convertToMSIVersionClamped(version string) (converted string, clamped bool) {
 	version = strings.TrimPrefix(version, "v")
-	// Drop any pre-release / build metadata.
+	// Drop any pre-release / build metadata. This also strips the sign off a
+	// negative field, so no field can end up below zero.
 	if i := strings.IndexAny(version, "-+"); i >= 0 {
 		version = version[:i]
 	}
@@ -671,12 +735,29 @@ func convertToMSIVersion(version string) string {
 		result[i] = "0"
 		if i < len(parts) {
 			if n, err := strconv.Atoi(parts[i]); err == nil {
-				if n > 65535 {
-					n = 65535
+				if n > msiVersionMaxima[i] {
+					n = msiVersionMaxima[i]
+					clamped = true
 				}
 				result[i] = strconv.Itoa(n)
 			}
 		}
 	}
-	return strings.Join(result, ".")
+	return strings.Join(result, "."), clamped
+}
+
+// msiVersion returns the ProductVersion for the package: msi.version when set,
+// otherwise the shared version, converted to MSI's Major.Minor.Build format.
+func msiVersion(info *nfpm.Info) string {
+	converted, _ := msiVersionClamped(info)
+	return converted
+}
+
+// msiVersionClamped is msiVersion, additionally reporting whether the source
+// version had to be clamped to fit the ProductVersion limits.
+func msiVersionClamped(info *nfpm.Info) (converted string, clamped bool) {
+	if info.MSI.Version != "" {
+		return convertToMSIVersionClamped(info.MSI.Version)
+	}
+	return convertToMSIVersionClamped(info.Version)
 }

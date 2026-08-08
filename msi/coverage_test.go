@@ -125,6 +125,40 @@ func TestMapDestination(t *testing.T) {
 	}
 }
 
+func TestPlatformFor(t *testing.T) {
+	for _, tt := range []struct {
+		arch string
+		want gomsi.Platform
+		ok   bool
+		is64 bool
+	}{
+		{"x64", gomsi.Platform_x64, true, true},
+		{"x86", gomsi.Platform_Intel, true, false},
+		{"intel", gomsi.Platform_Intel, true, false},
+		{"arm", gomsi.Platform_Arm, true, false},
+		{"arm64", gomsi.Platform_Arm64, true, true},
+		// Intel64 is Itanium, not x86-64, but it is still a 64-bit target.
+		{"intel64", gomsi.Platform_Intel64, true, true},
+		// Windows Installer accepts variant casing.
+		{"X64", gomsi.Platform_x64, true, true},
+		{"ARM64", gomsi.Platform_Arm64, true, true},
+		// neutral is an MSIX architecture with no MSI equivalent.
+		{"neutral", 0, false, false},
+		{"amd64", 0, false, false},
+		{"ppc64le", 0, false, false},
+		{"", 0, false, false},
+	} {
+		t.Run(tt.arch, func(t *testing.T) {
+			got, ok := platformFor(tt.arch)
+			require.Equal(t, tt.ok, ok)
+			if tt.ok {
+				require.Equal(t, tt.want, got)
+			}
+			require.Equal(t, tt.is64, is64bit(tt.arch))
+		})
+	}
+}
+
 func TestComponentAttributes(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
@@ -183,25 +217,83 @@ func TestSanitizeID(t *testing.T) {
 	}
 }
 
+// Windows Installer bounds ProductVersion per field: major and minor at most
+// 255, build at most 65535.
 func TestConvertToMSIVersionClamp(t *testing.T) {
 	for _, tt := range []struct {
-		in   string
-		want string
+		in      string
+		want    string
+		clamped bool
 	}{
-		{"99999.1.2", "65535.1.2"},
-		{"1.99999.2", "1.65535.2"},
-		{"65535.65535.65535", "65535.65535.65535"},
-		{"1.2.3", "1.2.3"},
-		{"1", "1.0.0"},
-		{"notanumber", "0.0.0"},
-		{"1.x.3", "1.0.3"},
-		{"v1.2.3-rc1+meta", "1.2.3"},
-		{"-1.2.3", "0.0.0"},
+		{"99999.1.2", "255.1.2", true},
+		{"1.99999.2", "1.255.2", true},
+		{"1.2.99999", "1.2.65535", true},
+		{"256.256.65536", "255.255.65535", true},
+		{"2024.1.0", "255.1.0", true},
+		{"255.255.65535", "255.255.65535", false},
+		{"1.2.3", "1.2.3", false},
+		{"1", "1.0.0", false},
+		{"notanumber", "0.0.0", false},
+		{"1.x.3", "1.0.3", false},
+		{"v1.2.3-rc1+meta", "1.2.3", false},
+		{"-1.2.3", "0.0.0", false},
 	} {
 		t.Run(tt.in, func(t *testing.T) {
 			require.Equal(t, tt.want, convertToMSIVersion(tt.in))
+
+			converted, clamped := convertToMSIVersionClamped(tt.in)
+			require.Equal(t, tt.want, converted)
+			require.Equal(t, tt.clamped, clamped)
 		})
 	}
+}
+
+// No field can go negative: the sign is stripped along with the pre-release
+// suffix before any field is parsed.
+func TestConvertToMSIVersionNeverNegative(t *testing.T) {
+	for _, in := range []string{"-1.0.0", "1.-5.0", "1.2.-3", "-1.-2.-3"} {
+		t.Run(in, func(t *testing.T) {
+			require.NotContains(t, convertToMSIVersion(in), "-")
+		})
+	}
+}
+
+func TestMSIVersionOverride(t *testing.T) {
+	t.Run("overrides the shared version", func(t *testing.T) {
+		info := derivationInfo("TestCo", "TestApp", "x64", "2024.1.0")
+		info.MSI.Version = "24.1.0"
+
+		converted, clamped := msiVersionClamped(info)
+		require.Equal(t, "24.1.0", converted)
+		require.False(t, clamped, "an in-range override must not report clamping")
+	})
+
+	t.Run("falls back to the shared version", func(t *testing.T) {
+		info := derivationInfo("TestCo", "TestApp", "x64", "1.2.3")
+
+		require.Equal(t, "1.2.3", msiVersion(info))
+	})
+
+	t.Run("is itself bounded", func(t *testing.T) {
+		info := derivationInfo("TestCo", "TestApp", "x64", "1.2.3")
+		info.MSI.Version = "2024.1.0"
+
+		converted, clamped := msiVersionClamped(info)
+		require.Equal(t, "255.1.0", converted)
+		require.True(t, clamped)
+	})
+
+	t.Run("participates in the derived ProductCode", func(t *testing.T) {
+		base := derivationInfo("TestCo", "TestApp", "x64", "1.2.3")
+
+		overridden := derivationInfo("TestCo", "TestApp", "x64", "1.2.3")
+		overridden.MSI.Version = "2.0.0"
+
+		require.NotEqual(t, deriveProductCode(base), deriveProductCode(overridden),
+			"the ProductCode must follow the version the package actually declares")
+		require.Equal(t, deriveUpgradeCode(base), deriveUpgradeCode(overridden),
+			"the UpgradeCode stays version independent")
+	})
 }
 
 func TestLooksLikeGUID(t *testing.T) {

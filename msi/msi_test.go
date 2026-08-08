@@ -79,7 +79,8 @@ func TestArchMapping(t *testing.T) {
 		"arm64":   "arm64",
 		"aarch64": "arm64",
 		"arm":     "arm",
-		"all":     "neutral",
+		"arm7":    "arm",
+		"ia64":    "intel64",
 	}
 	for in, want := range tests {
 		t.Run(in, func(t *testing.T) {
@@ -87,6 +88,50 @@ func TestArchMapping(t *testing.T) {
 			info.Arch = in
 			name := msi.Default.ConventionalFileName(info)
 			require.Contains(t, name, "_"+want+".msi")
+
+			var buf bytes.Buffer
+			require.NoError(t, msi.Default.Package(info, &buf),
+				"every mapped architecture must be packageable")
+		})
+	}
+}
+
+// TestArchSetsPlatform proves the architecture reaches the SummaryInformation
+// Template, so a package declares the platform it was actually built for
+// instead of always claiming x64.
+func TestArchSetsPlatform(t *testing.T) {
+	for arch, template := range map[string]string{
+		"amd64":   "x64;",
+		"386":     "Intel;",
+		"arm":     "Arm;",
+		"arm64":   "Arm64;",
+		"ia64":    "Intel64;",
+		"x86_64":  "x64;",
+		"aarch64": "Arm64;",
+	} {
+		t.Run(arch, func(t *testing.T) {
+			info := exampleInfo()
+			info.Arch = arch
+
+			raw := packageAndValidate(t, info)
+			require.True(t, bytes.Contains(raw, []byte(template)),
+				"expected Template platform %q for arch %q", template, arch)
+		})
+	}
+}
+
+// TestUnsupportedArch proves an architecture Windows Installer has no platform
+// for is rejected rather than silently packaged as a 32-bit x86 install.
+func TestUnsupportedArch(t *testing.T) {
+	for _, arch := range []string{"all", "neutral", "ppc64le", "s390x", "riscv64", "mips", "totally-bogus"} {
+		t.Run(arch, func(t *testing.T) {
+			info := exampleInfo()
+			info.Arch = arch
+
+			var buf bytes.Buffer
+			err := msi.Default.Package(info, &buf)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "is not supported by Windows Installer")
 		})
 	}
 }
@@ -728,6 +773,41 @@ func TestSymlinkSkipped(t *testing.T) {
 	})
 	packageAndValidate(t, info)
 	require.Contains(t, logs.String(), "msi does not support symlinks")
+}
+
+// TestVersionClampWarning proves an out-of-range version still builds, but is
+// reported rather than silently mangled.
+func TestVersionClampWarning(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	info := exampleInfo()
+	info.Version = "2024.1.0"
+
+	packageAndValidate(t, info)
+	require.Contains(t, logs.String(), `version "2024.1.0"`)
+	require.Contains(t, logs.String(), `clamped to "255.1.0"`)
+	require.Contains(t, logs.String(), "msi.version")
+}
+
+// TestVersionOverride proves msi.version replaces the shared version in both the
+// package and its conventional file name, and silences the clamp warning.
+func TestVersionOverride(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	info := exampleInfo()
+	info.Version = "2024.1.0"
+	info.MSI.Version = "24.1.0"
+
+	require.Equal(t, "TestApp_24.1.0_x64.msi", msi.Default.ConventionalFileName(info))
+
+	raw := packageAndValidate(t, info)
+	require.True(t, bytes.Contains(raw, []byte("24.1.0")),
+		"the override must reach the ProductVersion property")
+	require.NotContains(t, logs.String(), "clamped")
 }
 
 func TestDirectoryContentSkipped(t *testing.T) {
