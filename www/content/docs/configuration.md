@@ -255,6 +255,14 @@ contents:
   - dst: /var/log/boo.log
     type: ghost
 
+  # License files are installed like regular files and additionally marked as
+  # `%license` in RPM packages. For MSI packages the first license content is
+  # also used as the license text shown by the install wizard. Other packagers
+  # ignore this type. ('licence' is accepted as an alternate spelling.)
+  - src: LICENSE
+    dst: /usr/share/licenses/myapp/LICENSE
+    type: license
+
   # You can use the packager field to add files that are unique to a specific
   # packager
   - src: path/to/rpm/file.conf
@@ -325,6 +333,11 @@ contents:
 umask: 0o002
 
 # Scripts to run at specific stages. (overridable)
+#
+# For MSI packages the scripts run as elevated deferred custom actions and must
+# be PowerShell (.ps1) or batch (.bat/.cmd) files, at most 8 KiB each; a
+# non-zero exit rolls back the installer transaction (including on uninstall).
+# MSIX packages are declarative and ignore scripts (a warning is printed).
 scripts:
   preinstall: ./scripts/preinstall.sh
   postinstall: ./scripts/postinstall.sh
@@ -580,13 +593,19 @@ ipk:
       priority: 50
 
 # Custom configuration applied only to the MSIX packager (Windows).
+# MSIX is declarative: the root `scripts` are ignored (with a warning) and the
+# root `homepage` cannot be represented in the AppxManifest.
 msix:
   # msix specific architecture name that overrides "arch" without performing
   # any replacements.
   arch: x64
 
-  # Publisher identity. (required)
+  # Publisher identity.
   # Must match the subject of the signing certificate if signing is used.
+  # When omitted it defaults to the signing certificate's subject (if a
+  # signature is configured), otherwise to "CN=<vendor>" (falling back to the
+  # maintainer name). Set it explicitly if your certificate has an unusual
+  # subject that stringifies differently.
   publisher: "CN=MyCompany, O=MyCompany, C=US"
 
   # Package identity settings.
@@ -598,7 +617,8 @@ msix:
   properties:
     # Display name shown to users (defaults to package name).
     display_name: "My Application"
-    # Publisher display name (defaults to package name).
+    # Publisher display name (defaults to the vendor or maintainer name,
+    # falling back to the package name).
     publisher_display_name: "My Company"
     # Path to a logo file in the package.
     logo: "Assets/logo.png"
@@ -644,7 +664,143 @@ msix:
   signature:
     # Path to the PFX certificate file.
     pfx_file: certificate.pfx
-    # Passphrase is read from the NFPM_MSIX_PASSPHRASE environment variable.
+    # The passphrase is taken from the environment variable
+    # $NFPM_MSIX_PASSPHRASE with a fallback to $NFPM_PASSPHRASE.
+
+# Custom configuration applied only to the MSI packager (Windows).
+# The MSI packager produces a real Windows Installer database. Use unix-style
+# destinations (a leading "/", no drive letter). Well-known prefixes such as
+# `/Program Files`, `/ProgramData` and `/Windows/System32` are mapped to the
+# matching Windows Installer system folders; anything else is installed under the
+# product's install folder.
+#
+# Shared root fields are reused where MSI has a place for them:
+# - `description` becomes the ARPCOMMENTS property (shown in Add/Remove
+#   Programs) and `homepage` becomes ARPURLINFOABOUT; both can be overridden
+#   by setting the property explicitly in `msi.properties`.
+# - the first contents entry with `type: license` is shown as the license text
+#   by the install wizard (see `minimal_ui`).
+# - the root `scripts` run as elevated deferred custom actions: preinstall/
+#   postinstall around file installation (also during major upgrades), and
+#   preremove/postremove around file removal on uninstall (skipped while a
+#   major upgrade replaces the product). Scripts must be .ps1, .bat or .cmd
+#   and at most 8 KiB; a non-zero exit rolls back the transaction.
+msi:
+  # msi specific architecture name that overrides "arch" without performing
+  # any replacements.
+  #
+  # Windows Installer targets exactly five architectures, so this must be one of
+  # `x86`, `x64`, `arm`, `arm64`, or `intel64` (Itanium — note this is NOT
+  # x86-64). "arch" is mapped onto them automatically: amd64/x86_64 -> x64,
+  # 386/i386/i686 -> x86, arm/arm7 -> arm, arm64/aarch64 -> arm64, ia64 ->
+  # intel64. Any other architecture is an error, since it cannot produce a
+  # package Windows can install; there is no arch-independent MSI.
+  #
+  # The architecture is recorded in the package as its target platform and also
+  # decides whether files go to the 64-bit or 32-bit system folders.
+  arch: x64
+
+  # msi specific version that overrides "version".
+  #
+  # Windows Installer bounds the ProductVersion property per field: the major
+  # and minor versions may not exceed 255 and the build may not exceed 65535.
+  # nFPM normalizes whatever version it is given to major.minor.build and clamps
+  # each field to those limits, warning when it has to.
+  #
+  # Clamping keeps the package installable but flattens ordering, so calendar
+  # versions such as 2024.1.0 and 2025.1.0 would both become 255.1.0 and
+  # upgrades between them would stop being detected. Set this to map the version
+  # onto the supported range yourself, e.g. 2024.1.0 -> 24.1.0.
+  #
+  # This is used for the ProductVersion property, the derived product code, and
+  # the package file name.
+  version: 24.1.0
+
+  # Product name (defaults to the package name).
+  product_name: "My Application"
+
+  # Manufacturer/author of the product.
+  # Defaults to the vendor, falling back to the maintainer name.
+  manufacturer: "My Company"
+
+  # Product code GUID. When omitted, a GUID is derived from the manufacturer,
+  # product name, architecture, and version, so it changes on every release
+  # (required by Windows Installer for major upgrades).
+  product_code: "{12345678-1234-1234-1234-123456789ABC}"
+
+  # Upgrade code GUID. When omitted, a stable GUID is derived from the
+  # manufacturer, product name, and architecture, so it stays constant across
+  # releases and upgrades work. Pin it explicitly if the product or
+  # manufacturer name may change between releases.
+  upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
+
+  # Name of the default install folder (defaults to product_name).
+  install_dir: "My Application"
+
+  # Per-machine install (defaults to true).
+  all_users: true
+
+  # Arbitrary MSI Property rows. Setting ARPCOMMENTS or ARPURLINFOABOUT here
+  # overrides the values derived from the root description and homepage.
+  properties:
+    MYPROPERTY: "value"
+
+  # Install the canned minimal install wizard. The license text it shows comes
+  # from the first contents entry with `type: license`.
+  minimal_ui: true
+
+  # Major upgrade behavior.
+  upgrade:
+    # Enable WiX-style major upgrade handling (remove older, block downgrade).
+    enabled: true
+    # Message shown when a newer version is already installed.
+    downgrade_error_message: "A newer version is already installed."
+
+  # Advertised shortcuts. The target must match one of the contents
+  # destinations.
+  shortcuts:
+    - name: "My Application"
+      target: "/Program Files/My Application/myapp.exe"
+      # Standard folder ID the shortcut is created in.
+      # Defaults to ProgramMenuFolder; e.g. DesktopFolder.
+      directory: ProgramMenuFolder
+      arguments: ""
+      description: "Launch My Application"
+      icon: ./assets/app.ico
+
+  # Windows services to install. The executable must match one of the contents
+  # destinations.
+  services:
+    - name: MyService
+      display_name: "My Service"
+      executable: "/Program Files/My Application/svc.exe"
+      description: "My background service"
+      # auto | demand | disabled (defaults to demand).
+      start_type: auto
+      account: ""
+      arguments: ""
+      dependencies: []
+      # Start the service on install.
+      start: true
+      # Stop and delete the service on uninstall.
+      stop: true
+
+  # Registry entries to create.
+  registry:
+    - root: HKLM # HKLM | HKCU | HKCR | HKMU | HKU
+      key: 'Software\MyCompany\MyApp'
+      name: InstallPath
+      value: "C:\\Program Files\\My Application"
+
+  # MSI signing configuration (Authenticode).
+  # Uses PFX certificates (not PGP like Linux packagers).
+  signature:
+    # Path to the PFX certificate file.
+    pfx_file: certificate.pfx
+    # Optional RFC3161 timestamp URL.
+    timestamp_url: "http://timestamp.digicert.com"
+    # The passphrase is taken from the environment variable
+    # $NFPM_MSI_PASSPHRASE with a fallback to $NFPM_PASSPHRASE.
 ```
 
 ## Templating

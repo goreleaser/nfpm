@@ -67,6 +67,20 @@ tasks:
     cmds:
       - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/install-msix.ps1
 
+  acceptance:windows:package:msi:
+    desc: Build MSI package for Windows install testing
+    platforms: [windows]
+    cmds:
+      - mkdir -p ./dist
+      - go build -o ./dist/testapp.exe ./testdata/acceptance/testapp/
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.install.yaml -p msi -t ./dist/foo.msi
+
+  acceptance:windows:install:msi:
+    desc: Install and verify MSI package on Windows
+    platforms: [windows]
+    cmds:
+      - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/install-msi.ps1
+
   acceptance:pull:
     desc: Pull acceptance test images
     vars:
