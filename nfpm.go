@@ -283,6 +283,27 @@ func (c *Config) expandEnvVars() {
 	}
 	c.IPK.Predepends = c.expandEnvVarsStringSlice(c.IPK.Predepends)
 
+	// XBPS specific
+	c.XBPS.Arch = os.Expand(c.XBPS.Arch, c.envMappingFunc)
+	c.XBPS.ShortDesc = os.Expand(c.XBPS.ShortDesc, c.envMappingFunc)
+	c.XBPS.Tags = c.expandEnvVarsStringSlice(c.XBPS.Tags)
+	c.XBPS.Reverts = c.expandEnvVarsStringSlice(c.XBPS.Reverts)
+	for i := range c.XBPS.Alternatives {
+		c.XBPS.Alternatives[i].Group = os.Expand(c.XBPS.Alternatives[i].Group, c.envMappingFunc)
+		c.XBPS.Alternatives[i].LinkName = os.Expand(c.XBPS.Alternatives[i].LinkName, c.envMappingFunc)
+		c.XBPS.Alternatives[i].Target = os.Expand(c.XBPS.Alternatives[i].Target, c.envMappingFunc)
+	}
+	c.XBPS.Signature.KeyFile = os.Expand(c.XBPS.Signature.KeyFile, c.envMappingFunc)
+	c.XBPS.Signature.KeyPassphrase = generalPassphrase
+	xbpsPassphrase := os.Expand("$XBPS_PASSPHRASE", c.envMappingFunc)
+	if xbpsPassphrase != "" {
+		c.XBPS.Signature.KeyPassphrase = xbpsPassphrase
+	}
+	nfpmXBPSPassphrase := os.Expand("$NFPM_XBPS_PASSPHRASE", c.envMappingFunc)
+	if nfpmXBPSPassphrase != "" {
+		c.XBPS.Signature.KeyPassphrase = nfpmXBPSPassphrase
+	}
+
 	// MSIX specific
 	c.MSIX.Signature.PFXFile = os.Expand(c.MSIX.Signature.PFXFile, c.envMappingFunc)
 	c.MSIX.Publisher = os.Expand(c.MSIX.Publisher, c.envMappingFunc)
@@ -371,6 +392,7 @@ type Overridables struct {
 	APK        APK            `yaml:"apk,omitempty" json:"apk,omitempty" jsonschema:"title=apk-specific settings"`
 	ArchLinux  ArchLinux      `yaml:"archlinux,omitempty" json:"archlinux,omitempty" jsonschema:"title=archlinux-specific settings"`
 	IPK        IPK            `yaml:"ipk,omitempty" json:"ipk,omitempty" jsonschema:"title=ipk-specific settings"`
+	XBPS       XBPS           `yaml:"xbps,omitempty" json:"xbps,omitempty" jsonschema:"title=xbps-specific settings"`
 	MSIX       MSIX           `yaml:"msix,omitempty" json:"msix,omitempty" jsonschema:"title=msix-specific settings"`
 }
 
@@ -507,6 +529,31 @@ type IPKAlternative struct {
 	LinkName string `yaml:"link_name,omitempty" json:"link_name,omitempty" jsonschema:"title=link name"`
 }
 
+// XBPS contains configs that are only available on XBPS packages.
+type XBPS struct {
+	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in xbps nomenclature"`
+	ShortDesc    string            `yaml:"short_desc,omitempty" json:"short_desc,omitempty" jsonschema:"title=short one-line package description"`
+	Preserve     bool              `yaml:"preserve,omitempty" json:"preserve,omitempty" jsonschema:"title=preserve package files on update"`
+	Tags         []string          `yaml:"tags,omitempty" json:"tags,omitempty" jsonschema:"title=package tags"`
+	Reverts      []string          `yaml:"reverts,omitempty" json:"reverts,omitempty" jsonschema:"title=versions this package reverts"`
+	Alternatives []XBPSAlternative `yaml:"alternatives,omitempty" json:"alternatives,omitempty" jsonschema:"title=xbps alternatives"`
+	Signature    XBPSSignature     `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=xbps signature"`
+}
+
+// XBPSAlternative represents an alternative for an XBPS package.
+type XBPSAlternative struct {
+	Group    string `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=alternative group"`
+	LinkName string `yaml:"link_name,omitempty" json:"link_name,omitempty" jsonschema:"title=symlink path"`
+	Target   string `yaml:"target,omitempty" json:"target,omitempty" jsonschema:"title=target path"`
+}
+
+// XBPSSignature contains signing configs that are only available on XBPS packages.
+type XBPSSignature struct {
+	KeyFile       string                               `yaml:"key_file,omitempty" json:"key_file,omitempty" jsonschema:"title=RSA private key file"`
+	KeyPassphrase string                               `yaml:"-" json:"-"`
+	SignFn        func(data io.Reader) ([]byte, error) `yaml:"-" json:"-"`
+}
+
 // MSIX contains configs that are only available on MSIX packages.
 type MSIX struct {
 	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msix nomenclature"`
@@ -625,7 +672,7 @@ func Validate(info *Info) (err error) {
 	if info.Name == "" {
 		return ErrFieldEmpty{"name"}
 	}
-	if info.Arch == "" && (info.Deb.Arch == "" || info.RPM.Arch == "" || info.APK.Arch == "") {
+	if !hasAnyArch(info) {
 		return ErrFieldEmpty{"arch"}
 	}
 	if info.Version == "" {
@@ -646,6 +693,17 @@ func Validate(info *Info) (err error) {
 	}
 
 	return nil
+}
+
+func hasAnyArch(info *Info) bool {
+	return info.Arch != "" ||
+		info.Deb.Arch != "" ||
+		info.RPM.Arch != "" ||
+		info.APK.Arch != "" ||
+		info.ArchLinux.Arch != "" ||
+		info.IPK.Arch != "" ||
+		info.XBPS.Arch != "" ||
+		info.MSIX.Arch != ""
 }
 
 // WithDefaults set some sane defaults into the given Info.
