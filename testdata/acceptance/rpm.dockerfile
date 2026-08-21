@@ -234,3 +234,26 @@ FROM min AS postrequires
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^bash 1024 ?$'
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^coreutils 1036 9\.0$'
+
+# ---- triggers test ----
+FROM min AS triggers
+RUN dnf install -y rpm-build
+RUN mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS} && \
+    printf '%s\n' \
+      'Name: trigger-target' \
+      'Version: 1.0' \
+      'Release: 1' \
+      'Summary: RPM trigger target' \
+      'License: MIT' \
+      'BuildArch: noarch' \
+      '%description' \
+      'RPM trigger target' \
+      '%files' \
+      > /tmp/rpmbuild/SPECS/trigger-target.spec && \
+    rpmbuild --define '_topdir /tmp/rpmbuild' -bb /tmp/rpmbuild/SPECS/trigger-target.spec
+RUN rpm -ivh /tmp/rpmbuild/RPMS/noarch/trigger-target-1.0-1.noarch.rpm
+RUN grep -qx prein /tmp/rpm-trigger-proof
+RUN grep -qx in /tmp/rpm-trigger-proof
+RUN rpm -e trigger-target
+RUN grep -qx un /tmp/rpm-trigger-proof
+RUN grep -qx postun /tmp/rpm-trigger-proof

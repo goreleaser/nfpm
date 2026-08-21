@@ -22,6 +22,9 @@ func (r *RPM) packageRPM(info *nfpm.Info, w io.Writer) error {
 	if err := applyScripts(b, info); err != nil {
 		return err
 	}
+	if err := applyTriggers(b, info); err != nil {
+		return err
+	}
 	if err := applyChangelog(b, info); err != nil {
 		return err
 	}
