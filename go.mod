@@ -18,7 +18,7 @@ require (
 	github.com/klauspost/pgzip v1.2.6
 	github.com/sassoftware/go-rpmutils v0.4.0
 	github.com/spf13/cobra v1.10.2
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	github.com/ulikunitz/xz v0.5.16
 	go.digitalxero.dev/go-msix v1.0.0
 	go.digitalxero.dev/rpm v0.2.1
@@ -89,6 +89,5 @@ require (
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.39.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.2 // indirect
 )
