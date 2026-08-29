@@ -36,6 +36,12 @@ func exampleInfo() *nfpm.Info {
 			Depends: []string{
 				"bash",
 			},
+			Recommends: []string{
+				"git",
+			},
+			Suggests: []string{
+				"fish",
+			},
 			Replaces: []string{
 				"svn",
 			},
@@ -161,6 +167,8 @@ func TestArchPkginfo(t *testing.T) {
 	require.Equal(t, "zsh", fields["conflict"])
 	require.Equal(t, "bzr", fields["provides"])
 	require.Equal(t, "bash", fields["depend"])
+	require.Contains(t, string(pkginfoData), "optdepend = git\n")
+	require.Contains(t, string(pkginfoData), "optdepend = fish\n")
 	require.Equal(t, "etc/fake/fake.conf", fields["backup"])
 }
 
