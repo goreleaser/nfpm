@@ -280,6 +280,72 @@ func TestValidateError(t *testing.T) {
 	}
 }
 
+func TestPrepareForPackagerArchRequired(t *testing.T) {
+	t.Run("msi", func(t *testing.T) {
+		info := &nfpm.Info{Name: "foo", Version: "1.0.0"}
+		require.EqualError(t, nfpm.PrepareForPackager(info, "msi"), "package arch must be provided")
+		info.MSI.Arch = "x64"
+		require.NoError(t, nfpm.PrepareForPackager(info, "msi"))
+	})
+}
+
+// TestMSIEnvVarExpansion proves every free-form MSI string field goes through
+// environment variable expansion, matching the other packagers' fields.
+func TestMSIEnvVarExpansion(t *testing.T) {
+	env := map[string]string{
+		"MSI_VERSION": "24.1.0",
+		"MSI_PRODUCT": "My App",
+		"MSI_VENDOR":  "My Company",
+		"MSI_DIR":     "MyApp",
+		"MSI_PROP":    "prop-value",
+		"MSI_ARGS":    "--from-env",
+		"MSI_ACCOUNT": `NT AUTHORITY\LocalService`,
+		"MSI_REG":     "reg-value",
+		"MSI_PFX":     "/certs/code.pfx",
+		"MSI_TSA":     "http://timestamp.example.com",
+	}
+	config, err := nfpm.ParseWithEnvMapping(strings.NewReader(`
+name: foo
+msi:
+  version: "$MSI_VERSION"
+  product_name: "$MSI_PRODUCT"
+  manufacturer: "$MSI_VENDOR"
+  install_dir: "$MSI_DIR"
+  properties:
+    MYPROP: "$MSI_PROP"
+  shortcuts:
+    - name: s
+      target: /a.exe
+      arguments: "$MSI_ARGS"
+  services:
+    - name: svc
+      executable: /a.exe
+      account: "$MSI_ACCOUNT"
+      arguments: "$MSI_ARGS"
+  registry:
+    - root: HKLM
+      key: k
+      name: n
+      value: "$MSI_REG"
+  signature:
+    pfx_file: "$MSI_PFX"
+    timestamp_url: "$MSI_TSA"
+`), func(s string) string { return env[s] })
+	require.NoError(t, err)
+
+	require.Equal(t, "24.1.0", config.MSI.Version)
+	require.Equal(t, "My App", config.MSI.ProductName)
+	require.Equal(t, "My Company", config.MSI.Manufacturer)
+	require.Equal(t, "MyApp", config.MSI.InstallDir)
+	require.Equal(t, "prop-value", config.MSI.Properties["MYPROP"])
+	require.Equal(t, "--from-env", config.MSI.Shortcuts[0].Arguments)
+	require.Equal(t, `NT AUTHORITY\LocalService`, config.MSI.Services[0].Account)
+	require.Equal(t, "--from-env", config.MSI.Services[0].Arguments)
+	require.Equal(t, "reg-value", config.MSI.Registry[0].Value)
+	require.Equal(t, "/certs/code.pfx", config.MSI.Signature.PFXFile)
+	require.Equal(t, "http://timestamp.example.com", config.MSI.Signature.TimestampURL)
+}
+
 func parseAndValidate(filename string) (nfpm.Config, error) {
 	config, err := nfpm.ParseFile(filename)
 	if err != nil {
@@ -463,6 +529,7 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		require.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.MSI.Signature.KeyPassphrase)
 	})
 
 	t.Run("specific passphrases", func(t *testing.T) {
@@ -470,11 +537,13 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		t.Setenv("NFPM_DEB_PASSPHRASE", debPass)
 		t.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
 		t.Setenv("NFPM_APK_PASSPHRASE", apkPass)
+		t.Setenv("NFPM_MSI_PASSPHRASE", "msiPass")
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, "msiPass", info.MSI.Signature.KeyPassphrase)
 	})
 
 	t.Run("packager", func(t *testing.T) {
