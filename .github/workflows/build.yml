@@ -194,3 +194,75 @@ jobs:
         run: task acceptance:windows:package:msi
       - name: Install, upgrade, verify and remove the MSI packages
         run: task acceptance:windows:install:msi
+  msi-signed-build:
+    # Builds the nfpm-signed MSI on Linux: a GOOS=windows cross-compiled test
+    # app, packaged and Authenticode-signed by nfpm's pure-Go signer (go-msi)
+    # with a throwaway openssl cert. msi-windows-signature validates and
+    # installs these exact bytes on a real Windows runner, so the whole
+    # cross-platform story is exercised.
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task setup
+      - name: Build nfpm-signed MSI package
+        run: task acceptance:windows:package:signed:msi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: signed-msi-pkg
+          if-no-files-found: error
+          # The throwaway key is only needed by the failure diagnostics below.
+          retention-days: 1
+          path: |
+            dist/*.msi
+            dist/test.cer
+            dist/test.pfx
+  msi-windows-signature:
+    # Real Windows validation of nfpm's built-in MSI signature: msisip
+    # recomputes the CFB imprint (Get-AuthenticodeSignature), signtool
+    # verifies, and msiexec installs and removes the package. The package was
+    # built and signed on Linux by msi-signed-build. msi-windows-install is
+    # the unsigned control for the same packager output.
+    needs: [msi-signed-build]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: signed-msi-pkg
+          path: dist
+      - name: Validate signature (Get-AuthenticodeSignature, signtool verify /pa)
+        run: task acceptance:windows:verify:msi:signed
+      - name: Install and verify MSI package
+        run: task acceptance:windows:install:msi:signed
+      - name: "Diagnostic: real signtool signs the same package (imprint oracle)"
+        if: failure()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
+            Where-Object { $_.FullName -match '\\x64\\' } | Sort-Object FullName -Descending | Select-Object -First 1
+          Copy-Item ./dist/foo-unsigned.msi ./dist/foo-signtool.msi
+          & $signtool.FullName sign /debug /fd SHA256 /f ./dist/test.pfx /p test123 ./dist/foo-signtool.msi
+          Write-Host "signtool sign exit: $LASTEXITCODE"
+          foreach ($p in 'foo.msi', 'foo-signtool.msi') {
+            $s = Get-AuthenticodeSignature "./dist/$p"
+            Write-Host "Get-AuthenticodeSignature($p): $($s.Status) - $($s.StatusMessage)"
+          }
+      - name: Upload diagnostic packages and logs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: msi-signature-diagnostics
+          path: |
+            dist/*.msi
+            dist/*.log
