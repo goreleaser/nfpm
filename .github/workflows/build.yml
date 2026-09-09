@@ -100,6 +100,20 @@ jobs:
       - run: task acceptance
         env:
           TEST_PATTERN: "TestMSIXStructure"
+  msi-acceptance-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task setup
+      - run: task acceptance
+        env:
+          TEST_PATTERN: "TestMSIStructure"
   windows-build-pkgs:
     needs: [unit-tests]
     runs-on: windows-latest
@@ -165,3 +179,18 @@ jobs:
             Write-Error "Expected 'nfpm-msix-test-ok' but got '$output'"
             exit 1
           }
+  msi-windows-install:
+    needs: [unit-tests]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build MSI packages
+        run: task acceptance:windows:package:msi
+      - name: Install, upgrade, verify and remove the MSI packages
+        run: task acceptance:windows:install:msi
