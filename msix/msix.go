@@ -15,6 +15,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/maintainer"
 	"go.digitalxero.dev/go-msix"
 )
 
@@ -65,19 +66,6 @@ func (m *MSIX) ConventionalFileName(info *nfpm.Info) string {
 // ConventionalExtension returns the file extension for MSIX packages.
 func (*MSIX) ConventionalExtension() string {
 	return ".msix"
-}
-
-// vendorOrMaintainer returns info.Vendor, falling back to the name part of
-// info.Maintainer ("Jane Doe <jane@example.com>" -> "Jane Doe").
-func vendorOrMaintainer(info *nfpm.Info) string {
-	if info.Vendor != "" {
-		return info.Vendor
-	}
-	m := info.Maintainer
-	if i := strings.IndexByte(m, '<'); i >= 0 {
-		m = m[:i]
-	}
-	return strings.TrimSpace(m)
 }
 
 // dnAttributePattern matches a string that already starts with a distinguished
@@ -180,7 +168,7 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 			// on error fall through; configureSigning surfaces the real failure
 		}
 		if info.MSIX.Publisher == "" {
-			if v := vendorOrMaintainer(info); v != "" {
+			if v := maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer); v != "" {
 				info.MSIX.Publisher = ensureDN(v)
 			}
 		}
@@ -246,7 +234,7 @@ func buildProperties(info *nfpm.Info) msix.Properties {
 	}
 	publisherDisplayName := info.MSIX.Properties.PublisherDisplayName
 	if publisherDisplayName == "" {
-		publisherDisplayName = vendorOrMaintainer(info)
+		publisherDisplayName = maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer)
 	}
 	if publisherDisplayName == "" {
 		publisherDisplayName = info.Name
