@@ -39,6 +39,7 @@ FROM min AS complex
 RUN pacman -Qi foo | grep "Depends On\\s*: bash"
 RUN pacman -Qi foo | grep "Replaces\\s*: foo"
 RUN pacman -Qi foo | grep "Provides\\s*: fake"
+RUN pacman -Qi foo | grep "Optional Deps\\s*: fish"
 RUN test -e /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /usr/share/whatever/
