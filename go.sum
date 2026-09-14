@@ -96,8 +96,8 @@ github.com/gopherjs/gopherjs v1.17.2 h1:fQnZVsXk8uxXIStYb0N4bGk7jeyTalG/wsZjQ25d
 github.com/gopherjs/gopherjs v1.17.2/go.mod h1:pRRIvn/QzFLrKfvEz3qUuEhtE/zLCWfreZ6J5gM2i+k=
 github.com/goreleaser/chglog v0.7.4 h1:3pnNt/XCrUcAOq+KC91Azlgp5CRv4GHo1nl8Aws7OzI=
 github.com/goreleaser/chglog v0.7.4/go.mod h1:dTVoZZagTz7hHdWaZ9OshHntKiF44HbWIHWxYJQ/h0Y=
-github.com/goreleaser/fileglob v1.4.0 h1:Y7zcUnzQjT1gbntacGAkIIfLv+OwojxTXBFxjSFoBBs=
-github.com/goreleaser/fileglob v1.4.0/go.mod h1:1pbHx7hhmJIxNZvm6fi6WVrnP0tndq6p3ayWdLn1Yf8=
+github.com/goreleaser/fileglob v1.4.1 h1:4/SXlDDzfKCorA28/S3aXd/6D8VHDZjGXGIttVSjxhU=
+github.com/goreleaser/fileglob v1.4.1/go.mod h1:1pbHx7hhmJIxNZvm6fi6WVrnP0tndq6p3ayWdLn1Yf8=
 github.com/huandu/xstrings v1.5.0 h1:2ag3IFq9ZDANvthTwTiqSSZLjDc+BedvHPAp5tJy2TI=
 github.com/huandu/xstrings v1.5.0/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
@@ -194,8 +194,8 @@ github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e/go.mod h1:RbqR21r5mrJu
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 gitlab.com/digitalxero/go-conventional-commit v1.0.7 h1:8/dO6WWG+98PMhlZowt/YjuiKhqhGlOCwlIV8SqqGh8=
 gitlab.com/digitalxero/go-conventional-commit v1.0.7/go.mod h1:05Xc2BFsSyC5tKhK0y+P3bs0AwUtNuTp+mTpbCU/DZ0=
-go.digitalxero.dev/go-msix v1.0.0 h1:9qaOqvAgjgVswPEmrcynroo6/GEdGpQXLU/rDsxTz+0=
-go.digitalxero.dev/go-msix v1.0.0/go.mod h1:lsGjKne37diRcY+7cyuAWFtFF2itmzJNUVbVoDH3saw=
+go.digitalxero.dev/go-msix v1.0.1 h1:lsDicuHolFn84ZLuQljtjH2ybDaJRcAckHj/mD7TFW8=
+go.digitalxero.dev/go-msix v1.0.1/go.mod h1:lsGjKne37diRcY+7cyuAWFtFF2itmzJNUVbVoDH3saw=
 go.digitalxero.dev/rpm v0.2.1 h1:wH5mywdAJQXkDbF/if7Zz9Iw4ttico/KeoXJo9N5l28=
 go.digitalxero.dev/rpm v0.2.1/go.mod h1:45EsEzHamzqInyWQx9vpj7OYpL0BrkbQF87VdrLn5wo=
 go.mozilla.org/pkcs7 v0.9.0 h1:yM4/HS9dYv7ri2biPtxt8ikvB37a980dg69/pKmS+eI=

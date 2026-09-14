@@ -12,7 +12,7 @@ require (
 	github.com/caarlos0/go-version v0.2.2
 	github.com/charmbracelet/fang v1.0.0
 	github.com/goreleaser/chglog v0.7.4
-	github.com/goreleaser/fileglob v1.4.0
+	github.com/goreleaser/fileglob v1.4.1
 	github.com/invopop/jsonschema v0.14.0
 	github.com/klauspost/compress v1.20.0
 	github.com/klauspost/pgzip v1.2.6
@@ -20,7 +20,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	github.com/ulikunitz/xz v0.5.16
-	go.digitalxero.dev/go-msix v1.0.0
+	go.digitalxero.dev/go-msix v1.0.1
 	go.digitalxero.dev/rpm v0.2.1
 	go.yaml.in/yaml/v3 v3.0.5
 )
