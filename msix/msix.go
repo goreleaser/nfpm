@@ -9,11 +9,13 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/maintainer"
 	"go.digitalxero.dev/go-msix"
 )
 
@@ -64,6 +66,34 @@ func (m *MSIX) ConventionalFileName(info *nfpm.Info) string {
 // ConventionalExtension returns the file extension for MSIX packages.
 func (*MSIX) ConventionalExtension() string {
 	return ".msix"
+}
+
+// dnAttributePattern matches a string that already starts with a distinguished
+// name attribute assignment such as "CN=" or "O=".
+// nolint: gochecknoglobals
+var dnAttributePattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9.]*=`)
+
+// ensureDN turns a plain name into a publisher distinguished name by prefixing
+// "CN=" and escaping per RFC 2253; values that already look like a DN pass
+// through untouched.
+func ensureDN(name string) string {
+	if dnAttributePattern.MatchString(name) {
+		return name
+	}
+	var b strings.Builder
+	b.WriteString("CN=")
+	for i, r := range name {
+		switch {
+		case strings.ContainsRune(`,+"\<>;`, r):
+			b.WriteByte('\\')
+		case r == ' ' && (i == 0 || i == len(name)-1):
+			b.WriteByte('\\')
+		case r == '#' && i == 0:
+			b.WriteByte('\\')
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }
 
 // SetPackagerDefaults sets default values for MSIX-specific fields.
@@ -122,6 +152,28 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
+	if info.Scripts != (nfpm.Scripts{}) {
+		log.Printf("warning: msix is declarative and does not support install scripts, ignoring scripts")
+	}
+
+	// Publisher must byte-match the signing certificate subject on signed
+	// packages, so the cert is the only correct default when signing is
+	// configured; otherwise fall back to a CN= DN built from vendor/maintainer.
+	if info.MSIX.Publisher == "" {
+		if info.MSIX.Signature.PFXFile != "" {
+			cert, _, _, err := msix.LoadPFX(info.MSIX.Signature.PFXFile, info.MSIX.Signature.KeyPassphrase)
+			if err == nil {
+				info.MSIX.Publisher = cert.Subject.String()
+			}
+			// on error fall through; configureSigning surfaces the real failure
+		}
+		if info.MSIX.Publisher == "" {
+			if v := maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer); v != "" {
+				info.MSIX.Publisher = ensureDN(v)
+			}
+		}
+	}
+
 	if err := validate(info); err != nil {
 		return err
 	}
@@ -156,7 +208,7 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 
 func validate(info *nfpm.Info) error {
 	if info.MSIX.Publisher == "" {
-		return fmt.Errorf("package %s must be provided", "msix.publisher")
+		return fmt.Errorf("package msix.publisher, vendor, or maintainer must be provided")
 	}
 	if info.MSIX.Properties.Logo == "" {
 		return fmt.Errorf("package %s must be provided", "msix.properties.logo")
@@ -181,6 +233,9 @@ func buildProperties(info *nfpm.Info) msix.Properties {
 		displayName = info.Name
 	}
 	publisherDisplayName := info.MSIX.Properties.PublisherDisplayName
+	if publisherDisplayName == "" {
+		publisherDisplayName = maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer)
+	}
 	if publisherDisplayName == "" {
 		publisherDisplayName = info.Name
 	}

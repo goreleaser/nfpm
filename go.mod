@@ -23,6 +23,7 @@ require (
 	go.digitalxero.dev/go-msix v1.0.1
 	go.digitalxero.dev/rpm v0.2.1
 	go.yaml.in/yaml/v3 v3.0.5
+	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
 
 require (
@@ -89,5 +90,4 @@ require (
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.39.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	software.sslmate.com/src/go-pkcs12 v0.7.2 // indirect
 )

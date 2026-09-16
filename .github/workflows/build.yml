@@ -153,15 +153,75 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and sign MSIX package
         run: task acceptance:windows:package:msix
-      - name: Install MSIX package
+      - name: Install and verify MSIX package
         run: task acceptance:windows:install:msix
-      - name: Verify installed app runs correctly
+  msix-signed-build:
+    # Builds the nfpm-signed MSIX on Linux: a GOOS=windows cross-compiled test
+    # app, packaged and Authenticode-signed by nfpm's pure-Go signer (go-msix)
+    # with a throwaway openssl cert. msix-windows-signature validates and
+    # installs these exact bytes on a real Windows runner, so the whole
+    # cross-platform story is exercised.
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task setup
+      - name: Build nfpm-signed MSIX package
+        run: task acceptance:windows:package:signed:msix
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: signed-msix-pkg
+          if-no-files-found: error
+          # The throwaway key is only needed by the failure diagnostics below.
+          retention-days: 1
+          path: |
+            dist/*.msix
+            dist/test.cer
+            dist/test.pfx
+  msix-windows-signature:
+    # Real Windows validation of nfpm's built-in MSIX signature: crypt32
+    # recomputes the APPX digests (Get-AuthenticodeSignature), signtool
+    # verifies, and Add-AppxPackage performs an actual deployment. The package
+    # was built and signed on Linux by msix-signed-build. msix-windows-install
+    # is the signtool-signed control for the same packager output.
+    needs: [msix-signed-build]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: signed-msix-pkg
+          path: dist
+      - name: Validate signature (Get-AuthenticodeSignature, signtool verify /pa)
+        run: task acceptance:windows:verify:msix:signed
+      - name: Install and verify MSIX package
+        run: task acceptance:windows:install:msix
+      - name: "Diagnostic: real signtool signs the same package (digest-table oracle)"
+        if: failure()
+        continue-on-error: true
         shell: pwsh
         run: |
-          $pkg = Get-AppxPackage -Name "com.example.foo"
-          $exe = Join-Path $pkg.InstallLocation "app\testapp.exe"
-          $output = & $exe 2>&1
-          if ($output -ne "nfpm-msix-test-ok") {
-            Write-Error "Expected 'nfpm-msix-test-ok' but got '$output'"
-            exit 1
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
+            Where-Object { $_.FullName -match '\\x64\\' } | Sort-Object FullName -Descending | Select-Object -First 1
+          Copy-Item ./dist/foo-unsigned.msix ./dist/foo-signtool.msix
+          & $signtool.FullName sign /debug /fd SHA256 /f ./dist/test.pfx /p test123 ./dist/foo-signtool.msix
+          Write-Host "signtool sign exit: $LASTEXITCODE"
+          foreach ($p in 'foo.msix', 'foo-signtool.msix') {
+            $s = Get-AuthenticodeSignature "./dist/$p"
+            Write-Host "Get-AuthenticodeSignature($p): $($s.Status) - $($s.StatusMessage)"
           }
+      - name: Upload diagnostic packages
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: msix-signature-diagnostics
+          path: dist/*.msix
