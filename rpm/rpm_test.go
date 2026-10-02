@@ -23,10 +23,13 @@ import (
 )
 
 const (
+	tagProvideName    = 1047
 	tagRequireFlags   = 1048
 	tagRequireName    = 1049
 	tagRequireVersion = 1050
 	tagFileLangs      = 1097
+	tagProvideFlags   = 1112
+	tagProvideVersion = 1113
 )
 
 func exampleInfo() *nfpm.Info {
@@ -203,6 +206,126 @@ func requireRPMRequire(
 		}
 	}
 	require.Failf(t, "RPM require not found", "name=%s version=%s flag=%d", name, version, flag)
+}
+
+// rpmProvides returns the package's provides as `rpm -qp --provides` prints
+// them: "name" or "name = version".
+func rpmProvides(t *testing.T, r io.Reader) []string {
+	t.Helper()
+	rpm, err := rpmutils.ReadRpm(r)
+	require.NoError(t, err)
+
+	namesRaw, err := rpm.Header.Get(tagProvideName)
+	require.NoError(t, err)
+	names, ok := namesRaw.([]string)
+	require.True(t, ok)
+	versionsRaw, err := rpm.Header.Get(tagProvideVersion)
+	require.NoError(t, err)
+	versions, ok := versionsRaw.([]string)
+	require.True(t, ok)
+	flagsRaw, err := rpm.Header.Get(tagProvideFlags)
+	require.NoError(t, err)
+	flags, ok := flagsRaw.([]uint32)
+	require.True(t, ok)
+	require.Len(t, versions, len(names))
+	require.Len(t, flags, len(names))
+
+	provides := make([]string, len(names))
+	for idx, name := range names {
+		provides[idx] = name
+		if flags[idx] == 8 && versions[idx] != "" {
+			provides[idx] += " = " + versions[idx]
+		}
+	}
+	return provides
+}
+
+func TestRPMSelfProvides(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		arch   string
+		rpm    string
+		epoch  string
+		pre    string
+		meta   string
+		expect []string
+	}{
+		{
+			name:   "amd64 with epoch",
+			arch:   "amd64",
+			epoch:  "0",
+			expect: []string{"bzr", "foo = 0:1.0.0-1", "foo(x86-64) = 0:1.0.0-1"},
+		},
+		{
+			name:   "arm64 without epoch",
+			arch:   "arm64",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(aarch-64) = 1.0.0-1"},
+		},
+		{
+			name:   "386",
+			arch:   "386",
+			epoch:  "2",
+			expect: []string{"bzr", "foo = 2:1.0.0-1", "foo(x86-32) = 2:1.0.0-1"},
+		},
+		{
+			name:   "arm7",
+			arch:   "arm7",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(armv7hl-32) = 1.0.0-1"},
+		},
+		{
+			name:   "riscv64",
+			arch:   "riscv64",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(riscv-64) = 1.0.0-1"},
+		},
+		{
+			name:   "all is noarch",
+			arch:   "all",
+			expect: []string{"bzr", "foo = 1.0.0-1"},
+		},
+		{
+			name:   "rpm.arch override",
+			arch:   "amd64",
+			rpm:    "ppc64le",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(ppc-64) = 1.0.0-1"},
+		},
+		{
+			name:   "unknown arch",
+			arch:   "amd64",
+			rpm:    "myarch",
+			expect: []string{"bzr", "foo = 1.0.0-1"},
+		},
+		{
+			name:   "prerelease and metadata",
+			arch:   "amd64",
+			epoch:  "1",
+			pre:    "rc-1",
+			meta:   "git",
+			expect: []string{"bzr", "foo = 1:1.0.0~rc_1+git-1", "foo(x86-64) = 1:1.0.0~rc_1+git-1"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			info := exampleInfo()
+			info.Arch = tc.arch
+			info.RPM.Arch = tc.rpm
+			info.Epoch = tc.epoch
+			info.Prerelease = tc.pre
+			info.VersionMetadata = tc.meta
+
+			var buf bytes.Buffer
+			require.NoError(t, DefaultRPM.Package(info, &buf))
+			require.Equal(t, tc.expect, rpmProvides(t, &buf))
+		})
+	}
+}
+
+func TestSRPMHasNoISAProvide(t *testing.T) {
+	info := exampleInfo()
+	info.Arch = "arm64"
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultSRPM.Package(info, &buf))
+	// User provides are declared in the generated spec, not the source header.
+	require.Equal(t, []string{"foo = 0:1.0.0-1"}, rpmProvides(t, &buf))
 }
 
 func TestRPMRiscv64(t *testing.T) {
