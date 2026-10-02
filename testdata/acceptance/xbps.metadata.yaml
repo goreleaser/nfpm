@@ -1,0 +1,27 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+release: "1"
+maintainer: "Foo Bar"
+description: |
+  Foo bar
+  Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/fake
+    dst: /usr/bin/fake
+xbps:
+  short_desc: "XBPS metadata package"
+  preserve: true
+  tags:
+    - utilities
+    - cli
+  reverts:
+    - 1.2.2_1
+  alternatives:
+    - group: fake
+      link_name: /usr/bin/fake-alt
+      target: /usr/bin/fake
