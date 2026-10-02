@@ -1,0 +1,29 @@
+name: foo
+arch: "${BUILD_ARCH}"
+platform: linux
+version: v1.2.3
+maintainer: Foo Bar
+description: Foo bar
+license: MIT
+contents:
+  - src: ./testdata/fake
+    dst: /usr/bin/fake
+rpm:
+  triggers:
+    - type: prein
+      script: ./testdata/acceptance/scripts/rpm_trigger_prein.sh
+      conditions:
+        - trigger-target >= 1.0
+    - type: in
+      script: ./testdata/acceptance/scripts/rpm_trigger_in.sh
+      interpreter: /bin/bash
+      conditions:
+        - trigger-target
+    - type: un
+      script: ./testdata/acceptance/scripts/rpm_trigger_un.sh
+      conditions:
+        - trigger-target
+    - type: postun
+      script: ./testdata/acceptance/scripts/rpm_trigger_postun.sh
+      conditions:
+        - trigger-target

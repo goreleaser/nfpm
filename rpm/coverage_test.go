@@ -92,6 +92,43 @@ func TestApplyRelationsInvalidPostRequire(t *testing.T) {
 	require.Contains(t, err.Error(), "unknown version operator")
 }
 
+func TestReadTriggersErrors(t *testing.T) {
+	for name, trigger := range map[string]struct {
+		trigger  nfpm.RPMTrigger
+		expected string
+	}{
+		"type":    {nfpm.RPMTrigger{Type: "invalid", Script: "script", Conditions: []string{"foo"}}, "unknown trigger type"},
+		"script":  {nfpm.RPMTrigger{Type: "in", Conditions: []string{"foo"}}, "script must be provided"},
+		"missing": {nfpm.RPMTrigger{Type: "in", Script: "../testdata/does-not-exist.sh", Conditions: []string{"foo"}}, "does-not-exist.sh"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{trigger.trigger}}}}
+
+			_, err := readTriggers(info)
+			require.ErrorContains(t, err, trigger.expected)
+		})
+	}
+
+	t.Run("condition", func(t *testing.T) {
+		info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{{
+			Type: "in", Script: "../testdata/scripts/postinstall.sh", Conditions: []string{"foo >>> 2"},
+		}}}}}
+
+		_, err := readTriggers(info)
+		require.ErrorContains(t, err, "invalid condition")
+	})
+
+	t.Run("no conditions", func(t *testing.T) {
+		info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{{
+			Type: "in", Script: "../testdata/scripts/postinstall.sh",
+		}}}}}
+
+		triggers, err := readTriggers(info)
+		require.NoError(t, err)
+		require.Empty(t, triggers[0].conditions)
+	})
+}
+
 func TestRenderSpecChangelog(t *testing.T) {
 	t.Run("renders newest first", func(t *testing.T) {
 		info := exampleInfo()

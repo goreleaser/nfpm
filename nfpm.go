@@ -391,6 +391,7 @@ type RPM struct {
 	Arch        string       `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in rpm nomenclature"`
 	BuildHost   string       `yaml:"buildhost,omitempty" json:"buildhost,omitempty" jsonschema:"title=host name of the build environment, default=os.Hostname()"`
 	Scripts     RPMScripts   `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=rpm-specific scripts"`
+	Triggers    []RPMTrigger `yaml:"triggers,omitempty" json:"triggers,omitempty" jsonschema:"title=rpm triggers"`
 	Requires    RPMRequires  `yaml:"requires,omitempty" json:"requires,omitempty" jsonschema:"title=rpm-specific requires"`
 	Group       string       `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=package group,example=Unspecified"`
 	Summary     string       `yaml:"summary,omitempty" json:"summary,omitempty" jsonschema:"title=package summary"`
@@ -405,6 +406,14 @@ type RPMScripts struct {
 	PreTrans  string `yaml:"pretrans,omitempty" json:"pretrans,omitempty" jsonschema:"title=pretrans script"`
 	PostTrans string `yaml:"posttrans,omitempty" json:"posttrans,omitempty" jsonschema:"title=posttrans script"`
 	Verify    string `yaml:"verify,omitempty" json:"verify,omitempty" jsonschema:"title=verify script"`
+}
+
+// RPMTrigger represents an RPM package trigger.
+type RPMTrigger struct {
+	Type        string   `yaml:"type" json:"type" jsonschema:"title=trigger type,enum=prein,enum=in,enum=un,enum=postun"`
+	Script      string   `yaml:"script" json:"script" jsonschema:"title=trigger script"`
+	Interpreter string   `yaml:"interpreter,omitempty" json:"interpreter,omitempty" jsonschema:"title=trigger script interpreter,default=/bin/sh"`
+	Conditions  []string `yaml:"conditions,omitempty" json:"conditions,omitempty" jsonschema:"title=trigger conditions"`
 }
 
 // RPMRequires represents qualified RPM Requires dependencies.
