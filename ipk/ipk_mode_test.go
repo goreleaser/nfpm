@@ -86,9 +86,18 @@ func TestIPKTreeDirectoryModeIsNotBase256(t *testing.T) {
 	treeDir, ok := headers["./usr/share/doc/sub/"]
 	require.True(t, ok, "walked directory missing from data.tar.gz: %v", headers)
 
+	// Derive the expectation from what the walk actually saw instead of
+	// hardcoding 0o755: MkdirAll/WriteFile are masked by the process umask, so
+	// a restrictive umask (0o077) would otherwise fail this on mode, not on the
+	// base-256 encoding this test is about. This mirrors the apk packager.
+	subInfo, err := os.Stat(filepath.Join(source, "sub"))
+	require.NoError(t, err)
+	fileInfo, err := os.Stat(filepath.Join(source, "sub", "f.txt"))
+	require.NoError(t, err)
+
 	// The mode must fit the 7-digit octal field, which means the fs.ModeDir bit
 	// has to be gone. Anything >= 1<<23 forces base-256 encoding.
-	require.EqualValues(t, 0o755, treeDir.Mode,
+	require.EqualValues(t, subInfo.Mode().Perm()&^info.Umask, treeDir.Mode,
 		"walked tree directory must carry permission bits only")
 	require.Less(t, treeDir.Mode, int64(1<<23),
 		"mode overflows the tar octal field and gets base-256 encoded")
@@ -96,7 +105,8 @@ func TestIPKTreeDirectoryModeIsNotBase256(t *testing.T) {
 		"mode field is base-256 encoded, not octal ASCII")
 
 	// Sanity check: a regular file in the same tree is unaffected.
-	require.EqualValues(t, 0o644, headers["./usr/share/doc/sub/f.txt"].Mode)
+	require.EqualValues(t, fileInfo.Mode().Perm()&^info.Umask,
+		headers["./usr/share/doc/sub/f.txt"].Mode)
 }
 
 // rawModeField re-encodes a header the way archive/tar would and returns the
