@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Masterminds/semver/v3 v3.5.0
-	github.com/ProtonMail/go-crypto v1.5.1
+	github.com/ProtonMail/go-crypto v1.5.2
 	github.com/ProtonMail/gopenpgp/v2 v2.10.0
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-version v0.2.2
@@ -15,13 +15,13 @@ require (
 	github.com/goreleaser/fileglob v1.4.1
 	github.com/invopop/jsonschema v0.14.0
 	github.com/klauspost/compress v1.20.1
-	github.com/klauspost/pgzip v1.2.6
+	github.com/klauspost/pgzip v1.2.7
 	github.com/sassoftware/go-rpmutils v0.4.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	github.com/ulikunitz/xz v0.5.17
 	go.digitalxero.dev/go-msix v1.0.1
-	go.digitalxero.dev/rpm v0.2.1
+	go.digitalxero.dev/rpm v0.3.0
 	go.yaml.in/yaml/v3 v3.0.5
 )
 
