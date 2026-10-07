@@ -359,7 +359,7 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		}
 	}
 
-	for _, optdepend := range append(info.Recommends, info.Suggests...) {
+	for _, optdepend := range slices.Concat(info.Recommends, info.Suggests) {
 		err = writeKVPair(buf, "optdepend", optdepend)
 		if err != nil {
 			return nil, err
