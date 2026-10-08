@@ -189,6 +189,65 @@ func TestRPMPostRequires(t *testing.T) {
 	requireRPMRequire(t, names, versions, flags, "coreutils", "9.0", rpmSenseScriptPost|4|8)
 }
 
+func TestRPMScriptRequires(t *testing.T) {
+	dir := t.TempDir()
+	contents := func() files.Contents {
+		script := func(name, body, fileType string, mode os.FileMode) *files.Content {
+			path := filepath.Join(dir, name)
+			require.NoError(t, os.WriteFile(path, []byte(body), 0o644))
+			return &files.Content{
+				Source:      path,
+				Destination: "/usr/libexec/foo/" + name,
+				Type:        fileType,
+				FileInfo:    &files.ContentFileInfo{Mode: mode},
+			}
+		}
+		return files.Contents{
+			script("expect", "#!/usr/bin/expect -f\nsend hi\n", files.TypeFile, 0o755),
+			script("env", "#!/usr/bin/env /bin/bash -x\necho\n", files.TypeFile, 0o750),
+			script("python", "#!/usr/bin/env python3\nprint()\n", files.TypeFile, 0o755),
+			script("config", "#! /bin/ksh\r\necho\r\n", files.TypeConfig, 0o755),
+			script("perl", "#!/usr/bin/perl\n", files.TypeFile, 0o644),
+			script("doc", "#!/bin/dash\necho\n", files.TypeRPMDoc, 0o755),
+			script("text", "/bin/false\n", files.TypeFile, 0o755),
+		}
+	}
+
+	for name, tc := range map[string]struct {
+		enabled  bool
+		expected []string
+	}{
+		"enabled":  {true, []string{"/bin/bash", "/bin/ksh", "/usr/bin/env", "/usr/bin/expect"}},
+		"disabled": {false, nil},
+	} {
+		t.Run(name, func(t *testing.T) {
+			info := exampleInfo()
+			info.Contents = contents()
+			info.RPM.ScriptRequires = tc.enabled
+
+			var buf bytes.Buffer
+			require.NoError(t, DefaultRPM.Package(info, &buf))
+			rpm, err := rpmutils.ReadRpm(&buf)
+			require.NoError(t, err)
+
+			names, err := rpm.Header.GetStrings(tagRequireName)
+			require.NoError(t, err)
+			flagsRaw, err := rpm.Header.Get(tagRequireFlags)
+			require.NoError(t, err)
+			flags, ok := flagsRaw.([]uint32)
+			require.True(t, ok)
+
+			var generated []string
+			for i := range names {
+				if flags[i] == rpmSenseFindRequires {
+					generated = append(generated, names[i])
+				}
+			}
+			require.Equal(t, tc.expected, generated)
+		})
+	}
+}
+
 func requireRPMRequire(
 	t *testing.T,
 	names, versions []string,

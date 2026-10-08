@@ -234,3 +234,12 @@ FROM min AS postrequires
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^bash 1024 ?$'
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^coreutils 1036 9\.0$'
+
+# ---- script requires test ----
+FROM min AS scriptrequires
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/bin/bash 16384'
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/usr/bin/env 16384'
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/bin/sh 16384'
+# Scripts that are not executable are not scanned.
+RUN ! rpm -qp --requires /tmp/foo.rpm | grep -F perl
