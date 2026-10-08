@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/goreleaser/nfpm/v2"
@@ -29,43 +30,71 @@ const (
 // memory; symlinks and directories are described in place.
 func addContents(b rpm.PackageBuilder, info *nfpm.Info) error {
 	mtime := modtime.Get(info.MTime)
+	docDirs := cleanDocDirs(info.RPM.DocDirs)
 	for _, content := range info.Contents {
 		if content.Packager != "" && content.Packager != contentPackager {
 			continue
 		}
 
 		dest := files.ToNixPath(content.Destination)
+		doc := rpm.GenericFile
+		if isBelowDocDir(dest, docDirs) {
+			doc = rpm.DocFile
+		}
 		var err error
 		switch content.Type {
 		case files.TypeConfig:
-			err = addRegularFile(b, content, dest, rpm.ConfigFile)
+			err = addRegularFile(b, content, dest, rpm.ConfigFile|doc)
 		case files.TypeConfigNoReplace:
-			err = addRegularFile(b, content, dest, rpm.ConfigFile|rpm.NoReplaceFile)
+			err = addRegularFile(b, content, dest, rpm.ConfigFile|rpm.NoReplaceFile|doc)
 		case files.TypeConfigMissingOK:
-			err = addRegularFile(b, content, dest, rpm.ConfigFile|rpm.MissingOkFile)
+			err = addRegularFile(b, content, dest, rpm.ConfigFile|rpm.MissingOkFile|doc)
 		case files.TypeRPMGhost:
-			addGhostFile(b, content, dest)
+			addGhostFile(b, content, dest, rpm.GhostFile|doc)
 		case files.TypeRPMDoc:
 			err = addRegularFile(b, content, dest, rpm.DocFile)
 		case files.TypeRPMLicence, files.TypeRPMLicense:
-			err = addRegularFile(b, content, dest, rpm.LicenceFile)
+			err = addRegularFile(b, content, dest, rpm.LicenceFile|doc)
 		case files.TypeRPMReadme:
-			err = addRegularFile(b, content, dest, rpm.ReadmeFile)
+			err = addRegularFile(b, content, dest, rpm.ReadmeFile|doc)
 		case files.TypeSymlink:
-			addSymlink(b, content, dest)
+			addSymlink(b, content, dest, doc)
 		case files.TypeDir:
 			addDirectory(b, content, dest, mtime)
 		case files.TypeImplicitDir:
 			// implicit directories are not added to RPMs
 			continue
 		default:
-			err = addRegularFile(b, content, dest, rpm.GenericFile)
+			err = addRegularFile(b, content, dest, doc)
 		}
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// cleanDocDirs normalizes rpm.doc_dirs for the binary package and for the
+// generated spec alike, so that "/usr/share/doc/" matches the files below
+// /usr/share/doc.
+func cleanDocDirs(dirs []string) []string {
+	cleaned := make([]string, 0, len(dirs))
+	for _, dir := range dirs {
+		if dir == "" {
+			continue
+		}
+		cleaned = append(cleaned, files.ToNixPath(dir))
+	}
+	return cleaned
+}
+
+func isBelowDocDir(dest string, docDirs []string) bool {
+	for _, dir := range docDirs {
+		if strings.HasPrefix(dest, dir+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 func addRegularFile(b rpm.PackageBuilder, content *files.Content, dest string, ftype rpm.FileType) error {
@@ -135,7 +164,7 @@ func elfColor(content *files.Content) rpm.FileColor {
 	}
 }
 
-func addGhostFile(b rpm.PackageBuilder, content *files.Content, dest string) {
+func addGhostFile(b rpm.PackageBuilder, content *files.Content, dest string, ftype rpm.FileType) {
 	mode := content.FileInfo.Mode
 	if mode == 0 {
 		mode = fs.FileMode(0o644)
@@ -143,7 +172,7 @@ func addGhostFile(b rpm.PackageBuilder, content *files.Content, dest string) {
 	// Ghost files must not carry a body; they are owned by the package but not
 	// shipped in the payload.
 	b.File(dest).
-		WithType(rpm.GhostFile).
+		WithType(ftype).
 		WithMode(normalizeFileMode(mode)).
 		WithMTime(uint32(content.FileInfo.MTime.Unix())).
 		WithOwner(content.FileInfo.Owner).
@@ -151,16 +180,19 @@ func addGhostFile(b rpm.PackageBuilder, content *files.Content, dest string) {
 		Add()
 }
 
-func addSymlink(b rpm.PackageBuilder, content *files.Content, dest string) {
+func addSymlink(b rpm.PackageBuilder, content *files.Content, dest string, ftype rpm.FileType) {
 	// Mode 0 keeps the serialized FILEMODES exactly S_IFLNK (no permission bits),
 	// matching prior nfpm behavior; the kernel ignores symlink permissions.
-	b.File(dest).
+	fb := b.File(dest).
 		WithSymlink(content.Source).
 		WithMode(0).
 		WithMTime(uint32(content.FileInfo.MTime.Unix())).
 		WithOwner(content.FileInfo.Owner).
-		WithGroup(content.FileInfo.Group).
-		Add()
+		WithGroup(content.FileInfo.Group)
+	if ftype != rpm.GenericFile {
+		fb.WithType(ftype)
+	}
+	fb.Add()
 }
 
 func addDirectory(b rpm.PackageBuilder, content *files.Content, dest string, mtime time.Time) {

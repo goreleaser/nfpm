@@ -1300,6 +1300,16 @@
 						"type": "array",
 						"title": "Prefixes for relocatable packages"
 					},
+					"doc_dirs": {
+						"items": {
+							"type": "string",
+							"examples": [
+								"/usr/share/doc"
+							]
+						},
+						"type": "array",
+						"title": "directories whose files are flagged as documentation"
+					},
 					"script_requires": {
 						"type": "boolean",
 						"title": "require the interpreters of executable scripts",
