@@ -436,7 +436,7 @@ func TestSpecFileLine(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			line := specFileLine(tt.content)
+			line := specFileLine(tt.content, nil)
 			if tt.empty {
 				require.Empty(t, line)
 				return
