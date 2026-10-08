@@ -369,6 +369,19 @@ rpm:
     # The verify script runs when verifying packages using `rpm -V`.
     verify: ./scripts/verify.sh
 
+  # Interpreters of the RPM scriptlets. RPM ignores the shebang of the scripts
+  # and runs them with /bin/sh by default. Each scriptlet requires its
+  # interpreter. Debian and Alpine packages run their scripts with their
+  # shebang instead.
+  interpreters:
+    preinstall: /bin/bash
+    postinstall: /bin/bash
+    preremove: /bin/bash
+    postremove: /bin/bash
+    pretrans: /bin/bash
+    posttrans: /bin/bash
+    verify: /bin/bash
+
   # RPM specific qualified Requires dependencies.
   requires:
     # Adds `Requires(post): systemd`.

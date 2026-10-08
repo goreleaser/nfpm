@@ -994,6 +994,10 @@
 						"$ref": "#/$defs/RPMScripts",
 						"title": "rpm-specific scripts"
 					},
+					"interpreters": {
+						"$ref": "#/$defs/RPMInterpreters",
+						"title": "rpm scriptlet interpreters"
+					},
 					"requires": {
 						"$ref": "#/$defs/RPMRequires",
 						"title": "rpm-specific requires"
@@ -1034,6 +1038,47 @@
 						},
 						"type": "array",
 						"title": "Prefixes for relocatable packages"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"RPMInterpreters": {
+				"properties": {
+					"preinstall": {
+						"type": "string",
+						"title": "preinstall interpreter",
+						"default": "/bin/sh"
+					},
+					"postinstall": {
+						"type": "string",
+						"title": "postinstall interpreter",
+						"default": "/bin/sh"
+					},
+					"preremove": {
+						"type": "string",
+						"title": "preremove interpreter",
+						"default": "/bin/sh"
+					},
+					"postremove": {
+						"type": "string",
+						"title": "postremove interpreter",
+						"default": "/bin/sh"
+					},
+					"pretrans": {
+						"type": "string",
+						"title": "pretrans interpreter",
+						"default": "/bin/sh"
+					},
+					"posttrans": {
+						"type": "string",
+						"title": "posttrans interpreter",
+						"default": "/bin/sh"
+					},
+					"verify": {
+						"type": "string",
+						"title": "verify interpreter",
+						"default": "/bin/sh"
 					}
 				},
 				"additionalProperties": false,

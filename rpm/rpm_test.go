@@ -759,6 +759,57 @@ echo "Verify" > /dev/null
 `, data, "Verify script does not match")
 }
 
+func TestRPMScriptletInterpreters(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.Interpreters = nfpm.RPMInterpreters{
+		PostInstall: "/bin/bash",
+		PreTrans:    "<lua>",
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(info, &buf))
+	pkg, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+
+	const (
+		tagPreTransProg  = 1153
+		tagPostTransProg = 1154
+	)
+	for tag, expected := range map[int]string{
+		rpmutils.PREINPROG:        "/bin/sh",
+		rpmutils.POSTINPROG:       "/bin/bash",
+		rpmutils.PREUNPROG:        "/bin/sh",
+		rpmutils.POSTUNPROG:       "/bin/sh",
+		tagPreTransProg:           "<lua>",
+		tagPostTransProg:          "/bin/sh",
+		rpmutils.VERIFYSCRIPTPROG: "/bin/sh",
+	} {
+		prog, err := pkg.Header.GetString(tag)
+		require.NoError(t, err)
+		require.Equal(t, expected, prog, "tag %d", tag)
+	}
+
+	names, err := pkg.Header.GetStrings(tagRequireName)
+	require.NoError(t, err)
+	versions, err := pkg.Header.GetStrings(tagRequireVersion)
+	require.NoError(t, err)
+	flagsRaw, err := pkg.Header.Get(tagRequireFlags)
+	require.NoError(t, err)
+	flags, ok := flagsRaw.([]uint32)
+	require.True(t, ok)
+
+	// RPMSENSE_INTERP combined with the sense of each scriptlet, as rpmbuild
+	// emits them. A non-absolute interpreter such as <lua> requires nothing.
+	const interp = 1 << 8
+	requireRPMRequire(t, names, versions, flags, "/bin/sh", "", interp|1<<9)    // pre
+	requireRPMRequire(t, names, versions, flags, "/bin/bash", "", interp|1<<10) // post
+	requireRPMRequire(t, names, versions, flags, "/bin/sh", "", interp|1<<11)   // preun
+	requireRPMRequire(t, names, versions, flags, "/bin/sh", "", interp|1<<12)   // postun
+	requireRPMRequire(t, names, versions, flags, "/bin/sh", "", interp|1<<5)    // posttrans
+	requireRPMRequire(t, names, versions, flags, "/bin/sh", "", interp|1<<13)   // verify
+	require.NotContains(t, names, "<lua>")
+}
+
 func TestRPMFileDoesNotExist(t *testing.T) {
 	info := exampleInfo()
 	info.Contents = []*files.Content{

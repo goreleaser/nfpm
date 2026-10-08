@@ -36,3 +36,5 @@ scripts:
 rpm:
   group: "Application/Misc"
   summary: "foo summary"
+  interpreters:
+    postinstall: /bin/bash

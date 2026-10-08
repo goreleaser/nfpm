@@ -90,13 +90,9 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	writeScriptSection(&b, "pre", scripts.preIn)
-	writeScriptSection(&b, "post", scripts.postIn)
-	writeScriptSection(&b, "preun", scripts.preUn)
-	writeScriptSection(&b, "postun", scripts.postUn)
-	writeScriptSection(&b, "pretrans", scripts.preTrans)
-	writeScriptSection(&b, "posttrans", scripts.postTrans)
-	writeScriptSection(&b, "verifyscript", scripts.verify)
+	for _, sc := range scripts.scriptlets(info.RPM.Interpreters) {
+		writeScriptSection(&b, sc.section, sc.interpreter, sc.body)
+	}
 
 	b.WriteString("\n%files\n")
 	writeFilesSection(&b, info)
@@ -110,12 +106,16 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 	return b.String(), nil
 }
 
-func writeScriptSection(b *strings.Builder, section, body string) {
+func writeScriptSection(b *strings.Builder, section, interpreter, body string) {
 	if body == "" {
 		return
 	}
 	body = escapeSpecText(body)
-	fmt.Fprintf(b, "\n%%%s\n%s", section, body)
+	fmt.Fprintf(b, "\n%%%s", section)
+	if interpreter != defaultInterpreter {
+		fmt.Fprintf(b, " -p %s", escapeSpecText(interpreter))
+	}
+	fmt.Fprintf(b, "\n%s", body)
 	if !strings.HasSuffix(body, "\n") {
 		b.WriteString("\n")
 	}
