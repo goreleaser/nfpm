@@ -129,10 +129,6 @@ func writeScriptSection(b *strings.Builder, section, body string) {
 
 func writeTriggerSections(b *strings.Builder, triggers []trigger) {
 	for _, trigger := range triggers {
-		if len(trigger.conditions) == 0 {
-			continue
-		}
-
 		conditions := make([]string, 0, len(trigger.conditions))
 		for _, condition := range trigger.conditions {
 			conditions = append(conditions, escapeSpecText(condition.String()))

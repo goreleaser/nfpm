@@ -6,6 +6,8 @@ import (
 	"compress/gzip"
 	"io"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -93,13 +95,21 @@ func TestApplyRelationsInvalidPostRequire(t *testing.T) {
 }
 
 func TestReadTriggersErrors(t *testing.T) {
+	const script = "../testdata/scripts/postinstall.sh"
+	blank := filepath.Join(t.TempDir(), "blank.sh")
+	require.NoError(t, os.WriteFile(blank, []byte(" \n"), 0o644))
+
 	for name, trigger := range map[string]struct {
 		trigger  nfpm.RPMTrigger
 		expected string
 	}{
-		"type":    {nfpm.RPMTrigger{Type: "invalid", Script: "script", Conditions: []string{"foo"}}, "unknown trigger type"},
-		"script":  {nfpm.RPMTrigger{Type: "in", Conditions: []string{"foo"}}, "script must be provided"},
-		"missing": {nfpm.RPMTrigger{Type: "in", Script: "../testdata/does-not-exist.sh", Conditions: []string{"foo"}}, "does-not-exist.sh"},
+		"type":          {nfpm.RPMTrigger{Type: "invalid", Script: script, Conditions: []string{"foo"}}, "unknown trigger type"},
+		"script":        {nfpm.RPMTrigger{Type: "in", Conditions: []string{"foo"}}, "script must be provided"},
+		"missing":       {nfpm.RPMTrigger{Type: "in", Script: "../testdata/does-not-exist.sh", Conditions: []string{"foo"}}, "does-not-exist.sh"},
+		"blank script":  {nfpm.RPMTrigger{Type: "in", Script: blank, Conditions: []string{"foo"}}, "is empty"},
+		"condition":     {nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo >>> 2"}}, "invalid condition"},
+		"rich":          {nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"(foo if bar)"}}, "rich dependency"},
+		"no conditions": {nfpm.RPMTrigger{Type: "in", Script: script}, "at least one condition"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{trigger.trigger}}}}
@@ -108,25 +118,6 @@ func TestReadTriggersErrors(t *testing.T) {
 			require.ErrorContains(t, err, trigger.expected)
 		})
 	}
-
-	t.Run("condition", func(t *testing.T) {
-		info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{{
-			Type: "in", Script: "../testdata/scripts/postinstall.sh", Conditions: []string{"foo >>> 2"},
-		}}}}}
-
-		_, err := readTriggers(info)
-		require.ErrorContains(t, err, "invalid condition")
-	})
-
-	t.Run("no conditions", func(t *testing.T) {
-		info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{{
-			Type: "in", Script: "../testdata/scripts/postinstall.sh",
-		}}}}}
-
-		triggers, err := readTriggers(info)
-		require.NoError(t, err)
-		require.Empty(t, triggers[0].conditions)
-	})
 }
 
 func TestRenderSpecChangelog(t *testing.T) {

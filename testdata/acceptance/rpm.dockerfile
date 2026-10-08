@@ -237,6 +237,11 @@ RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo
 
 # ---- triggers test ----
 FROM min AS triggers
+# Trigger interpreters are required with RPMSENSE_INTERP, as rpmbuild does.
+RUN rpm -q --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' foo | grep -E '^/bin/bash 256$'
+RUN rpm -q --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' foo | grep -E '^/bin/sh 256$'
+# No trigger may fire while its target package is absent.
+RUN test ! -e /tmp/rpm-trigger-proof
 RUN dnf install -y rpm-build
 RUN mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS} && \
     printf '%s\n' \
@@ -254,6 +259,7 @@ RUN mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS} && \
 RUN rpm -ivh /tmp/rpmbuild/RPMS/noarch/trigger-target-1.0-1.noarch.rpm
 RUN grep -qx prein /tmp/rpm-trigger-proof
 RUN grep -qx in /tmp/rpm-trigger-proof
+RUN ! grep -qxE 'un|postun' /tmp/rpm-trigger-proof
 RUN rpm -e trigger-target
 RUN grep -qx un /tmp/rpm-trigger-proof
 RUN grep -qx postun /tmp/rpm-trigger-proof

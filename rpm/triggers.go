@@ -3,6 +3,7 @@ package rpm
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/goreleaser/nfpm/v2"
 	"go.digitalxero.dev/rpm"
@@ -33,6 +34,12 @@ func readTriggers(info *nfpm.Info) ([]trigger, error) {
 			return nil, fmt.Errorf("rpm trigger %d: read trigger script: %w", i+1, err)
 		}
 
+		// The rpm library silently drops a trigger with an empty body, while the
+		// generated spec would still declare it.
+		if strings.TrimSpace(string(body)) == "" {
+			return nil, fmt.Errorf("rpm trigger %d: script %s is empty", i+1, t.Script)
+		}
+
 		conditions := make([]rpm.Relation, 0, len(t.Conditions))
 		for _, condition := range t.Conditions {
 			relation, err := rpm.ParseRelation(condition)
@@ -40,7 +47,16 @@ func readTriggers(info *nfpm.Info) ([]trigger, error) {
 				return nil, fmt.Errorf("rpm trigger %d: invalid condition %q: %w", i+1, condition, err)
 			}
 
+			// rpmbuild rejects rich dependencies in trigger conditions.
+			if strings.HasPrefix(relation.Name(), "(") {
+				return nil, fmt.Errorf("rpm trigger %d: rich dependency %q is not allowed in trigger conditions", i+1, condition)
+			}
+
 			conditions = append(conditions, relation)
+		}
+
+		if len(conditions) == 0 {
+			return nil, fmt.Errorf("rpm trigger %d: at least one condition must be provided", i+1)
 		}
 
 		interpreter := t.Interpreter
@@ -90,6 +106,12 @@ func applyTriggers(b rpm.PackageBuilder, info *nfpm.Info) error {
 		}
 
 		builder.Done()
+
+		// Require the interpreter so that it is installed before the trigger
+		// runs.
+		if strings.HasPrefix(configured.interpreter, "/") {
+			b.Requires().With(configured.interpreter, "", rpm.SenseInterp).Done()
+		}
 	}
 
 	return nil

@@ -223,6 +223,18 @@ func TestRPMTriggers(t *testing.T) {
 	indexes, ok := indexesRaw.([]uint32)
 	require.True(t, ok)
 	require.Equal(t, []uint32{0, 0, 1, 2, 3}, indexes)
+
+	requireNames, err := pkg.Header.GetStrings(tagRequireName)
+	require.NoError(t, err)
+	requireVersions, err := pkg.Header.GetStrings(tagRequireVersion)
+	require.NoError(t, err)
+	requireFlagsRaw, err := pkg.Header.Get(tagRequireFlags)
+	require.NoError(t, err)
+	requireFlags, ok := requireFlagsRaw.([]uint32)
+	require.True(t, ok)
+	const rpmSenseInterp = 1 << 8
+	requireRPMRequire(t, requireNames, requireVersions, requireFlags, "/bin/bash", "", rpmSenseInterp)
+	requireRPMRequire(t, requireNames, requireVersions, requireFlags, "/bin/sh", "", rpmSenseInterp)
 }
 
 func TestRPMPostRequires(t *testing.T) {

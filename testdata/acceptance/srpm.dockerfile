@@ -35,6 +35,12 @@ RUN rpm -qp --scripts /tmp/foo.rpm | grep -E 'postinstall scriptlet'
 # %-sequences in scriptlets must survive the rebuild literally; without the
 # spec escaping, ${host%%.*} would be silently mangled to ${host%.*}.
 RUN rpm -qp --scripts /tmp/foo.rpm | grep -F '${host%%.*}'
+# The %trigger sections of the generated spec must survive the rebuild.
+RUN rpm -qp --triggers /tmp/foo.rpm | grep -Fx 'triggerprein scriptlet (using /bin/sh) -- trigger-target >= 1.0'
+RUN rpm -qp --triggers /tmp/foo.rpm | grep -Fx 'triggerin scriptlet (using /bin/bash) -- trigger-target'
+RUN rpm -qp --triggers /tmp/foo.rpm | grep -Fx 'triggerun scriptlet (using /bin/sh) -- trigger-target'
+RUN rpm -qp --triggers /tmp/foo.rpm | grep -Fx 'triggerpostun scriptlet (using /bin/sh) -- trigger-target'
+RUN rpm -qp --triggers /tmp/foo.rpm | grep -Fx 'echo postun >> /tmp/rpm-trigger-proof'
 
 # Install it and verify the payload landed on disk.
 RUN rpm -ivh /tmp/foo.rpm
