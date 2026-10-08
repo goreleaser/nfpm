@@ -398,6 +398,7 @@ type RPM struct {
 	Signature   RPMSignature `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=rpm signature"`
 	Packager    string       `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that actually packaged the software"`
 	Prefixes    []string     `yaml:"prefixes,omitempty" json:"prefixes,omitempty" jsonschema:"title=Prefixes for relocatable packages"`
+	DocDirs     []string     `yaml:"doc_dirs,omitempty" json:"doc_dirs,omitempty" jsonschema:"title=directories whose files are flagged as documentation,example=/usr/share/doc"`
 }
 
 // RPMScripts represents scripts only available on RPM packages.
