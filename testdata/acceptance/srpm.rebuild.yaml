@@ -31,8 +31,13 @@ contents:
     type: symlink
   - dst: /var/lib/foo/state
     type: ghost
+  - src: ./testdata/acceptance/scripts/script_requires_bash.sh
+    dst: /usr/libexec/foo/bash-script
+    file_info:
+      mode: 0755
 scripts:
   postinstall: ./testdata/scripts/srpm-rebuild-postinstall.sh
 rpm:
   group: "Application/Misc"
   summary: "foo summary"
+  script_requires: true
