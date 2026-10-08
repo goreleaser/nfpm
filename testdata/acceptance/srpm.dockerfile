@@ -35,6 +35,8 @@ RUN rpm -qp --scripts /tmp/foo.rpm | grep -E 'postinstall scriptlet'
 # %-sequences in scriptlets must survive the rebuild literally; without the
 # spec escaping, ${host%%.*} would be silently mangled to ${host%.*}.
 RUN rpm -qp --scripts /tmp/foo.rpm | grep -F '${host%%.*}'
+# rpmbuild colors ELF files on rebuild, as nfpm does in the binary RPM.
+RUN rpm -qp --qf '[%{FILECOLORS} %{FILENAMES}\n]' /tmp/foo.rpm | grep -Fx '2 /usr/lib/foo/elf64'
 
 # Install it and verify the payload landed on disk.
 RUN rpm -ivh /tmp/foo.rpm

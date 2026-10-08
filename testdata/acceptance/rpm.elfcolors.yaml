@@ -1,0 +1,29 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar"
+release: "4"
+description: |
+  Foo bar
+    Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+- src: ./testdata/fake
+  dst: /usr/bin/fake
+  file_info:
+    mode: 0755
+- src: ./testdata/elf32
+  dst: /usr/lib/foo/elf32
+  file_info:
+    mode: 0755
+- src: ./testdata/elf64
+  dst: /usr/lib/foo/elf64
+  file_info:
+    mode: 0755
+- src: ./testdata/elf64
+  dst: /usr/lib/foo/elf64.so
+  file_info:
+    mode: 0644

@@ -293,6 +293,62 @@ func TestRPMLang(t *testing.T) {
 	require.Empty(t, byName["/usr/bin/fake"])
 }
 
+func TestRPMELFFileColors(t *testing.T) {
+	dir := t.TempDir()
+	elf := func(name string, size int, class, data, version byte) string {
+		header := make([]byte, size)
+		copy(header, []byte{0x7f, 'E', 'L', 'F', class, data, version})
+		path := filepath.Join(dir, name)
+		require.NoError(t, os.WriteFile(path, header, 0o644))
+		return path
+	}
+	mode := func(mode os.FileMode) *files.ContentFileInfo {
+		return &files.ContentFileInfo{Mode: mode}
+	}
+
+	expected := map[string]uint32{
+		"/usr/bin/elf32":      1,
+		"/usr/bin/elf64":      2,
+		"/usr/lib/foo/lib.so": 0, // not executable
+		"/usr/bin/truncated":  0,
+		"/usr/bin/byteorder":  0,
+		"/usr/bin/version":    0,
+		"/usr/bin/script":     0,
+		"/usr/bin/link":       0,
+	}
+	info := exampleInfo()
+	info.Contents = files.Contents{
+		{Source: elf("elf32", 52, 1, 1, 1), Destination: "/usr/bin/elf32", FileInfo: mode(0o755)},
+		{Source: elf("elf64", 64, 2, 1, 1), Destination: "/usr/bin/elf64", FileInfo: mode(0o755)},
+		{Source: elf("lib.so", 64, 2, 1, 1), Destination: "/usr/lib/foo/lib.so", FileInfo: mode(0o644)},
+		{Source: elf("truncated", 63, 2, 1, 1), Destination: "/usr/bin/truncated", FileInfo: mode(0o755)},
+		{Source: elf("byteorder", 64, 2, 0, 1), Destination: "/usr/bin/byteorder", FileInfo: mode(0o755)},
+		{Source: elf("version", 64, 2, 1, 0), Destination: "/usr/bin/version", FileInfo: mode(0o755)},
+		{Source: "../testdata/fake", Destination: "/usr/bin/script", FileInfo: mode(0o755)},
+		{Source: "/usr/bin/elf64", Destination: "/usr/bin/link", Type: files.TypeSymlink},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(nfpm.WithDefaults(info), &buf))
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+
+	rpmFiles, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+	colors, err := rpm.Header.GetUint32s(rpmutils.FILECOLORS)
+	require.NoError(t, err)
+	require.Len(t, colors, len(rpmFiles))
+
+	actual := map[string]uint32{}
+	for i, f := range rpmFiles {
+		if _, ok := expected[f.Name()]; ok {
+			actual[f.Name()] = colors[i]
+		}
+	}
+	require.Equal(t, expected, actual)
+}
+
 func TestRPMConfigTree(t *testing.T) {
 	info := exampleInfo()
 	info.Contents = files.Contents{
