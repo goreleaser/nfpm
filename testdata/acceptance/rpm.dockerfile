@@ -234,3 +234,11 @@ FROM min AS postrequires
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^bash 1024 ?$'
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^coreutils 1036 9\.0$'
+
+# ---- elfcolors test ----
+FROM min AS elfcolors
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '1 /usr/lib/foo/elf32'
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '2 /usr/lib/foo/elf64'
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '0 /usr/lib/foo/elf64.so'
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '0 /usr/bin/fake'
