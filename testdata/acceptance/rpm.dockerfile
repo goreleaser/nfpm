@@ -257,3 +257,17 @@ RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/bin/sh 16384'
 # Scripts that are not executable are not scanned.
 RUN ! rpm -qp --requires /tmp/foo.rpm | grep -F perl
+
+# ---- doc_dirs test ----
+FROM test_base AS docdirs
+RUN rpm -qp -d /tmp/foo.rpm | grep -Fx /usr/share/doc/foo/README
+RUN rpm -qp -d /tmp/foo.rpm | grep -Fx /usr/share/doc/foo/README.link
+RUN rpm -qp --qf '[%{FILEFLAGS} %{FILENAMES}\n]' /tmp/foo.rpm | grep -Fx '3 /usr/share/doc/foo/example.conf'
+RUN ! rpm -qp -d /tmp/foo.rpm | grep -Fx /usr/bin/fake
+# Documentation is skipped by --excludedocs, and installed otherwise.
+RUN rpm -ivh --excludedocs /tmp/foo.rpm
+RUN test -f /usr/bin/fake
+RUN test ! -e /usr/share/doc/foo/README
+RUN rpm -e foo
+RUN rpm -ivh /tmp/foo.rpm
+RUN test -f /usr/share/doc/foo/README
