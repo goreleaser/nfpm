@@ -45,3 +45,5 @@ rpm:
   group: "Application/Misc"
   summary: "foo summary"
   script_requires: true
+  interpreters:
+    postinstall: /bin/bash
