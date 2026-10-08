@@ -24,7 +24,11 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 	// post-processing/stripping, and no auto-generated dependencies.
 	b.WriteString("%global debug_package %{nil}\n")
 	b.WriteString("%global __os_install_post %{nil}\n")
-	b.WriteString("%define _build_id_links none\n\n")
+	b.WriteString("%define _build_id_links none\n")
+	// rpmbuild flags the files below its default doc directories as %doc; use
+	// rpm.doc_dirs instead, as the binary package does.
+	docDirs := strings.Join(cleanDocDirs(info.RPM.DocDirs), ":")
+	fmt.Fprintf(&b, "%%global __docdir_path %s\n\n", defaultTo(escapeSpecText(docDirs), "%{nil}"))
 
 	writeField := func(key, value string) {
 		if value != "" {

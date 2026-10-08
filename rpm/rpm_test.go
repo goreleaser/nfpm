@@ -324,6 +324,46 @@ func TestRPMConfigTree(t *testing.T) {
 	require.True(t, sawFile, "expected at least one regular file in the tree")
 }
 
+func TestRPMDocDirs(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.DocDirs = []string{"/usr/share/doc", "/opt/docs/"}
+	info.Contents = files.Contents{
+		{Source: "../testdata/fake", Destination: "/usr/share/doc/foo/README"},
+		{Source: "../testdata/fake", Destination: "/usr/share/doc/foo/sub/deep"},
+		{Source: "../testdata/whatever.conf", Destination: "/usr/share/doc/foo/foo.conf", Type: files.TypeConfig},
+		{Source: "README", Destination: "/usr/share/doc/foo/link", Type: files.TypeSymlink},
+		{Destination: "/usr/share/doc/foo/ghost", Type: files.TypeRPMGhost},
+		{Destination: "/usr/share/doc/foo", Type: files.TypeDir},
+		{Source: "../testdata/fake", Destination: "/usr/share/documentation/notes"},
+		{Source: "../testdata/fake", Destination: "/opt/docs/manual"},
+		{Source: "../testdata/fake", Destination: "/usr/bin/fake"},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(nfpm.WithDefaults(info), &buf))
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+	rpmFiles, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+
+	flags := map[string]int{}
+	for _, f := range rpmFiles {
+		flags[f.Name()] = f.Flags()
+	}
+	require.Equal(t, map[string]int{
+		"/usr/share/doc/foo/README":      rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo/sub/deep":    rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo/foo.conf":    rpmutils.RPMFILE_CONFIG | rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo/link":        rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo/ghost":       rpmutils.RPMFILE_GHOST | rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo":             0,
+		"/usr/share/documentation/notes": 0,
+		"/opt/docs/manual":               rpmutils.RPMFILE_DOC,
+		"/usr/bin/fake":                  0,
+	}, flags)
+}
+
 func TestRPMMandatoryFieldsOnly(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)

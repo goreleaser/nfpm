@@ -28,6 +28,9 @@ RUN cp "$(find /root/rpmbuild/RPMS -name 'foo-*.rpm' | head -1)" /tmp/foo.rpm
 RUN test "$(rpm -qp --qf '%{EPOCH}:%{NAME}-%{VERSION}-%{RELEASE}' /tmp/foo.rpm)" = "1:foo-1.2.3-4"
 RUN rpm -qp -c /tmp/foo.rpm | grep -E '^/etc/foo/whatever\.conf$'
 RUN rpm -qp -d /tmp/foo.rpm | grep -E '^/usr/share/doc/foo/README$'
+# rpm.doc_dirs replaces the default %__docdir_path of rpmbuild.
+RUN rpm -qp -d /tmp/foo.rpm | grep -Fx /usr/share/foo-docs/manual
+RUN ! rpm -qp -d /tmp/foo.rpm | grep -Fx /usr/share/doc/foo/CHANGES
 RUN rpm -qp --qf '[%{FILENAMES} %{FILEFLAGS}\n]' /tmp/foo.rpm | grep -E '^/var/lib/foo/state 64$'
 RUN test "$(rpm -qp --provides /tmp/foo.rpm | grep '^foo-tool$')" = "foo-tool"
 RUN rpm -qp --requires /tmp/foo.rpm | grep -E '^bash$'
