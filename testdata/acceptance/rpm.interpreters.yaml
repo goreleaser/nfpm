@@ -1,0 +1,16 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar"
+description: "Foo bar"
+license: "MIT"
+contents:
+- src: ./testdata/fake
+  dst: /usr/bin/fake
+scripts:
+  preinstall: ./testdata/acceptance/scripts/rpm_interpreter_preinstall.sh
+  postinstall: ./testdata/acceptance/scripts/rpm_interpreter_postinstall.sh
+rpm:
+  interpreters:
+    postinstall: /bin/bash

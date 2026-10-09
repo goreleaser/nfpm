@@ -2,6 +2,7 @@ package rpm
 
 import (
 	"os"
+	"strings"
 
 	"github.com/goreleaser/nfpm/v2"
 	"go.digitalxero.dev/rpm"
@@ -60,6 +61,30 @@ func readScripts(info *nfpm.Info) (scriptBodies, error) {
 	return s, nil
 }
 
+const defaultInterpreter = "/bin/sh"
+
+type scriptlet struct {
+	section     string
+	body        string
+	interpreter string
+	sense       rpm.Sense
+	builder     func(rpm.PackageBuilder) rpm.ScriptletBuilder
+}
+
+// scriptlets pairs every script body with its interpreter, in the order of the
+// generated spec.
+func (s scriptBodies) scriptlets(in nfpm.RPMInterpreters) []scriptlet {
+	return []scriptlet{
+		{"pre", s.preIn, defaultTo(in.PreInstall, defaultInterpreter), rpm.SenseScriptPre, rpm.PackageBuilder.Prein},
+		{"post", s.postIn, defaultTo(in.PostInstall, defaultInterpreter), rpm.SenseScriptPost, rpm.PackageBuilder.Postin},
+		{"preun", s.preUn, defaultTo(in.PreRemove, defaultInterpreter), rpm.SenseScriptPreUn, rpm.PackageBuilder.Preun},
+		{"postun", s.postUn, defaultTo(in.PostRemove, defaultInterpreter), rpm.SenseScriptPostUn, rpm.PackageBuilder.Postun},
+		{"pretrans", s.preTrans, defaultTo(in.PreTrans, defaultInterpreter), rpm.SensePreTrans, rpm.PackageBuilder.Pretrans},
+		{"posttrans", s.postTrans, defaultTo(in.PostTrans, defaultInterpreter), rpm.SensePostTrans, rpm.PackageBuilder.Posttrans},
+		{"verifyscript", s.verify, defaultTo(in.Verify, defaultInterpreter), rpm.SenseScriptVerify, rpm.PackageBuilder.VerifyScript},
+	}
+}
+
 // applyScripts attaches the configured lifecycle scripts to the package builder.
 func applyScripts(b rpm.PackageBuilder, info *nfpm.Info) error {
 	s, err := readScripts(info)
@@ -67,26 +92,17 @@ func applyScripts(b rpm.PackageBuilder, info *nfpm.Info) error {
 		return err
 	}
 
-	if s.preTrans != "" {
-		b.Pretrans().WithScript(s.preTrans).Done()
-	}
-	if s.preIn != "" {
-		b.Prein().WithScript(s.preIn).Done()
-	}
-	if s.preUn != "" {
-		b.Preun().WithScript(s.preUn).Done()
-	}
-	if s.postIn != "" {
-		b.Postin().WithScript(s.postIn).Done()
-	}
-	if s.postUn != "" {
-		b.Postun().WithScript(s.postUn).Done()
-	}
-	if s.postTrans != "" {
-		b.Posttrans().WithScript(s.postTrans).Done()
-	}
-	if s.verify != "" {
-		b.VerifyScript().WithScript(s.verify).Done()
+	for _, sc := range s.scriptlets(info.RPM.Interpreters) {
+		if sc.body == "" {
+			continue
+		}
+		sc.builder(b).WithScript(sc.body).WithInterpreter(sc.interpreter).Done()
+
+		// Require the interpreter so that it is installed before the scriptlet
+		// runs.
+		if strings.HasPrefix(sc.interpreter, "/") {
+			b.Requires().With(sc.interpreter, "", sc.sense|rpm.SenseInterp).Done()
+		}
 	}
 	return nil
 }

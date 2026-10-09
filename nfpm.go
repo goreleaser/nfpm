@@ -388,16 +388,17 @@ type ArchLinuxScripts struct {
 
 // RPM is custom configs that are only available on RPM packages.
 type RPM struct {
-	Arch        string       `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in rpm nomenclature"`
-	BuildHost   string       `yaml:"buildhost,omitempty" json:"buildhost,omitempty" jsonschema:"title=host name of the build environment, default=os.Hostname()"`
-	Scripts     RPMScripts   `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=rpm-specific scripts"`
-	Requires    RPMRequires  `yaml:"requires,omitempty" json:"requires,omitempty" jsonschema:"title=rpm-specific requires"`
-	Group       string       `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=package group,example=Unspecified"`
-	Summary     string       `yaml:"summary,omitempty" json:"summary,omitempty" jsonschema:"title=package summary"`
-	Compression string       `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=lzma,enum=xz,enum=zstd,default=gzip:-1"`
-	Signature   RPMSignature `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=rpm signature"`
-	Packager    string       `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that actually packaged the software"`
-	Prefixes    []string     `yaml:"prefixes,omitempty" json:"prefixes,omitempty" jsonschema:"title=Prefixes for relocatable packages"`
+	Arch         string          `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in rpm nomenclature"`
+	BuildHost    string          `yaml:"buildhost,omitempty" json:"buildhost,omitempty" jsonschema:"title=host name of the build environment, default=os.Hostname()"`
+	Scripts      RPMScripts      `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=rpm-specific scripts"`
+	Interpreters RPMInterpreters `yaml:"interpreters,omitempty" json:"interpreters,omitempty" jsonschema:"title=rpm scriptlet interpreters"`
+	Requires     RPMRequires     `yaml:"requires,omitempty" json:"requires,omitempty" jsonschema:"title=rpm-specific requires"`
+	Group        string          `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=package group,example=Unspecified"`
+	Summary      string          `yaml:"summary,omitempty" json:"summary,omitempty" jsonschema:"title=package summary"`
+	Compression  string          `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=lzma,enum=xz,enum=zstd,default=gzip:-1"`
+	Signature    RPMSignature    `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=rpm signature"`
+	Packager     string          `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that actually packaged the software"`
+	Prefixes     []string        `yaml:"prefixes,omitempty" json:"prefixes,omitempty" jsonschema:"title=Prefixes for relocatable packages"`
 }
 
 // RPMScripts represents scripts only available on RPM packages.
@@ -405,6 +406,17 @@ type RPMScripts struct {
 	PreTrans  string `yaml:"pretrans,omitempty" json:"pretrans,omitempty" jsonschema:"title=pretrans script"`
 	PostTrans string `yaml:"posttrans,omitempty" json:"posttrans,omitempty" jsonschema:"title=posttrans script"`
 	Verify    string `yaml:"verify,omitempty" json:"verify,omitempty" jsonschema:"title=verify script"`
+}
+
+// RPMInterpreters represents the interpreters of the RPM scriptlets.
+type RPMInterpreters struct {
+	PreInstall  string `yaml:"preinstall,omitempty" json:"preinstall,omitempty" jsonschema:"title=preinstall interpreter,default=/bin/sh"`
+	PostInstall string `yaml:"postinstall,omitempty" json:"postinstall,omitempty" jsonschema:"title=postinstall interpreter,default=/bin/sh"`
+	PreRemove   string `yaml:"preremove,omitempty" json:"preremove,omitempty" jsonschema:"title=preremove interpreter,default=/bin/sh"`
+	PostRemove  string `yaml:"postremove,omitempty" json:"postremove,omitempty" jsonschema:"title=postremove interpreter,default=/bin/sh"`
+	PreTrans    string `yaml:"pretrans,omitempty" json:"pretrans,omitempty" jsonschema:"title=pretrans interpreter,default=/bin/sh"`
+	PostTrans   string `yaml:"posttrans,omitempty" json:"posttrans,omitempty" jsonschema:"title=posttrans interpreter,default=/bin/sh"`
+	Verify      string `yaml:"verify,omitempty" json:"verify,omitempty" jsonschema:"title=verify interpreter,default=/bin/sh"`
 }
 
 // RPMRequires represents qualified RPM Requires dependencies.

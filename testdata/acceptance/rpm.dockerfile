@@ -234,3 +234,10 @@ FROM min AS postrequires
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^bash 1024 ?$'
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^coreutils 1036 9\.0$'
+
+# ---- interpreters test ----
+FROM min AS interpreters
+RUN test "$(cat /tmp/preinstall-interpreter)" = sh
+RUN test "$(cat /tmp/postinstall-interpreter)" = bash
+RUN rpm -q --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' foo | grep -Ex '/bin/sh 768'
+RUN rpm -q --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' foo | grep -Ex '/bin/bash 1280'

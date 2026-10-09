@@ -338,19 +338,19 @@ func TestNormalizeFileMode(t *testing.T) {
 func TestWriteScriptSection(t *testing.T) {
 	t.Run("empty body is omitted", func(t *testing.T) {
 		var b strings.Builder
-		writeScriptSection(&b, "post", "")
+		writeScriptSection(&b, "post", defaultInterpreter, "")
 		require.Empty(t, b.String())
 	})
 
 	t.Run("trailing newline preserved", func(t *testing.T) {
 		var b strings.Builder
-		writeScriptSection(&b, "post", "echo hi\n")
+		writeScriptSection(&b, "post", defaultInterpreter, "echo hi\n")
 		require.Equal(t, "\n%post\necho hi\n", b.String())
 	})
 
 	t.Run("missing trailing newline is added", func(t *testing.T) {
 		var b strings.Builder
-		writeScriptSection(&b, "post", "echo hi")
+		writeScriptSection(&b, "post", defaultInterpreter, "echo hi")
 		require.Equal(t, "\n%post\necho hi\n", b.String())
 	})
 }
