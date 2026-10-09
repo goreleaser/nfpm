@@ -98,6 +98,12 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 	writeScriptSection(&b, "posttrans", scripts.postTrans)
 	writeScriptSection(&b, "verifyscript", scripts.verify)
 
+	triggers, err := readTriggers(info)
+	if err != nil {
+		return "", err
+	}
+	writeTriggerSections(&b, triggers)
+
 	b.WriteString("\n%files\n")
 	writeFilesSection(&b, info)
 
@@ -118,6 +124,29 @@ func writeScriptSection(b *strings.Builder, section, body string) {
 	fmt.Fprintf(b, "\n%%%s\n%s", section, body)
 	if !strings.HasSuffix(body, "\n") {
 		b.WriteString("\n")
+	}
+}
+
+func writeTriggerSections(b *strings.Builder, triggers []trigger) {
+	for _, trigger := range triggers {
+		if len(trigger.conditions) == 0 {
+			continue
+		}
+
+		conditions := make([]string, 0, len(trigger.conditions))
+		for _, condition := range trigger.conditions {
+			conditions = append(conditions, escapeSpecText(condition.String()))
+		}
+
+		fmt.Fprintf(b, "\n%%trigger%s", trigger.directive)
+		if trigger.interpreter != "/bin/sh" {
+			fmt.Fprintf(b, " -p %s", escapeSpecText(trigger.interpreter))
+		}
+
+		fmt.Fprintf(b, " -- %s\n%s", strings.Join(conditions, ", "), escapeSpecText(trigger.script))
+		if !strings.HasSuffix(trigger.script, "\n") {
+			b.WriteString("\n")
+		}
 	}
 }
 
