@@ -1,0 +1,16 @@
+name: TestAppRollback
+arch: amd64
+version: 1.0.0
+license: MIT
+maintainer: "Test Company"
+description: "An MSI whose postinstall fails, to prove the install rolls back"
+contents:
+  - src: ./dist/testapp.exe
+    dst: "/Program Files/NfpmMsiRollback/testapp.exe"
+scripts:
+  preinstall: ./testdata/acceptance/testapp/preinstall.ps1
+  postinstall: ./testdata/acceptance/testapp/postinstall-fail.ps1
+msi:
+  product_name: NfpmMsiRollback
+  manufacturer: "Test Company"
+  upgrade_code: "{ABCDEF02-2345-6789-ABCD-EF0123456789}"
