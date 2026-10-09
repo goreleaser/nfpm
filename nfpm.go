@@ -286,6 +286,7 @@ func (c *Config) expandEnvVars() {
 	// MSIX specific
 	c.MSIX.Signature.PFXFile = os.Expand(c.MSIX.Signature.PFXFile, c.envMappingFunc)
 	c.MSIX.Publisher = os.Expand(c.MSIX.Publisher, c.envMappingFunc)
+	c.MSIX.Signature.KeyPassphrase = generalPassphrase
 	msixPassphrase := os.Expand("$NFPM_MSIX_PASSPHRASE", c.envMappingFunc)
 	if msixPassphrase != "" {
 		c.MSIX.Signature.KeyPassphrase = msixPassphrase
@@ -510,7 +511,7 @@ type IPKAlternative struct {
 // MSIX contains configs that are only available on MSIX packages.
 type MSIX struct {
 	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msix nomenclature"`
-	Publisher    string            `yaml:"publisher" json:"publisher" jsonschema:"title=publisher identity,example=CN=MyCompany\\, O=MyCompany\\, C=US"`
+	Publisher    string            `yaml:"publisher,omitempty" json:"publisher,omitempty" jsonschema:"title=publisher identity,description=defaults to the signing certificate subject when signing or CN=<vendor or maintainer>,example=CN=MyCompany\\, O=MyCompany\\, C=US"`
 	Identity     MSIXIdentity      `yaml:"identity,omitempty" json:"identity,omitempty" jsonschema:"title=package identity"`
 	Properties   MSIXProperties    `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=package properties"`
 	Applications []MSIXApplication `yaml:"applications" json:"applications" jsonschema:"title=applications in the package"`
@@ -570,7 +571,7 @@ type MSIXCapabilities struct {
 // MSIXSignature contains signing configuration for MSIX packages.
 type MSIXSignature struct {
 	PFXFile       string `yaml:"pfx_file,omitempty" json:"pfx_file,omitempty" jsonschema:"title=PFX certificate file"`
-	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSIX_PASSPHRASE env var
+	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSIX_PASSPHRASE, falling back to NFPM_PASSPHRASE
 }
 
 // Scripts contains information about maintainer scripts for packages.

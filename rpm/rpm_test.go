@@ -19,6 +19,7 @@ import (
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/sassoftware/go-rpmutils/cpio"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -575,6 +576,9 @@ func TestRPMCompression(t *testing.T) {
 }
 
 func TestRPMDefaultCompression(t *testing.T) {
+	// Keep build and generated file timestamps identical across packages.
+	t.Setenv("SOURCE_DATE_EPOCH", "1700000000")
+
 	// When compression is unset, it should default to gzip and produce the
 	// same output as explicitly setting compression to "gzip".
 	buildRPM := func(compression string) []byte {
@@ -593,7 +597,7 @@ func TestRPMDefaultCompression(t *testing.T) {
 
 	defaultRPM := buildRPM("")
 	explicitGzipRPM := buildRPM("gzip")
-	require.Len(t, explicitGzipRPM, len(defaultRPM), "default compression should produce identical output to explicit 'gzip'")
+	assert.Equal(t, defaultRPM, explicitGzipRPM, "default compression should produce identical output to explicit 'gzip'")
 
 	// Also verify the default uses gzip as the compressor type in the RPM header.
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
