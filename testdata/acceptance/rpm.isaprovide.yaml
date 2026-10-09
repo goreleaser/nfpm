@@ -1,0 +1,16 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+epoch: "1"
+maintainer: "Foo Bar"
+release: "4"
+description: |
+  Foo bar
+    Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+- src: ./testdata/fake
+  dst: /usr/bin/fake
