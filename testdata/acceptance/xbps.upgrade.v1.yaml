@@ -1,0 +1,20 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+release: "1"
+maintainer: "Foo Bar"
+description: |
+  Foo bar
+  Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/acceptance/xbps.current.v1.txt
+    dst: /usr/share/foo/current.txt
+  - src: ./testdata/acceptance/xbps.preserve.v1.txt
+    dst: /usr/share/foo/preserve.txt
+xbps:
+  short_desc: "XBPS upgrade package"
+  preserve: true
