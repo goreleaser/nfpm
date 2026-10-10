@@ -36,6 +36,12 @@ func exampleInfo() *nfpm.Info {
 			Depends: []string{
 				"bash",
 			},
+			Recommends: []string{
+				"git",
+			},
+			Suggests: []string{
+				"fish",
+			},
 			Replaces: []string{
 				"svn",
 			},
@@ -161,6 +167,7 @@ func TestArchPkginfo(t *testing.T) {
 	require.Equal(t, "zsh", fields["conflict"])
 	require.Equal(t, "bzr", fields["provides"])
 	require.Equal(t, "bash", fields["depend"])
+	require.ElementsMatch(t, []string{"git", "fish"}, extractPkginfoValues(pkginfoData, "optdepend"))
 	require.Equal(t, "etc/fake/fake.conf", fields["backup"])
 }
 
@@ -250,6 +257,16 @@ func extractPkginfoFields(data []byte) map[string]string {
 		out[splitPair[0]] = splitPair[1]
 	}
 
+	return out
+}
+
+func extractPkginfoValues(data []byte, key string) []string {
+	var out []string
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		if k, v, ok := strings.Cut(line, " = "); ok && k == key {
+			out = append(out, v)
+		}
+	}
 	return out
 }
 
