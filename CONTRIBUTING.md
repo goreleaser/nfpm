@@ -92,6 +92,9 @@ See #284
 
 Push your branch to your `nfpm` fork and open a pull request against the main branch.
 
+Pull requests merge through the merge queue using squash merges.
+The required `build` and `lint` checks must pass on both the pull request and its merge group.
+
 ## Financial contributions
 
 We also welcome financial contributions in full transparency on our [open collective](https://opencollective.com/goreleaser).

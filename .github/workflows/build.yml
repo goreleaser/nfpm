@@ -19,14 +19,7 @@ on:
       - "testdata/**"
       - ".goreleaser.yml"
   pull_request:
-    paths:
-      - "go.*"
-      - "**/*.go"
-      - "Taskfile.yml"
-      - "Dockerfile"
-      - ".github/workflows/*.yml"
-      - "testdata/**"
-      - ".goreleaser.yml"
+  merge_group:
 
 permissions:
   contents: read
@@ -165,3 +158,21 @@ jobs:
             Write-Error "Expected 'nfpm-msix-test-ok' but got '$output'"
             exit 1
           }
+  build:
+    if: always()
+    needs:
+      - license-check
+      - semgrep
+      - unit-tests
+      - acceptance-tests
+      - msix-acceptance-tests
+      - windows-build-pkgs
+      - install-windows-pkgs
+      - msix-windows-install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check build results
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          printf '%s\n' "$RESULTS" | jq -e 'map_values(.result) | ., all(.[]; . == "success")'
