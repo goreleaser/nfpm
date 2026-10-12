@@ -92,6 +92,11 @@ See #284
 
 Push your branch to your `nfpm` fork and open a pull request against the main branch.
 
+Pull requests merge through the merge queue using squash merges.
+The required `build` and `lint` checks must pass on both the pull request and its merge group.
+On pull requests, `build` waits for unit tests, license checks, and Semgrep.
+In the merge queue, `build` waits for acceptance tests, including Windows package and installation checks.
+
 ## Financial contributions
 
 We also welcome financial contributions in full transparency on our [open collective](https://opencollective.com/goreleaser).
