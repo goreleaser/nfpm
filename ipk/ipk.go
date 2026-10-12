@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"strings"
 	"text/template"
 	"time"
@@ -185,6 +186,29 @@ func createIPK(info *nfpm.Info, ipk *tar.Writer) error {
 	return nil
 }
 
+// normalizeIPKFileMode converts a Go fs.FileMode to the POSIX permission bits
+// that belong in a tar header.
+//
+// The tree walk in files.PrepareForPackager stores the raw fs.FileMode, so a
+// walked directory also carries fs.ModeDir (bit 31). Values that large do not
+// fit tar's 7-digit octal mode field, so archive/tar silently switches that
+// header to GNU format with base-256 (binary) numeric encoding, which ipk
+// consumers cannot read. Special bits are preserved from both the Go flags and
+// the traditional octal positions.
+func normalizeIPKFileMode(mode fs.FileMode) int64 {
+	result := int64(mode.Perm())
+	if mode&fs.ModeSetuid != 0 || int64(mode)&0o4000 != 0 {
+		result |= 0o4000
+	}
+	if mode&fs.ModeSetgid != 0 || int64(mode)&0o2000 != 0 {
+		result |= 0o2000
+	}
+	if mode&fs.ModeSticky != 0 || int64(mode)&0o1000 != 0 {
+		result |= 0o1000
+	}
+	return result
+}
+
 // populateDataTar populates the data tarball with the files specified in the info.
 func populateDataTar(info *nfpm.Info, tw *tar.Writer) (instSize int64, err error) {
 	// create files and implicit directories
@@ -199,7 +223,7 @@ func populateDataTar(info *nfpm.Info, tw *tar.Writer) (instSize int64, err error
 					Typeflag: tar.TypeDir,
 					Format:   tar.FormatGNU,
 					ModTime:  modtime.Get(info.MTime),
-					Mode:     int64(file.FileInfo.Mode),
+					Mode:     normalizeIPKFileMode(file.FileInfo.Mode),
 					Uname:    file.FileInfo.Owner,
 					Gname:    file.FileInfo.Group,
 				},

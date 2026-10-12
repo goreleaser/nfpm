@@ -63,7 +63,10 @@ func writeFile(out *tar.Writer, file *files.Content) (int64, error) {
 
 	// tar.FileInfoHeader only uses file.Mode().Perm() which masks the mode with
 	// 0o777 which we don't want because we want to be able to set the suid bit.
-	header.Mode = int64(file.Mode())
+	// normalizeIPKFileMode keeps the permission and special bits while dropping
+	// the fs.FileMode type flags, which would otherwise overflow the tar header's
+	// octal mode field and switch it to base-256 encoding.
+	header.Mode = normalizeIPKFileMode(file.Mode())
 	header.Format = tar.FormatGNU
 	header.Name = files.AsExplicitRelativePath(file.Destination)
 	header.Size = size
