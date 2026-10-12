@@ -6,6 +6,8 @@ import (
 	"compress/gzip"
 	"io"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -447,19 +449,19 @@ func TestSpecFileLine(t *testing.T) {
 }
 
 func TestAddContentsFileTypes(t *testing.T) {
-	// addContents only configures the builder; sources are not read until Build,
-	// so every RPM-specific content type can be exercised without real files.
+	source := filepath.Join(t.TempDir(), "src")
+	require.NoError(t, os.WriteFile(source, []byte("content"), 0o644))
 	info := &nfpm.Info{
 		Overridables: nfpm.Overridables{
 			Contents: []*files.Content{
-				{Source: "src", Destination: "/generic", FileInfo: &files.ContentFileInfo{Mode: 0o644}},
-				{Source: "src", Destination: "/config", Type: files.TypeConfig, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
-				{Source: "src", Destination: "/confignoreplace", Type: files.TypeConfigNoReplace, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
-				{Source: "src", Destination: "/configmissingok", Type: files.TypeConfigMissingOK, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
-				{Source: "src", Destination: "/doc", Type: files.TypeRPMDoc, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
-				{Source: "src", Destination: "/license", Type: files.TypeRPMLicense, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
-				{Source: "src", Destination: "/licence", Type: files.TypeRPMLicence, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
-				{Source: "src", Destination: "/readme", Type: files.TypeRPMReadme, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
+				{Source: source, Destination: "/generic", FileInfo: &files.ContentFileInfo{Mode: 0o644}},
+				{Source: source, Destination: "/config", Type: files.TypeConfig, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
+				{Source: source, Destination: "/confignoreplace", Type: files.TypeConfigNoReplace, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
+				{Source: source, Destination: "/configmissingok", Type: files.TypeConfigMissingOK, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
+				{Source: source, Destination: "/doc", Type: files.TypeRPMDoc, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
+				{Source: source, Destination: "/license", Type: files.TypeRPMLicense, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
+				{Source: source, Destination: "/licence", Type: files.TypeRPMLicence, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
+				{Source: source, Destination: "/readme", Type: files.TypeRPMReadme, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
 				{Destination: "/ghost", Type: files.TypeRPMGhost, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
 				{Source: "/target", Destination: "/symlink", Type: files.TypeSymlink, FileInfo: &files.ContentFileInfo{}},
 				{Destination: "/dir", Type: files.TypeDir, FileInfo: &files.ContentFileInfo{Mode: 0o755}},
@@ -469,8 +471,7 @@ func TestAddContentsFileTypes(t *testing.T) {
 		},
 	}
 
-	// Should not panic and should walk every switch arm.
-	require.NotPanics(t, func() { addContents(rpm.NewPackage(), info) })
+	require.NoError(t, addContents(rpm.NewPackage(), info))
 }
 
 func TestGenerateSpecPostRequiresAndForeignContents(t *testing.T) {

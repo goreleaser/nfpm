@@ -3,6 +3,7 @@ package rpm
 import (
 	"debug/elf"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -26,7 +27,7 @@ const (
 // addContents maps the prepared nfpm contents onto the binary package builder.
 // Regular files are streamed from disk so large payloads are never held in
 // memory; symlinks and directories are described in place.
-func addContents(b rpm.PackageBuilder, info *nfpm.Info) {
+func addContents(b rpm.PackageBuilder, info *nfpm.Info) error {
 	mtime := modtime.Get(info.MTime)
 	for _, content := range info.Contents {
 		if content.Packager != "" && content.Packager != contentPackager {
@@ -34,21 +35,22 @@ func addContents(b rpm.PackageBuilder, info *nfpm.Info) {
 		}
 
 		dest := files.ToNixPath(content.Destination)
+		var err error
 		switch content.Type {
 		case files.TypeConfig:
-			addRegularFile(b, content, dest, rpm.ConfigFile)
+			err = addRegularFile(b, content, dest, rpm.ConfigFile)
 		case files.TypeConfigNoReplace:
-			addRegularFile(b, content, dest, rpm.ConfigFile|rpm.NoReplaceFile)
+			err = addRegularFile(b, content, dest, rpm.ConfigFile|rpm.NoReplaceFile)
 		case files.TypeConfigMissingOK:
-			addRegularFile(b, content, dest, rpm.ConfigFile|rpm.MissingOkFile)
+			err = addRegularFile(b, content, dest, rpm.ConfigFile|rpm.MissingOkFile)
 		case files.TypeRPMGhost:
 			addGhostFile(b, content, dest)
 		case files.TypeRPMDoc:
-			addRegularFile(b, content, dest, rpm.DocFile)
+			err = addRegularFile(b, content, dest, rpm.DocFile)
 		case files.TypeRPMLicence, files.TypeRPMLicense:
-			addRegularFile(b, content, dest, rpm.LicenceFile)
+			err = addRegularFile(b, content, dest, rpm.LicenceFile)
 		case files.TypeRPMReadme:
-			addRegularFile(b, content, dest, rpm.ReadmeFile)
+			err = addRegularFile(b, content, dest, rpm.ReadmeFile)
 		case files.TypeSymlink:
 			addSymlink(b, content, dest)
 		case files.TypeDir:
@@ -57,13 +59,28 @@ func addContents(b rpm.PackageBuilder, info *nfpm.Info) {
 			// implicit directories are not added to RPMs
 			continue
 		default:
-			addRegularFile(b, content, dest, rpm.GenericFile)
+			err = addRegularFile(b, content, dest, rpm.GenericFile)
+		}
+		if err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
-func addRegularFile(b rpm.PackageBuilder, content *files.Content, dest string, ftype rpm.FileType) {
-	fb := b.WithFileFromPath(dest, content.Source).
+func addRegularFile(b rpm.PackageBuilder, content *files.Content, dest string, ftype rpm.FileType) error {
+	fi, err := os.Stat(content.Source)
+	if err != nil {
+		return fmt.Errorf("cannot read %s: %w", content.Source, err)
+	}
+	fb := b.File(dest).
+		WithOpener(func() (io.ReadCloser, error) {
+			f, err := os.Open(content.Source)
+			if err != nil {
+				return nil, fmt.Errorf("cannot read %s: %w", content.Source, err)
+			}
+			return f, nil
+		}, fi.Size()).
 		WithMode(normalizeFileMode(content.FileInfo.Mode)).
 		WithMTime(uint32(content.FileInfo.MTime.Unix())).
 		WithOwner(content.FileInfo.Owner).
@@ -78,6 +95,7 @@ func addRegularFile(b rpm.PackageBuilder, content *files.Content, dest string, f
 		fb.WithColor(color)
 	}
 	fb.Add()
+	return nil
 }
 
 // elfColor returns the color of an executable ELF file, which rpm uses to let

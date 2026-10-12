@@ -25,7 +25,9 @@ func (r *RPM) packageRPM(info *nfpm.Info, w io.Writer) error {
 	if err := applyChangelog(b, info); err != nil {
 		return err
 	}
-	addContents(b, info)
+	if err := addContents(b, info); err != nil {
+		return err
+	}
 	if fn := signFunc(info); fn != nil {
 		b.WithPGPSignFunc(fn)
 	}

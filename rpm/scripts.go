@@ -1,6 +1,7 @@
 package rpm
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/goreleaser/nfpm/v2"
@@ -21,13 +22,13 @@ type scriptBodies struct {
 // readScripts reads every configured script file into memory once, so both the
 // binary builder and the source-package spec generator can consume them.
 func readScripts(info *nfpm.Info) (scriptBodies, error) {
-	read := func(path string) (string, error) {
+	read := func(kind, path string) (string, error) {
 		if path == "" {
 			return "", nil
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("cannot read %s script %s: %w", kind, path, err)
 		}
 		return string(data), nil
 	}
@@ -36,25 +37,25 @@ func readScripts(info *nfpm.Info) (scriptBodies, error) {
 		s   scriptBodies
 		err error
 	)
-	if s.preTrans, err = read(info.RPM.Scripts.PreTrans); err != nil {
+	if s.preTrans, err = read("pretrans", info.RPM.Scripts.PreTrans); err != nil {
 		return s, err
 	}
-	if s.preIn, err = read(info.Scripts.PreInstall); err != nil {
+	if s.preIn, err = read("preinstall", info.Scripts.PreInstall); err != nil {
 		return s, err
 	}
-	if s.preUn, err = read(info.Scripts.PreRemove); err != nil {
+	if s.preUn, err = read("preremove", info.Scripts.PreRemove); err != nil {
 		return s, err
 	}
-	if s.postIn, err = read(info.Scripts.PostInstall); err != nil {
+	if s.postIn, err = read("postinstall", info.Scripts.PostInstall); err != nil {
 		return s, err
 	}
-	if s.postUn, err = read(info.Scripts.PostRemove); err != nil {
+	if s.postUn, err = read("postremove", info.Scripts.PostRemove); err != nil {
 		return s, err
 	}
-	if s.postTrans, err = read(info.RPM.Scripts.PostTrans); err != nil {
+	if s.postTrans, err = read("posttrans", info.RPM.Scripts.PostTrans); err != nil {
 		return s, err
 	}
-	if s.verify, err = read(info.RPM.Scripts.Verify); err != nil {
+	if s.verify, err = read("verify", info.RPM.Scripts.Verify); err != nil {
 		return s, err
 	}
 	return s, nil

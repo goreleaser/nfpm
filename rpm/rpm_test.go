@@ -22,6 +22,7 @@ import (
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/require"
+	"go.digitalxero.dev/rpm"
 )
 
 const (
@@ -1570,4 +1571,67 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 	}
 
 	return nil, os.ErrNotExist
+}
+
+func TestWriterPathErrorsAreWrapped(t *testing.T) {
+	tests := []struct {
+		name    string
+		fn      func() error
+		want    error
+		wantMsg string
+	}{
+		{
+			name: "packageRPM read error",
+			fn: func() error {
+				info := exampleInfo()
+				info.Contents = []*files.Content{{Source: "/nonexistent/path", Destination: "/dest"}}
+				return DefaultRPM.packageRPM(info, io.Discard)
+			},
+			want:    os.ErrNotExist,
+			wantMsg: "cannot read /nonexistent/path:",
+		},
+		{
+			name: "readScripts read error",
+			fn: func() error {
+				info := &nfpm.Info{
+					Overridables: nfpm.Overridables{
+						Scripts: nfpm.Scripts{
+							PreInstall: "/nonexistent/path",
+						},
+					},
+				}
+				_, err := readScripts(info)
+				return err
+			},
+			want:    os.ErrNotExist,
+			wantMsg: "cannot read preinstall script /nonexistent/path:",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.fn()
+			require.ErrorIs(t, err, tt.want)
+			require.ErrorContains(t, err, tt.wantMsg)
+		})
+	}
+}
+
+func TestRegularFileOpenErrorIsWrapped(t *testing.T) {
+	source := filepath.Join(t.TempDir(), "source")
+	require.NoError(t, os.WriteFile(source, []byte("body"), 0o644))
+	content := &files.Content{
+		Source:      source,
+		Destination: "/dest",
+		FileInfo:    &files.ContentFileInfo{Mode: 0o644},
+	}
+	b := rpm.NewPackage().WithName("test").WithVersion("1.0.0").WithRelease("1")
+	require.NoError(t, addRegularFile(b, content, "/dest", rpm.GenericFile))
+	pkg, err := b.Build()
+	require.NoError(t, err)
+	require.NoError(t, os.Remove(source))
+
+	_, err = pkg.WriteTo(io.Discard)
+	require.ErrorIs(t, err, os.ErrNotExist)
+	require.ErrorContains(t, err, "cannot read "+source+":")
 }
