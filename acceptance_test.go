@@ -91,7 +91,8 @@ func TestUpgrade(t *testing.T) {
 						target := fmt.Sprintf("./testdata/acceptance/%s", oldpkg)
 						require.NoError(t, os.MkdirAll("./testdata/acceptance/tmp", 0o700))
 
-						config, err := nfpm.ParseFileWithEnvMapping(fmt.Sprintf("./testdata/acceptance/%s.v1.yaml", testName),
+						config, err := nfpm.ParseFileWithEnvMapping(
+							fmt.Sprintf("./testdata/acceptance/%s.v1.yaml", testName),
 							func(s string) string {
 								switch s {
 								case "BUILD_ARCH":
@@ -201,6 +202,8 @@ func TestRPMSpecific(t *testing.T) {
 		"release",
 		"directories",
 		"verify",
+		"postrequires",
+		"isaprovide",
 	}
 	for _, name := range testNames {
 		for _, arch := range formatArchs[format] {
@@ -224,6 +227,25 @@ func TestRPMSpecific(t *testing.T) {
 			}(t, name, arch)
 		}
 	}
+}
+
+func TestSRPM(t *testing.T) {
+	t.Parallel()
+	// The source package is architecture-independent (arch "src"); a single
+	// amd64 rebuild exercises the whole generate-spec → rpmbuild → install path.
+	t.Run("srpm/amd64/rebuild", func(t *testing.T) {
+		t.Parallel()
+		accept(t, acceptParms{
+			Name:   "rebuild_amd64",
+			Conf:   "srpm.rebuild.yaml",
+			Format: "srpm",
+			Docker: dockerParams{
+				File:   "srpm.dockerfile",
+				Target: "rebuild",
+				Arch:   "amd64",
+			},
+		})
+	})
 }
 
 func TestDebSpecific(t *testing.T) {

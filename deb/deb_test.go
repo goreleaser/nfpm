@@ -112,7 +112,7 @@ func TestConventionalExtension(t *testing.T) {
 }
 
 func TestDeb(t *testing.T) {
-	for _, arch := range []string{"386", "amd64"} {
+	for _, arch := range []string{"386", "amd64", "riscv64"} {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
@@ -456,6 +456,34 @@ func TestConffiles(t *testing.T) {
 	out, ok := conffiles(info)
 	require.True(t, ok)
 	require.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
+}
+
+func TestConffilesFromConfigTree(t *testing.T) {
+	info := nfpm.WithDefaults(&nfpm.Info{
+		Name:        "minimal",
+		Arch:        "arm64",
+		Description: "Minimal does nothing",
+		Priority:    "extra",
+		Version:     "1.0.0",
+		Section:     "default",
+		Maintainer:  "maintainer",
+		Overridables: nfpm.Overridables{
+			Contents: []*files.Content{
+				{
+					Source:      "../files/testdata/tree/files",
+					Destination: "/etc/fake",
+					Type:        files.TypeConfigTree,
+				},
+			},
+		},
+	})
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
+	require.NoError(t, err)
+	out, ok := conffiles(info)
+	require.True(t, ok)
+	// Every regular file in the tree must be registered as a conffile.
+	require.Contains(t, string(out), "/etc/fake/a\n")
+	require.Contains(t, string(out), "/etc/fake/b/c\n")
 }
 
 func TestNoConffiles(t *testing.T) {
@@ -1226,8 +1254,13 @@ func TestCompressionAlgorithms(t *testing.T) {
 func TestDefaultCompressionMatchesExplicitGzip(t *testing.T) {
 	// When compression is unset, it should default to gzip at the same level
 	// as explicitly setting compression to "gzip", producing identical output.
+	// Use a fixed MTime so both builds embed identical timestamps; otherwise
+	// each build calls time.Now() and the differing timestamps compress to
+	// slightly different sizes, making this comparison flaky.
+	mtime := time.Unix(1700000000, 0)
 	buildDeb := func(compression string) []byte {
 		info := exampleInfo()
+		info.MTime = mtime
 		info.Deb.Compression = compression
 
 		var deb bytes.Buffer

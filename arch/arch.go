@@ -52,6 +52,7 @@ var archToArchLinux = map[string]string{
 	"x86_64":  "x86_64",
 	"aarch64": "aarch64",
 	"i386":    "i686",
+	"riscv64": "riscv64",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {

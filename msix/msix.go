@@ -2,6 +2,7 @@
 package msix
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -125,30 +126,24 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
-	builder := msix.NewBuilder()
+	builder := msix.NewBuilder().
+		WithIdentity(msix.NewIdentity().
+			WithName(info.Name).
+			WithVersion(convertToMSIXVersion(info.Version)).
+			WithPublisher(info.MSIX.Publisher).
+			WithProcessorArchitecture(info.Arch).
+			WithResourceID(info.MSIX.Identity.ResourceID).
+			Build()).
+		WithProperties(buildProperties(info)).
+		WithDependencies(buildDependencies(info)).
+		WithCapabilities(buildCapabilities(info)).
+		AddResource(msix.NewResource().WithLanguage("en-us").Build())
 
-	builder.Manifest = msix.Manifest{
-		Identity: msix.Identity{
-			Name:                  info.Name,
-			Version:               convertToMSIXVersion(info.Version),
-			Publisher:             info.MSIX.Publisher,
-			ProcessorArchitecture: info.Arch,
-			ResourceID:            info.MSIX.Identity.ResourceID,
-		},
-		Properties: buildProperties(info),
-		Dependencies: msix.Dependencies{
-			TargetDeviceFamilies: buildTargetDeviceFamilies(info),
-		},
-		Resources: []msix.Resource{
-			{Language: "en-us"},
-		},
-		Applications: buildApplications(info),
-		Capabilities: buildCapabilities(info),
+	for _, app := range buildApplications(info) {
+		builder.AddApplication(app)
 	}
 
-	if err := addContents(builder, info); err != nil {
-		return err
-	}
+	addContents(builder, info)
 
 	if info.MSIX.Signature.PFXFile != "" {
 		if err := configureSigning(builder, info); err != nil {
@@ -156,7 +151,7 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 		}
 	}
 
-	return builder.Build(w)
+	return builder.Build(context.Background(), w)
 }
 
 func validate(info *nfpm.Info) error {
@@ -181,73 +176,73 @@ func validate(info *nfpm.Info) error {
 }
 
 func buildProperties(info *nfpm.Info) msix.Properties {
-	props := msix.Properties{
-		DisplayName:          info.MSIX.Properties.DisplayName,
-		PublisherDisplayName: info.MSIX.Properties.PublisherDisplayName,
-		Logo:                 info.MSIX.Properties.Logo,
-		Description:          info.Description,
+	displayName := info.MSIX.Properties.DisplayName
+	if displayName == "" {
+		displayName = info.Name
 	}
-	if props.DisplayName == "" {
-		props.DisplayName = info.Name
+	publisherDisplayName := info.MSIX.Properties.PublisherDisplayName
+	if publisherDisplayName == "" {
+		publisherDisplayName = info.Name
 	}
-	if props.PublisherDisplayName == "" {
-		props.PublisherDisplayName = info.Name
-	}
-	return props
+	return msix.NewProperties().
+		WithDisplayName(displayName).
+		WithPublisherDisplayName(publisherDisplayName).
+		WithLogo(info.MSIX.Properties.Logo).
+		WithDescription(info.Description).
+		Build()
 }
 
-func buildTargetDeviceFamilies(info *nfpm.Info) []msix.TargetDeviceFamily {
-	families := make([]msix.TargetDeviceFamily, len(info.MSIX.Dependencies.TargetDeviceFamilies))
-	for i, f := range info.MSIX.Dependencies.TargetDeviceFamilies {
-		families[i] = msix.TargetDeviceFamily{
-			Name:             f.Name,
-			MinVersion:       f.MinVersion,
-			MaxVersionTested: f.MaxVersionTested,
-		}
+func buildDependencies(info *nfpm.Info) msix.Dependencies {
+	deps := msix.NewDependencies()
+	for _, f := range info.MSIX.Dependencies.TargetDeviceFamilies {
+		deps.AddTargetDeviceFamily(f.Name, f.MinVersion, f.MaxVersionTested)
 	}
-	return families
+	return deps.Build()
 }
 
 func buildApplications(info *nfpm.Info) []msix.Application {
-	apps := make([]msix.Application, len(info.MSIX.Applications))
-	for i, app := range info.MSIX.Applications {
-		apps[i] = msix.Application{
-			ID:         app.ID,
-			Executable: app.Executable,
-			EntryPoint: app.EntryPoint,
-			VisualElements: msix.VisualElements{
-				DisplayName:       app.VisualElements.DisplayName,
-				Description:       app.VisualElements.Description,
-				BackgroundColor:   app.VisualElements.BackgroundColor,
-				Square150x150Logo: app.VisualElements.Square150x150Logo,
-				Square44x44Logo:   app.VisualElements.Square44x44Logo,
-			},
+	apps := make([]msix.Application, 0, len(info.MSIX.Applications))
+	for _, app := range info.MSIX.Applications {
+		displayName := app.VisualElements.DisplayName
+		if displayName == "" {
+			displayName = info.Name
 		}
-		if apps[i].VisualElements.DisplayName == "" {
-			apps[i].VisualElements.DisplayName = info.Name
+		description := app.VisualElements.Description
+		if description == "" {
+			description = info.Description
 		}
-		if apps[i].VisualElements.Description == "" {
-			apps[i].VisualElements.Description = info.Description
-		}
+		ve := msix.NewVisualElements().
+			WithDisplayName(displayName).
+			WithDescription(description).
+			WithBackgroundColor(app.VisualElements.BackgroundColor).
+			WithSquare150x150Logo(app.VisualElements.Square150x150Logo).
+			WithSquare44x44Logo(app.VisualElements.Square44x44Logo).
+			Build()
+		apps = append(apps, msix.NewApplication().
+			WithID(app.ID).
+			WithExecutable(app.Executable).
+			WithEntryPoint(app.EntryPoint).
+			WithVisualElements(ve).
+			Build())
 	}
 	return apps
 }
 
 func buildCapabilities(info *nfpm.Info) msix.Capabilities {
-	caps := msix.Capabilities{}
+	caps := msix.NewCapabilities()
 	for _, c := range info.MSIX.Capabilities.Capabilities {
-		caps.Capabilities = append(caps.Capabilities, msix.Capability{Name: c})
+		caps.AddCapability(c)
 	}
 	for _, c := range info.MSIX.Capabilities.DeviceCapabilities {
-		caps.DeviceCapabilities = append(caps.DeviceCapabilities, msix.DeviceCapability{Name: c})
+		caps.AddDeviceCapability(msix.NewDeviceCapability().WithName(c).Build())
 	}
 	for _, c := range info.MSIX.Capabilities.Restricted {
-		caps.Restricted = append(caps.Restricted, msix.RestrictedCapability{Name: c})
+		caps.AddRestricted(c)
 	}
-	return caps
+	return caps.Build()
 }
 
-func addContents(builder *msix.Builder, info *nfpm.Info) error {
+func addContents(builder msix.Builder, info *nfpm.Info) {
 	for _, content := range info.Contents {
 		switch content.Type {
 		case files.TypeDir:
@@ -257,19 +252,17 @@ func addContents(builder *msix.Builder, info *nfpm.Info) error {
 			log.Printf("warning: msix does not support symlinks, skipping %s", content.Destination)
 			continue
 		default:
-			// Treat everything else (TypeFile, TypeConfig, etc.) as regular files
+			// Treat everything else (TypeFile, TypeConfig, etc.) as regular files.
+			// AddFile defers errors to Build, so they surface from builder.Build.
 			dest := normalizePathForMSIX(content.Destination)
 			if content.Source != "" {
-				if err := builder.AddFile(dest, content.Source); err != nil {
-					return fmt.Errorf("adding file %s: %w", content.Source, err)
-				}
+				builder.AddFile(dest, content.Source)
 			}
 		}
 	}
-	return nil
 }
 
-func configureSigning(builder *msix.Builder, info *nfpm.Info) error {
+func configureSigning(builder msix.Builder, info *nfpm.Info) error {
 	pfxPath := info.MSIX.Signature.PFXFile
 	if _, err := os.Stat(pfxPath); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -283,11 +276,11 @@ func configureSigning(builder *msix.Builder, info *nfpm.Info) error {
 		return &nfpm.ErrSigningFailure{Err: fmt.Errorf("loading PFX: %w", err)}
 	}
 
-	builder.SignOptions = &msix.SignOptions{
-		Certificate: cert,
-		PrivateKey:  key,
-		CertChain:   chain,
-	}
+	builder.WithSigning(msix.NewSigning().
+		WithCertificate(cert).
+		WithPrivateKey(key).
+		WithCertChain(chain...).
+		Build())
 
 	return nil
 }

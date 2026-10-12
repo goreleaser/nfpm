@@ -17,7 +17,7 @@ name: foo
 # to the platform specific equivalent. In order to manually set the architecture
 # to a platform specific value, set `{format}.arch`.
 # Examples: `all`, `amd64`, `386`, `arm5`, `arm6`, `arm7`, `arm64`, `mips`,
-# `mipsle`, `mips64le`, `ppc64le`, `s390`
+# `mipsle`, `mips64le`, `ppc64le`, `s390`, `riscv64`
 arch: amd64
 
 # Platform.
@@ -127,6 +127,11 @@ replaces:
 # Packages it provides. (overridable)
 # This will expand any env var you set in the field, e.g. ${PROVIDES_BLA}
 # the env var approach can be used to account for differences in platforms
+# RPM packages always provide themselves, as rpmbuild does, so there is no need
+# to list them here: `name = [epoch:]version-release`. Binary RPMs with a known
+# ISA also provide `name(isa) = [epoch:]version-release` (e.g.
+# `foo(x86-64) = 1:1.0.0-1`). No ISA-qualified self provide is added for
+# noarch, source packages, or unknown architectures.
 provides:
   - bar
   - ${PROVIDES_BLA}
@@ -181,6 +186,26 @@ contents:
   - src: some/directory/
     dst: /etc
     type: tree
+
+  # Like 'tree', but every regular file discovered while walking the directory
+  # is also marked as a config file (equivalent to setting 'type: config' on
+  # each of them). Directories and symlinks keep their natural type.
+  # 'config|noreplace|tree' and 'config|missingok|tree' behave the same but mark
+  # the files with the respective RPM directive.
+  - src: some/config-directory/
+    dst: /etc/myapp
+    type: config|tree
+
+  # It is possible to add an entire directory structure without automatically
+  # marking all directories within the structure as owned by this package.
+  # In this case, `disown_subtree` is used to mark `/opt` and all
+  # subdirectories that end with `-common` as *not* owned by this package.
+  - src: some/directory/
+    dst: /opt
+    type: tree
+    disown_subtree:
+      - /opt
+      - /opt/*-common
 
   # Simple config file
   - src: path/to/local/foo.conf
@@ -263,6 +288,15 @@ contents:
       owner: notRoot
       group: notRoot
 
+  # The 'lang' field marks a file with an RPM language tag (RPMTAG_FILELANGS),
+  # rendered as `%lang(en)` in the spec. This lets RPM-based distributions honor
+  # `%_install_langs` and avoids rpmlint's `file-not-in-%lang` warning. It is
+  # ignored by all other packagers.
+  - src: path/to/locale/en/LC_MESSAGES/myapp.mo
+    dst: /usr/share/locale/en/LC_MESSAGES/myapp.mo
+    file_info:
+      lang: en
+
   # Using the type 'dir', empty directories can be created. When building RPMs, however, this
   # type has another important purpose: Claiming ownership of that folder. This is important
   # because when upgrading or removing an RPM package, only the directories for which it has
@@ -339,6 +373,12 @@ rpm:
     posttrans: ./scripts/posttrans.sh
     # The verify script runs when verifying packages using `rpm -V`.
     verify: ./scripts/verify.sh
+
+  # RPM specific qualified Requires dependencies.
+  requires:
+    # Adds `Requires(post): systemd`.
+    post:
+      - systemd
 
   # The package group. This option is deprecated by most distros
   # but required by old distros like CentOS 5 / EL 5 and earlier.

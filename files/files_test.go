@@ -901,6 +901,108 @@ func TestTree(t *testing.T) {
 	}, withoutFileInfo(results))
 }
 
+func TestConfigTree(t *testing.T) {
+	for _, tt := range []struct {
+		treeType string
+		fileType string
+	}{
+		{files.TypeConfigTree, files.TypeConfig},
+		{files.TypeConfigNoReplaceTree, files.TypeConfigNoReplace},
+		{files.TypeConfigMissingOKTree, files.TypeConfigMissingOK},
+	} {
+		t.Run(tt.treeType, func(t *testing.T) {
+			results, err := files.PrepareForPackager(
+				files.Contents{
+					{
+						Source:      filepath.Join("testdata", "tree"),
+						Destination: "/base",
+						Type:        tt.treeType,
+					},
+				},
+				0,
+				"",
+				false,
+				mtime,
+			)
+			require.NoError(t, err)
+
+			// Only regular files become config files; directories and symlinks
+			// keep their natural type.
+			require.Equal(t, files.Contents{
+				{
+					Source:      "",
+					Destination: "/base/",
+					Type:        files.TypeDir,
+				},
+				{
+					Source:      "",
+					Destination: "/base/files/",
+					Type:        files.TypeDir,
+				},
+				{
+					Source:      filepath.Join("testdata", "tree", "files", "a"),
+					Destination: "/base/files/a",
+					Type:        tt.fileType,
+				},
+				{
+					Source:      "",
+					Destination: "/base/files/b/",
+					Type:        files.TypeDir,
+				},
+				{
+					Source:      filepath.Join("testdata", "tree", "files", "b", "c"),
+					Destination: "/base/files/b/c",
+					Type:        tt.fileType,
+				},
+				{
+					Source:      "",
+					Destination: "/base/symlinks/",
+					Type:        files.TypeDir,
+				},
+				{
+					Source:      "/etc/foo",
+					Destination: "/base/symlinks/link1",
+					Type:        files.TypeSymlink,
+				},
+				{
+					Source:      "../files/a",
+					Destination: "/base/symlinks/link2",
+					Type:        files.TypeSymlink,
+				},
+			}, withoutFileInfo(results))
+		})
+	}
+}
+
+func TestContentLang(t *testing.T) {
+	results, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source:      filepath.Join("testdata", "globtest", "**", "*.txt"),
+				Destination: "/usr/share/locale",
+				FileInfo: &files.ContentFileInfo{
+					Lang: "en",
+				},
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	// The lang attribute must survive glob expansion on every resulting file.
+	var sawFile bool
+	for _, c := range results {
+		if c.Type == files.TypeFile {
+			sawFile = true
+			require.Equal(t, "en", c.FileInfo.Lang, c.Destination)
+		}
+	}
+	require.True(t, sawFile, "expected at least one globbed file")
+}
+
 func TestTreeMode(t *testing.T) {
 	results, err := files.PrepareForPackager(
 		files.Contents{
@@ -1173,6 +1275,46 @@ contents:
 		"/var/log/":                            "implicit dir",
 		"/var/log/acme/":                       "dir",
 		"/var/log/acme/.gitkeep":               "file",
+	}
+
+	for _, file := range files {
+		require.Equal(t, expect[file.Destination], file.Type, "invalid type for %s", file.Destination)
+	}
+}
+
+func TestTreeWithDisown(t *testing.T) {
+	files, err := files.PrepareForPackager(
+		files.Contents{
+			{
+				Source: filepath.Join("testdata", "disown"),
+				Type:   files.TypeTree,
+				DisownSubtree: []string{
+					"/disowned-dir",
+					"*/nested-disowned",
+					"owned-dir/nested-disowned/",
+					"*matched-dir",
+				},
+			},
+		},
+		0,
+		"",
+		false,
+		mtime,
+	)
+	require.NoError(t, err)
+
+	expect := map[string]string{
+		"/disowned-matched-dir/":                 "implicit dir",
+		"/disowned-matched-dir/file.txt":         "file",
+		"/disowned-dir/":                         "implicit dir",
+		"/disowned-dir/nested-disowned/":         "implicit dir",
+		"/disowned-dir/nested-disowned/file.txt": "file",
+		"/disowned-dir/nested-owned/":            "dir",
+		"/disowned-dir/nested-owned/file.txt":    "file",
+		"/owned-dir/":                            "dir",
+		"/owned-dir/nested-disowned/":            "implicit dir",
+		"/owned-dir/nested-disowned/file.txt":    "file",
+		"/owned-dir/file.txt":                    "file",
 	}
 
 	for _, file := range files {

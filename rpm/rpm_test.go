@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/google/rpmpack"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
@@ -21,6 +20,17 @@ import (
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/require"
+	"go.digitalxero.dev/rpm"
+)
+
+const (
+	tagProvideName    = 1047
+	tagRequireFlags   = 1048
+	tagRequireName    = 1049
+	tagRequireVersion = 1050
+	tagFileLangs      = 1097
+	tagProvideFlags   = 1112
+	tagProvideVersion = 1113
 )
 
 func exampleInfo() *nfpm.Info {
@@ -155,6 +165,193 @@ func TestRPM(t *testing.T) {
 	require.Equal(t, "Foo does things", description)
 }
 
+func TestRPMPostRequires(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.Requires.Post = []string{"systemd", "coreutils >= 9.0"}
+
+	var buf bytes.Buffer
+	err := DefaultRPM.Package(info, &buf)
+	require.NoError(t, err)
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+
+	namesRaw, err := rpm.Header.Get(tagRequireName)
+	require.NoError(t, err)
+	names, ok := namesRaw.([]string)
+	require.True(t, ok)
+	versionsRaw, err := rpm.Header.Get(tagRequireVersion)
+	require.NoError(t, err)
+	versions, ok := versionsRaw.([]string)
+	require.True(t, ok)
+	flagsRaw, err := rpm.Header.Get(tagRequireFlags)
+	require.NoError(t, err)
+	flags, ok := flagsRaw.([]uint32)
+	require.True(t, ok)
+
+	requireRPMRequire(t, names, versions, flags, "systemd", "", rpmSenseScriptPost)
+	requireRPMRequire(t, names, versions, flags, "coreutils", "9.0", rpmSenseScriptPost|4|8)
+}
+
+func requireRPMRequire(
+	t *testing.T,
+	names, versions []string,
+	flags []uint32,
+	name, version string,
+	flag uint32,
+) {
+	t.Helper()
+	for idx := range names {
+		if names[idx] == name && versions[idx] == version && flags[idx] == flag {
+			return
+		}
+	}
+	require.Failf(t, "RPM require not found", "name=%s version=%s flag=%d", name, version, flag)
+}
+
+// rpmProvides returns the package's provides as `rpm -qp --provides` prints
+// them: "name" or "name = version".
+func rpmProvides(t *testing.T, r io.Reader) []string {
+	t.Helper()
+	rpm, err := rpmutils.ReadRpm(r)
+	require.NoError(t, err)
+
+	namesRaw, err := rpm.Header.Get(tagProvideName)
+	require.NoError(t, err)
+	names, ok := namesRaw.([]string)
+	require.True(t, ok)
+	versionsRaw, err := rpm.Header.Get(tagProvideVersion)
+	require.NoError(t, err)
+	versions, ok := versionsRaw.([]string)
+	require.True(t, ok)
+	flagsRaw, err := rpm.Header.Get(tagProvideFlags)
+	require.NoError(t, err)
+	flags, ok := flagsRaw.([]uint32)
+	require.True(t, ok)
+	require.Len(t, versions, len(names))
+	require.Len(t, flags, len(names))
+
+	provides := make([]string, len(names))
+	for idx, name := range names {
+		provides[idx] = name
+		if flags[idx] == 8 && versions[idx] != "" {
+			provides[idx] += " = " + versions[idx]
+		}
+	}
+	return provides
+}
+
+func TestRPMSelfProvides(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		arch   string
+		rpm    string
+		epoch  string
+		pre    string
+		meta   string
+		expect []string
+	}{
+		{
+			name:   "amd64 with epoch",
+			arch:   "amd64",
+			epoch:  "0",
+			expect: []string{"bzr", "foo = 0:1.0.0-1", "foo(x86-64) = 0:1.0.0-1"},
+		},
+		{
+			name:   "arm64 without epoch",
+			arch:   "arm64",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(aarch-64) = 1.0.0-1"},
+		},
+		{
+			name:   "386",
+			arch:   "386",
+			epoch:  "2",
+			expect: []string{"bzr", "foo = 2:1.0.0-1", "foo(x86-32) = 2:1.0.0-1"},
+		},
+		{
+			name:   "arm7",
+			arch:   "arm7",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(armv7hl-32) = 1.0.0-1"},
+		},
+		{
+			name:   "riscv64",
+			arch:   "riscv64",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(riscv-64) = 1.0.0-1"},
+		},
+		{
+			name:   "all is noarch",
+			arch:   "all",
+			expect: []string{"bzr", "foo = 1.0.0-1"},
+		},
+		{
+			name:   "rpm.arch override",
+			arch:   "amd64",
+			rpm:    "ppc64le",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(ppc-64) = 1.0.0-1"},
+		},
+		{
+			name:   "unknown arch",
+			arch:   "amd64",
+			rpm:    "myarch",
+			expect: []string{"bzr", "foo = 1.0.0-1"},
+		},
+		{
+			name:   "prerelease and metadata",
+			arch:   "amd64",
+			epoch:  "1",
+			pre:    "rc-1",
+			meta:   "git",
+			expect: []string{"bzr", "foo = 1:1.0.0~rc_1+git-1", "foo(x86-64) = 1:1.0.0~rc_1+git-1"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			info := exampleInfo()
+			info.Arch = tc.arch
+			info.RPM.Arch = tc.rpm
+			info.Epoch = tc.epoch
+			info.Prerelease = tc.pre
+			info.VersionMetadata = tc.meta
+
+			var buf bytes.Buffer
+			require.NoError(t, DefaultRPM.Package(info, &buf))
+			require.Equal(t, tc.expect, rpmProvides(t, &buf))
+		})
+	}
+}
+
+func TestSRPMHasNoISAProvide(t *testing.T) {
+	info := exampleInfo()
+	info.Arch = "arm64"
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultSRPM.Package(info, &buf))
+	// User provides are declared in the generated spec, not the source header.
+	require.Equal(t, []string{"foo = 0:1.0.0-1"}, rpmProvides(t, &buf))
+}
+
+func TestRPMRiscv64(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "test-riscv.rpm")
+	require.NoError(t, err)
+	info := exampleInfo()
+	info.Arch = "riscv64"
+	require.NoError(t, DefaultRPM.Package(info, f))
+
+	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
+	require.NoError(t, err)
+	defer func() {
+		f.Close()
+		file.Close()
+		err = os.Remove(file.Name())
+		require.NoError(t, err)
+	}()
+	rpm, err := rpmutils.ReadRpm(file)
+	require.NoError(t, err)
+
+	arch, err := rpm.Header.GetString(rpmutils.ARCH)
+	require.NoError(t, err)
+	require.Equal(t, archToRPM["riscv64"], arch)
+}
+
 func TestIssue952(t *testing.T) {
 	info := exampleInfo()
 	info.MTime = time.Time{}
@@ -184,64 +381,71 @@ func TestIssue952(t *testing.T) {
 	require.Positive(t, f.Mtime())
 }
 
-func TestSRPM(t *testing.T) {
-	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
-	require.NoError(t, err)
-	require.NoError(t, DefaultSRPM.Package(exampleInfo(), f))
+func TestRPMLang(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = files.Contents{
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/usr/share/locale/en/LC_MESSAGES/foo.mo",
+			FileInfo: &files.ContentFileInfo{
+				Lang: "en",
+			},
+		},
+		{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/usr/bin/fake",
+		},
+	}
 
-	file, err := os.OpenFile(f.Name(), os.O_RDONLY, 0o600) //nolint:gosec
-	require.NoError(t, err)
-	defer func() {
-		f.Close()
-		file.Close()
-		err = os.Remove(file.Name())
-		require.NoError(t, err)
-	}()
-	rpm, err := rpmutils.ReadRpm(file)
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(nfpm.WithDefaults(info), &buf))
+
+	rpm, err := rpmutils.ReadRpm(&buf)
 	require.NoError(t, err)
 
-	os, err := rpm.Header.GetString(rpmutils.OS)
+	rpmFiles, err := rpm.Header.GetFiles()
 	require.NoError(t, err)
-	require.Equal(t, "linux", os)
+	langs, err := rpm.Header.GetStrings(tagFileLangs)
+	require.NoError(t, err)
+	require.Len(t, langs, len(rpmFiles))
 
-	arch, err := rpm.Header.GetString(rpmutils.ARCH)
-	require.NoError(t, err)
-	require.Equal(t, archToRPM["amd64"], arch)
+	byName := map[string]string{}
+	for i, f := range rpmFiles {
+		byName[f.Name()] = langs[i]
+	}
+	require.Equal(t, "en", byName["/usr/share/locale/en/LC_MESSAGES/foo.mo"])
+	require.Empty(t, byName["/usr/bin/fake"])
+}
 
-	version, err := rpm.Header.GetString(rpmutils.VERSION)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0", version)
+func TestRPMConfigTree(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = files.Contents{
+		{
+			Source:      "../files/testdata/tree",
+			Destination: "/etc/foo",
+			Type:        files.TypeConfigTree,
+		},
+	}
 
-	release, err := rpm.Header.GetString(rpmutils.RELEASE)
-	require.NoError(t, err)
-	require.Equal(t, "1", release)
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(nfpm.WithDefaults(info), &buf))
 
-	epoch, err := rpm.Header.Get(rpmutils.EPOCH)
+	rpm, err := rpmutils.ReadRpm(&buf)
 	require.NoError(t, err)
-	epochUint32, ok := epoch.([]uint32)
-	require.True(t, ok)
-	require.Len(t, epochUint32, 1)
-	require.Equal(t, uint32(0), epochUint32[0])
 
-	group, err := rpm.Header.GetString(rpmutils.GROUP)
+	rpmFiles, err := rpm.Header.GetFiles()
 	require.NoError(t, err)
-	require.Equal(t, "foo", group)
 
-	buildhost, err := rpm.Header.GetString(rpmutils.BUILDHOST)
-	require.NoError(t, err)
-	require.Equal(t, "barhost", buildhost)
-
-	summary, err := rpm.Header.GetString(rpmutils.SUMMARY)
-	require.NoError(t, err)
-	require.Equal(t, "Foo does things", summary)
-
-	description, err := rpm.Header.GetString(rpmutils.DESCRIPTION)
-	require.NoError(t, err)
-	require.Equal(t, "Foo does things", description)
-
-	bts, err := rpm.Header.GetUint32s(tagSourcePackage)
-	require.NoError(t, err)
-	require.Equal(t, []uint32{1}, bts)
+	const sIFMT = 0o170000
+	var sawFile bool
+	for _, f := range rpmFiles {
+		if f.Mode()&sIFMT != cpio.S_ISREG {
+			continue
+		}
+		sawFile = true
+		require.NotZero(t, f.Flags()&rpmutils.RPMFILE_CONFIG, "%s should be a config file", f.Name())
+	}
+	require.True(t, sawFile, "expected at least one regular file in the tree")
 }
 
 func TestRPMMandatoryFieldsOnly(t *testing.T) {
@@ -523,20 +727,16 @@ func TestWithRPMTags(t *testing.T) {
 func TestRPMVersion(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0" //nolint:golint,goconst
-	meta, err := buildRPMMeta(info)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0", meta.Version)
-	require.Equal(t, "1", meta.Release)
+	require.Equal(t, "1.0.0", formatVersion(info))
+	require.Equal(t, "1", defaultTo(info.Release, "1"))
 }
 
 func TestRPMVersionWithRelease(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0" //nolint:golint,goconst
 	info.Release = "2"
-	meta, err := buildRPMMeta(info)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0", meta.Version)
-	require.Equal(t, "2", meta.Release)
+	require.Equal(t, "1.0.0", formatVersion(info))
+	require.Equal(t, "2", defaultTo(info.Release, "1"))
 }
 
 func TestRPMVersionWithPrerelease(t *testing.T) {
@@ -545,27 +745,21 @@ func TestRPMVersionWithPrerelease(t *testing.T) {
 
 	info.Version = "1.0.0"
 	info.Prerelease = "rc1" // nolint:goconst
-	meta, err := buildRPMMeta(info)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1", meta.Version)
-	require.Equal(t, "1", meta.Release)
+	require.Equal(t, "1.0.0~rc1", formatVersion(info))
+	require.Equal(t, "1", defaultTo(info.Release, "1"))
 
 	info.Version = "1.0.0~rc1"
 	info.Prerelease = ""
-	meta, err = buildRPMMeta(info)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1", meta.Version)
-	require.Equal(t, "1", meta.Release)
+	require.Equal(t, "1.0.0~rc1", formatVersion(info))
+	require.Equal(t, "1", defaultTo(info.Release, "1"))
 }
 
 func TestRPMVersionWithPrereleaseWithDashes(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "1.0.0"
 	info.Prerelease = "rc1-alpha-omega" // nolint:goconst
-	meta, err := buildRPMMeta(info)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1_alpha_omega", meta.Version)
-	require.Equal(t, "1", meta.Release)
+	require.Equal(t, "1.0.0~rc1_alpha_omega", formatVersion(info))
+	require.Equal(t, "1", defaultTo(info.Release, "1"))
 }
 
 func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
@@ -575,18 +769,14 @@ func TestRPMVersionWithReleaseAndPrerelease(t *testing.T) {
 	info.Version = "1.0.0"
 	info.Release = "2"
 	info.Prerelease = "rc1"
-	meta, err := buildRPMMeta(info)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1", meta.Version)
-	require.Equal(t, "2", meta.Release)
+	require.Equal(t, "1.0.0~rc1", formatVersion(info))
+	require.Equal(t, "2", defaultTo(info.Release, "1"))
 
 	info.Version = "1.0.0~rc1"
 	info.Release = "3"
 	info.Prerelease = ""
-	meta, err = buildRPMMeta(info)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0~rc1", meta.Version)
-	require.Equal(t, "3", meta.Release)
+	require.Equal(t, "1.0.0~rc1", formatVersion(info))
+	require.Equal(t, "3", defaultTo(info.Release, "1"))
 }
 
 func TestRPMVersionWithVersionMetadata(t *testing.T) {
@@ -595,18 +785,15 @@ func TestRPMVersionWithVersionMetadata(t *testing.T) {
 
 	info.Version = "1.0.0+meta"
 	info.VersionMetadata = ""
-	meta, err := buildRPMMeta(info)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0+meta", meta.Version)
-	require.Equal(t, "1", meta.Release)
+	require.Equal(t, "1.0.0+meta", formatVersion(info))
+	require.Equal(t, "1", defaultTo(info.Release, "1"))
 
 	info.Version = "1.0.0"
 	info.VersionMetadata = "meta"
 	info.Release = "10"
-	meta, err = buildRPMMeta(nfpm.WithDefaults(info))
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0+meta", meta.Version)
-	require.Equal(t, "10", meta.Release)
+	info = nfpm.WithDefaults(info)
+	require.Equal(t, "1.0.0+meta", formatVersion(info))
+	require.Equal(t, "10", defaultTo(info.Release, "1"))
 }
 
 func TestWithInvalidEpoch(t *testing.T) {
@@ -957,7 +1144,7 @@ func TestSymlink(t *testing.T) {
 	packagedSymlink, err := extractFileFromRpm(rpmFileBuffer.Bytes(), symlink)
 	require.NoError(t, err)
 
-	require.Equal(t, symlink, packagedSymlinkHeader.Filename())
+	require.Equal(t, symlink, normalizePayloadName(packagedSymlinkHeader.Filename()))
 	require.Equal(t, cpio.S_ISLNK, packagedSymlinkHeader.Mode())
 	require.Equal(t, symlinkTarget, string(packagedSymlink))
 }
@@ -1236,7 +1423,7 @@ func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 			return nil, err
 		}
 
-		if hdr.Filename() != filename {
+		if normalizePayloadName(hdr.Filename()) != filename {
 			continue
 		}
 
@@ -1249,6 +1436,13 @@ func extractFileFromRpm(rpm []byte, filename string) ([]byte, error) {
 	}
 
 	return nil, os.ErrNotExist
+}
+
+// normalizePayloadName strips the leading "." that RPM cpio payloads use on
+// their entry names (e.g. "./usr/bin/foo"), so they compare against the absolute
+// header file names the tests assert.
+func normalizePayloadName(name string) string {
+	return strings.TrimPrefix(name, ".")
 }
 
 func extraFileInfoSliceFromRpm(rpm []byte) ([]rpmutils.FileInfo, error) {
@@ -1274,7 +1468,7 @@ func getTree(tb testing.TB, rpm []byte) []string {
 			break // End of archive
 		}
 		require.NoError(tb, err)
-		tree = append(tree, hdr.Filename())
+		tree = append(tree, normalizePayloadName(hdr.Filename()))
 	}
 
 	return tree
@@ -1300,7 +1494,7 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 			return nil, err
 		}
 
-		if hdr.Filename() != filename {
+		if normalizePayloadName(hdr.Filename()) != filename {
 			continue
 		}
 
@@ -1318,17 +1512,17 @@ func TestWriterPathErrorsAreWrapped(t *testing.T) {
 		wantMsg string
 	}{
 		{
-			name: "asRPMFile read error",
+			name: "packageRPM read error",
 			fn: func() error {
-				content := &files.Content{Source: "/nonexistent/path", Destination: "/dest"}
-				_, err := asRPMFile(content, rpmpack.GenericFile)
-				return err
+				info := exampleInfo()
+				info.Contents = []*files.Content{{Source: "/nonexistent/path", Destination: "/dest"}}
+				return DefaultRPM.packageRPM(info, io.Discard)
 			},
 			want:    os.ErrNotExist,
 			wantMsg: "cannot read /nonexistent/path:",
 		},
 		{
-			name: "addScriptFiles read error",
+			name: "readScripts read error",
 			fn: func() error {
 				info := &nfpm.Info{
 					Overridables: nfpm.Overridables{
@@ -1337,11 +1531,8 @@ func TestWriterPathErrorsAreWrapped(t *testing.T) {
 						},
 					},
 				}
-				rpmPkg, err := rpmpack.NewRPM(rpmpack.RPMMetaData{Name: "test"})
-				if err != nil {
-					return err
-				}
-				return addScriptFiles(info, rpmPkg)
+				_, err := readScripts(info)
+				return err
 			},
 			want:    os.ErrNotExist,
 			wantMsg: "cannot read preinstall script /nonexistent/path:",
@@ -1355,4 +1546,23 @@ func TestWriterPathErrorsAreWrapped(t *testing.T) {
 			require.ErrorContains(t, err, tt.wantMsg)
 		})
 	}
+}
+
+func TestRegularFileOpenErrorIsWrapped(t *testing.T) {
+	source := filepath.Join(t.TempDir(), "source")
+	require.NoError(t, os.WriteFile(source, []byte("body"), 0o644))
+	content := &files.Content{
+		Source:      source,
+		Destination: "/dest",
+		FileInfo:    &files.ContentFileInfo{Mode: 0o644},
+	}
+	b := rpm.NewPackage().WithName("test").WithVersion("1.0.0").WithRelease("1")
+	require.NoError(t, addRegularFile(b, content, "/dest", rpm.GenericFile))
+	pkg, err := b.Build()
+	require.NoError(t, err)
+	require.NoError(t, os.Remove(source))
+
+	_, err = pkg.WriteTo(io.Discard)
+	require.ErrorIs(t, err, os.ErrNotExist)
+	require.ErrorContains(t, err, "cannot read "+source+":")
 }
