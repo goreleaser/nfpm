@@ -2,6 +2,7 @@ package deb
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"crypto/md5" // nolint: gosec
@@ -1661,47 +1662,40 @@ func verifyDpkgSigFileHashes(arFiles map[string][]byte, msg string) error {
 	return nil
 }
 
-type failAfterNWriter struct {
-	n   int
-	err error
-}
+type errWriter struct{ err error }
 
-func (w *failAfterNWriter) Write(p []byte) (int, error) {
-	if w.n <= 0 {
-		return 0, w.err
-	}
-	if len(p) > w.n {
-		p = p[:w.n]
-	}
-	w.n -= len(p)
-	return len(p), nil
+func (w *errWriter) Write([]byte) (int, error) {
+	return 0, w.err
 }
 
 func TestWriterPathErrorsAreWrapped(t *testing.T) {
 	tests := []struct {
-		name string
-		fn   func() error
-		want error
+		name    string
+		fn      func() error
+		want    error
+		wantMsg string
 	}{
 		{
 			name: "addArFile write error",
 			fn: func() error {
-				fw := &failAfterNWriter{n: 68, err: os.ErrClosed}
-				w := ar.NewWriter(fw)
+				buffer := bufio.NewWriter(&errWriter{err: os.ErrClosed})
+				w := ar.NewWriter(buffer)
 				if err := w.WriteGlobalHeader(); err != nil {
 					return err
 				}
-				return addArFile(w, "test", []byte("body"), time.Now())
+				return addArFile(w, "test", make([]byte, buffer.Size()), mtime)
 			},
-			want: os.ErrClosed,
+			want:    os.ErrClosed,
+			wantMsg: "cannot write test body to deb:",
 		},
 		{
 			name: "newFilePathInsideTar read error",
 			fn: func() error {
 				tw := tar.NewWriter(io.Discard)
-				return newFilePathInsideTar(tw, "/nonexistent/path", "dest", 0o644, time.Now())
+				return newFilePathInsideTar(tw, "/nonexistent/path", "dest", 0o644, mtime)
 			},
-			want: os.ErrNotExist,
+			want:    os.ErrNotExist,
+			wantMsg: "cannot read /nonexistent/path:",
 		},
 	}
 
@@ -1709,6 +1703,7 @@ func TestWriterPathErrorsAreWrapped(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.fn()
 			require.ErrorIs(t, err, tt.want)
+			require.ErrorContains(t, err, tt.wantMsg)
 		})
 	}
 }

@@ -13,11 +13,11 @@ import (
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/google/rpmpack"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
-	"github.com/google/rpmpack"
 	"github.com/sassoftware/go-rpmutils"
 	"github.com/sassoftware/go-rpmutils/cpio"
 	"github.com/stretchr/testify/require"
@@ -1312,9 +1312,10 @@ func extractFileHeaderFromRpm(rpm []byte, filename string) (*cpio.Cpio_newc_head
 
 func TestWriterPathErrorsAreWrapped(t *testing.T) {
 	tests := []struct {
-		name string
-		fn   func() error
-		want error
+		name    string
+		fn      func() error
+		want    error
+		wantMsg string
 	}{
 		{
 			name: "asRPMFile read error",
@@ -1323,7 +1324,8 @@ func TestWriterPathErrorsAreWrapped(t *testing.T) {
 				_, err := asRPMFile(content, rpmpack.GenericFile)
 				return err
 			},
-			want: os.ErrNotExist,
+			want:    os.ErrNotExist,
+			wantMsg: "cannot read /nonexistent/path:",
 		},
 		{
 			name: "addScriptFiles read error",
@@ -1341,7 +1343,8 @@ func TestWriterPathErrorsAreWrapped(t *testing.T) {
 				}
 				return addScriptFiles(info, rpmPkg)
 			},
-			want: os.ErrNotExist,
+			want:    os.ErrNotExist,
+			wantMsg: "cannot read preinstall script /nonexistent/path:",
 		},
 	}
 
@@ -1349,6 +1352,7 @@ func TestWriterPathErrorsAreWrapped(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.fn()
 			require.ErrorIs(t, err, tt.want)
+			require.ErrorContains(t, err, tt.wantMsg)
 		})
 	}
 }
