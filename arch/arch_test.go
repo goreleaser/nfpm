@@ -100,7 +100,7 @@ func TestConventionalExtension(t *testing.T) {
 }
 
 func TestArch(t *testing.T) {
-	for _, arch := range []string{"386", "amd64", "arm64", "riscv64"} {
+	for _, arch := range []string{"386", "amd64", "arm64", "riscv64", "ppc64", "ppc64le"} {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
@@ -135,16 +135,39 @@ func TestArchNoInfo(t *testing.T) {
 }
 
 func TestArchConventionalFileName(t *testing.T) {
-	for _, arch := range []string{"386", "amd64", "arm64", "riscv64"} {
+	for arch, expectedArch := range map[string]string{
+		"386":     "i686",
+		"amd64":   "x86_64",
+		"arm64":   "aarch64",
+		"riscv64": "riscv64",
+		"ppc64":   "powerpc64",
+		"ppc64le": "powerpc64le",
+	} {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
 			name := Default.ConventionalFileName(info)
 			require.Equal(
 				t,
-				"foo-test-1.0.0beta_1-1-"+archToArchLinux[arch]+".pkg.tar.zst",
+				"foo-test-1.0.0beta_1-1-"+expectedArch+".pkg.tar.zst",
 				name,
 			)
+		})
+	}
+}
+
+func TestArchPkginfoArch(t *testing.T) {
+	for arch, expectedArch := range map[string]string{
+		"ppc64":   "powerpc64",
+		"ppc64le": "powerpc64le",
+	} {
+		t.Run(arch, func(t *testing.T) {
+			info := exampleInfo()
+			info.Arch = arch
+			pkginfoData, err := makeTestPkginfo(t, info)
+			require.NoError(t, err)
+			fields := extractPkginfoFields(pkginfoData)
+			require.Equal(t, expectedArch, fields["arch"])
 		})
 	}
 }

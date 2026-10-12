@@ -6,22 +6,22 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Masterminds/semver/v3 v3.5.0
-	github.com/ProtonMail/go-crypto v1.4.1
+	github.com/ProtonMail/go-crypto v1.5.2
 	github.com/ProtonMail/gopenpgp/v2 v2.10.0
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/caarlos0/go-version v0.2.2
 	github.com/charmbracelet/fang v1.0.0
 	github.com/goreleaser/chglog v0.7.4
-	github.com/goreleaser/fileglob v1.4.0
+	github.com/goreleaser/fileglob v1.4.1
 	github.com/invopop/jsonschema v0.14.0
-	github.com/klauspost/compress v1.20.0
-	github.com/klauspost/pgzip v1.2.6
+	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/pgzip v1.2.7
 	github.com/sassoftware/go-rpmutils v0.4.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
-	github.com/ulikunitz/xz v0.5.16
-	go.digitalxero.dev/go-msix v1.0.0
-	go.digitalxero.dev/rpm v0.2.1
+	github.com/ulikunitz/xz v0.5.17
+	go.digitalxero.dev/go-msix v1.0.1
+	go.digitalxero.dev/rpm v0.3.4
 	go.yaml.in/yaml/v3 v3.0.5
 )
 
@@ -83,11 +83,11 @@ require (
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
 	go.mozilla.org/pkcs7 v0.9.0 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
-	golang.org/x/crypto v0.53.0 // indirect
-	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.39.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.2 // indirect
 )

@@ -2,6 +2,8 @@ package rpm
 
 import (
 	"bytes"
+	"debug/elf"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -23,10 +25,13 @@ import (
 )
 
 const (
+	tagProvideName    = 1047
 	tagRequireFlags   = 1048
 	tagRequireName    = 1049
 	tagRequireVersion = 1050
 	tagFileLangs      = 1097
+	tagProvideFlags   = 1112
+	tagProvideVersion = 1113
 )
 
 func exampleInfo() *nfpm.Info {
@@ -205,6 +210,126 @@ func requireRPMRequire(
 	require.Failf(t, "RPM require not found", "name=%s version=%s flag=%d", name, version, flag)
 }
 
+// rpmProvides returns the package's provides as `rpm -qp --provides` prints
+// them: "name" or "name = version".
+func rpmProvides(t *testing.T, r io.Reader) []string {
+	t.Helper()
+	rpm, err := rpmutils.ReadRpm(r)
+	require.NoError(t, err)
+
+	namesRaw, err := rpm.Header.Get(tagProvideName)
+	require.NoError(t, err)
+	names, ok := namesRaw.([]string)
+	require.True(t, ok)
+	versionsRaw, err := rpm.Header.Get(tagProvideVersion)
+	require.NoError(t, err)
+	versions, ok := versionsRaw.([]string)
+	require.True(t, ok)
+	flagsRaw, err := rpm.Header.Get(tagProvideFlags)
+	require.NoError(t, err)
+	flags, ok := flagsRaw.([]uint32)
+	require.True(t, ok)
+	require.Len(t, versions, len(names))
+	require.Len(t, flags, len(names))
+
+	provides := make([]string, len(names))
+	for idx, name := range names {
+		provides[idx] = name
+		if flags[idx] == 8 && versions[idx] != "" {
+			provides[idx] += " = " + versions[idx]
+		}
+	}
+	return provides
+}
+
+func TestRPMSelfProvides(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		arch   string
+		rpm    string
+		epoch  string
+		pre    string
+		meta   string
+		expect []string
+	}{
+		{
+			name:   "amd64 with epoch",
+			arch:   "amd64",
+			epoch:  "0",
+			expect: []string{"bzr", "foo = 0:1.0.0-1", "foo(x86-64) = 0:1.0.0-1"},
+		},
+		{
+			name:   "arm64 without epoch",
+			arch:   "arm64",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(aarch-64) = 1.0.0-1"},
+		},
+		{
+			name:   "386",
+			arch:   "386",
+			epoch:  "2",
+			expect: []string{"bzr", "foo = 2:1.0.0-1", "foo(x86-32) = 2:1.0.0-1"},
+		},
+		{
+			name:   "arm7",
+			arch:   "arm7",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(armv7hl-32) = 1.0.0-1"},
+		},
+		{
+			name:   "riscv64",
+			arch:   "riscv64",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(riscv-64) = 1.0.0-1"},
+		},
+		{
+			name:   "all is noarch",
+			arch:   "all",
+			expect: []string{"bzr", "foo = 1.0.0-1"},
+		},
+		{
+			name:   "rpm.arch override",
+			arch:   "amd64",
+			rpm:    "ppc64le",
+			expect: []string{"bzr", "foo = 1.0.0-1", "foo(ppc-64) = 1.0.0-1"},
+		},
+		{
+			name:   "unknown arch",
+			arch:   "amd64",
+			rpm:    "myarch",
+			expect: []string{"bzr", "foo = 1.0.0-1"},
+		},
+		{
+			name:   "prerelease and metadata",
+			arch:   "amd64",
+			epoch:  "1",
+			pre:    "rc-1",
+			meta:   "git",
+			expect: []string{"bzr", "foo = 1:1.0.0~rc_1+git-1", "foo(x86-64) = 1:1.0.0~rc_1+git-1"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			info := exampleInfo()
+			info.Arch = tc.arch
+			info.RPM.Arch = tc.rpm
+			info.Epoch = tc.epoch
+			info.Prerelease = tc.pre
+			info.VersionMetadata = tc.meta
+
+			var buf bytes.Buffer
+			require.NoError(t, DefaultRPM.Package(info, &buf))
+			require.Equal(t, tc.expect, rpmProvides(t, &buf))
+		})
+	}
+}
+
+func TestSRPMHasNoISAProvide(t *testing.T) {
+	info := exampleInfo()
+	info.Arch = "arm64"
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultSRPM.Package(info, &buf))
+	// User provides are declared in the generated spec, not the source header.
+	require.Equal(t, []string{"foo = 0:1.0.0-1"}, rpmProvides(t, &buf))
+}
+
 func TestRPMRiscv64(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test-riscv.rpm")
 	require.NoError(t, err)
@@ -291,6 +416,71 @@ func TestRPMLang(t *testing.T) {
 	}
 	require.Equal(t, "en", byName["/usr/share/locale/en/LC_MESSAGES/foo.mo"])
 	require.Empty(t, byName["/usr/bin/fake"])
+}
+
+func TestRPMELFFileColors(t *testing.T) {
+	dir := t.TempDir()
+	elfFile := func(name string, size int, class, data, version byte, machine elf.Machine) string {
+		header := make([]byte, size)
+		copy(header, []byte{0x7f, 'E', 'L', 'F', class, data, version})
+		var order binary.ByteOrder = binary.LittleEndian
+		if data == 2 {
+			order = binary.BigEndian
+		}
+		order.PutUint16(header[18:20], uint16(machine))
+		path := filepath.Join(dir, name)
+		require.NoError(t, os.WriteFile(path, header, 0o644))
+		return path
+	}
+	mode := func(mode os.FileMode) *files.ContentFileInfo {
+		return &files.ContentFileInfo{Mode: mode}
+	}
+
+	expected := map[string]uint32{
+		"/usr/bin/elf32":      1,
+		"/usr/bin/elf64":      2,
+		"/usr/lib/foo/bpfle":  0,
+		"/usr/lib/foo/bpfbe":  0,
+		"/usr/lib/foo/lib.so": 0, // not executable
+		"/usr/bin/truncated":  0,
+		"/usr/bin/byteorder":  0,
+		"/usr/bin/version":    0,
+		"/usr/bin/script":     0,
+		"/usr/bin/link":       0,
+	}
+	info := exampleInfo()
+	info.Contents = files.Contents{
+		{Source: elfFile("elf32", 52, 1, 1, 1, elf.EM_386), Destination: "/usr/bin/elf32", FileInfo: mode(0o755)},
+		{Source: elfFile("elf64", 64, 2, 1, 1, elf.EM_X86_64), Destination: "/usr/bin/elf64", FileInfo: mode(0o755)},
+		{Source: elfFile("bpfle", 64, 2, 1, 1, elf.EM_BPF), Destination: "/usr/lib/foo/bpfle", FileInfo: mode(0o755)},
+		{Source: elfFile("bpfbe", 64, 2, 2, 1, elf.EM_BPF), Destination: "/usr/lib/foo/bpfbe", FileInfo: mode(0o755)},
+		{Source: elfFile("lib.so", 64, 2, 1, 1, elf.EM_X86_64), Destination: "/usr/lib/foo/lib.so", FileInfo: mode(0o644)},
+		{Source: elfFile("truncated", 63, 2, 1, 1, elf.EM_X86_64), Destination: "/usr/bin/truncated", FileInfo: mode(0o755)},
+		{Source: elfFile("byteorder", 64, 2, 0, 1, elf.EM_X86_64), Destination: "/usr/bin/byteorder", FileInfo: mode(0o755)},
+		{Source: elfFile("version", 64, 2, 1, 0, elf.EM_X86_64), Destination: "/usr/bin/version", FileInfo: mode(0o755)},
+		{Source: "../testdata/fake", Destination: "/usr/bin/script", FileInfo: mode(0o755)},
+		{Source: "/usr/bin/elf64", Destination: "/usr/bin/link", Type: files.TypeSymlink},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(nfpm.WithDefaults(info), &buf))
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+
+	rpmFiles, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+	colors, err := rpm.Header.GetUint32s(rpmutils.FILECOLORS)
+	require.NoError(t, err)
+	require.Len(t, colors, len(rpmFiles))
+
+	actual := map[string]uint32{}
+	for i, f := range rpmFiles {
+		if _, ok := expected[f.Name()]; ok {
+			actual[f.Name()] = colors[i]
+		}
+	}
+	require.Equal(t, expected, actual)
 }
 
 func TestRPMConfigTree(t *testing.T) {
@@ -454,12 +644,14 @@ func TestRPMCompression(t *testing.T) {
 func TestRPMDefaultCompression(t *testing.T) {
 	// When compression is unset, it should default to gzip and produce the
 	// same output as explicitly setting compression to "gzip".
+	mtime := time.Unix(1700000000, 0)
 	buildRPM := func(compression string) []byte {
 		f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 		require.NoError(t, err)
 		defer f.Close()
 
 		info := exampleInfo()
+		info.MTime = mtime
 		info.RPM.Compression = compression
 		require.NoError(t, DefaultRPM.Package(info, f))
 
@@ -470,7 +662,7 @@ func TestRPMDefaultCompression(t *testing.T) {
 
 	defaultRPM := buildRPM("")
 	explicitGzipRPM := buildRPM("gzip")
-	require.Len(t, explicitGzipRPM, len(defaultRPM), "default compression should produce identical output to explicit 'gzip'")
+	require.Equal(t, defaultRPM, explicitGzipRPM, "default compression should produce identical output to explicit 'gzip'")
 
 	// Also verify the default uses gzip as the compressor type in the RPM header.
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")

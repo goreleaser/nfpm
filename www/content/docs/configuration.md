@@ -127,6 +127,11 @@ replaces:
 # Packages it provides. (overridable)
 # This will expand any env var you set in the field, e.g. ${PROVIDES_BLA}
 # the env var approach can be used to account for differences in platforms
+# RPM packages always provide themselves, as rpmbuild does, so there is no need
+# to list them here: `name = [epoch:]version-release`. Binary RPMs with a known
+# ISA also provide `name(isa) = [epoch:]version-release` (e.g.
+# `foo(x86-64) = 1:1.0.0-1`). No ISA-qualified self provide is added for
+# noarch, source packages, or unknown architectures.
 provides:
   - bar
   - ${PROVIDES_BLA}
