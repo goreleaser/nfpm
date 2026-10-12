@@ -577,12 +577,14 @@ func TestRPMCompression(t *testing.T) {
 func TestRPMDefaultCompression(t *testing.T) {
 	// When compression is unset, it should default to gzip and produce the
 	// same output as explicitly setting compression to "gzip".
+	mtime := time.Unix(1700000000, 0)
 	buildRPM := func(compression string) []byte {
 		f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 		require.NoError(t, err)
 		defer f.Close()
 
 		info := exampleInfo()
+		info.MTime = mtime
 		info.RPM.Compression = compression
 		require.NoError(t, DefaultRPM.Package(info, f))
 
@@ -593,7 +595,7 @@ func TestRPMDefaultCompression(t *testing.T) {
 
 	defaultRPM := buildRPM("")
 	explicitGzipRPM := buildRPM("gzip")
-	require.Len(t, explicitGzipRPM, len(defaultRPM), "default compression should produce identical output to explicit 'gzip'")
+	require.Equal(t, defaultRPM, explicitGzipRPM, "default compression should produce identical output to explicit 'gzip'")
 
 	// Also verify the default uses gzip as the compressor type in the RPM header.
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
