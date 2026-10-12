@@ -203,6 +203,7 @@ func TestRPMSpecific(t *testing.T) {
 		"directories",
 		"verify",
 		"postrequires",
+		"elfcolors",
 		"isaprovide",
 	}
 	for _, name := range testNames {
