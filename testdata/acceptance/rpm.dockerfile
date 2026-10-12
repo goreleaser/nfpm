@@ -242,3 +242,9 @@ RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '1 /usr/lib/foo/
 RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '2 /usr/lib/foo/elf64'
 RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '0 /usr/lib/foo/elf64.so'
 RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '0 /usr/bin/fake'
+
+# ---- isaprovide test ----
+FROM min AS isaprovide
+RUN rpm -qp --provides /tmp/foo.rpm
+RUN rpm -qp --provides /tmp/foo.rpm | grep -Fx "foo = 1:1.2.3-4"
+RUN rpm -qp --provides /tmp/foo.rpm | grep -Fx "foo$(rpm --eval '%{_isa}') = 1:1.2.3-4"
