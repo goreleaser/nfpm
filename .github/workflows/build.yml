@@ -26,6 +26,7 @@ permissions:
 
 jobs:
   license-check:
+    if: github.event_name != 'merge_group'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -35,8 +36,10 @@ jobs:
       - name: Check licenses
         run: go run github.com/google/go-licenses/v2@latest check --allowed_licenses=MIT,Apache-2.0,BSD-3-Clause,BSD-2-Clause,ISC,MPL-2.0 ./...
   semgrep:
+    if: github.event_name != 'merge_group'
     uses: caarlos0/meta/.github/workflows/semgrep.yml@c7f17af352dac91fa6c785d06ebac8547f1abdd3 # v0.1.0
   unit-tests:
+    if: github.event_name != 'merge_group'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -57,6 +60,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
   acceptance-tests:
+    if: github.event_name == 'merge_group'
     strategy:
       matrix:
         pkgFormat: [deb, rpm, apk, archlinux, ipk]
@@ -80,6 +84,7 @@ jobs:
         env:
           TEST_PATTERN: "/${{ matrix.pkgFormat }}/${{ matrix.pkgPlatform }}/"
   msix-acceptance-tests:
+    if: github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -94,7 +99,7 @@ jobs:
         env:
           TEST_PATTERN: "TestMSIXStructure"
   windows-build-pkgs:
-    needs: [unit-tests]
+    if: github.event_name == 'merge_group'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -114,6 +119,7 @@ jobs:
           enableCrossOsArchive: true
       - run: task acceptance:windows:package
   install-windows-pkgs:
+    if: github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     needs: [windows-build-pkgs]
     steps:
@@ -134,7 +140,7 @@ jobs:
           enableCrossOsArchive: true
       - run: task acceptance:windows:install
   msix-windows-install:
-    needs: [unit-tests]
+    if: github.event_name == 'merge_group'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -170,9 +176,14 @@ jobs:
       - install-windows-pkgs
       - msix-windows-install
     runs-on: ubuntu-latest
+    env:
+      RESULTS: ${{ toJSON(needs) }}
     steps:
-      - name: Check build results
-        env:
-          RESULTS: ${{ toJSON(needs) }}
+      - name: Check PR results
+        if: github.event_name != 'merge_group'
         run: |
-          printf '%s\n' "$RESULTS" | jq -e 'map_values(.result) | ., all(.[]; . == "success")'
+          printf '%s\n' "$RESULTS" | jq -e '[.["license-check"], .semgrep, .["unit-tests"]] | ., all(.[]; .result == "success")'
+      - name: Check acceptance results
+        if: github.event_name == 'merge_group'
+        run: |
+          printf '%s\n' "$RESULTS" | jq -e '[.["acceptance-tests"], .["msix-acceptance-tests"], .["windows-build-pkgs"], .["install-windows-pkgs"], .["msix-windows-install"]] | ., all(.[]; .result == "success")'
