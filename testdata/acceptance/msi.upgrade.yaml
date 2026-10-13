@@ -1,0 +1,39 @@
+name: TestApp
+arch: amd64
+version: 1.0.1
+license: MIT
+maintainer: "Test Company"
+description: "A test MSI package for Windows installation"
+contents:
+  - src: ./dist/testapp.exe
+    dst: "/Program Files/NfpmMsiTest/testapp.exe"
+  # A second copy registered as a Windows service (never started: the test
+  # app is not a real service, registration and removal are what is verified).
+  - src: ./dist/testapp.exe
+    dst: "/Program Files/NfpmMsiTest/testsvc.exe"
+  # A Linux-style destination lands under the product's install folder.
+  - src: ./testdata/whatever.conf
+    dst: /etc/testapp/testapp.conf
+scripts:
+  preinstall: ./testdata/acceptance/testapp/preinstall.ps1
+  postinstall: ./testdata/acceptance/testapp/postinstall.ps1
+  preremove: ./testdata/acceptance/testapp/preremove.ps1
+  postremove: ./testdata/acceptance/testapp/postremove.ps1
+msi:
+  product_name: NfpmMsiTest
+  manufacturer: "Test Company"
+  upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
+  shortcuts:
+    - name: "Nfpm MSI Test"
+      target: "/Program Files/NfpmMsiTest/testapp.exe"
+      description: "Launch NfpmMsiTest"
+  services:
+    - name: NfpmMsiTestSvc
+      display_name: "nfpm MSI test service"
+      executable: "/Program Files/NfpmMsiTest/testsvc.exe"
+      start_type: demand
+  registry:
+    - root: HKLM
+      key: 'Software\NfpmMsiTest'
+      name: InstallPath
+      value: "[INSTALLFOLDER]"
