@@ -99,6 +99,7 @@ jobs:
         env:
           TEST_PATTERN: "TestMSIXStructure"
   msi-acceptance-tests:
+    if: github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -179,7 +180,7 @@ jobs:
             exit 1
           }
   msi-windows-install:
-    needs: [unit-tests]
+    if: github.event_name == 'merge_group'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -194,12 +195,12 @@ jobs:
       - name: Install, upgrade, verify and remove the MSI packages
         run: task acceptance:windows:install:msi
   msi-signed-build:
+    if: github.event_name == 'merge_group'
     # Builds the nfpm-signed MSI on Linux: a GOOS=windows cross-compiled test
     # app, packaged and Authenticode-signed by nfpm's pure-Go signer (go-msi)
     # with a throwaway openssl cert. msi-windows-signature validates and
     # installs these exact bytes on a real Windows runner, so the whole
     # cross-platform story is exercised.
-    needs: [unit-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -223,6 +224,7 @@ jobs:
             dist/test.cer
             dist/test.pfx
   msi-windows-signature:
+    if: github.event_name == 'merge_group'
     # Real Windows validation of nfpm's built-in MSI signature: msisip
     # recomputes the CFB imprint (Get-AuthenticodeSignature), signtool
     # verifies, and msiexec installs and removes the package. The package was
@@ -276,6 +278,10 @@ jobs:
       - windows-build-pkgs
       - install-windows-pkgs
       - msix-windows-install
+      - msi-acceptance-tests
+      - msi-windows-install
+      - msi-signed-build
+      - msi-windows-signature
     runs-on: ubuntu-latest
     env:
       RESULTS: ${{ toJSON(needs) }}
@@ -287,4 +293,4 @@ jobs:
       - name: Check acceptance results
         if: github.event_name == 'merge_group'
         run: |
-          printf '%s\n' "$RESULTS" | jq -e '[.["acceptance-tests"], .["msix-acceptance-tests"], .["windows-build-pkgs"], .["install-windows-pkgs"], .["msix-windows-install"]] | ., all(.[]; .result == "success")'
+          printf '%s\n' "$RESULTS" | jq -e '[.["acceptance-tests"], .["msix-acceptance-tests"], .["windows-build-pkgs"], .["install-windows-pkgs"], .["msix-windows-install"], .["msi-acceptance-tests"], .["msi-windows-install"], .["msi-signed-build"], .["msi-windows-signature"]] | ., all(.[]; .result == "success")'
