@@ -67,6 +67,23 @@ tasks:
     cmds:
       - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/install-msix.ps1
 
+  acceptance:windows:package:signed:msix:
+    desc: Cross-compile the test app and build the nfpm-signed MSIX package (runs on Linux/macOS)
+    env:
+      NFPM_MSIX_PASSPHRASE: test123
+    cmds:
+      - mkdir -p ./dist
+      - ./testdata/acceptance/create-test-cert.sh
+      - GOOS=windows GOARCH=amd64 go build -o ./dist/testapp.exe ./testdata/acceptance/testapp/
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msix.install.yaml -p msix -t ./dist/foo-unsigned.msix
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msix.signed.yaml -p msix -t ./dist/foo.msix
+
+  acceptance:windows:verify:msix:signed:
+    desc: Trust the test cert and validate the nfpm-signed MSIX with the real Windows trust stack
+    platforms: [windows]
+    cmds:
+      - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/verify-signature.ps1 -Cert ./dist/test.cer -Signed ./dist/foo.msix -Unsigned ./dist/foo-unsigned.msix
+
   acceptance:pull:
     desc: Pull acceptance test images
     vars:
