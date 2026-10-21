@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/xml"
 	"io"
 	"log"
 	"math/big"
@@ -163,6 +164,17 @@ func readManifest(t *testing.T, raw []byte) string {
 	return string(b)
 }
 
+func decodedPublisher(t *testing.T, raw []byte) string {
+	t.Helper()
+	var manifest struct {
+		Identity struct {
+			Publisher string `xml:"Publisher,attr"`
+		} `xml:"Identity"`
+	}
+	require.NoError(t, xml.Unmarshal([]byte(readManifest(t, raw)), &manifest))
+	return manifest.Identity.Publisher
+}
+
 // TestMissingPublisher proves the package builds without an explicit publisher
 // by falling back to a CN= DN derived from the root vendor.
 func TestMissingPublisher(t *testing.T) {
@@ -191,7 +203,12 @@ func TestPublisherDefaults(t *testing.T) {
 		want   string
 	}{
 		{"plain vendor", "TestCo", "CN=TestCo"},
-		{"vendor with comma escaped", "TestCo, Inc", `CN=TestCo\, Inc`},
+		{"vendor with comma quoted", "TestCo, Inc", `CN="TestCo, Inc"`},
+		{"vendor with quote doubled", `Test"Co`, `CN="Test""Co"`},
+		{"vendor with plus quoted", "Test+Co", `CN="Test+Co"`},
+		{"vendor with equals quoted", "Test=Co", `CN="Test=Co"`},
+		{"vendor with hash quoted", "Test#Co", `CN="Test#Co"`},
+		{"vendor with backslash", `Test\Co`, `CN="Test\Co"`},
 		{"vendor already a DN", "CN=TestCo, O=TestCo, C=US", "CN=TestCo, O=TestCo, C=US"},
 	}
 	for _, tt := range tests {
@@ -201,19 +218,36 @@ func TestPublisherDefaults(t *testing.T) {
 			info.Vendor = tt.vendor
 			var buf bytes.Buffer
 			require.NoError(t, Default.Package(info, &buf))
-			require.Contains(t, readManifest(t, buf.Bytes()), `Publisher="`+tt.want+`"`)
+			require.Equal(t, tt.want, decodedPublisher(t, buf.Bytes()))
 		})
 	}
 }
 
 func TestPublisherFromMaintainer(t *testing.T) {
-	info := exampleInfo()
-	info.MSIX.Publisher = ""
-	info.Vendor = ""
-	info.Maintainer = "Jane Doe <jane@example.com>"
-	var buf bytes.Buffer
-	require.NoError(t, Default.Package(info, &buf))
-	require.Contains(t, readManifest(t, buf.Bytes()), `Publisher="CN=Jane Doe"`)
+	for _, tt := range []struct {
+		maintainer string
+		name       string
+		publisher  string
+	}{
+		{"Jane Doe <jane@example.com>", "Jane Doe", "CN=Jane Doe"},
+		{`"Jane Doe" <jane@example.com>`, "Jane Doe", "CN=Jane Doe"},
+		{`"Jane <Ops>" <jane@example.com>`, "Jane <Ops>", `CN="Jane <Ops>"`},
+	} {
+		t.Run(tt.maintainer, func(t *testing.T) {
+			info := exampleInfo()
+			info.MSIX.Publisher = ""
+			info.Vendor = ""
+			info.Maintainer = tt.maintainer
+			var buf bytes.Buffer
+			require.NoError(t, Default.Package(info, &buf))
+			require.Equal(t, tt.publisher, decodedPublisher(t, buf.Bytes()))
+			var manifest struct {
+				PublisherDisplayName string `xml:"Properties>PublisherDisplayName"`
+			}
+			require.NoError(t, xml.Unmarshal([]byte(readManifest(t, buf.Bytes())), &manifest))
+			require.Equal(t, tt.name, manifest.PublisherDisplayName)
+		})
+	}
 }
 
 // TestPublisherFromSigningCert proves that when signing is configured and no
@@ -230,7 +264,7 @@ func TestPublisherFromSigningCert(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	require.NoError(t, Default.Package(info, &buf))
-	require.Contains(t, readManifest(t, buf.Bytes()), `Publisher="CN=nfpm-msix-test"`)
+	require.Equal(t, `CN="nfpm, msix", O=TestCompany, S=Washington, C=US`, decodedPublisher(t, buf.Bytes()))
 }
 
 // TestPublisherDisplayNameFallback proves the display name prefers the root
@@ -265,11 +299,16 @@ func makeTestPFX(t *testing.T) (string, string) {
 
 	tmpl := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "nfpm-msix-test"},
-		NotBefore:    time.Unix(0, 0),
-		NotAfter:     time.Unix(0, 0).AddDate(20, 0, 0),
-		KeyUsage:     x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
+		Subject: pkix.Name{
+			CommonName:   "nfpm, msix",
+			Organization: []string{"TestCompany"},
+			Province:     []string{"Washington"},
+			Country:      []string{"US"},
+		},
+		NotBefore:   time.Unix(0, 0),
+		NotAfter:    time.Unix(0, 0).AddDate(20, 0, 0),
+		KeyUsage:    x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
 	require.NoError(t, err)

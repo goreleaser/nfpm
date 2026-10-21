@@ -598,8 +598,9 @@ msix:
   # Must match the subject of the signing certificate if signing is used.
   # When omitted it defaults to the signing certificate's subject (if a
   # signature is configured), otherwise to "CN=<vendor>" (falling back to the
-  # maintainer name). Set it explicitly if your certificate has an unusual
-  # subject that stringifies differently.
+  # maintainer name). Derived values use Windows DN quoting, for example
+  # CN="MyCompany, Inc". Certificate subjects retain their RDN grouping and
+  # use Windows attribute names and separators (S=, comma-space).
   publisher: "CN=MyCompany, O=MyCompany, C=US"
 
   # Package identity settings.

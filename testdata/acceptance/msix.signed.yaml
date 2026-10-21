@@ -10,7 +10,7 @@ contents:
   - src: ./testdata/acceptance/testapp/logo.png
     dst: /Assets/logo.png
 msix:
-  publisher: "CN=TestCompany, O=TestCompany, C=US"
+  # Publisher is deliberately omitted: derive it from the multi-attribute PFX.
   properties:
     logo: Assets/logo.png
   applications:

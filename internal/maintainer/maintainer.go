@@ -3,12 +3,18 @@
 // person name (the Windows packagers).
 package maintainer
 
-import "strings"
+import (
+	"net/mail"
+	"strings"
+)
 
 // Name returns the name part of an RFC 822 style maintainer string
 // ("Jane Doe <jane@example.com>" -> "Jane Doe"), trimmed of surrounding
 // whitespace. A maintainer without an address is returned as-is.
 func Name(maintainer string) string {
+	if address, err := mail.ParseAddress(maintainer); err == nil {
+		return strings.TrimSpace(address.Name)
+	}
 	if i := strings.IndexByte(maintainer, '<'); i >= 0 {
 		maintainer = maintainer[:i]
 	}

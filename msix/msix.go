@@ -71,29 +71,18 @@ func (*MSIX) ConventionalExtension() string {
 // dnAttributePattern matches a string that already starts with a distinguished
 // name attribute assignment such as "CN=" or "O=".
 // nolint: gochecknoglobals
-var dnAttributePattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9.]*=`)
+var dnAttributePattern = regexp.MustCompile(
+	`^(CN|L|O|OU|E|C|S|STREET|T|G|I|SN|DC|SERIALNUMBER|Description|PostalCode|POBox|Phone|X21Address|dnQualifier|OID\.[0-9]+(\.[0-9]+)+)=`,
+)
 
 // ensureDN turns a plain name into a publisher distinguished name by prefixing
-// "CN=" and escaping per RFC 2253; values that already look like a DN pass
+// "CN=" and quoting per Windows X.500 syntax; values that already look like a DN pass
 // through untouched.
 func ensureDN(name string) string {
 	if dnAttributePattern.MatchString(name) {
 		return name
 	}
-	var b strings.Builder
-	b.WriteString("CN=")
-	for i, r := range name {
-		switch {
-		case strings.ContainsRune(`,+"\<>;`, r):
-			b.WriteByte('\\')
-		case r == ' ' && (i == 0 || i == len(name)-1):
-			b.WriteByte('\\')
-		case r == '#' && i == 0:
-			b.WriteByte('\\')
-		}
-		b.WriteRune(r)
-	}
-	return b.String()
+	return "CN=" + quoteDNValue(name)
 }
 
 // SetPackagerDefaults sets default values for MSIX-specific fields.
@@ -163,7 +152,10 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 		if info.MSIX.Signature.PFXFile != "" {
 			cert, _, _, err := msix.LoadPFX(info.MSIX.Signature.PFXFile, info.MSIX.Signature.KeyPassphrase)
 			if err == nil {
-				info.MSIX.Publisher = cert.Subject.String()
+				info.MSIX.Publisher, err = certificatePublisher(cert.RawSubject)
+				if err != nil {
+					return fmt.Errorf("format signing certificate publisher: %w", err)
+				}
 			}
 			// on error fall through; configureSigning surfaces the real failure
 		}
