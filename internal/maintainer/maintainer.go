@@ -12,7 +12,7 @@ import (
 // ("Jane Doe <jane@example.com>" -> "Jane Doe"), trimmed of surrounding
 // whitespace. A maintainer without an address is returned as-is.
 func Name(maintainer string) string {
-	if address, err := mail.ParseAddress(maintainer); err == nil {
+	if address, err := mail.ParseAddress(maintainer); err == nil && address.Name != "" {
 		return strings.TrimSpace(address.Name)
 	}
 	if i := strings.IndexByte(maintainer, '<'); i >= 0 {
