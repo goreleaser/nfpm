@@ -24,7 +24,9 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 	// post-processing/stripping, and no auto-generated dependencies.
 	b.WriteString("%global debug_package %{nil}\n")
 	b.WriteString("%global __os_install_post %{nil}\n")
-	b.WriteString("%define _build_id_links none\n\n")
+	b.WriteString("%define _build_id_links none\n")
+	// Only the files below rpm.doc_dirs are %doc, as in the binary package.
+	b.WriteString("%global __docdir_path %{nil}\n\n")
 
 	writeField := func(key, value string) {
 		if value != "" {
@@ -122,19 +124,25 @@ func writeScriptSection(b *strings.Builder, section, body string) {
 }
 
 func writeFilesSection(b *strings.Builder, info *nfpm.Info) {
+	docDirs := cleanDocDirs(info.RPM.DocDirs)
 	for _, content := range info.Contents {
 		if content.Packager != "" && content.Packager != contentPackager {
 			continue
 		}
-		if line := specFileLine(content); line != "" {
+		if line := specFileLine(content, docDirs); line != "" {
 			b.WriteString(line)
 			b.WriteString("\n")
 		}
 	}
 }
 
-func specFileLine(content *files.Content) string {
-	dest := escapeSpecText(files.ToNixPath(content.Destination))
+func specFileLine(content *files.Content, docDirs []string) string {
+	dest := files.ToNixPath(content.Destination)
+	doc := ""
+	if isBelowDocDir(dest, docDirs) {
+		doc = "%doc "
+	}
+	dest = escapeSpecText(dest)
 	owner := defaultTo(content.FileInfo.Owner, "root")
 	group := defaultTo(content.FileInfo.Group, "root")
 
@@ -150,19 +158,19 @@ func specFileLine(content *files.Content) string {
 	case files.TypeImplicitDir:
 		return ""
 	case files.TypeSymlink:
-		return fmt.Sprintf("%%attr(-, %s, %s) %q", owner, group, dest)
+		return fmt.Sprintf("%s%%attr(-, %s, %s) %q", doc, owner, group, dest)
 	case files.TypeDir:
 		return fmt.Sprintf("%%dir %s", attrPath(content.Mode(), owner, group, dest))
 	case files.TypeConfig:
-		return langPrefix + "%config " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%config " + doc + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeConfigNoReplace:
-		return langPrefix + "%config(noreplace) " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%config(noreplace) " + doc + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeConfigMissingOK:
-		return langPrefix + "%config(missingok) " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%config(missingok) " + doc + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeRPMDoc:
 		return langPrefix + "%doc " + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeRPMLicence, files.TypeRPMLicense:
-		return langPrefix + "%license " + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + "%license " + doc + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeRPMReadme:
 		return langPrefix + "%doc " + attrPath(content.FileInfo.Mode, owner, group, dest)
 	case files.TypeRPMGhost:
@@ -170,9 +178,9 @@ func specFileLine(content *files.Content) string {
 		if mode == 0 {
 			mode = 0o644
 		}
-		return "%ghost " + attrPath(mode, owner, group, dest)
+		return "%ghost " + doc + attrPath(mode, owner, group, dest)
 	default:
-		return langPrefix + attrPath(content.FileInfo.Mode, owner, group, dest)
+		return langPrefix + doc + attrPath(content.FileInfo.Mode, owner, group, dest)
 	}
 }
 

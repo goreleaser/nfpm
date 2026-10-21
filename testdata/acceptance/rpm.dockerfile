@@ -248,3 +248,17 @@ FROM min AS isaprovide
 RUN rpm -qp --provides /tmp/foo.rpm
 RUN rpm -qp --provides /tmp/foo.rpm | grep -Fx "foo = 1:1.2.3-4"
 RUN rpm -qp --provides /tmp/foo.rpm | grep -Fx "foo$(rpm --eval '%{_isa}') = 1:1.2.3-4"
+
+# ---- doc_dirs test ----
+FROM test_base AS docdirs
+RUN rpm -qp -d /tmp/foo.rpm | grep -Fx /usr/share/doc/foo/README
+RUN rpm -qp -d /tmp/foo.rpm | grep -Fx /usr/share/doc/foo/README.link
+RUN rpm -qp --qf '[%{FILEFLAGS} %{FILENAMES}\n]' /tmp/foo.rpm | grep -Fx '3 /usr/share/doc/foo/example.conf'
+RUN ! rpm -qp -d /tmp/foo.rpm | grep -Fx /usr/bin/fake
+# Documentation is skipped by --excludedocs, and installed otherwise.
+RUN rpm -ivh --excludedocs /tmp/foo.rpm
+RUN test -f /usr/bin/fake
+RUN test ! -e /usr/share/doc/foo/README
+RUN rpm -e foo
+RUN rpm -ivh /tmp/foo.rpm
+RUN test -f /usr/share/doc/foo/README
