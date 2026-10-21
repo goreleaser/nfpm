@@ -20,7 +20,7 @@ Thank you!
 
 ---
 
-{{< tabs items="Deb,RPM,APK,Arch Linux,IPK,MSIX" >}}
+{{< tabs items="Deb,RPM,APK,Arch Linux,IPK,MSI,MSIX" >}}
 
 {{< tab >}}
 
@@ -116,6 +116,26 @@ Thank you!
 | `ppc64le`  |     `ppc64el`     |
 |   `s390`   |      `s390x`      |
 | `riscv64`  | `riscv64_generic` |
+
+{{< /tab >}}
+
+{{< tab >}}
+
+Windows Installer targets exactly five architectures; any other input is an
+error. `intel64` is Itanium, not x86-64.
+
+|   Input   |   Value   |
+| :-------: | :-------: |
+|  `amd64`  |   `x64`   |
+| `x86_64`  |   `x64`   |
+|   `386`   |   `x86`   |
+|  `i386`   |   `x86`   |
+|  `i686`   |   `x86`   |
+|  `arm64`  |  `arm64`  |
+| `aarch64` |  `arm64`  |
+|   `arm`   |   `arm`   |
+|  `arm7`   |   `arm`   |
+|  `ia64`   | `intel64` |
 
 {{< /tab >}}
 

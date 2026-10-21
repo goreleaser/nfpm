@@ -260,6 +260,14 @@ contents:
   - dst: /var/log/boo.log
     type: ghost
 
+  # License files are installed like regular files and additionally marked as
+  # `%license` in RPM packages. For MSI packages the first license content is
+  # also used as the license text shown by the install wizard. Other packagers
+  # ignore this type. ('licence' is accepted as an alternate spelling.)
+  - src: LICENSE
+    dst: /usr/share/licenses/myapp/LICENSE
+    type: license
+
   # You can use the packager field to add files that are unique to a specific
   # packager
   - src: path/to/rpm/file.conf
@@ -330,6 +338,12 @@ contents:
 umask: 0o002
 
 # Scripts to run at specific stages. (overridable)
+#
+# For MSI packages the scripts run as elevated deferred custom actions and must
+# be PowerShell (.ps1) or batch (.bat/.cmd) files, at most 8 KiB each; a
+# non-zero exit rolls back the installer transaction (including on uninstall,
+# so a failing preremove/postremove leaves the product installed until the
+# script is fixed). See the `msi` section for details.
 scripts:
   preinstall: ./scripts/preinstall.sh
   postinstall: ./scripts/postinstall.sh
@@ -650,6 +664,195 @@ msix:
     # Path to the PFX certificate file.
     pfx_file: certificate.pfx
     # Passphrase is read from the NFPM_MSIX_PASSPHRASE environment variable.
+
+# Custom configuration applied only to the MSI packager (Windows).
+#
+# The MSI packager produces a real Windows Installer database. Use unix-style
+# destinations (a leading "/", no drive letter). Well-known prefixes are mapped
+# onto the matching Windows Installer folders:
+#   /Program Files        -> Program Files (the 64-bit one on 64-bit packages)
+#   /Program Files (x86)  -> Program Files (x86)
+#   /ProgramData          -> the shared application data folder
+#   /Windows/System32     -> System32 (the 64-bit one on 64-bit packages)
+#   /Windows/SysWOW64     -> SysWOW64
+#   /Windows/Fonts        -> the Fonts folder
+#   /Windows              -> the Windows folder
+#   /AppData/Local        -> the user's local application data folder
+#   /AppData/Roaming      -> the user's roaming application data folder
+# Anything else is installed under the product's install folder, keeping its
+# relative path: `/usr/bin/myapp` becomes
+# `C:\Program Files\<install_dir>\usr\bin\myapp`. Files installed under
+# `/Windows` (including System32 and Fonts) are permanent: Windows Installer
+# never removes them, so they outlive every uninstall of the product; nFPM
+# warns when a package does this. Two destinations that differ only by drive
+# letter or slashes are an error, and `config` contents are installed as
+# plain files (they are replaced on upgrade, with a warning).
+#
+# Every release must have a distinct version that fits Windows Installer's
+# limits (see `version` below); releases replace older installs of the same
+# product in place (see `upgrade`).
+#
+# Shared root fields are reused where MSI has a place for them:
+# - `description` becomes the ARPCOMMENTS property (shown in Add/Remove
+#   Programs) and `homepage` becomes ARPURLINFOABOUT; both can be overridden
+#   by setting the property explicitly in `msi.properties`.
+# - the first contents entry with `type: license` is shown as the license text
+#   by the install wizard (see `minimal_ui`).
+# - the root `scripts` run as elevated (SYSTEM) deferred custom actions:
+#   preinstall/postinstall around file installation (on fresh installs and on
+#   the new release during an upgrade), and preremove/postremove around file
+#   removal on uninstall (not while an upgrade replaces the old release).
+#   Scripts must be .ps1, .bat or .cmd and at most 8 KiB; they are embedded in
+#   the package and extracted to a randomly named temporary file when they
+#   run. A non-zero exit rolls back the transaction; there is no way to undo
+#   what a script already did before failing. A machine-wide PowerShell
+#   execution policy set by Group Policy overrides the `Bypass` the runner
+#   uses, so .ps1 hooks fail (and roll the install back) on such machines.
+msi:
+  # msi specific architecture name that overrides "arch" without performing
+  # any replacements.
+  #
+  # Windows Installer targets exactly five architectures, so this must be one of
+  # `x86`, `x64`, `arm`, `arm64`, or `intel64` (Itanium — note this is NOT
+  # x86-64; `intel` is accepted as an alias of `x86`). "arch" is mapped onto
+  # them automatically: amd64/x86_64 -> x64, 386/i386/i686 -> x86, arm/arm7 ->
+  # arm, arm64/aarch64 -> arm64, ia64 -> intel64. Any other architecture is an
+  # error, since it cannot produce a package Windows can install; there is no
+  # arch-independent MSI. Note that `arm` (32-bit) packages only install on
+  # Windows RT; current Windows on ARM needs `arm64`.
+  #
+  # The architecture is recorded in the package as its target platform and also
+  # decides whether files go to the 64-bit or 32-bit system folders. Each
+  # architecture is its own product line: an x64 package does not upgrade an
+  # x86 install.
+  arch: x64
+
+  # msi specific version that overrides "version".
+  #
+  # Windows Installer bounds the ProductVersion property per field: the major
+  # and minor versions may not exceed 255 and the build may not exceed 65535.
+  # nFPM normalizes whatever version it is given to major.minor.build (dropping
+  # any pre-release or metadata suffix) and refuses to build a package whose
+  # version does not fit, since clamping it would give distinct releases the
+  # same version and they could no longer upgrade each other. Calendar versions
+  # such as 2024.1.0 therefore need this field, e.g. 2024.1.0 -> 24.1.0.
+  #
+  # A pre-release and its final release (1.2.3-rc1 and 1.2.3) are different
+  # releases to nFPM but the same 1.2.3 to Windows Installer; installing the
+  # release over the pre-release needs `upgrade.allow_same_version`.
+  #
+  # This is used for the ProductVersion property, the derived product code, and
+  # the package file name.
+  version: 24.1.0
+
+  # Product name (defaults to the package name).
+  product_name: "My Application"
+
+  # Manufacturer/author of the product.
+  # Defaults to the vendor, falling back to the maintainer name.
+  manufacturer: "My Company"
+
+  # Product code GUID. When omitted, a GUID is derived from the manufacturer,
+  # product name, architecture, and full version (including any pre-release
+  # or metadata), so it changes on every release, as Windows Installer
+  # requires for upgrades. Pinning it makes installing a new release over an
+  # old one fail with "another version of this product is already installed"
+  # (error 1638), so leave it empty unless you generate a new one per release.
+  product_code: "{12345678-1234-1234-1234-123456789ABC}"
+
+  # Upgrade code GUID. When omitted, a stable GUID is derived from the
+  # manufacturer, product name, and architecture, so it stays constant across
+  # releases and every release replaces the previous one. Pin it explicitly if
+  # the product or manufacturer name may change between releases.
+  upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
+
+  # Name of the default install folder (defaults to product_name). It is
+  # created under Program Files (the 64-bit one for 64-bit packages) for
+  # per-machine installs and under %LOCALAPPDATA%\Programs for per-user
+  # installs; users can redirect it with `msiexec INSTALLFOLDER=...`.
+  install_dir: "My Application"
+
+  # Install for the current user only, without elevation (defaults to false: a
+  # per-machine install for all users). A per-user package cannot install into
+  # Program Files, ProgramData or the Windows folders, write HKLM registry
+  # values, or install services.
+  per_user: false
+
+  # Arbitrary MSI Property rows. Setting ARPCOMMENTS or ARPURLINFOABOUT here
+  # overrides the values derived from the root description and homepage. The
+  # properties nFPM derives from its own fields (ProductName, ProductVersion,
+  # Manufacturer, ProductCode, UpgradeCode, ALLUSERS, ProductLanguage) cannot
+  # be set here.
+  properties:
+    MYPROPERTY: "value"
+
+  # Install the canned minimal install wizard. The license text it shows comes
+  # from the first contents entry with `type: license`.
+  minimal_ui: true
+
+  # Upgrade behavior. Major upgrades are always enabled: installing a release
+  # removes any older release with the same upgrade code first, and installing
+  # over a newer release is refused.
+  upgrade:
+    # Message shown when a newer version is already installed.
+    downgrade_error_message: "A newer version is already installed."
+    # Let an older release be installed over a newer one (defaults to false).
+    allow_downgrades: false
+    # Treat a package with the same major.minor.build as an upgrade (defaults
+    # to false). Needed to replace a pre-release with its final release, or a
+    # rebuilt package with the same version.
+    allow_same_version: false
+
+  # Advertised shortcuts. The target must match one of the contents
+  # destinations.
+  shortcuts:
+    - name: "My Application"
+      target: "/Program Files/My Application/myapp.exe"
+      # Standard Windows Installer folder the shortcut is created in, e.g.
+      # DesktopFolder, StartupFolder, or INSTALLFOLDER.
+      # Defaults to ProgramMenuFolder (the Start menu).
+      directory: ProgramMenuFolder
+      arguments: ""
+      description: "Launch My Application"
+      icon: ./assets/app.ico
+
+  # Windows services to install. The executable must match one of the contents
+  # destinations. A service is always stopped before its files are installed
+  # or replaced, and stopped and deleted when the product is uninstalled.
+  services:
+    - name: MyService
+      display_name: "My Service"
+      executable: "/Program Files/My Application/svc.exe"
+      description: "My background service"
+      # auto | demand | disabled (defaults to demand).
+      start_type: auto
+      account: ""
+      arguments: ""
+      dependencies: []
+      # Start the service once it is installed.
+      start: true
+
+  # Registry values to create. Each value is its own component and is removed
+  # with the product. HKMU resolves to HKLM for per-machine and HKCU for
+  # per-user installs; HKCU values in a per-machine package are only written
+  # for the user running the installer.
+  registry:
+    - root: HKLM # HKLM | HKCU | HKCR | HKMU | HKU
+      key: 'Software\MyCompany\MyApp'
+      name: InstallPath
+      # Windows Installer properties are expanded: [INSTALLFOLDER] is the
+      # install folder path.
+      value: "[INSTALLFOLDER]"
+
+  # MSI signing configuration (Authenticode).
+  # Uses PFX certificates (not PGP like Linux packagers).
+  signature:
+    # Path to the PFX certificate file.
+    pfx_file: certificate.pfx
+    # Optional RFC3161 timestamp URL.
+    timestamp_url: "http://timestamp.digicert.com"
+    # The passphrase is taken from the environment variable
+    # $NFPM_MSI_PASSPHRASE with a fallback to $NFPM_PASSPHRASE.
 ```
 
 ## Templating
