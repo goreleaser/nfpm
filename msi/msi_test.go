@@ -498,6 +498,14 @@ func TestManufacturerFallback(t *testing.T) {
 	require.Equal(t, "TestCo", property(t, buildDB(t, info), "Manufacturer"))
 }
 
+func TestManufacturerFromQuotedMaintainer(t *testing.T) {
+	info := exampleInfo()
+	info.MSI.Manufacturer = ""
+	info.Vendor = ""
+	info.Maintainer = `"Jane <Ops>" <jane@example.com>`
+	require.Equal(t, "Jane <Ops>", property(t, buildDB(t, info), "Manufacturer"))
+}
+
 func TestNoManufacturer(t *testing.T) {
 	info := exampleInfo()
 	info.MSI.Manufacturer = ""
@@ -521,6 +529,8 @@ func TestManufacturerDefaults(t *testing.T) {
 		{"vendor", "TestCo", "Jane Doe <jane@example.com>", "", "TestCo"},
 		{"maintainer email stripped", "", "Jane Doe <jane@example.com>", "", "Jane Doe"},
 		{"maintainer without email", "", "Jane Doe", "", "Jane Doe"},
+		{"quoted maintainer", "", `"Jane Doe" <jane@example.com>`, "", "Jane Doe"},
+		{"quoted angle brackets", "", `"Jane <Ops>" <jane@example.com>`, "", "Jane <Ops>"},
 		{"all empty", "", "", "", ""},
 	}
 	for _, tt := range tests {

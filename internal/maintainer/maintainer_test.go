@@ -9,11 +9,15 @@ import (
 
 func TestName(t *testing.T) {
 	for in, want := range map[string]string{
-		"Jane Doe <jane@example.com>": "Jane Doe",
-		"Jane Doe":                    "Jane Doe",
-		"  Jane Doe  ":                "Jane Doe",
-		"<jane@example.com>":          "",
-		"":                            "",
+		"Jane Doe <jane@example.com>":       "Jane Doe",
+		"Jane Doe":                          "Jane Doe",
+		"  Jane Doe  ":                      "Jane Doe",
+		"<jane@example.com>":                "",
+		"jane@example.com":                  "",
+		`"Jane Doe" <jane@example.com>`:     "Jane Doe",
+		`"Jane <Ops>" <jane@example.com>`:   "Jane <Ops>",
+		`"Jane \"Ops\"" <jane@example.com>`: `Jane "Ops"`,
+		"":                                  "",
 	} {
 		t.Run(in, func(t *testing.T) {
 			require.Equal(t, want, maintainer.Name(in))
