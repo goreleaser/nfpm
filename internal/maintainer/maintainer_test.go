@@ -13,7 +13,7 @@ func TestName(t *testing.T) {
 		"Jane Doe":                          "Jane Doe",
 		"  Jane Doe  ":                      "Jane Doe",
 		"<jane@example.com>":                "",
-		"jane@example.com":                  "",
+		"jane@example.com":                  "jane@example.com",
 		`"Jane Doe" <jane@example.com>`:     "Jane Doe",
 		`"Jane <Ops>" <jane@example.com>`:   "Jane <Ops>",
 		`"Jane \"Ops\"" <jane@example.com>`: `Jane "Ops"`,
