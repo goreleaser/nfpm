@@ -133,7 +133,9 @@ Thank you!
 |  `arm64`  | `aarch64` |
 | `aarch64` | `aarch64` |
 |  `arm6`   | `armv6l`  |
+| `armv6l`  | `armv6l`  |
 |  `arm7`   | `armv7l`  |
+| `armv7l`  | `armv7l`  |
 
 {{< /tab >}}
 

@@ -70,10 +70,23 @@ xbps-query -p pkgver foo
 xbps-remove -y foo
 ```
 
+`-i` only tells `xbps-install` to ignore the repositories configured in
+`xbps.d`, so the test uses the local repository alone. Packages installed from
+a local (file path) repository are verified by SHA-256 hash; XBPS verifies RSA
+signatures only for remote (`http`, `https`, `ftp`) repositories.
+
 When `xbps.signature.key_file` is configured, nFPM writes an adjacent
-`<package>.xbps.sig2` sidecar for the generated package. This does not create or
-sign repository metadata, publish repositories, manage remote repositories, or
-orchestrate `xbps-rindex --sign`.
+`<package>.xbps.sig2` sidecar, equivalent to running `xbps-rindex --sign-pkg`
+with the same key. To serve a signed repository, sign its index with that same
+key after adding the packages:
+
+```sh
+xbps-rindex -a "$repo"/*.xbps
+xbps-rindex --privkey key.pem --signedby "Your Name <you@example.com>" --sign "$repo"
+```
+
+nFPM does not create or sign repository metadata, publish repositories, or
+run `xbps-rindex` for you.
 
 {{% /steps %}}
 

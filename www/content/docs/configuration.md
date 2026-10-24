@@ -582,12 +582,48 @@ xbps:
   # `config|noreplace`, or `config|missingok`; there is no separate XBPS
   # config-files list.
 
+  # Version handling: XBPS reserves "-" and "_" inside a pkgver (the last "-"
+  # separates the name from the version, the "_" separates the version from
+  # the revision). nFPM therefore folds both characters to "." in the version,
+  # prerelease, and metadata, so "v1.2.3-beta-1+git-1" becomes
+  # "foo-1.2.3.beta.1.git.1_1". "release" is the XBPS revision and must be a
+  # positive integer (default 1).
+
+  # Dependencies: the generic "depends" list is emitted as run_depends. XBPS
+  # requires either a version pattern ("zlib>=1.0_1") or an exact
+  # "name-version_revision"; a bare name such as "bash" is emitted as
+  # "bash>=0". Syntax from other packagers ("foo (>= 1.0)") is rejected.
+
+  # Directories: XBPS does not create directories from archive entries.
+  # Contents of type "dir" are created at post-install by the generated
+  # INSTALL script with the configured mode and owner, and removed at
+  # post-remove when empty, matching the make_dirs mechanism of xbps-src.
+  # Parent directories of packaged files are created implicitly.
+
+  # Lifecycle scripts receive the arguments XBPS passes:
+  # ACTION PKGNAME VERSION UPDATE CONF ARCH, where ACTION is "pre" or "post"
+  # and UPDATE is "yes" on an upgrade and "no" on a first install.
+
   # XBPS package signature sidecar output. When key_file is set, nFPM writes
-  # an adjacent <package>.xbps.sig2 file for the generated package.
-  # The passphrase is taken from NFPM_XBPS_PASSPHRASE, with fallbacks to
-  # XBPS_PASSPHRASE and NFPM_PASSPHRASE.
-  # This does not create or sign repository metadata, publish repositories,
-  # manage remote repositories, or orchestrate xbps-rindex --sign.
+  # an adjacent <package>.xbps.sig2 file: an RSA PKCS#1 v1.5 signature over the
+  # SHA-256 digest of the package, identical to what `xbps-rindex --sign-pkg`
+  # produces for the same key. Any stale sidecar at that path is removed
+  # before the package is written, including when the new build is unsigned.
+  # The passphrase is taken from NFPM_XBPS_PASSPHRASE, falling back to
+  # NFPM_PASSPHRASE. The unprefixed XBPS_PASSPHRASE is not read: xbps-rindex
+  # uses it for the repository signing key.
+  #
+  # XBPS only verifies package signatures when installing from a remote
+  # (http/https/ftp) repository, and verifies them against the key that
+  # signed the repository index. The repository must therefore be signed with
+  # the same key: `xbps-rindex --privkey key.pem --signedby "..." --sign <repo>`.
+  # nFPM does not create or sign repository metadata, publish repositories,
+  # or run xbps-rindex.
+  #
+  # Library users: the sidecar is written next to info.Target, which the nfpm
+  # CLI sets to the output path. Callers of the Go API that enable signing
+  # must set info.Target themselves; packaging to a bare io.Writer with
+  # signing enabled fails with an ErrSigningFailure.
   signature:
     # RSA private key in PEM format.
     key_file: key.pem
