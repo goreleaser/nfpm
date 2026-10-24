@@ -165,6 +165,15 @@ func TestLoadPrivateKeyNoPEMBlock(t *testing.T) {
 	require.ErrorIs(t, err, errNoPemBlock)
 }
 
+func TestLoadPrivateKeyPKCS1ParseError(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad_pkcs1.priv")
+	bad := pem.EncodeToMemory(&pem.Block{Type: PKCS1PrivkeyPreamble, Bytes: []byte("not-valid-der")})
+	require.NoError(t, os.WriteFile(path, bad, 0o600))
+	_, err := loadPrivateKey(path, "")
+	require.ErrorContains(t, err, "parse PKCS#1 private key")
+}
+
 func TestLoadPrivateKeyPKCS8ParseError(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad_pkcs8.priv")

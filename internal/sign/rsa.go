@@ -81,7 +81,11 @@ func loadPrivateKey(keyFile, passphrase string) (crypto.Signer, error) {
 
 	switch block.Type {
 	case PKCS1PrivkeyPreamble:
-		return x509.ParsePKCS1PrivateKey(blockData)
+		priv, err := x509.ParsePKCS1PrivateKey(blockData)
+		if err != nil {
+			return nil, fmt.Errorf("parse PKCS#1 private key: %w", err)
+		}
+		return priv, nil
 	case PKCS8PrivkeyPreamble:
 		privAny, err := x509.ParsePKCS8PrivateKey(blockData)
 		if err != nil {
