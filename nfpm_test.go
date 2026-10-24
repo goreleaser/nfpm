@@ -484,12 +484,15 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		require.Equal(t, globalPass, info.XBPS.Signature.KeyPassphrase)
 	})
 
-	t.Run("xbps passphrase", func(t *testing.T) {
+	t.Run("xbps ignores unprefixed XBPS_PASSPHRASE", func(t *testing.T) {
+		// XBPS_PASSPHRASE is read by xbps-rindex for the repository signing
+		// key, which is a different secret; nFPM only honours the
+		// NFPM_-prefixed variables shared by every packager.
 		t.Setenv("NFPM_PASSPHRASE", globalPass)
 		t.Setenv("XBPS_PASSPHRASE", xbpsPass)
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
-		require.Equal(t, xbpsPass, info.XBPS.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.XBPS.Signature.KeyPassphrase)
 	})
 
 	t.Run("specific passphrases", func(t *testing.T) {

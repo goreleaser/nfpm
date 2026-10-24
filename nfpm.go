@@ -295,13 +295,9 @@ func (c *Config) expandEnvVars() {
 	}
 	c.XBPS.Signature.KeyFile = os.Expand(c.XBPS.Signature.KeyFile, c.envMappingFunc)
 	c.XBPS.Signature.KeyPassphrase = generalPassphrase
-	xbpsPassphrase := os.Expand("$XBPS_PASSPHRASE", c.envMappingFunc)
+	xbpsPassphrase := os.Expand("$NFPM_XBPS_PASSPHRASE", c.envMappingFunc)
 	if xbpsPassphrase != "" {
 		c.XBPS.Signature.KeyPassphrase = xbpsPassphrase
-	}
-	nfpmXBPSPassphrase := os.Expand("$NFPM_XBPS_PASSPHRASE", c.envMappingFunc)
-	if nfpmXBPSPassphrase != "" {
-		c.XBPS.Signature.KeyPassphrase = nfpmXBPSPassphrase
 	}
 
 	// MSIX specific
@@ -548,6 +544,12 @@ type XBPSAlternative struct {
 }
 
 // XBPSSignature contains signing configs that are only available on XBPS packages.
+//
+// It intentionally does not embed PackageSignature: that type carries key_id,
+// which is a PGP concept with no XBPS equivalent (XBPS signatures are raw RSA
+// over a SHA-256 digest and the repository, not the package, names the key).
+// Keeping the field out of the schema avoids advertising a setting xbps
+// would silently ignore.
 type XBPSSignature struct {
 	KeyFile       string                               `yaml:"key_file,omitempty" json:"key_file,omitempty" jsonschema:"title=RSA private key file"`
 	KeyPassphrase string                               `yaml:"-" json:"-"`
