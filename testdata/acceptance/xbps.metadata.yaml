@@ -1,7 +1,9 @@
 name: "foo"
 arch: "${BUILD_ARCH}"
 platform: "linux"
-version: "v1.2.3"
+# A prerelease and build metadata containing hyphens: xbps must still index
+# and resolve the package as "foo".
+version: "v1.2.3-beta-1+git-1"
 release: "1"
 maintainer: "Foo Bar"
 description: |

@@ -367,7 +367,7 @@ func TestXBPSSpecific(t *testing.T) {
 		{
 			name:      "metadata",
 			conf:      "xbps.metadata.yaml",
-			pkgfile:   "foo-1.2.3_1.x86_64.xbps",
+			pkgfile:   "foo-1.2.3.beta.1.git.1_1.x86_64.xbps",
 			buildArgs: []string{"scenario=metadata"},
 		},
 		{
@@ -400,6 +400,21 @@ func TestXBPSSpecific(t *testing.T) {
 			})
 		})
 	}
+
+	t.Run(fmt.Sprintf("%s/%s/signed", format, arch), func(t *testing.T) {
+		t.Parallel()
+		accept(t, acceptParms{
+			Name:   fmt.Sprintf("xbps_signed_%s", arch),
+			Conf:   "xbps.signed.yaml",
+			Format: format,
+			Docker: dockerParams{
+				File:      "xbps.dockerfile",
+				Target:    "signed",
+				Arch:      arch,
+				BuildArgs: []string{"pkgfile=foo-1.2.3_1.x86_64.xbps"},
+			},
+		})
+	})
 
 	t.Run(fmt.Sprintf("%s/%s/upgrade", format, arch), func(t *testing.T) {
 		t.Parallel()

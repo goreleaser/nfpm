@@ -13,6 +13,8 @@ license: "MIT"
 contents:
   - src: ./testdata/acceptance/xbps.current.v2.txt
     dst: /usr/share/foo/current.txt
+scripts:
+  postinstall: ./testdata/acceptance/scripts/xbps/postinstall.sh
 xbps:
   short_desc: "XBPS upgrade package"
   preserve: true
