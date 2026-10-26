@@ -745,6 +745,17 @@ msi:
   # the package file name.
   version: 24.1.0
 
+  # PE executable and DLL file versions and languages are detected from their
+  # embedded version resources, independently of the filename extension.
+  # Other data files remain unversioned. PE files without valid fixed file
+  # version resources require an explicit override, including Go executables
+  # built without version resources. Keys match contents destination paths;
+  # an empty string explicitly keeps that file unversioned. These are file
+  # versions, separate from the package's ProductVersion above.
+  file_versions:
+    /app/unversioned.exe: ""
+    /app/override.dll: "1.2.3.4"
+
   # Product name (defaults to the package name).
   product_name: "My Application"
 

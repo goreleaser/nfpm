@@ -346,6 +346,17 @@ func validate(info *nfpm.Info) error {
 	if err != nil {
 		return err
 	}
+	versionDests := map[string]bool{}
+	for dest := range info.MSI.FileVersions {
+		normalized := normalizeDest(dest)
+		if !dests[normalized] {
+			return fmt.Errorf("package msi.file_versions[%q] does not match any contents destination", dest)
+		}
+		if versionDests[normalized] {
+			return fmt.Errorf("package msi.file_versions has duplicate Windows path %q", normalized)
+		}
+		versionDests[normalized] = true
+	}
 
 	for i, s := range info.MSI.Shortcuts {
 		if s.Name == "" {
@@ -482,6 +493,10 @@ func (t *idTable) id(prefix, seed string) (string, error) {
 // keyed by normalized destination path.
 func addContents(b msi.PackageBuilder, info *nfpm.Info, upgradeCode string, ids *idTable, createdDirs map[string]bool) (map[string]placement, error) {
 	placed := map[string]placement{}
+	versions := map[string]string{}
+	for dest, version := range info.MSI.FileVersions {
+		versions[normalizeDest(dest)] = version
+	}
 	licenseSet := false
 	warnedPermanent := map[string]bool{}
 	is64 := is64bit(info.Arch)
@@ -576,7 +591,10 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info, upgradeCode string, ids 
 		comp := b.Directory(parentID).Component(compID).
 			WithGUID(deriveGUID("component|" + upgradeCode + "|" + info.Arch + "|" + dest)).
 			WithAttributes(componentAttributes(rootID, is64))
-		comp.WithFile(fileName, src)
+		file := comp.WithFile(fileName, src)
+		if version, explicit := versions[dest]; explicit {
+			file.WithVersion(version)
+		}
 		comp.AssociateToFeature(mainFeature)
 
 		placed[dest] = placement{componentID: compID, rootID: rootID}

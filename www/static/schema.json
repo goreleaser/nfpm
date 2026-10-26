@@ -736,6 +736,14 @@
 						"type": "object",
 						"title": "arbitrary MSI Property rows"
 					},
+					"file_versions": {
+						"additionalProperties": {
+							"type": "string"
+						},
+						"type": "object",
+						"title": "file version overrides by contents destination",
+						"description": "PE file versions are detected automatically; an empty override explicitly keeps a file unversioned"
+					},
 					"minimal_ui": {
 						"type": "boolean",
 						"title": "install the canned minimal install wizard"

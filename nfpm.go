@@ -299,6 +299,9 @@ func (c *Config) expandEnvVars() {
 	for k, v := range c.MSI.Properties {
 		c.MSI.Properties[k] = os.Expand(v, c.envMappingFunc)
 	}
+	for k, v := range c.MSI.FileVersions {
+		c.MSI.FileVersions[k] = os.Expand(v, c.envMappingFunc)
+	}
 	for i := range c.MSI.Shortcuts {
 		c.MSI.Shortcuts[i].Arguments = os.Expand(c.MSI.Shortcuts[i].Arguments, c.envMappingFunc)
 	}
@@ -611,6 +614,7 @@ type MSI struct {
 	InstallDir   string            `yaml:"install_dir,omitempty" json:"install_dir,omitempty" jsonschema:"title=default install folder name,description=created under Program Files (or the user's local app data for per-user installs); defaults to the product name"`
 	PerUser      bool              `yaml:"per_user,omitempty" json:"per_user,omitempty" jsonschema:"title=per-user install,description=install for the current user only without elevation; defaults to a per-machine install"`
 	Properties   map[string]string `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=arbitrary MSI Property rows"`
+	FileVersions map[string]string `yaml:"file_versions,omitempty" json:"file_versions,omitempty" jsonschema:"title=file version overrides by contents destination,description=PE file versions are detected automatically; an empty override explicitly keeps a file unversioned"`
 	MinimalUI    bool              `yaml:"minimal_ui,omitempty" json:"minimal_ui,omitempty" jsonschema:"title=install the canned minimal install wizard"`
 	Upgrade      MSIUpgrade        `yaml:"upgrade,omitempty" json:"upgrade,omitempty" jsonschema:"title=major upgrade behavior"`
 	Shortcuts    []MSIShortcut     `yaml:"shortcuts,omitempty" json:"shortcuts,omitempty" jsonschema:"title=shortcuts to create"`

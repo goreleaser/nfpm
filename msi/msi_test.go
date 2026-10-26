@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -376,6 +377,68 @@ func TestPackageWithContents(t *testing.T) {
 		names = append(names, longName(f["FileName"]))
 	}
 	require.ElementsMatch(t, []string{"app.exe", "config.conf", "extra.txt", "file.txt"}, names)
+}
+
+func TestPEFileVersions(t *testing.T) {
+	// Use a real PE without version resources, as produced by a normal Go build.
+	source := filepath.Join(t.TempDir(), "testapp.exe")
+	cmd := exec.Command("go", "build", "-o", source, "../testdata/acceptance/testapp/")
+	cmd.Env = append(cmd.Environ(), "GOOS=windows", "GOARCH=amd64")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "%s", output)
+
+	const destination = "/Program Files/TestApp/app.exe"
+	for _, tc := range []struct {
+		name      string
+		versions  map[string]string
+		want      any
+		wantError string
+	}{
+		{
+			name:      "missing version requires an explicit choice",
+			wantError: "PE image has no fixed file version resource",
+		},
+		{
+			name:     "intentionally unversioned",
+			versions: map[string]string{destination: ""},
+		},
+		{
+			name:     "explicit version with normalized destination",
+			versions: map[string]string{`C:\Program Files\TestApp\app.exe`: "1.2.3.4"},
+			want:     "1.2.3.4",
+		},
+		{
+			name:      "unknown destination",
+			versions:  map[string]string{"/missing.exe": ""},
+			wantError: "does not match any contents destination",
+		},
+		{
+			name: "duplicate normalized destination",
+			versions: map[string]string{
+				destination: "", `C:\Program Files\TestApp\app.exe`: "1.2.3.4",
+			},
+			wantError: "duplicate Windows path",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			info := exampleInfo()
+			info.Contents[0].Source = source
+			info.MSI.FileVersions = tc.versions
+			if tc.wantError != "" {
+				err := msi.Default.Package(info, io.Discard)
+				require.ErrorContains(t, err, tc.wantError)
+				return
+			}
+			db := buildDB(t, info)
+			for _, row := range tableRows(t, db, "File") {
+				if longName(row["FileName"]) == "app.exe" {
+					assert.Equal(t, tc.want, row["Version"])
+					return
+				}
+			}
+			t.Fatal("payload missing from File table")
+		})
+	}
 }
 
 // TestInstallFolder proves where the product's own files land: under the

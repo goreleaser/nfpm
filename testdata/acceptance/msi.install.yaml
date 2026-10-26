@@ -20,6 +20,10 @@ scripts:
   preremove: ./testdata/acceptance/testapp/preremove.ps1
   postremove: ./testdata/acceptance/testapp/postremove.ps1
 msi:
+  # The Go test payload deliberately has no PE version resource.
+  file_versions:
+    "/Program Files/NfpmMsiTest/testapp.exe": ""
+    "/Program Files/NfpmMsiTest/testsvc.exe": ""
   product_name: NfpmMsiTest
   manufacturer: "Test Company"
   upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"

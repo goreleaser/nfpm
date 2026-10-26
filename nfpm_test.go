@@ -313,6 +313,9 @@ msi:
   install_dir: "$MSI_DIR"
   properties:
     MYPROP: "$MSI_PROP"
+  file_versions:
+    /a.exe: "$MSI_VERSION"
+    /unversioned.exe: ""
   shortcuts:
     - name: s
       target: /a.exe
@@ -338,6 +341,7 @@ msi:
 	require.Equal(t, "My Company", config.MSI.Manufacturer)
 	require.Equal(t, "MyApp", config.MSI.InstallDir)
 	require.Equal(t, "prop-value", config.MSI.Properties["MYPROP"])
+	require.Equal(t, map[string]string{"/a.exe": "24.1.0", "/unversioned.exe": ""}, config.MSI.FileVersions)
 	require.Equal(t, "--from-env", config.MSI.Shortcuts[0].Arguments)
 	require.Equal(t, `NT AUTHORITY\LocalService`, config.MSI.Services[0].Account)
 	require.Equal(t, "--from-env", config.MSI.Services[0].Arguments)
