@@ -203,6 +203,12 @@ func (c *Config) expandEnvVarsContents(contents files.Contents) files.Contents {
 	return contents
 }
 
+func (c *Config) expandEnvVarsRPMTriggers(triggers []RPMTrigger) {
+	for i := range triggers {
+		triggers[i].Conditions = c.expandEnvVarsStringSlice(triggers[i].Conditions)
+	}
+}
+
 func (c *Config) expandEnvVars() {
 	// Version related fields
 	c.Release = os.Expand(c.Release, c.envMappingFunc)
@@ -221,6 +227,7 @@ func (c *Config) expandEnvVars() {
 		c.Overrides[or].Provides = c.expandEnvVarsStringSlice(c.Overrides[or].Provides)
 		c.Overrides[or].Suggests = c.expandEnvVarsStringSlice(c.Overrides[or].Suggests)
 		c.Overrides[or].RPM.Requires.Post = c.expandEnvVarsStringSlice(c.Overrides[or].RPM.Requires.Post)
+		c.expandEnvVarsRPMTriggers(c.Overrides[or].RPM.Triggers)
 		c.Overrides[or].Contents = c.expandEnvVarsContents(c.Overrides[or].Contents)
 	}
 	c.Conflicts = c.expandEnvVarsStringSlice(c.Conflicts)
@@ -230,6 +237,7 @@ func (c *Config) expandEnvVars() {
 	c.Provides = c.expandEnvVarsStringSlice(c.Provides)
 	c.Suggests = c.expandEnvVarsStringSlice(c.Suggests)
 	c.RPM.Requires.Post = c.expandEnvVarsStringSlice(c.RPM.Requires.Post)
+	c.expandEnvVarsRPMTriggers(c.RPM.Triggers)
 	c.Contents = c.expandEnvVarsContents(c.Contents)
 
 	// Basic metadata fields
@@ -413,7 +421,7 @@ type RPMTrigger struct {
 	Type        string   `yaml:"type" json:"type" jsonschema:"title=trigger type,enum=prein,enum=in,enum=un,enum=postun"`
 	Script      string   `yaml:"script" json:"script" jsonschema:"title=trigger script"`
 	Interpreter string   `yaml:"interpreter,omitempty" json:"interpreter,omitempty" jsonschema:"title=trigger script interpreter,default=/bin/sh"`
-	Conditions  []string `yaml:"conditions,omitempty" json:"conditions,omitempty" jsonschema:"title=trigger conditions"`
+	Conditions  []string `yaml:"conditions" json:"conditions" jsonschema:"title=trigger conditions"`
 }
 
 // RPMRequires represents qualified RPM Requires dependencies.

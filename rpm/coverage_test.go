@@ -6,6 +6,8 @@ import (
 	"compress/gzip"
 	"io"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -93,13 +95,25 @@ func TestApplyRelationsInvalidPostRequire(t *testing.T) {
 }
 
 func TestReadTriggersErrors(t *testing.T) {
+	const script = "../testdata/scripts/postinstall.sh"
+	blank := filepath.Join(t.TempDir(), "blank.sh")
+	require.NoError(t, os.WriteFile(blank, []byte(" \n"), 0o644))
+
 	for name, trigger := range map[string]struct {
 		trigger  nfpm.RPMTrigger
 		expected string
 	}{
-		"type":    {nfpm.RPMTrigger{Type: "invalid", Script: "script", Conditions: []string{"foo"}}, "unknown trigger type"},
-		"script":  {nfpm.RPMTrigger{Type: "in", Conditions: []string{"foo"}}, "script must be provided"},
-		"missing": {nfpm.RPMTrigger{Type: "in", Script: "../testdata/does-not-exist.sh", Conditions: []string{"foo"}}, "does-not-exist.sh"},
+		"type":          {nfpm.RPMTrigger{Type: "invalid", Script: script, Conditions: []string{"foo"}}, "unknown trigger type"},
+		"script":        {nfpm.RPMTrigger{Type: "in", Conditions: []string{"foo"}}, "script must be provided"},
+		"missing":       {nfpm.RPMTrigger{Type: "in", Script: "../testdata/does-not-exist.sh", Conditions: []string{"foo"}}, "does-not-exist.sh"},
+		"blank script":  {nfpm.RPMTrigger{Type: "in", Script: blank, Conditions: []string{"foo"}}, "is empty"},
+		"condition":     {nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo >>> 2"}}, "invalid condition"},
+		"rich":          {nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"(foo if bar)"}}, "rich dependency"},
+		"no conditions": {nfpm.RPMTrigger{Type: "in", Script: script}, "at least one condition"},
+		"comma":         {nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo,bar"}}, "must not contain a comma"},
+		"relative":      {nfpm.RPMTrigger{Type: "in", Script: script, Interpreter: "bash", Conditions: []string{"foo"}}, "must be an absolute path or <lua>"},
+		"arguments":     {nfpm.RPMTrigger{Type: "in", Script: script, Interpreter: "/bin/bash -e", Conditions: []string{"foo"}}, "must not contain whitespace"},
+		"quote":         {nfpm.RPMTrigger{Type: "in", Script: script, Interpreter: `/opt/"sh"`, Conditions: []string{"foo"}}, "must not contain whitespace"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{trigger.trigger}}}}
@@ -108,25 +122,37 @@ func TestReadTriggersErrors(t *testing.T) {
 			require.ErrorContains(t, err, trigger.expected)
 		})
 	}
+}
 
-	t.Run("condition", func(t *testing.T) {
-		info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{{
-			Type: "in", Script: "../testdata/scripts/postinstall.sh", Conditions: []string{"foo >>> 2"},
-		}}}}}
+func TestReadTriggersOverlap(t *testing.T) {
+	const script = "../testdata/scripts/postinstall.sh"
+	read := func(triggers ...nfpm.RPMTrigger) error {
+		_, err := readTriggers(&nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: triggers}}})
+		return err
+	}
 
-		_, err := readTriggers(info)
-		require.ErrorContains(t, err, "invalid condition")
-	})
-
-	t.Run("no conditions", func(t *testing.T) {
-		info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{{
-			Type: "in", Script: "../testdata/scripts/postinstall.sh",
-		}}}}}
-
-		triggers, err := readTriggers(info)
-		require.NoError(t, err)
-		require.Empty(t, triggers[0].conditions)
-	})
+	require.ErrorContains(t, read(
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo"}},
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"bar", "foo >= 2.0"}},
+	), `rpm trigger 2: condition "foo >= 2.0" overlaps condition "foo" of rpm trigger 1, which has the same type "in"`)
+	require.ErrorContains(t, read(
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo >= 1.0"}},
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo < 3.0"}},
+	), `rpm trigger 2: condition "foo < 3.0" overlaps condition "foo >= 1.0" of rpm trigger 1, which has the same type "in"`)
+	require.ErrorContains(t, read(
+		nfpm.RPMTrigger{Type: "un", Script: script, Conditions: []string{"foo <= 2.0", "foo >= 2.0"}},
+	), `rpm trigger 1: condition "foo >= 2.0" overlaps condition "foo <= 2.0" of rpm trigger 1, which has the same type "un"`)
+	require.NoError(t, read(
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo < 2.0"}},
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo >= 2.0"}},
+		nfpm.RPMTrigger{Type: "un", Script: script, Conditions: []string{"foo < 2.0", "foo >= 2.0"}},
+	))
+	require.NoError(t, read(
+		nfpm.RPMTrigger{Type: "prein", Script: script, Conditions: []string{"foo"}},
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo"}},
+		nfpm.RPMTrigger{Type: "un", Script: script, Conditions: []string{"foo"}},
+		nfpm.RPMTrigger{Type: "postun", Script: script, Conditions: []string{"foo"}},
+	))
 }
 
 func TestRenderSpecChangelog(t *testing.T) {

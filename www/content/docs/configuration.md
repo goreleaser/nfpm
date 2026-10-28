@@ -360,16 +360,32 @@ rpm:
 
   # RPM package triggers.
   triggers:
-    # The supported types are prein, in, un, and postun.
+    # The supported types are:
+    # - prein: runs before a package matching the conditions is installed.
+    # - in: runs after a package matching the conditions is installed.
+    # - un: runs before a package matching the conditions is removed.
+    # - postun: runs after a package matching the conditions is removed.
+    # prein and in triggers also run when this package is installed, and un
+    # triggers when it is removed, if a package matching the conditions is
+    # already installed.
     - type: in
+      # The script must not be empty.
       script: ./scripts/trigger-in.sh
-      # Defaults to /bin/sh.
+      # Defaults to /bin/sh. The interpreter must be an absolute path without
+      # arguments, or `<lua>`. An absolute path is added as a requirement.
       interpreter: /bin/bash
-      # Optional. Conditions use RPM dependency syntax and may contain multiple entries.
-      # No trigger is added when this list is empty.
+      # At least one condition is required. Conditions are package names with
+      # an optional version: RPM matches them against the name of the package
+      # being installed or removed, so a capability provided by another
+      # package does not fire the trigger. Rich dependencies such as
+      # `(foo if bar)` are not allowed. Two triggers of the same type can use
+      # the same package only if their version ranges do not overlap, e.g.
+      # `foo < 2.0` and `foo >= 2.0`. Use one entry per condition: commas are
+      # not allowed.
+      # This will expand any env var you set in the field, e.g. ${PG_VERSION}
       conditions:
         - another-package >= 2.0
-        - another-capability
+        - third-package
 
   # RPM specific qualified Requires dependencies.
   requires:

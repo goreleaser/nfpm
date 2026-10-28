@@ -525,6 +525,31 @@ overrides:
 		require.Equal(t, "package = 1.0.0", info.Overrides["rpm"].Depends[0])
 	})
 
+	t.Run("rpm trigger conditions", func(t *testing.T) {
+		t.Setenv("VERSION", version)
+		t.Setenv("PKG", "")
+		info, err := nfpm.Parse(strings.NewReader(`---
+name: foo
+rpm:
+  triggers:
+  - type: in
+    script: ./trigger.sh
+    conditions:
+    - package = ${VERSION}
+    - ${PKG}
+overrides:
+  rpm:
+    rpm:
+      triggers:
+      - type: un
+        script: ./trigger.sh
+        conditions:
+        - other >= ${VERSION}`))
+		require.NoError(t, err)
+		require.Equal(t, []string{"package = 1.0.0"}, info.RPM.Triggers[0].Conditions)
+		require.Equal(t, []string{"other >= 1.0.0"}, info.Overrides["rpm"].RPM.Triggers[0].Conditions)
+	})
+
 	t.Run("deb fields", func(t *testing.T) {
 		t.Setenv("CI_PROJECT_URL", vcsBrowser)
 		info, err := nfpm.Parse(strings.NewReader(`
