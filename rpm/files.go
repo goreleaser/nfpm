@@ -90,7 +90,7 @@ func cleanDocDirs(dirs []string) []string {
 
 func isBelowDocDir(dest string, docDirs []string) bool {
 	for _, dir := range docDirs {
-		if strings.HasPrefix(dest, dir+"/") {
+		if strings.HasPrefix(dest, strings.TrimSuffix(dir, "/")+"/") {
 			return true
 		}
 	}

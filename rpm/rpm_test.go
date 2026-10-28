@@ -614,6 +614,39 @@ func TestRPMDocDirs(t *testing.T) {
 	}, flags)
 }
 
+func TestRPMRootDocDir(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.DocDirs = []string{"/"}
+	info.Contents = files.Contents{
+		{Source: "../testdata/fake", Destination: "/usr/share/foo/README"},
+		{Source: "README", Destination: "/usr/share/foo/link", Type: files.TypeSymlink},
+		{Destination: "/usr/share/foo", Type: files.TypeDir},
+	}
+	info = nfpm.WithDefaults(info)
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(info, &buf))
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+	rpmFiles, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+	flags := map[string]int{}
+	for _, f := range rpmFiles {
+		flags[f.Name()] = f.Flags()
+	}
+	require.Equal(t, map[string]int{
+		"/usr/share/foo/README": rpmutils.RPMFILE_DOC,
+		"/usr/share/foo/link":   rpmutils.RPMFILE_DOC,
+		"/usr/share/foo":        0,
+	}, flags)
+
+	spec, err := generateSpec(info, "foo-1.0.0.tar.gz")
+	require.NoError(t, err)
+	require.Regexp(t, `\n%doc %attr\(\d+, root, root\) "/usr/share/foo/README"\n`, spec)
+	require.Contains(t, spec, "\n%doc %attr(-, root, root) \"/usr/share/foo/link\"\n")
+	require.Contains(t, spec, "\n%dir %attr(0755, root, root) \"/usr/share/foo\"\n")
+}
+
 func TestRPMMandatoryFieldsOnly(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test.rpm")
 	require.NoError(t, err)
