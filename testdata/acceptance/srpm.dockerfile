@@ -34,6 +34,7 @@ RUN rpm -qp --requires /tmp/foo.rpm | grep -E '^bash$'
 # The generated script requires survive the rebuild as explicit requires.
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/bin/bash 0'
 RUN rpm -qp --scripts /tmp/foo.rpm | grep -Fx 'postinstall scriptlet (using /bin/bash):'
+RUN test "$(rpm -qp --qf '%{PREUNPROG}' /tmp/foo.rpm)" = '/opt/foo shell/"sh"\bin'
 # %-sequences in scriptlets must survive the rebuild literally; without the
 # spec escaping, ${host%%.*} would be silently mangled to ${host%.*}.
 RUN rpm -qp --scripts /tmp/foo.rpm | grep -F '${host%%.*}'
@@ -41,7 +42,10 @@ RUN rpm -qp --scripts /tmp/foo.rpm | grep -F '${host%%.*}'
 RUN rpm -qp --qf '[%{FILECOLORS} %{FILENAMES}\n]' /tmp/foo.rpm | grep -Fx '2 /usr/lib/foo/elf64'
 
 # Install it and verify the payload landed on disk.
-RUN rpm -ivh /tmp/foo.rpm
+# The custom preremove interpreter is a symlink to /bin/sh that no package
+# provides, hence --nodeps.
+RUN mkdir -p '/opt/foo shell' && ln -s /bin/sh '/opt/foo shell/"sh"\bin'
+RUN rpm -ivh --nodeps /tmp/foo.rpm
 RUN test -f /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /var/log/whatever
@@ -50,3 +54,4 @@ RUN test "$(readlink /usr/bin/fake-link)" = "/usr/bin/fake"
 RUN test ! -e /var/lib/foo/state
 RUN rpm -e foo
 RUN test ! -f /usr/bin/fake
+RUN test "$(cat /tmp/srpm-rebuild-preremove)" = preremove

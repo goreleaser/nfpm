@@ -12,5 +12,8 @@ scripts:
   preinstall: ./testdata/acceptance/scripts/rpm_interpreter_preinstall.sh
   postinstall: ./testdata/acceptance/scripts/rpm_interpreter_postinstall.sh
 rpm:
+  scripts:
+    pretrans: ./testdata/acceptance/scripts/rpm_interpreter_pretrans.lua
   interpreters:
     postinstall: /bin/bash
+    pretrans: <lua>

@@ -97,7 +97,11 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for _, sc := range scripts.scriptlets(info.RPM.Interpreters) {
+	scriptlets, err := scripts.scriptlets(info.RPM.Interpreters)
+	if err != nil {
+		return "", err
+	}
+	for _, sc := range scriptlets {
 		writeScriptSection(&b, sc.section, sc.interpreter, sc.body)
 	}
 
@@ -120,7 +124,9 @@ func writeScriptSection(b *strings.Builder, section, interpreter, body string) {
 	body = escapeSpecText(body)
 	fmt.Fprintf(b, "\n%%%s", section)
 	if interpreter != defaultInterpreter {
-		fmt.Fprintf(b, " -p %s", escapeSpecText(interpreter))
+		// rpmbuild parses the section line into arguments, then parses the -p
+		// value again, so the interpreter is escaped once for each pass.
+		fmt.Fprintf(b, " -p %s", escapeSpecText(escapeSpecArg(escapeSpecArg(interpreter))))
 	}
 	fmt.Fprintf(b, "\n%s", body)
 	if !strings.HasSuffix(body, "\n") {
@@ -195,4 +201,18 @@ func attrPath(mode fs.FileMode, owner, group, dest string) string {
 // never to the spec directives nfpm itself emits.
 func escapeSpecText(s string) string {
 	return strings.ReplaceAll(s, "%", "%%")
+}
+
+// escapeSpecArg backslash-escapes the whitespace, quotes and backslashes in s,
+// so that rpmbuild's argument parser (popt) reads it as a single literal
+// argument.
+func escapeSpecArg(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if strings.ContainsRune(" \t\v\f\"'\\", r) {
+			b.WriteByte('\\')
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }

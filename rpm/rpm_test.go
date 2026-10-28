@@ -1062,6 +1062,21 @@ func TestRPMScriptletInterpreters(t *testing.T) {
 	require.NotContains(t, names, "<lua>")
 }
 
+func TestRPMScriptletInterpreterErrors(t *testing.T) {
+	for name, interpreter := range map[string]string{
+		"relative":   "bash",
+		"internal":   "<python>",
+		"line break": "/bin/sh\n-x",
+	} {
+		t.Run(name, func(t *testing.T) {
+			info := exampleInfo()
+			info.RPM.Interpreters.PostInstall = interpreter
+			require.ErrorContains(t, DefaultRPM.Package(info, io.Discard), "invalid %post interpreter")
+			require.ErrorContains(t, DefaultSRPM.Package(info, io.Discard), "invalid %post interpreter")
+		})
+	}
+}
+
 func TestRPMFileDoesNotExist(t *testing.T) {
 	info := exampleInfo()
 	info.Contents = []*files.Content{

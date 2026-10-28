@@ -262,5 +262,6 @@ RUN ! rpm -qp --requires /tmp/foo.rpm | grep -F perl
 FROM min AS interpreters
 RUN test "$(cat /tmp/preinstall-interpreter)" = sh
 RUN test "$(cat /tmp/postinstall-interpreter)" = bash
+RUN test "$(cat /tmp/pretrans-interpreter)" = lua
 RUN rpm -q --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' foo | grep -Ex '/bin/sh 768'
 RUN rpm -q --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' foo | grep -Ex '/bin/bash 1280'

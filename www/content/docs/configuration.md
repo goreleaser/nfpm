@@ -375,9 +375,10 @@ rpm:
     verify: ./scripts/verify.sh
 
   # Interpreters of the RPM scriptlets. RPM ignores the shebang of the scripts
-  # and runs them with /bin/sh by default. Each scriptlet requires its
-  # interpreter. Debian and Alpine packages run their scripts with their
-  # shebang instead.
+  # and runs them with /bin/sh by default. Interpreters must be absolute
+  # paths, or `<lua>` for RPM's built-in Lua interpreter. Each scriptlet
+  # requires its interpreter, except for `<lua>`. Debian and Alpine packages
+  # run their scripts with their shebang instead.
   interpreters:
     preinstall: /bin/bash
     postinstall: /bin/bash
