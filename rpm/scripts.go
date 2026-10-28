@@ -79,17 +79,24 @@ type scriptlet struct {
 // generated spec.
 func (s scriptBodies) scriptlets(in nfpm.RPMInterpreters) ([]scriptlet, error) {
 	scriptlets := []scriptlet{
-		{"pre", s.preIn, defaultTo(in.PreInstall, defaultInterpreter), rpm.SenseScriptPre, rpm.PackageBuilder.Prein},
-		{"post", s.postIn, defaultTo(in.PostInstall, defaultInterpreter), rpm.SenseScriptPost, rpm.PackageBuilder.Postin},
-		{"preun", s.preUn, defaultTo(in.PreRemove, defaultInterpreter), rpm.SenseScriptPreUn, rpm.PackageBuilder.Preun},
-		{"postun", s.postUn, defaultTo(in.PostRemove, defaultInterpreter), rpm.SenseScriptPostUn, rpm.PackageBuilder.Postun},
-		{"pretrans", s.preTrans, defaultTo(in.PreTrans, defaultInterpreter), rpm.SensePreTrans, rpm.PackageBuilder.Pretrans},
-		{"posttrans", s.postTrans, defaultTo(in.PostTrans, defaultInterpreter), rpm.SensePostTrans, rpm.PackageBuilder.Posttrans},
-		{"verifyscript", s.verify, defaultTo(in.Verify, defaultInterpreter), rpm.SenseScriptVerify, rpm.PackageBuilder.VerifyScript},
+		{"pre", s.preIn, in.PreInstall, rpm.SenseScriptPre, rpm.PackageBuilder.Prein},
+		{"post", s.postIn, in.PostInstall, rpm.SenseScriptPost, rpm.PackageBuilder.Postin},
+		{"preun", s.preUn, in.PreRemove, rpm.SenseScriptPreUn, rpm.PackageBuilder.Preun},
+		{"postun", s.postUn, in.PostRemove, rpm.SenseScriptPostUn, rpm.PackageBuilder.Postun},
+		{"pretrans", s.preTrans, in.PreTrans, rpm.SensePreTrans, rpm.PackageBuilder.Pretrans},
+		{"posttrans", s.postTrans, in.PostTrans, rpm.SensePostTrans, rpm.PackageBuilder.Posttrans},
+		{"verifyscript", s.verify, in.Verify, rpm.SenseScriptVerify, rpm.PackageBuilder.VerifyScript},
 	}
-	for _, sc := range scriptlets {
+	for i, sc := range scriptlets {
+		if sc.interpreter == "" {
+			scriptlets[i].interpreter = defaultInterpreter
+			continue
+		}
 		if err := checkInterpreter(sc.interpreter); err != nil {
 			return nil, fmt.Errorf("invalid %%%s interpreter: %w", sc.section, err)
+		}
+		if sc.body == "" {
+			return nil, fmt.Errorf("invalid %%%s interpreter: %q is set without a script", sc.section, sc.interpreter)
 		}
 	}
 	return scriptlets, nil
@@ -104,8 +111,8 @@ func checkInterpreter(interpreter string) error {
 	if !strings.HasPrefix(interpreter, "/") {
 		return fmt.Errorf("%q must be an absolute path or %s", interpreter, luaInterpreter)
 	}
-	if strings.ContainsAny(interpreter, "\r\n") {
-		return fmt.Errorf("%q must not contain a line break", interpreter)
+	if strings.ContainsAny(interpreter, " \t\n\v\f\r") {
+		return fmt.Errorf("%q must not contain whitespace, interpreter arguments are not supported", interpreter)
 	}
 	return nil
 }
