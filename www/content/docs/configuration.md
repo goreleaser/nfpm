@@ -370,12 +370,16 @@ rpm:
       script: ./scripts/trigger-in.sh
       # Defaults to /bin/sh. The interpreter is added as a requirement.
       interpreter: /bin/bash
-      # At least one condition is required. Conditions use RPM dependency
-      # syntax, but rich dependencies such as `(foo if bar)` are not allowed.
+      # At least one condition is required. Conditions are package names with
+      # an optional version: RPM matches them against the name of the package
+      # being installed or removed, so a capability provided by another
+      # package does not fire the trigger. Rich dependencies such as
+      # `(foo if bar)` are not allowed, and a package can only be used in one
+      # trigger of each type.
       # This will expand any env var you set in the field, e.g. ${PG_VERSION}
       conditions:
         - another-package >= 2.0
-        - another-capability
+        - third-package
 
   # RPM specific qualified Requires dependencies.
   requires:

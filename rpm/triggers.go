@@ -17,8 +17,16 @@ type trigger struct {
 	conditions  []rpm.Relation
 }
 
+type triggerTarget struct {
+	triggerType rpm.TriggerKind
+	name        string
+}
+
 func readTriggers(info *nfpm.Info) ([]trigger, error) {
 	triggers := make([]trigger, 0, len(info.RPM.Triggers))
+	// RPM runs a single trigger script per type for a given package, and
+	// rpmbuild refuses a spec that declares more than one.
+	definedBy := map[triggerTarget]int{}
 	for i, t := range info.RPM.Triggers {
 		triggerType, err := parseTriggerType(t.Type)
 		if err != nil {
@@ -51,6 +59,12 @@ func readTriggers(info *nfpm.Info) ([]trigger, error) {
 			if strings.HasPrefix(relation.Name(), "(") {
 				return nil, fmt.Errorf("rpm trigger %d: rich dependency %q is not allowed in trigger conditions", i+1, condition)
 			}
+
+			target := triggerTarget{triggerType, relation.Name()}
+			if previous, ok := definedBy[target]; ok {
+				return nil, fmt.Errorf("rpm trigger %d: %q is already a condition of rpm trigger %d, which has the same type %q", i+1, relation.Name(), previous, t.Type)
+			}
+			definedBy[target] = i + 1
 
 			conditions = append(conditions, relation)
 		}

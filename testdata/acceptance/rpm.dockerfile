@@ -255,7 +255,25 @@ RUN mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS} && \
       'RPM trigger target' \
       '%files' \
       > /tmp/rpmbuild/SPECS/trigger-target.spec && \
-    rpmbuild --define '_topdir /tmp/rpmbuild' -bb /tmp/rpmbuild/SPECS/trigger-target.spec
+    rpmbuild --define '_topdir /tmp/rpmbuild' -bb /tmp/rpmbuild/SPECS/trigger-target.spec && \
+    printf '%s\n' \
+      'Name: trigger-provider' \
+      'Version: 1.0' \
+      'Release: 1' \
+      'Provides: trigger-target = 2.0' \
+      'Summary: RPM trigger target provider' \
+      'License: MIT' \
+      'BuildArch: noarch' \
+      '%description' \
+      'RPM trigger target provider' \
+      '%files' \
+      > /tmp/rpmbuild/SPECS/trigger-provider.spec && \
+    rpmbuild --define '_topdir /tmp/rpmbuild' -bb /tmp/rpmbuild/SPECS/trigger-provider.spec
+# A package that only provides trigger-target must not fire the triggers:
+# RPM matches trigger conditions against package names.
+RUN rpm -ivh /tmp/rpmbuild/RPMS/noarch/trigger-provider-1.0-1.noarch.rpm
+RUN rpm -e trigger-provider
+RUN test ! -e /tmp/rpm-trigger-proof
 RUN rpm -ivh /tmp/rpmbuild/RPMS/noarch/trigger-target-1.0-1.noarch.rpm
 RUN grep -qx prein /tmp/rpm-trigger-proof
 RUN grep -qx in /tmp/rpm-trigger-proof

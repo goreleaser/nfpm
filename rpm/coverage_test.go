@@ -120,6 +120,32 @@ func TestReadTriggersErrors(t *testing.T) {
 	}
 }
 
+func TestReadTriggersSameTarget(t *testing.T) {
+	const script = "../testdata/scripts/postinstall.sh"
+	read := func(triggers ...nfpm.RPMTrigger) error {
+		_, err := readTriggers(&nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: triggers}}})
+		return err
+	}
+
+	require.ErrorContains(t, read(
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo"}},
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"bar", "foo"}},
+	), `rpm trigger 2: "foo" is already a condition of rpm trigger 1, which has the same type "in"`)
+	require.ErrorContains(t, read(
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo >= 1.0"}},
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo < 3.0"}},
+	), `rpm trigger 2: "foo" is already a condition of rpm trigger 1, which has the same type "in"`)
+	require.ErrorContains(t, read(
+		nfpm.RPMTrigger{Type: "un", Script: script, Conditions: []string{"foo >= 1.0", "foo < 3.0"}},
+	), `rpm trigger 1: "foo" is already a condition of rpm trigger 1, which has the same type "un"`)
+	require.NoError(t, read(
+		nfpm.RPMTrigger{Type: "prein", Script: script, Conditions: []string{"foo"}},
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo"}},
+		nfpm.RPMTrigger{Type: "un", Script: script, Conditions: []string{"foo"}},
+		nfpm.RPMTrigger{Type: "postun", Script: script, Conditions: []string{"foo"}},
+	))
+}
+
 func TestRenderSpecChangelog(t *testing.T) {
 	t.Run("renders newest first", func(t *testing.T) {
 		info := exampleInfo()
