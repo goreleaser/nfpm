@@ -1067,6 +1067,7 @@ func TestRPMScriptletInterpreterErrors(t *testing.T) {
 		"relative":   "bash",
 		"internal":   "<python>",
 		"line break": "/bin/sh\n-x",
+		"arguments":  "/bin/bash -e",
 	} {
 		t.Run(name, func(t *testing.T) {
 			info := exampleInfo()
@@ -1075,6 +1076,14 @@ func TestRPMScriptletInterpreterErrors(t *testing.T) {
 			require.ErrorContains(t, DefaultSRPM.Package(info, io.Discard), "invalid %post interpreter")
 		})
 	}
+}
+
+func TestRPMScriptletInterpreterWithoutScript(t *testing.T) {
+	info := exampleInfo()
+	info.Scripts.PostRemove = ""
+	info.RPM.Interpreters.PostRemove = "/sbin/ldconfig"
+	require.ErrorContains(t, DefaultRPM.Package(info, io.Discard), `invalid %postun interpreter: "/sbin/ldconfig" is set without a script`)
+	require.ErrorContains(t, DefaultSRPM.Package(info, io.Discard), `invalid %postun interpreter: "/sbin/ldconfig" is set without a script`)
 }
 
 func TestRPMFileDoesNotExist(t *testing.T) {

@@ -34,7 +34,9 @@ RUN rpm -qp --requires /tmp/foo.rpm | grep -E '^bash$'
 # The generated script requires survive the rebuild as explicit requires.
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/bin/bash 0'
 RUN rpm -qp --scripts /tmp/foo.rpm | grep -Fx 'postinstall scriptlet (using /bin/bash):'
-RUN test "$(rpm -qp --qf '%{PREUNPROG}' /tmp/foo.rpm)" = '/opt/foo shell/"sh"\bin'
+RUN test "$(rpm -qp --qf '%{PREUNPROG}' /tmp/foo.rpm)" = '/opt/foo/"sh"\bin'
+RUN test "$(rpm -qp --qf '%{PRETRANSPROG}' /tmp/foo.rpm)" = '<lua>'
+RUN rpm -qp --requires /tmp/foo.rpm | grep -Fx 'rpmlib(BuiltinLuaScripts) <= 4.2.2-1'
 # %-sequences in scriptlets must survive the rebuild literally; without the
 # spec escaping, ${host%%.*} would be silently mangled to ${host%.*}.
 RUN rpm -qp --scripts /tmp/foo.rpm | grep -F '${host%%.*}'
@@ -43,9 +45,11 @@ RUN rpm -qp --qf '[%{FILECOLORS} %{FILENAMES}\n]' /tmp/foo.rpm | grep -Fx '2 /us
 
 # Install it and verify the payload landed on disk.
 # The custom preremove interpreter is a symlink to /bin/sh that no package
-# provides, hence --nodeps.
-RUN mkdir -p '/opt/foo shell' && ln -s /bin/sh '/opt/foo shell/"sh"\bin'
+# provides: it must be the only missing dependency.
+RUN test "$(rpm -ivh --test /tmp/foo.rpm 2>&1 | sed -n 's/^[[:space:]]*\(.*\) is needed by .*/\1/p')" = '/opt/foo/"sh"\bin'
+RUN mkdir -p /opt/foo && ln -s /bin/sh '/opt/foo/"sh"\bin'
 RUN rpm -ivh --nodeps /tmp/foo.rpm
+RUN test "$(cat /tmp/pretrans-interpreter)" = lua
 RUN test -f /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /var/log/whatever
