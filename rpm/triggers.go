@@ -52,6 +52,11 @@ func readTriggers(info *nfpm.Info) ([]trigger, error) {
 
 		conditions := make([]rpm.Relation, 0, len(t.Conditions))
 		for _, condition := range t.Conditions {
+			// rpmbuild splits trigger conditions on commas.
+			if strings.Contains(condition, ",") {
+				return nil, fmt.Errorf("rpm trigger %d: condition %q must not contain a comma, use one condition per entry", i+1, condition)
+			}
+
 			relation, err := rpm.ParseRelation(condition)
 			if err != nil {
 				return nil, fmt.Errorf("rpm trigger %d: invalid condition %q: %w", i+1, condition, err)
@@ -79,6 +84,14 @@ func readTriggers(info *nfpm.Info) ([]trigger, error) {
 		interpreter := t.Interpreter
 		if interpreter == "" {
 			interpreter = "/bin/sh"
+		}
+		if interpreter != "<lua>" && !strings.HasPrefix(interpreter, "/") {
+			return nil, fmt.Errorf("rpm trigger %d: interpreter %q must be an absolute path or <lua>", i+1, interpreter)
+		}
+		// rpmbuild parses the -p value with popt, which splits on whitespace
+		// and interprets quotes and backslashes.
+		if strings.ContainsAny(interpreter, " \t\n\v\f\r\"'\\") {
+			return nil, fmt.Errorf("rpm trigger %d: interpreter %q must not contain whitespace, quotes or backslashes", i+1, interpreter)
 		}
 
 		triggers = append(triggers, trigger{

@@ -110,6 +110,10 @@ func TestReadTriggersErrors(t *testing.T) {
 		"condition":     {nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo >>> 2"}}, "invalid condition"},
 		"rich":          {nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"(foo if bar)"}}, "rich dependency"},
 		"no conditions": {nfpm.RPMTrigger{Type: "in", Script: script}, "at least one condition"},
+		"comma":         {nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo,bar"}}, "must not contain a comma"},
+		"relative":      {nfpm.RPMTrigger{Type: "in", Script: script, Interpreter: "bash", Conditions: []string{"foo"}}, "must be an absolute path or <lua>"},
+		"arguments":     {nfpm.RPMTrigger{Type: "in", Script: script, Interpreter: "/bin/bash -e", Conditions: []string{"foo"}}, "must not contain whitespace"},
+		"quote":         {nfpm.RPMTrigger{Type: "in", Script: script, Interpreter: `/opt/"sh"`, Conditions: []string{"foo"}}, "must not contain whitespace"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			info := &nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: []nfpm.RPMTrigger{trigger.trigger}}}}
