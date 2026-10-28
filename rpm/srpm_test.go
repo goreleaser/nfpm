@@ -89,8 +89,11 @@ func TestSRPMArchAlwaysSrc(t *testing.T) {
 }
 
 func TestSRPMSpecContents(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.Interpreters.PostInstall = "/bin/bash"
+
 	var buf bytes.Buffer
-	require.NoError(t, DefaultSRPM.Package(exampleInfo(), &buf))
+	require.NoError(t, DefaultSRPM.Package(info, &buf))
 
 	specBytes, err := extractFileFromRpm(buf.Bytes(), "/foo.spec")
 	require.NoError(t, err)
@@ -126,7 +129,7 @@ func TestSRPMSpecContents(t *testing.T) {
 
 	// Scriptlets are inlined verbatim.
 	require.Contains(t, spec, "%pre\n")
-	require.Contains(t, spec, "%post\n")
+	require.Contains(t, spec, "%post -p /bin/bash\n")
 	require.Contains(t, spec, "%pretrans\n")
 	require.Contains(t, spec, "%posttrans\n")
 	require.Contains(t, spec, "%verifyscript\n")
