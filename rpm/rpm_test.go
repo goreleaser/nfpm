@@ -576,7 +576,7 @@ func TestRPMConfigTree(t *testing.T) {
 
 func TestRPMDocDirs(t *testing.T) {
 	info := exampleInfo()
-	info.RPM.DocDirs = []string{"/usr/share/doc", "/opt/docs/"}
+	info.RPM.DocDirs = []string{"/usr/share/doc", "opt/docs/"}
 	info.Contents = files.Contents{
 		{Source: "../testdata/fake", Destination: "/usr/share/doc/foo/README"},
 		{Source: "../testdata/fake", Destination: "/usr/share/doc/foo/sub/deep"},

@@ -415,7 +415,8 @@ rpm:
 
   # Files below these directories are flagged as documentation (%doc).
   # Directories themselves are not. Documentation is skipped when installing
-  # with --excludedocs.
+  # with --excludedocs, except for the files with type license, which RPM
+  # always installs.
   # Default is empty: only the files with type doc are documentation.
   doc_dirs:
     - /usr/share/doc
