@@ -58,6 +58,13 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 	for _, dep := range info.RPM.Requires.Post {
 		writeField("Requires(post)", dep)
 	}
+	interpreters, err := scriptRequires(info)
+	if err != nil {
+		return "", err
+	}
+	for _, interpreter := range interpreters {
+		writeField("Requires", interpreter)
+	}
 	for _, dep := range info.Provides {
 		writeField("Provides", dep)
 	}

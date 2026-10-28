@@ -167,6 +167,35 @@ func TestSRPMGenerateSpecFileDirectives(t *testing.T) {
 	require.Contains(t, spec, `%attr(-, root, root) "/usr/bin/fakelink"`)
 }
 
+func TestSRPMGenerateSpecScriptRequires(t *testing.T) {
+	script := filepath.Join(t.TempDir(), "script")
+	require.NoError(t, os.WriteFile(script, []byte("#!/bin/bash\necho\n"), 0o644))
+	info := nfpm.WithDefaults(&nfpm.Info{
+		Name:        "scripttest",
+		Arch:        "amd64",
+		Version:     "1.0.0",
+		Description: "script requires coverage",
+		Maintainer:  "maintainer",
+		Overridables: nfpm.Overridables{
+			Contents: []*files.Content{{
+				Source:      script,
+				Destination: "/usr/bin/script",
+				FileInfo:    &files.ContentFileInfo{Mode: 0o755},
+			}},
+			RPM: nfpm.RPM{ScriptRequires: true},
+		},
+	})
+	info = setDefaults(info)
+	require.NoError(t, nfpm.PrepareForPackager(info, "rpm"))
+
+	spec, err := generateSpec(info, "scripttest-1.0.0.tar.gz")
+	require.NoError(t, err)
+
+	// AutoReqProv is off, so the rebuild only keeps the explicit requires.
+	require.Contains(t, spec, "AutoReqProv: no\n")
+	require.Contains(t, spec, "Requires: /bin/bash\n")
+}
+
 func TestSRPMGenerateSpecLang(t *testing.T) {
 	info := nfpm.WithDefaults(&nfpm.Info{
 		Name:        "langtest",
