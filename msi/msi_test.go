@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"debug/pe"
+	"encoding/binary"
 	"errors"
 	"io"
 	"log"
@@ -848,6 +849,70 @@ func TestShortcutRejectsNonPEIcon(t *testing.T) {
 			require.Contains(t, err.Error(), "PE image containing icon resources")
 		})
 	}
+}
+
+func TestShortcutMalformedIconResources(t *testing.T) {
+	fixture, err := os.ReadFile("../testdata/msi/icon.dll")
+	require.NoError(t, err)
+	image, err := pe.NewFile(bytes.NewReader(fixture))
+	require.NoError(t, err)
+	defer image.Close()
+	resource := int(image.Section(".rsrc").Offset)
+	for _, tc := range []struct {
+		name   string
+		mutate func([]byte) []byte
+		want   string
+	}{
+		{
+			name:   "truncated resource header",
+			mutate: func(data []byte) []byte { return data[:resource+8] },
+			want:   "reading icon resource directory",
+		},
+		{
+			name:   "truncated resource entries",
+			mutate: func(data []byte) []byte { return data[:resource+16] },
+			want:   "reading icon resource entries",
+		},
+		{
+			name: "entry count exceeds resource size",
+			mutate: func(data []byte) []byte {
+				binary.LittleEndian.PutUint16(data[resource+14:], 65535)
+				return data
+			},
+			want: "PE image containing icon resources",
+		},
+		{
+			name: "subdirectory outside resource range",
+			mutate: func(data []byte) []byte {
+				binary.LittleEndian.PutUint32(data[resource+20:], 0xffffffff)
+				return data
+			},
+			want: "PE image containing icon resources",
+		},
+		{
+			name: "missing group icon",
+			mutate: func(data []byte) []byte {
+				binary.LittleEndian.PutUint32(data[resource+24:], 16) // RT_VERSION instead of RT_GROUP_ICON
+				return data
+			},
+			want: "PE image containing icon resources",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			filename := filepath.Join(t.TempDir(), "broken.dll")
+			require.NoError(t, os.WriteFile(filename, tc.mutate(bytes.Clone(fixture)), 0o600))
+			info := exampleInfo()
+			info.MSI.Shortcuts = []nfpm.MSIShortcut{{Name: "App", Target: info.Contents[0].Destination, Icon: filename}}
+			require.ErrorContains(t, msi.Default.Package(info, io.Discard), tc.want)
+		})
+	}
+}
+
+func TestShortcutIconRequiresTargetExtension(t *testing.T) {
+	info := exampleInfo()
+	info.Contents[0].Destination = "/App/run"
+	info.MSI.Shortcuts = []nfpm.MSIShortcut{{Name: "App", Target: "/app/RUN", Icon: "../testdata/msi/icon.dll"}}
+	require.ErrorContains(t, msi.Default.Package(info, io.Discard), "requires a target file extension")
 }
 
 func TestShortcutMissingIcon(t *testing.T) {

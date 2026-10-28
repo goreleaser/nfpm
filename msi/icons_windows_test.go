@@ -19,6 +19,8 @@ func TestIconResourcesWindows(t *testing.T) {
 	shell := windows.NewLazySystemDLL("shell32.dll")
 	extract := shell.NewProc("ExtractIconExW")
 	destroy := windows.NewLazySystemDLL("user32.dll").NewProc("DestroyIcon")
+	groups, _, _ := extract.Call(uintptr(unsafe.Pointer(name)), ^uintptr(0), 0, 0, 0)
+	require.Equal(t, uintptr(1), groups, "the fixture must contain one RT_GROUP_ICON resource")
 	var large, small windows.Handle
 	count, _, _ := extract.Call(uintptr(unsafe.Pointer(name)), 0,
 		uintptr(unsafe.Pointer(&large)), uintptr(unsafe.Pointer(&small)), 1)
@@ -30,7 +32,9 @@ func TestIconResourcesWindows(t *testing.T) {
 			destroy.Call(uintptr(small))
 		}
 	}()
-	require.Equal(t, uintptr(1), count, "Windows must decode an icon from the PE resources")
+	// The return value counts extracted handles, including both requested
+	// sizes; it is not the number of RT_GROUP_ICON resources.
+	require.Equal(t, uintptr(2), count, "Windows must decode both large and small icons from the PE resources")
 	require.NotZero(t, large)
 	require.NotZero(t, small)
 }
