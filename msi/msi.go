@@ -236,6 +236,12 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 	}
 	if info.MSI.Upgrade.AllowDowngrades {
 		mu.AllowDowngrades()
+		// go-msi v0.5.1 only disables the downgrade block; its synthesized
+		// removal row still ends at this version. Cover strictly newer
+		// products too, using a distinct secure action property per MSI's
+		// Upgrade-table contract. AllowSameVersion controls the other row.
+		b.Upgrade(upgradeCode).DetectRange(version, "").
+			MigrateFeatures().ActionProperty("NFPM_NEWER_PRODUCTS")
 	}
 	if info.MSI.Upgrade.AllowSameVersion {
 		mu.AllowSameVersionUpgrades()
@@ -348,7 +354,7 @@ func validate(info *nfpm.Info) error {
 	}
 	versionDests := map[string]bool{}
 	for dest := range info.MSI.FileVersions {
-		normalized := normalizeDest(dest)
+		normalized := destinationKey(dest)
 		if !dests[normalized] {
 			return fmt.Errorf("package msi.file_versions[%q] does not match any contents destination", dest)
 		}
@@ -365,7 +371,7 @@ func validate(info *nfpm.Info) error {
 		if s.Target == "" {
 			return fmt.Errorf("package msi.shortcuts[%d].target must be provided", i)
 		}
-		if !dests[normalizeDest(s.Target)] {
+		if !dests[destinationKey(s.Target)] {
 			return fmt.Errorf("package msi.shortcuts[%d].target %q does not match any contents destination", i, s.Target)
 		}
 		if !shortcutDirectories[s.Directory] {
@@ -382,7 +388,7 @@ func validate(info *nfpm.Info) error {
 		if s.Executable == "" {
 			return fmt.Errorf("package msi.services[%d].executable must be provided", i)
 		}
-		if !dests[normalizeDest(s.Executable)] {
+		if !dests[destinationKey(s.Executable)] {
 			return fmt.Errorf("package msi.services[%d].executable %q does not match any contents destination", i, s.Executable)
 		}
 		if _, ok := startTypes[strings.ToLower(s.StartType)]; !ok {
@@ -448,11 +454,12 @@ func validateDestinations(info *nfpm.Info) (map[string]bool, error) {
 		if dest == "" {
 			return nil, fmt.Errorf("package contents destination %q is empty once the drive letter is removed; it must name a file", c.Destination)
 		}
-		if prev, dup := firstByDest[dest]; dup {
+		key := destinationKey(dest)
+		if prev, dup := firstByDest[key]; dup {
 			return nil, fmt.Errorf("package contents destinations %q and %q resolve to the same Windows path %q", prev, c.Destination, dest)
 		}
-		firstByDest[dest] = c.Destination
-		dests[dest] = true
+		firstByDest[key] = c.Destination
+		dests[key] = true
 
 		if info.MSI.PerUser {
 			if rootID, _, _ := mapDestination(dest, is64bit(info.Arch)); perMachineDirs[rootID] {
@@ -495,7 +502,7 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info, upgradeCode string, ids 
 	placed := map[string]placement{}
 	versions := map[string]string{}
 	for dest, version := range info.MSI.FileVersions {
-		versions[normalizeDest(dest)] = version
+		versions[destinationKey(dest)] = version
 	}
 	licenseSet := false
 	warnedPermanent := map[string]bool{}
@@ -592,20 +599,21 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info, upgradeCode string, ids 
 			WithGUID(deriveGUID("component|" + upgradeCode + "|" + info.Arch + "|" + dest)).
 			WithAttributes(componentAttributes(rootID, is64))
 		file := comp.WithFile(fileName, src)
-		if version, explicit := versions[dest]; explicit {
+		if version, explicit := versions[destinationKey(dest)]; explicit {
 			file.WithVersion(version)
 		}
 		comp.AssociateToFeature(mainFeature)
 
-		placed[dest] = placement{componentID: compID, rootID: rootID}
+		placed[destinationKey(dest)] = placement{componentID: compID, rootID: rootID}
 	}
 
 	return placed, nil
 }
 
 func addShortcuts(b msi.PackageBuilder, info *nfpm.Info, placed map[string]placement, ids *idTable) error {
+	icons := map[string]bool{}
 	for _, s := range info.MSI.Shortcuts {
-		p, ok := placed[normalizeDest(s.Target)]
+		p, ok := placed[destinationKey(s.Target)]
 		if !ok {
 			return fmt.Errorf("shortcut %q target %q was not installed", s.Name, s.Target)
 		}
@@ -620,16 +628,27 @@ func addShortcuts(b msi.PackageBuilder, info *nfpm.Info, placed map[string]place
 			sc = sc.Arguments(s.Arguments)
 		}
 		if s.Icon != "" {
-			iconSrc, err := msi.FileSourceFromPath(s.Icon)
-			if err != nil {
-				return fmt.Errorf("reading shortcut icon %s: %w", s.Icon, err)
+			// Advertised shortcut icons must be PE resource images whose
+			// stream name has the component key file's extension. Cache by
+			// source and target extension: one PE may serve both .exe and
+			// .dll targets, but those require distinct stream names.
+			ext := strings.ToLower(path.Ext(normalizeDest(s.Target)))
+			if ext == "" {
+				return fmt.Errorf("shortcut %q with an icon requires a target file extension", s.Name)
 			}
-			iconID, err := ids.id("ico", s.Icon)
+			iconID, err := ids.id("ico", filepath.Clean(s.Icon)+"|"+ext)
 			if err != nil {
 				return err
 			}
-			iconName := iconID + filepath.Ext(s.Icon)
-			b.Icon(iconName, iconSrc)
+			iconName := iconID + ext
+			if !icons[iconName] {
+				iconSrc, err := shortcutIcon(s.Icon)
+				if err != nil {
+					return fmt.Errorf("reading shortcut icon %s: %w", s.Icon, err)
+				}
+				b.Icon(iconName, iconSrc)
+				icons[iconName] = true
+			}
 			sc.Icon(iconName, 0)
 		}
 	}
@@ -638,7 +657,7 @@ func addShortcuts(b msi.PackageBuilder, info *nfpm.Info, placed map[string]place
 
 func addServices(b msi.PackageBuilder, info *nfpm.Info, placed map[string]placement) error {
 	for _, s := range info.MSI.Services {
-		p, ok := placed[normalizeDest(s.Executable)]
+		p, ok := placed[destinationKey(s.Executable)]
 		if !ok {
 			return fmt.Errorf("service %q executable %q was not installed", s.Name, s.Executable)
 		}
@@ -872,6 +891,12 @@ func normalizeDest(p string) string {
 		return ""
 	}
 	return p
+}
+
+// destinationKey compares Windows paths without changing the spelling emitted
+// in Directory/File rows or the existing component GUID derivation contract.
+func destinationKey(p string) string {
+	return strings.ToLower(normalizeDest(p))
 }
 
 // mapDestination resolves a normalized destination to a root directory ID, its

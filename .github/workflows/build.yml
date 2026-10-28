@@ -180,7 +180,6 @@ jobs:
             exit 1
           }
   msi-windows-install:
-    if: github.event_name == 'merge_group'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -192,7 +191,11 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build MSI packages
         run: task acceptance:windows:package:msi
-      - name: Install, upgrade, verify and remove the MSI packages
+      - name: Install native MSI validator
+        run: dotnet tool install wix --version 5.0.2 --tool-path ./dist/wix --allow-roll-forward
+      - name: Validate advertised shortcut icons with native ICE50
+        run: ./dist/wix/wix.exe msi validate ./dist/foo.msi -ice ICE50
+      - name: Install, upgrade, downgrade, verify and remove the MSI packages
         run: task acceptance:windows:install:msi
   msi-signed-build:
     if: github.event_name == 'merge_group'
@@ -289,7 +292,7 @@ jobs:
       - name: Check PR results
         if: github.event_name != 'merge_group'
         run: |
-          printf '%s\n' "$RESULTS" | jq -e '[.["license-check"], .semgrep, .["unit-tests"]] | ., all(.[]; .result == "success")'
+          printf '%s\n' "$RESULTS" | jq -e '[.["license-check"], .semgrep, .["unit-tests"], .["msi-windows-install"]] | ., all(.[]; .result == "success")'
       - name: Check acceptance results
         if: github.event_name == 'merge_group'
         run: |

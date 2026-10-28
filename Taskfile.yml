@@ -73,15 +73,18 @@ tasks:
     cmds:
       - mkdir -p ./dist
       - go build -o ./dist/testapp.exe ./testdata/acceptance/testapp/
+      - go build -ldflags="-X=main.message=nfpm-msi-v2-test-ok" -o ./dist/testapp-newer.exe ./testdata/acceptance/testapp/
       - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.install.yaml -p msi -t ./dist/foo.msi
       - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.upgrade.yaml -p msi -t ./dist/foo-upgrade.msi
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.newer.yaml -p msi -t ./dist/foo-newer.msi
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.downgrade.yaml -p msi -t ./dist/foo-downgrade.msi
       - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.rollback.yaml -p msi -t ./dist/foo-rollback.msi
 
   acceptance:windows:install:msi:
-    desc: Install, upgrade, verify and remove the MSI packages on Windows, and prove a failing script rolls back
+    desc: Install, upgrade, downgrade and remove MSI packages on Windows, and prove a failing script rolls back
     platforms: [windows]
     cmds:
-      - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/install-msi.ps1 -Msi ./dist/foo.msi -Upgrade ./dist/foo-upgrade.msi -Rollback ./dist/foo-rollback.msi
+      - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/install-msi.ps1 -Msi ./dist/foo.msi -Upgrade ./dist/foo-upgrade.msi -Newer ./dist/foo-newer.msi -Downgrade ./dist/foo-downgrade.msi -Rollback ./dist/foo-rollback.msi
 
   acceptance:windows:install:msi:signed:
     desc: Install, verify and remove the nfpm-signed MSI on Windows

@@ -898,7 +898,8 @@
 					},
 					"icon": {
 						"type": "string",
-						"title": "path to an icon file"
+						"title": "path to a PE file containing icon resources",
+						"description": "advertised shortcuts require EXE-format icon data; raw .ico files are not supported"
 					}
 				},
 				"additionalProperties": false,

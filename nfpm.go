@@ -639,7 +639,7 @@ type MSIShortcut struct {
 	Directory   string `yaml:"directory,omitempty" json:"directory,omitempty" jsonschema:"title=standard folder ID,default=ProgramMenuFolder,example=DesktopFolder"`
 	Arguments   string `yaml:"arguments,omitempty" json:"arguments,omitempty" jsonschema:"title=command-line arguments"`
 	Description string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"title=shortcut description"`
-	Icon        string `yaml:"icon,omitempty" json:"icon,omitempty" jsonschema:"title=path to an icon file"`
+	Icon        string `yaml:"icon,omitempty" json:"icon,omitempty" jsonschema:"title=path to a PE file containing icon resources,description=advertised shortcuts require EXE-format icon data; raw .ico files are not supported"`
 }
 
 // MSIService describes a Windows service to install from an MSI package.

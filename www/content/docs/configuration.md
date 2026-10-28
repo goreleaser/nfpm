@@ -815,7 +815,7 @@ msi:
     allow_same_version: false
 
   # Advertised shortcuts. The target must match one of the contents
-  # destinations.
+  # destinations (Windows paths are compared without case sensitivity).
   shortcuts:
     - name: "My Application"
       target: "/Program Files/My Application/myapp.exe"
@@ -825,7 +825,11 @@ msi:
       directory: ProgramMenuFolder
       arguments: ""
       description: "Launch My Application"
-      icon: ./assets/app.ico
+      # Optional PE (.exe or .dll) containing icon resources. Raw .ico files
+      # cannot be used for advertised shortcuts. The first icon is selected;
+      # nfpm names its Icon stream with the target file's extension and shares
+      # that stream between shortcuts with the same source and target extension.
+      icon: ./assets/icons.dll
 
   # Windows services to install. The executable must match one of the contents
   # destinations. A service is always stopped before its files are installed

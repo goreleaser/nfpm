@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"debug/pe"
 	"errors"
 	"io"
 	"log"
@@ -758,6 +759,18 @@ func TestShortcutInvalidDirectory(t *testing.T) {
 // an icon, which adds an Icon row to the package.
 func TestShortcutOptionalFields(t *testing.T) {
 	info := exampleInfo()
+	source := filepath.Join(t.TempDir(), "app.exe")
+	cmd := exec.Command("go", "build", "-o", source, "../testdata/acceptance/testapp/")
+	cmd.Env = append(cmd.Environ(), "GOOS=windows", "GOARCH=amd64")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "%s", output)
+	info.Contents[0].Source = source
+	info.MSI.FileVersions = map[string]string{info.Contents[0].Destination: ""}
+	t.Run("PE without icon resources", func(t *testing.T) {
+		noIcons := exampleInfo()
+		noIcons.MSI.Shortcuts = []nfpm.MSIShortcut{{Name: "App", Target: noIcons.Contents[0].Destination, Icon: source}}
+		require.ErrorContains(t, msi.Default.Package(noIcons, io.Discard), "PE image containing icon resources")
+	})
 	info.MSI.Shortcuts = []nfpm.MSIShortcut{
 		{
 			Name:        "Test App",
@@ -765,7 +778,7 @@ func TestShortcutOptionalFields(t *testing.T) {
 			Directory:   "DesktopFolder",
 			Description: "Launch Test App",
 			Arguments:   "--verbose",
-			Icon:        "../testdata/fake",
+			Icon:        "../testdata/msi/icon.dll",
 		},
 	}
 	db := buildDB(t, info)
@@ -776,6 +789,65 @@ func TestShortcutOptionalFields(t *testing.T) {
 	icons := tableRows(t, db, "Icon")
 	require.Len(t, icons, 1)
 	require.Equal(t, icons[0]["Name"], rows[0]["Icon_"])
+	require.Equal(t, ".exe", filepath.Ext(icons[0]["Name"].(string)))
+	payload := icons[0]["Data"].([]byte)
+	image, err := pe.NewFile(bytes.NewReader(payload))
+	require.NoError(t, err, "advertised icons must contain a PE image")
+	defer image.Close()
+	require.NotNil(t, image.Section(".rsrc"), "the icon image must contain resources")
+	want, err := os.ReadFile("../testdata/msi/icon.dll")
+	require.NoError(t, err)
+	require.Equal(t, want, payload)
+}
+
+func TestShortcutSharedIcon(t *testing.T) {
+	for _, extension := range []string{".exe", ".dll"} {
+		t.Run(extension, func(t *testing.T) {
+			info := exampleInfo()
+			info.Contents = append(info.Contents, &files.Content{
+				Source: "../testdata/fake", Destination: "/App/other" + extension,
+			})
+			info.MSI.Shortcuts = []nfpm.MSIShortcut{
+				{Name: "Start", Target: info.Contents[0].Destination, Icon: "../testdata/msi/icon.dll"},
+				{Name: "Desktop", Target: info.Contents[0].Destination, Directory: "DesktopFolder", Icon: "../testdata/msi/icon.dll"},
+				{Name: "Other", Target: "/App/other" + extension, Icon: "../testdata/msi/icon.dll"},
+			}
+			db := buildDB(t, info)
+			shortcuts := tableRows(t, db, "Shortcut")
+			require.Len(t, shortcuts, 3)
+			start := rowWhere(t, shortcuts, "Directory_", "ProgramMenuFolder")
+			desktop := rowWhere(t, shortcuts, "Directory_", "DesktopFolder")
+			require.Equal(t, start["Icon_"], desktop["Icon_"])
+			icons := tableRows(t, db, "Icon")
+			if extension == ".exe" {
+				require.Len(t, icons, 1, "reuse the icon for all executable targets")
+			} else {
+				require.Len(t, icons, 2, "different target extensions require different Icon rows")
+			}
+			for _, shortcut := range shortcuts {
+				component := rowWhere(t, tableRows(t, db, "Component"), "Component", shortcut["Component_"])
+				file := rowWhere(t, tableRows(t, db, "File"), "File", component["KeyPath"])
+				require.Equal(t, filepath.Ext(longName(file["FileName"])), filepath.Ext(shortcut["Icon_"].(string)))
+			}
+		})
+	}
+}
+
+func TestShortcutRejectsNonPEIcon(t *testing.T) {
+	rawICO := filepath.Join(t.TempDir(), "raw.ico")
+	// An ICO header must not be accepted simply by renaming it to .exe.
+	require.NoError(t, os.WriteFile(rawICO, []byte{0, 0, 1, 0, 1, 0}, 0o600))
+	renamedICO := filepath.Join(t.TempDir(), "raw.exe")
+	require.NoError(t, os.WriteFile(renamedICO, []byte{0, 0, 1, 0, 1, 0}, 0o600))
+	for _, icon := range []string{"../testdata/fake", rawICO, renamedICO} {
+		t.Run(icon, func(t *testing.T) {
+			info := exampleInfo()
+			info.MSI.Shortcuts = []nfpm.MSIShortcut{{Name: "App", Target: info.Contents[0].Destination, Icon: icon}}
+			err := msi.Default.Package(info, io.Discard)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "PE image containing icon resources")
+		})
+	}
 }
 
 func TestShortcutMissingIcon(t *testing.T) {
@@ -943,7 +1015,7 @@ func upgradeRows(t *testing.T, db gomsi.Database) (remove, detectNewer gomsi.Row
 		require.Equal(t, property(t, db, "UpgradeCode"), r["UpgradeCode"])
 		if r["Attributes"].(int32)&upgradeOnlyDetect != 0 {
 			detectNewer = r
-		} else {
+		} else if r["ActionProperty"] == "WIX_UPGRADE_DETECTED" {
 			remove = r
 		}
 	}
@@ -994,6 +1066,15 @@ func TestMajorUpgradeOptions(t *testing.T) {
 		require.NotNil(t, remove)
 		require.Nil(t, detectNewer, "no downgrade detection")
 		require.False(t, hasTable(db, "LaunchCondition"))
+		newer := rowWhere(t, tableRows(t, db, "Upgrade"), "ActionProperty", "NFPM_NEWER_PRODUCTS")
+		require.Equal(t, "1.2.3", newer["VersionMin"])
+		require.Empty(t, newer["VersionMax"], "newer products must be in the removal range")
+		require.Equal(t, upgradeMigrateFeatures, newer["Attributes"], "remove strictly newer versions")
+		require.Equal(t, "1.2.3", remove["VersionMax"])
+		require.Empty(t, remove["VersionMin"])
+		require.Zero(t, remove["Attributes"].(int32)&upgradeVersionMaxInclusive)
+		require.Contains(t, property(t, db, "SecureCustomProperties"), "NFPM_NEWER_PRODUCTS")
+		require.Len(t, tableRows(t, db, "Upgrade"), 2)
 	})
 
 	t.Run("allow same version", func(t *testing.T) {
@@ -1003,6 +1084,18 @@ func TestMajorUpgradeOptions(t *testing.T) {
 		remove, _ := upgradeRows(t, db)
 		require.NotZero(t, remove["Attributes"].(int32)&upgradeVersionMaxInclusive,
 			"an equal version must be in the removed range")
+	})
+
+	t.Run("allow downgrades and same version", func(t *testing.T) {
+		info := exampleInfo()
+		info.MSI.Upgrade.AllowDowngrades = true
+		info.MSI.Upgrade.AllowSameVersion = true
+		db := buildDB(t, info)
+		remove, detectNewer := upgradeRows(t, db)
+		require.Nil(t, detectNewer)
+		require.NotZero(t, remove["Attributes"].(int32)&upgradeVersionMaxInclusive)
+		newer := rowWhere(t, tableRows(t, db, "Upgrade"), "ActionProperty", "NFPM_NEWER_PRODUCTS")
+		require.Equal(t, upgradeMigrateFeatures, newer["Attributes"])
 	})
 }
 
@@ -1130,6 +1223,35 @@ func TestReservedProperties(t *testing.T) {
 // not a file, two spellings of one path must not both be packaged, and a
 // drive-rooted directory destination is fine.
 func TestDestinations(t *testing.T) {
+	for _, dest := range []string{"/program files/TestApp/app.exe", "/Program Files/testapp/app.exe", "/Program Files/TestApp/APP.EXE"} {
+		t.Run("case collision "+dest, func(t *testing.T) {
+			info := exampleInfo()
+			info.Contents = append(info.Contents, &files.Content{Source: "../testdata/whatever.conf", Destination: dest})
+			err := msi.Default.Package(info, io.Discard)
+			require.ErrorContains(t, err, "resolve to the same Windows path")
+		})
+	}
+
+	t.Run("case varied references", func(t *testing.T) {
+		info := exampleInfo()
+		info.MSI.Shortcuts = []nfpm.MSIShortcut{{Name: "App", Target: "/program files/testapp/APP.EXE"}}
+		info.MSI.Services = []nfpm.MSIService{{Name: "App", Executable: "/PROGRAM FILES/TESTAPP/app.EXE"}}
+		info.MSI.FileVersions = map[string]string{"/program files/testapp/App.Exe": "2.3.4"}
+		db := buildDB(t, info)
+		comp := componentFor(t, db, "app.exe")
+		require.Equal(t, comp["Component"], tableRows(t, db, "Shortcut")[0]["Component_"])
+		require.Equal(t, comp["Component"], tableRows(t, db, "ServiceInstall")[0]["Component_"])
+		file := rowWhere(t, tableRows(t, db, "File"), "Component_", comp["Component"])
+		require.Equal(t, "2.3.4", file["Version"])
+	})
+
+	t.Run("case duplicate version overrides", func(t *testing.T) {
+		info := exampleInfo()
+		info.MSI.FileVersions = map[string]string{
+			"/Program Files/TestApp/app.exe": "1.0.0", "/program files/testapp/APP.EXE": "2.0.0",
+		}
+		require.ErrorContains(t, msi.Default.Package(info, io.Discard), "duplicate Windows path")
+	})
 	for _, dst := range []string{"C:", "/C:"} {
 		t.Run("bare drive "+dst, func(t *testing.T) {
 			info := exampleInfo()

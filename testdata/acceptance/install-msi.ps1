@@ -6,6 +6,11 @@ param(
     # installed over $Msi and must replace it in place: exactly one entry in
     # Apps & Features, the new version, the old files gone with the product.
     [string]$Upgrade,
+    # Install 2.0.0, then replace it with 1.0.0 allowing downgrades. The
+    # payloads print different messages so product registration alone is
+    # insufficient to pass this check.
+    [string]$Newer,
+    [string]$Downgrade,
     # A package whose postinstall script fails (msi.rollback.yaml). When given,
     # installing it must fail and leave nothing behind.
     [string]$Rollback
@@ -18,6 +23,7 @@ $exe = Join-Path $installDir 'testapp.exe'
 $svcExe = Join-Path $installDir 'testsvc.exe'
 $conf = Join-Path $installDir 'etc\testapp\testapp.conf'
 $shortcut = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Nfpm MSI Test.lnk'
+$desktopShortcut = Join-Path $env:PUBLIC 'Desktop\Nfpm MSI Test.lnk'
 $regKey = 'HKLM:\Software\NfpmMsiTest'
 $serviceName = 'NfpmMsiTestSvc'
 
@@ -66,15 +72,15 @@ function Get-InstalledProducts([string]$displayName) {
         Where-Object { $_.DisplayName -eq $displayName })
 }
 
-function Assert-Installed([string]$version) {
-    foreach ($path in @($exe, $svcExe, $conf, $shortcut)) {
+function Assert-Installed([string]$version, [string]$expectedOutput = 'nfpm-msix-test-ok') {
+    foreach ($path in @($exe, $svcExe, $conf, $shortcut, $desktopShortcut)) {
         if (-not (Test-Path $path)) { throw "expected $path after install" }
     }
     Write-Host "Files, shortcut and service executable are in place"
 
     $output = & $exe 2>&1
-    if ($output -ne 'nfpm-msix-test-ok') {
-        throw "expected the installed app to print 'nfpm-msix-test-ok' but got '$output'"
+    if ($output -ne $expectedOutput) {
+        throw "expected the installed app to print '$expectedOutput' but got '$output'"
     }
     Write-Host "Installed application ran correctly"
 
@@ -100,6 +106,7 @@ function Assert-Installed([string]$version) {
 function Assert-Removed {
     if (Test-Path $installDir) { throw "install directory $installDir still exists after uninstall" }
     if (Test-Path $shortcut) { throw "shortcut $shortcut still exists after uninstall" }
+    if (Test-Path $desktopShortcut) { throw "shortcut $desktopShortcut still exists after uninstall" }
     if (Test-Path $regKey) { throw "registry key $regKey still exists after uninstall" }
     if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) { throw "service $serviceName still exists after uninstall" }
     if ((Get-InstalledProducts 'NfpmMsiTest').Count -ne 0) { throw "NfpmMsiTest is still registered after uninstall" }
@@ -142,6 +149,30 @@ if ($Upgrade) {
     Write-Host "Upgrade scripts ran correctly"
     Assert-Installed '1.0.1'
     $msi = $upgrade
+}
+
+# --- downgrade in place, including replacement of the newer payload ----------
+
+if ($Newer -or $Downgrade) {
+    if (-not ($Newer -and $Downgrade)) { throw '-Newer and -Downgrade must be supplied together' }
+    $newer = Resolve-Path $Newer
+    $downgrade = Resolve-Path $Downgrade
+    foreach ($replacement in @(
+        @{ Msi = $newer; Version = '2.0.0'; Output = 'nfpm-msi-v2-test-ok'; Log = './dist/newer.log' },
+        @{ Msi = $downgrade; Version = '1.0.0'; Output = 'nfpm-msix-test-ok'; Log = './dist/downgrade.log' }
+    )) {
+        Reset-Markers
+        $package = $replacement.Msi
+        $code = Invoke-Msiexec @('/i', "`"$package`"") $replacement.Log
+        if ($code -ne 0) {
+            Show-Log $replacement.Log
+            throw "installing version $($replacement.Version) failed with exit code $code"
+        }
+        Assert-Markers @('preinstall', 'postinstall')
+        Assert-NoMarkers @('preremove', 'postremove')
+        Assert-Installed $replacement.Version $replacement.Output
+    }
+    $msi = $downgrade
 }
 
 # --- uninstall ---------------------------------------------------------------
