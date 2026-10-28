@@ -355,6 +355,12 @@ func TestWriteScriptSection(t *testing.T) {
 		writeScriptSection(&b, "post", defaultInterpreter, "echo hi")
 		require.Equal(t, "\n%post\necho hi\n", b.String())
 	})
+
+	t.Run("interpreter is escaped for rpmbuild argument parsing", func(t *testing.T) {
+		var b strings.Builder
+		writeScriptSection(&b, "post", `/opt/a b/"c'\d%x`, "echo hi")
+		require.Equal(t, "\n%post -p "+`/opt/a\\\ b/\\\"c\\\'\\\\d%%x`+"\necho hi\n", b.String())
+	})
 }
 
 func TestSpecFileLine(t *testing.T) {

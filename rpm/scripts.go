@@ -62,7 +62,10 @@ func readScripts(info *nfpm.Info) (scriptBodies, error) {
 	return s, nil
 }
 
-const defaultInterpreter = "/bin/sh"
+const (
+	defaultInterpreter = "/bin/sh"
+	luaInterpreter     = "<lua>"
+)
 
 type scriptlet struct {
 	section     string
@@ -74,8 +77,8 @@ type scriptlet struct {
 
 // scriptlets pairs every script body with its interpreter, in the order of the
 // generated spec.
-func (s scriptBodies) scriptlets(in nfpm.RPMInterpreters) []scriptlet {
-	return []scriptlet{
+func (s scriptBodies) scriptlets(in nfpm.RPMInterpreters) ([]scriptlet, error) {
+	scriptlets := []scriptlet{
 		{"pre", s.preIn, defaultTo(in.PreInstall, defaultInterpreter), rpm.SenseScriptPre, rpm.PackageBuilder.Prein},
 		{"post", s.postIn, defaultTo(in.PostInstall, defaultInterpreter), rpm.SenseScriptPost, rpm.PackageBuilder.Postin},
 		{"preun", s.preUn, defaultTo(in.PreRemove, defaultInterpreter), rpm.SenseScriptPreUn, rpm.PackageBuilder.Preun},
@@ -84,6 +87,27 @@ func (s scriptBodies) scriptlets(in nfpm.RPMInterpreters) []scriptlet {
 		{"posttrans", s.postTrans, defaultTo(in.PostTrans, defaultInterpreter), rpm.SensePostTrans, rpm.PackageBuilder.Posttrans},
 		{"verifyscript", s.verify, defaultTo(in.Verify, defaultInterpreter), rpm.SenseScriptVerify, rpm.PackageBuilder.VerifyScript},
 	}
+	for _, sc := range scriptlets {
+		if err := checkInterpreter(sc.interpreter); err != nil {
+			return nil, fmt.Errorf("invalid %%%s interpreter: %w", sc.section, err)
+		}
+	}
+	return scriptlets, nil
+}
+
+// checkInterpreter rejects the interpreters that rpmbuild would refuse in a
+// "-p" option, so that the generated SRPM can always be rebuilt.
+func checkInterpreter(interpreter string) error {
+	if interpreter == luaInterpreter {
+		return nil
+	}
+	if !strings.HasPrefix(interpreter, "/") {
+		return fmt.Errorf("%q must be an absolute path or %s", interpreter, luaInterpreter)
+	}
+	if strings.ContainsAny(interpreter, "\r\n") {
+		return fmt.Errorf("%q must not contain a line break", interpreter)
+	}
+	return nil
 }
 
 // applyScripts attaches the configured lifecycle scripts to the package builder.
@@ -93,7 +117,11 @@ func applyScripts(b rpm.PackageBuilder, info *nfpm.Info) error {
 		return err
 	}
 
-	for _, sc := range s.scriptlets(info.RPM.Interpreters) {
+	scriptlets, err := s.scriptlets(info.RPM.Interpreters)
+	if err != nil {
+		return err
+	}
+	for _, sc := range scriptlets {
 		if sc.body == "" {
 			continue
 		}
