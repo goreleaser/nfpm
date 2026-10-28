@@ -246,7 +246,7 @@ RUN dnf install -y rpm-build
 RUN mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS} && \
     printf '%s\n' \
       'Name: trigger-target' \
-      'Version: 1.0' \
+      'Version: %{?target_version}%{!?target_version:1.0}' \
       'Release: 1' \
       'Summary: RPM trigger target' \
       'License: MIT' \
@@ -256,6 +256,7 @@ RUN mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS} && \
       '%files' \
       > /tmp/rpmbuild/SPECS/trigger-target.spec && \
     rpmbuild --define '_topdir /tmp/rpmbuild' -bb /tmp/rpmbuild/SPECS/trigger-target.spec && \
+    rpmbuild --define '_topdir /tmp/rpmbuild' --define 'target_version 2.0' -bb /tmp/rpmbuild/SPECS/trigger-target.spec && \
     printf '%s\n' \
       'Name: trigger-provider' \
       'Version: 1.0' \
@@ -277,7 +278,13 @@ RUN test ! -e /tmp/rpm-trigger-proof
 RUN rpm -ivh /tmp/rpmbuild/RPMS/noarch/trigger-target-1.0-1.noarch.rpm
 RUN grep -qx prein /tmp/rpm-trigger-proof
 RUN grep -qx in /tmp/rpm-trigger-proof
+RUN ! grep -qx in-v2 /tmp/rpm-trigger-proof
 RUN ! grep -qxE 'un|postun' /tmp/rpm-trigger-proof
 RUN rpm -e trigger-target
 RUN grep -qx un /tmp/rpm-trigger-proof
 RUN grep -qx postun /tmp/rpm-trigger-proof
+# Each version range of the target runs its own trigger script.
+RUN rm /tmp/rpm-trigger-proof
+RUN rpm -ivh /tmp/rpmbuild/RPMS/noarch/trigger-target-2.0-1.noarch.rpm
+RUN grep -qx in-v2 /tmp/rpm-trigger-proof
+RUN ! grep -qx in /tmp/rpm-trigger-proof

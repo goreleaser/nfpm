@@ -374,8 +374,9 @@ rpm:
       # an optional version: RPM matches them against the name of the package
       # being installed or removed, so a capability provided by another
       # package does not fire the trigger. Rich dependencies such as
-      # `(foo if bar)` are not allowed, and a package can only be used in one
-      # trigger of each type.
+      # `(foo if bar)` are not allowed. Two triggers of the same type can use
+      # the same package only if their version ranges do not overlap, e.g.
+      # `foo < 2.0` and `foo >= 2.0`.
       # This will expand any env var you set in the field, e.g. ${PG_VERSION}
       conditions:
         - another-package >= 2.0

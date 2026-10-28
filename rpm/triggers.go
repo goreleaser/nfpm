@@ -17,16 +17,18 @@ type trigger struct {
 	conditions  []rpm.Relation
 }
 
-type triggerTarget struct {
+type triggerCondition struct {
 	triggerType rpm.TriggerKind
-	name        string
+	relation    rpm.Relation
+	condition   string
+	trigger     int
 }
 
 func readTriggers(info *nfpm.Info) ([]trigger, error) {
 	triggers := make([]trigger, 0, len(info.RPM.Triggers))
-	// RPM runs a single trigger script per type for a given package, and
-	// rpmbuild refuses a spec that declares more than one.
-	definedBy := map[triggerTarget]int{}
+	// RPM runs a single trigger script per type for a given package version,
+	// and rpmbuild refuses a spec where two such conditions overlap.
+	var defined []triggerCondition
 	for i, t := range info.RPM.Triggers {
 		triggerType, err := parseTriggerType(t.Type)
 		if err != nil {
@@ -60,11 +62,12 @@ func readTriggers(info *nfpm.Info) ([]trigger, error) {
 				return nil, fmt.Errorf("rpm trigger %d: rich dependency %q is not allowed in trigger conditions", i+1, condition)
 			}
 
-			target := triggerTarget{triggerType, relation.Name()}
-			if previous, ok := definedBy[target]; ok {
-				return nil, fmt.Errorf("rpm trigger %d: %q is already a condition of rpm trigger %d, which has the same type %q", i+1, relation.Name(), previous, t.Type)
+			for _, previous := range defined {
+				if previous.triggerType == triggerType && conditionsOverlap(previous.relation, relation) {
+					return nil, fmt.Errorf("rpm trigger %d: condition %q overlaps condition %q of rpm trigger %d, which has the same type %q", i+1, condition, previous.condition, previous.trigger, t.Type)
+				}
 			}
-			definedBy[target] = i + 1
+			defined = append(defined, triggerCondition{triggerType, relation, condition, i + 1})
 
 			conditions = append(conditions, relation)
 		}

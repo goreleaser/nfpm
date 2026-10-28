@@ -120,7 +120,7 @@ func TestReadTriggersErrors(t *testing.T) {
 	}
 }
 
-func TestReadTriggersSameTarget(t *testing.T) {
+func TestReadTriggersOverlap(t *testing.T) {
 	const script = "../testdata/scripts/postinstall.sh"
 	read := func(triggers ...nfpm.RPMTrigger) error {
 		_, err := readTriggers(&nfpm.Info{Overridables: nfpm.Overridables{RPM: nfpm.RPM{Triggers: triggers}}})
@@ -129,15 +129,20 @@ func TestReadTriggersSameTarget(t *testing.T) {
 
 	require.ErrorContains(t, read(
 		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo"}},
-		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"bar", "foo"}},
-	), `rpm trigger 2: "foo" is already a condition of rpm trigger 1, which has the same type "in"`)
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"bar", "foo >= 2.0"}},
+	), `rpm trigger 2: condition "foo >= 2.0" overlaps condition "foo" of rpm trigger 1, which has the same type "in"`)
 	require.ErrorContains(t, read(
 		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo >= 1.0"}},
 		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo < 3.0"}},
-	), `rpm trigger 2: "foo" is already a condition of rpm trigger 1, which has the same type "in"`)
+	), `rpm trigger 2: condition "foo < 3.0" overlaps condition "foo >= 1.0" of rpm trigger 1, which has the same type "in"`)
 	require.ErrorContains(t, read(
-		nfpm.RPMTrigger{Type: "un", Script: script, Conditions: []string{"foo >= 1.0", "foo < 3.0"}},
-	), `rpm trigger 1: "foo" is already a condition of rpm trigger 1, which has the same type "un"`)
+		nfpm.RPMTrigger{Type: "un", Script: script, Conditions: []string{"foo <= 2.0", "foo >= 2.0"}},
+	), `rpm trigger 1: condition "foo >= 2.0" overlaps condition "foo <= 2.0" of rpm trigger 1, which has the same type "un"`)
+	require.NoError(t, read(
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo < 2.0"}},
+		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo >= 2.0"}},
+		nfpm.RPMTrigger{Type: "un", Script: script, Conditions: []string{"foo < 2.0", "foo >= 2.0"}},
+	))
 	require.NoError(t, read(
 		nfpm.RPMTrigger{Type: "prein", Script: script, Conditions: []string{"foo"}},
 		nfpm.RPMTrigger{Type: "in", Script: script, Conditions: []string{"foo"}},
