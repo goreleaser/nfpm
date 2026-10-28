@@ -157,7 +157,7 @@ func TestSRPMGenerateSpecFileDirectives(t *testing.T) {
 				{Source: "../testdata/fake", Destination: "/opt/docs:v1/manual"},
 				{Source: "../testdata/fake", Destination: "/opt/docs/manual"},
 			},
-			RPM: nfpm.RPM{DocDirs: []string{"/usr/share/doc/", "", "/opt/100%docs", "/opt/docs:v1"}},
+			RPM: nfpm.RPM{DocDirs: []string{"/usr/share/doc/", "", "opt/100%docs", "/opt/docs:v1"}},
 		},
 	})
 	info = setDefaults(info)

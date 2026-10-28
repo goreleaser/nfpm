@@ -75,15 +75,15 @@ func addContents(b rpm.PackageBuilder, info *nfpm.Info) error {
 }
 
 // cleanDocDirs normalizes rpm.doc_dirs for the binary package and for the
-// generated spec alike, so that "/usr/share/doc/" matches the files below
-// /usr/share/doc.
+// generated spec alike, so that "/usr/share/doc/" and "usr/share/doc" match
+// the files below /usr/share/doc.
 func cleanDocDirs(dirs []string) []string {
 	cleaned := make([]string, 0, len(dirs))
 	for _, dir := range dirs {
 		if dir == "" {
 			continue
 		}
-		cleaned = append(cleaned, files.ToNixPath(dir))
+		cleaned = append(cleaned, files.NormalizeAbsoluteFilePath(dir))
 	}
 	return cleaned
 }
