@@ -11,6 +11,7 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -270,23 +271,55 @@ func TestConfigureSigningWrongPassphrase(t *testing.T) {
 	require.ErrorAs(t, err, &expectedError)
 }
 
-// TestPublisherFromBadPFX proves publisher derivation degrades gracefully: an
-// unreadable PFX leaves the configured publisher in place rather than failing,
-// because the signing step reports the error later with better context.
+// TestPublisherFromBadPFX ensures signing failures are reported even when
+// no publisher fallback is available.
 func TestPublisherFromBadPFX(t *testing.T) {
 	pfxPath := filepath.Join(t.TempDir(), "corrupt.pfx")
 	require.NoError(t, os.WriteFile(pfxPath, []byte("not a pfx"), 0o600))
+	validPFX, _ := makeTestPFX(t)
 
-	info := exampleInfo()
-	info.MSIX.Publisher = ""
-	info.Vendor = "FallbackCo"
-	info.MSIX.Signature.PFXFile = pfxPath
+	for _, tt := range []struct {
+		name       string
+		path       string
+		passphrase string
+	}{
+		{name: "corrupt", path: pfxPath},
+		{name: "missing", path: filepath.Join(t.TempDir(), "missing.pfx")},
+		{name: "wrong passphrase", path: validPFX, passphrase: "wrong-passphrase"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, fallback := range []struct {
+				name      string
+				vendor    string
+				publisher string
+			}{
+				{name: "vendor fallback", vendor: "FallbackCo", publisher: "CN=FallbackCo"},
+				{name: "no fallback"},
+			} {
+				t.Run(fallback.name, func(t *testing.T) {
+					info := exampleInfo()
+					info.MSIX.Publisher = ""
+					info.Vendor = fallback.vendor
+					info.Maintainer = ""
+					info.MSIX.Signature = nfpm.MSIXSignature{
+						PFXFile:       tt.path,
+						KeyPassphrase: tt.passphrase,
+					}
 
-	err := Default.Package(info, io.Discard)
-	require.Error(t, err, "the corrupt PFX must still fail at the signing step")
-
-	var expectedError *nfpm.ErrSigningFailure
-	require.ErrorAs(t, err, &expectedError)
-	require.Equal(t, "CN=FallbackCo", info.MSIX.Publisher,
-		"publisher must fall back to the vendor when the PFX cannot be read")
+					err := Default.Package(info, io.Discard)
+					require.Error(t, err)
+					if tt.name == "missing" && fallback.vendor != "" {
+						require.ErrorIs(t, err, os.ErrNotExist)
+						assert.Contains(t, err.Error(), "PFX file not found")
+					} else {
+						var expectedError *nfpm.ErrSigningFailure
+						require.ErrorAs(t, err, &expectedError)
+						assert.Contains(t, err.Error(), "loading PFX")
+					}
+					assert.NotContains(t, err.Error(), "msix.publisher, vendor, or maintainer")
+					assert.Equal(t, fallback.publisher, info.MSIX.Publisher)
+				})
+			}
+		})
+	}
 }

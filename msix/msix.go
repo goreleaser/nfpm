@@ -149,20 +149,27 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 	// packages, so the cert is the only correct default when signing is
 	// configured; otherwise fall back to a CN= DN built from vendor/maintainer.
 	if info.MSIX.Publisher == "" {
+		var signingErr error
 		if info.MSIX.Signature.PFXFile != "" {
 			cert, _, _, err := msix.LoadPFX(info.MSIX.Signature.PFXFile, info.MSIX.Signature.KeyPassphrase)
-			if err == nil {
+			if err != nil {
+				signingErr = err
+			} else {
 				info.MSIX.Publisher, err = certificatePublisher(cert.RawSubject)
 				if err != nil {
 					return fmt.Errorf("format signing certificate publisher: %w", err)
 				}
 			}
-			// on error fall through; configureSigning surfaces the real failure
 		}
 		if info.MSIX.Publisher == "" {
 			if v := maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer); v != "" {
 				info.MSIX.Publisher = ensureDN(v)
 			}
+		}
+		// Without a fallback, report the signing failure before publisher validation.
+		// Otherwise configureSigning will report it after metadata validation.
+		if info.MSIX.Publisher == "" && signingErr != nil {
+			return &nfpm.ErrSigningFailure{Err: fmt.Errorf("loading PFX: %w", signingErr)}
 		}
 	}
 
