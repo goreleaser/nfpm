@@ -1,0 +1,22 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar"
+description: |
+  Foo bar
+license: "MIT"
+contents:
+- src: ./testdata/fake
+  dst: /usr/bin/fake
+- src: ./testdata/fake
+  dst: /usr/share/doc/foo/README
+- src: ./testdata/whatever.conf
+  dst: /usr/share/doc/foo/example.conf
+  type: config
+- src: README
+  dst: /usr/share/doc/foo/README.link
+  type: symlink
+rpm:
+  doc_dirs:
+  - /usr/share/doc

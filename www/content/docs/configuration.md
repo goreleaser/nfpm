@@ -413,6 +413,15 @@ rpm:
   # Default is false.
   script_requires: true
 
+  # Files below these directories are flagged as documentation (%doc).
+  # Directories themselves are not. Documentation is skipped when installing
+  # with --excludedocs, except for the files with type license, which RPM
+  # always installs.
+  # Default is empty: only the files with type doc are documentation.
+  doc_dirs:
+    - /usr/share/doc
+    - /usr/share/man
+
   # The package is signed if a key_file is set
   signature:
     # PGP secret key (can also be ASCII-armored), the passphrase is taken
