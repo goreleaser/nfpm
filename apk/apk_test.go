@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
@@ -304,6 +305,43 @@ func TestCreateBuilderControlScripts(t *testing.T) {
 	require.Contains(t, script, `echo "Preremove" > /dev/null`)
 	script = string(extractFromTar(t, w.Bytes(), ".post-deinstall"))
 	require.Contains(t, script, `echo "Postremove" > /dev/null`)
+}
+
+func TestCreateBuilderControlScriptsModTime(t *testing.T) {
+	script := filepath.Join(t.TempDir(), "postinstall.sh")
+	require.NoError(t, os.WriteFile(script, []byte("#!/bin/sh\n"), 0o644))
+	scriptMTime := time.Date(2024, 5, 6, 7, 8, 9, 0, time.UTC)
+	require.NoError(t, os.Chtimes(script, scriptMTime, scriptMTime))
+	configuredMTime := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	for _, tc := range []struct {
+		name            string
+		sourceDateEpoch string
+		mtime           time.Time
+		want            time.Time
+	}{
+		{name: "configured mtime", mtime: configuredMTime, want: configuredMTime},
+		{name: "SOURCE_DATE_EPOCH", sourceDateEpoch: "1600000000", want: time.Unix(1600000000, 0)},
+		{name: "script mtime when unset", want: scriptMTime},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("SOURCE_DATE_EPOCH", tc.sourceDateEpoch)
+			info := exampleInfo()
+			if !tc.mtime.IsZero() {
+				info.MTime = tc.mtime
+			}
+			info.Scripts.PostInstall = script
+			require.NoError(t, nfpm.PrepareForPackager(info, "apk"))
+
+			var w bytes.Buffer
+			tw := tar.NewWriter(&w)
+			require.NoError(t, createBuilderControl(info, 0, sha256.New().Sum(nil))(tw))
+			require.NoError(t, tw.Close())
+
+			header := extractFileHeaderFromTar(t, w.Bytes(), ".post-install")
+			require.Equal(t, tc.want.Unix(), header.ModTime.Unix())
+		})
+	}
 }
 
 func TestControl(t *testing.T) {

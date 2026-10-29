@@ -47,6 +47,7 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/maps"
+	"github.com/goreleaser/nfpm/v2/internal/modtime"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 	gzip "github.com/klauspost/pgzip"
 )
@@ -360,7 +361,7 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 			if path == "" {
 				continue
 			}
-			if err := newScriptInsideTarGz(tw, path, name); err != nil {
+			if err := newScriptInsideTarGz(tw, path, name, info.MTime); err != nil {
 				return err
 			}
 		}
@@ -369,7 +370,7 @@ func createBuilderControl(info *nfpm.Info, size int64, dataDigest []byte) func(t
 	}
 }
 
-func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
+func newScriptInsideTarGz(out *tar.Writer, path, dest string, mtime time.Time) error {
 	file, err := os.Stat(path) //nolint:gosec
 	if err != nil {
 		return err
@@ -382,7 +383,7 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 		Name:     files.ToNixPath(dest),
 		Size:     int64(len(content)),
 		Mode:     0o755,
-		ModTime:  file.ModTime(),
+		ModTime:  modtime.Get(mtime, file.ModTime()),
 		Typeflag: tar.TypeReg,
 	})
 }
