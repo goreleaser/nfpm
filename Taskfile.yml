@@ -79,6 +79,9 @@ tasks:
       - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.newer.yaml -p msi -t ./dist/foo-newer.msi
       - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.downgrade.yaml -p msi -t ./dist/foo-downgrade.msi
       - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.rollback.yaml -p msi -t ./dist/foo-rollback.msi
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.user-latin.yaml -p msi -t ./dist/foo-user-latin.msi
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.user-japanese.yaml -p msi -t ./dist/foo-user-japanese.msi
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/msi.user-cyrillic.yaml -p msi -t ./dist/foo-user-cyrillic.msi
 
   acceptance:windows:install:msi:
     desc: Install, upgrade, downgrade and remove MSI packages on Windows, and prove a failing script rolls back
@@ -91,6 +94,12 @@ tasks:
     platforms: [windows]
     cmds:
       - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/install-msi.ps1 -Msi ./dist/foo.msi
+
+  acceptance:windows:install:msi:per-user:
+    desc: Verify Unicode metadata and install/remove MSI packages as a fresh standard user on a disposable Windows CI runner
+    platforms: [windows]
+    cmds:
+      - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/verify-msi-per-user.ps1
 
   acceptance:windows:package:signed:msi:
     desc: Cross-compile the test app and build the nfpm-signed MSI package (runs on Linux/macOS)

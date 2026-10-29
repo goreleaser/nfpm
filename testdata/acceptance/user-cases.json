@@ -1,0 +1,17 @@
+[
+  {
+    "name": "latin",
+    "product": "Café",
+    "manufacturer": "Müller GmbH"
+  },
+  {
+    "name": "japanese",
+    "product": "アプリ",
+    "manufacturer": "日本株式会社"
+  },
+  {
+    "name": "cyrillic",
+    "product": "Приложение",
+    "manufacturer": "Компания"
+  }
+]

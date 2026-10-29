@@ -339,7 +339,8 @@ umask: 0o002
 
 # Scripts to run at specific stages. (overridable)
 #
-# For MSI packages the scripts run as elevated deferred custom actions and must
+# For MSI packages the scripts run as deferred custom actions (elevated for
+# per-machine installs, with user privileges for per-user installs) and must
 # be PowerShell (.ps1) or batch (.bat/.cmd) files, at most 8 KiB each; a
 # non-zero exit rolls back the installer transaction (including on uninstall,
 # so a failing preremove/postremove leaves the product installed until the
@@ -684,9 +685,10 @@ msix:
 # `C:\Program Files\<install_dir>\usr\bin\myapp`. Files installed under
 # `/Windows` (including System32 and Fonts) are permanent: Windows Installer
 # never removes them, so they outlive every uninstall of the product; nFPM
-# warns when a package does this. Two destinations that differ only by drive
-# letter or slashes are an error, and `config` contents are installed as
-# plain files (they are replaced on upgrade, with a warning).
+# warns when a package does this. Destinations that resolve to the same install
+# path are an error, including case/drive/slash differences and aliases such as
+# `/app.exe` and `/Program Files/<install_dir>/app.exe`. `config` contents are
+# installed as plain files (they are replaced on upgrade, with a warning).
 #
 # Every release must have a distinct version that fits Windows Installer's
 # limits (see `version` below); releases replace older installs of the same
@@ -698,7 +700,8 @@ msix:
 #   by setting the property explicitly in `msi.properties`.
 # - the first contents entry with `type: license` is shown as the license text
 #   by the install wizard (see `minimal_ui`).
-# - the root `scripts` run as elevated (SYSTEM) deferred custom actions:
+# - the root `scripts` run as deferred custom actions, elevated (SYSTEM) for
+#   per-machine installs and with user privileges for per-user installs:
 #   preinstall/postinstall around file installation (on fresh installs and on
 #   the new release during an upgrade), and preremove/postremove around file
 #   removal on uninstall (not while an upgrade replaces the old release).
@@ -757,6 +760,9 @@ msi:
     /app/override.dll: "1.2.3.4"
 
   # Product name (defaults to the package name).
+  # Accented and non-Latin names are preserved. All summary metadata must fit
+  # one supported Windows ANSI code page without loss. Unsupported combinations
+  # and supplementary characters (such as emoji) fail before writing a package.
   product_name: "My Application"
 
   # Manufacturer/author of the product.
@@ -786,7 +792,9 @@ msi:
   # Install for the current user only, without elevation (defaults to false: a
   # per-machine install for all users). A per-user package cannot install into
   # Program Files, ProgramData or the Windows folders, write HKLM registry
-  # values, or install services.
+  # values, or install services. Its scripts must work with user privileges.
+  # Per-user packages require Windows Installer 4.0 or newer. If INSTALLFOLDER
+  # is overridden at install time, pass the same override during uninstall.
   per_user: false
 
   # Arbitrary MSI Property rows. Setting ARPCOMMENTS or ARPURLINFOABOUT here

@@ -18,6 +18,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $msi = Resolve-Path $Msi
+$defaultPolicy = $msi
 $installDir = 'C:\Program Files\NfpmMsiTest'
 $exe = Join-Path $installDir 'testapp.exe'
 $svcExe = Join-Path $installDir 'testsvc.exe'
@@ -171,6 +172,19 @@ if ($Newer -or $Downgrade) {
         Assert-Markers @('preinstall', 'postinstall')
         Assert-NoMarkers @('preremove', 'postremove')
         Assert-Installed $replacement.Version $replacement.Output
+        if ($replacement.Version -eq '2.0.0') {
+            $before = (Get-FileHash $exe).Hash
+            Reset-Markers
+            $code = Invoke-Msiexec @('/i', "`"$defaultPolicy`"") './dist/blocked-downgrade.log'
+            if ($code -ne 1603) {
+                Show-Log './dist/blocked-downgrade.log'
+                throw "expected default-policy silent downgrade to fail with 1603, got $code"
+            }
+            Assert-Installed '2.0.0' 'nfpm-msi-v2-test-ok'
+            if ((Get-FileHash $exe).Hash -ne $before) { throw 'Rejected downgrade changed the newer executable' }
+            Assert-NoMarkers @('preinstall', 'postinstall', 'preremove', 'postremove')
+            Write-Host 'SILENT_DOWNGRADE_REJECTED_ONE_PRODUCT_UNCHANGED_NEWER_OK'
+        }
     }
     $msi = $downgrade
 }

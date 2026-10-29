@@ -461,6 +461,7 @@ func TestInstallFolder(t *testing.T) {
 		parent, name := parentOf(t, db, "INSTALLFOLDER")
 		require.Equal(t, "ProgramFiles64Folder", parent)
 		require.Equal(t, "My Application", name)
+		require.Equal(t, 2, db.Summary().WordCount(), "per-machine packages keep the elevation-capable default")
 
 		// Contents without a well-known prefix live under it.
 		comp := componentFor(t, db, "config.conf")
@@ -496,7 +497,45 @@ func TestInstallFolder(t *testing.T) {
 		parent, _ = parentOf(t, db, "LocalAppDataFolder")
 		require.Equal(t, "TARGETDIR", parent)
 		require.Empty(t, property(t, db, "ALLUSERS"), "a per-user package must not set ALLUSERS")
+		require.Equal(t, 2|8, db.Summary().WordCount(), "per-user packages must be authored as non-elevating")
+		require.GreaterOrEqual(t, db.Summary().PageCount(), 400, "non-elevating packages require MSI 4.0")
 	})
+}
+
+func TestUnicodeMetadata(t *testing.T) {
+	for _, tc := range []struct {
+		name, product, manufacturer string
+	}{
+		{"accented", "Café", "Müller GmbH"},
+		{"Japanese", "アプリ", "日本株式会社"},
+		{"Cyrillic", "Приложение", "Компания"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			info := exampleInfo()
+			info.MSI.ProductName = tc.product
+			info.MSI.Manufacturer = "" // exercise the shared vendor fallback
+			info.Vendor = tc.manufacturer
+			db := buildDB(t, info)
+			require.Equal(t, tc.product, property(t, db, "ProductName"))
+			require.Equal(t, tc.manufacturer, property(t, db, "Manufacturer"))
+			require.Equal(t, tc.product, db.Summary().Subject())
+			require.Equal(t, tc.manufacturer, db.Summary().Author())
+		})
+	}
+	for _, field := range []string{"product", "manufacturer"} {
+		t.Run("unrepresentable "+field, func(t *testing.T) {
+			info := exampleInfo()
+			if field == "product" {
+				info.MSI.ProductName = "App 😀"
+			} else {
+				info.MSI.Manufacturer = "Company 😀"
+			}
+			var buf bytes.Buffer
+			err := msi.Default.Package(info, &buf)
+			require.ErrorContains(t, err, "summary metadata cannot be represented losslessly")
+			require.Zero(t, buf.Len(), "unsupported names must fail before writing output")
+		})
+	}
 }
 
 // TestPerUserValidation proves a per-user package cannot claim per-machine
@@ -1092,6 +1131,13 @@ func upgradeRows(t *testing.T, db gomsi.Database) (remove, detectNewer gomsi.Row
 // RemoveExistingProducts removes them, and a newer install is refused.
 func TestMajorUpgradeDefault(t *testing.T) {
 	db := buildDB(t, exampleInfo())
+	for _, table := range []string{"InstallExecuteSequence", "InstallUISequence"} {
+		rows := tableRows(t, db, table)
+		detect := rowWhere(t, rows, "Action", "FindRelatedProducts")
+		conditions := rowWhere(t, rows, "Action", "LaunchConditions")
+		require.Less(t, detect["Sequence"].(int16), conditions["Sequence"].(int16),
+			"%s must detect newer products before checking the downgrade condition", table)
+	}
 
 	remove, detectNewer := upgradeRows(t, db)
 	require.NotNil(t, remove, "older versions must be detected for removal")
@@ -1354,6 +1400,44 @@ func TestDestinations(t *testing.T) {
 		dir := rowWhere(t, tableRows(t, db, "Directory"), "Directory", comp["Directory_"])
 		require.Equal(t, "ProgramFiles64Folder", dir["Directory_Parent"])
 	})
+}
+
+func TestResolvedDestinationCollisions(t *testing.T) {
+	for _, tc := range []struct {
+		name, arch, installDir, first, second string
+		perUser, allowed                      bool
+	}{
+		{name: "default product folder", first: "/app.exe", second: "/Program Files/TestApp/app.exe"},
+		{name: "case and drive aliases", first: "/APP.EXE", second: "C:/program files/testapp/app.exe"},
+		{name: "custom install folder", installDir: "Custom Folder", first: "/sub/app.exe", second: "/Program Files/Custom Folder/sub/app.exe"},
+		{name: "32-bit folder alias", arch: "386", first: "/app.exe", second: "/Program Files (x86)/TestApp/app.exe"},
+		{name: "per-user folder", perUser: true, first: "/app.exe", second: "/AppData/Local/Programs/TestApp/app.exe"},
+		{name: "Windows system directory alias", arch: "386", first: "/Windows/System32/app.dll", second: "/Windows/SysWOW64/app.dll"},
+		{name: "distinct 32 and 64 bit roots", first: "/app.exe", second: "/Program Files (x86)/TestApp/app.exe", allowed: true},
+		{name: "distinct install folders", installDir: "Other", first: "/app.exe", second: "/Program Files/TestApp/app.exe", allowed: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			info := exampleInfo()
+			if tc.arch != "" {
+				info.Arch = tc.arch
+			}
+			info.MSI.PerUser = tc.perUser
+			info.MSI.InstallDir = tc.installDir
+			info.Contents = []*files.Content{
+				{Source: "../testdata/fake", Destination: tc.first},
+				{Source: "../testdata/whatever.conf", Destination: tc.second},
+			}
+			if tc.allowed {
+				require.Len(t, tableRows(t, buildDB(t, info), "File"), 2)
+				return
+			}
+			err := msi.Default.Package(info, io.Discard)
+			require.ErrorContains(t, err, "resolve to the same Windows path")
+			require.Contains(t, err.Error(), tc.first)
+			// PrepareForPackager adds the leading slash to drive paths.
+			require.Contains(t, err.Error(), tc.second)
+		})
+	}
 }
 
 // customAction returns the CustomAction row and its InstallExecuteSequence

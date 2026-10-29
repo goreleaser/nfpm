@@ -68,9 +68,10 @@ func scriptHooks(info *nfpm.Info) []struct {
 	}
 }
 
-// addScripts turns the root maintainer scripts into deferred, elevated custom
-// actions. Failures roll back the installer transaction, including on
-// uninstall, matching dpkg/rpm strictness.
+// addScripts turns the root maintainer scripts into deferred custom actions.
+// They run elevated for per-machine installs and with the user's privileges
+// for non-elevating per-user installs. Failures roll back the transaction,
+// including on uninstall, matching dpkg/rpm strictness.
 func addScripts(b msi.PackageBuilder, info *nfpm.Info) error {
 	for _, h := range scriptHooks(info) {
 		if h.path == "" {
@@ -97,8 +98,9 @@ func addScripts(b msi.PackageBuilder, info *nfpm.Info) error {
 // travel base64 inside the bootstrap because the payload must run at points
 // where no package file is on disk yet (preinstall) or anymore (postremove).
 //
-// The custom action runs as SYSTEM, whose temp directory (C:\Windows\Temp)
-// lets any local user pre-create files, so the extracted script must not have
+// A per-machine custom action runs as SYSTEM, whose temp directory
+// (C:\Windows\Temp) lets any local user pre-create files; a per-user action
+// instead runs with user privileges. The extracted script must not have
 // a predictable name and must never be written over an existing file: the
 // name gets a CSPRNG-backed random component and the file is opened with
 // CreateNew, which fails (and rolls the install back) if the path exists.

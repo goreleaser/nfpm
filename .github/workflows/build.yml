@@ -197,6 +197,16 @@ jobs:
         run: ./dist/wix/wix.exe msi validate ./dist/foo.msi -ice ICE50
       - name: Install, upgrade, downgrade, verify and remove the MSI packages
         run: task acceptance:windows:install:msi
+      - name: Verify per-user privileges and native Unicode metadata
+        run: task acceptance:windows:install:msi:per-user
+      - name: Preserve native MSI verification logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nfpm-msi-native-logs
+          path: dist/*.log
+          if-no-files-found: error
+          retention-days: 7
   msi-signed-build:
     if: github.event_name == 'merge_group'
     # Builds the nfpm-signed MSI on Linux: a GOOS=windows cross-compiled test

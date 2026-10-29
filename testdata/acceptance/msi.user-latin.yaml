@@ -1,0 +1,22 @@
+name: NfpmMsiUserlatin
+arch: amd64
+version: 1.0.0
+license: MIT
+vendor: "Müller GmbH"
+description: "A per-user MSI package"
+contents:
+  - src: ./dist/testapp.exe
+    dst: /testapp.exe
+scripts:
+  postinstall: ./testdata/acceptance/testapp/peruser-postinstall.ps1
+msi:
+  product_name: "Café"
+  install_dir: NfpmMsiUserlatin
+  per_user: true
+  file_versions:
+    /testapp.exe: ""
+  registry:
+    - root: HKCU
+      key: 'Software\NfpmMsiUserlatin'
+      name: Installed
+      value: "1"

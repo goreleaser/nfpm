@@ -236,7 +236,7 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 	}
 	if info.MSI.Upgrade.AllowDowngrades {
 		mu.AllowDowngrades()
-		// go-msi v0.5.1 only disables the downgrade block; its synthesized
+		// go-msi only disables the downgrade block; its synthesized
 		// removal row still ends at this version. Cover strictly newer
 		// products too, using a distinct secure action property per MSI's
 		// Upgrade-table contract. AllowSameVersion controls the other row.
@@ -437,8 +437,8 @@ func validateVersion(info *nfpm.Info) error {
 }
 
 // validateDestinations checks that every content file has a usable Windows
-// destination and that no two contents land on the same path once drive
-// letters and slashes are normalized (files.PrepareForPackager only
+// destination and that no two contents land on the same resolved install path,
+// including aliases through INSTALLFOLDER (files.PrepareForPackager only
 // deduplicates literal duplicates). Per-user packages are also kept out of
 // the per-machine folders they could not write without elevation. It returns
 // the set of normalized destinations for cross-referencing shortcuts and
@@ -455,10 +455,11 @@ func validateDestinations(info *nfpm.Info) (map[string]bool, error) {
 			return nil, fmt.Errorf("package contents destination %q is empty once the drive letter is removed; it must name a file", c.Destination)
 		}
 		key := destinationKey(dest)
-		if prev, dup := firstByDest[key]; dup {
-			return nil, fmt.Errorf("package contents destinations %q and %q resolve to the same Windows path %q", prev, c.Destination, dest)
+		target := resolvedDestinationKey(info, dest)
+		if prev, dup := firstByDest[target]; dup {
+			return nil, fmt.Errorf("package contents destinations %q and %q resolve to the same Windows path %q", prev, c.Destination, target)
 		}
-		firstByDest[key] = c.Destination
+		firstByDest[target] = c.Destination
 		dests[key] = true
 
 		if info.MSI.PerUser {
@@ -897,6 +898,39 @@ func normalizeDest(p string) string {
 // in Directory/File rows or the existing component GUID derivation contract.
 func destinationKey(p string) string {
 	return strings.ToLower(normalizeDest(p))
+}
+
+// resolvedDestinationKey models the authored directory tree using standard
+// Windows Installer folder identities rather than machine-specific drive
+// paths. It is only a collision key; emitted names and component GUID seeds
+// continue to use the original normalized destination.
+func resolvedDestinationKey(info *nfpm.Info, dest string) string {
+	is64 := is64bit(info.Arch)
+	root, _, rel := mapDestination(dest, is64)
+	switch root {
+	case installFolder:
+		if info.MSI.PerUser {
+			root = "LocalAppDataFolder"
+			rel = path.Join("Programs", info.MSI.InstallDir, rel)
+		} else {
+			root = "ProgramFilesFolder"
+			if is64 {
+				root = "ProgramFiles64Folder"
+			}
+			rel = path.Join(info.MSI.InstallDir, rel)
+		}
+	case "System64Folder":
+		root, rel = "WindowsFolder", path.Join("System32", rel)
+	case "SystemFolder":
+		folder := "System32"
+		if is64 {
+			folder = "SysWOW64"
+		}
+		root, rel = "WindowsFolder", path.Join(folder, rel)
+	case "FontsFolder":
+		root, rel = "WindowsFolder", path.Join("Fonts", rel)
+	}
+	return strings.ToLower(path.Join(root, rel))
 }
 
 // mapDestination resolves a normalized destination to a root directory ID, its
