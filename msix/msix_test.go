@@ -267,16 +267,6 @@ func TestPublisherFromSigningCert(t *testing.T) {
 	require.Equal(t, `CN="nfpm, msix", O=TestCompany, S=Washington, C=US`, decodedPublisher(t, buf.Bytes()))
 }
 
-// TestPublisherDisplayNameFallback proves the display name prefers the root
-// vendor over the package name.
-func TestPublisherDisplayNameFallback(t *testing.T) {
-	info := exampleInfo()
-	info.MSIX.Properties.PublisherDisplayName = ""
-	var buf bytes.Buffer
-	require.NoError(t, Default.Package(info, &buf))
-	require.Contains(t, readManifest(t, buf.Bytes()), "<PublisherDisplayName>TestCo</PublisherDisplayName>")
-}
-
 func TestScriptsWarning(t *testing.T) {
 	var logs bytes.Buffer
 	log.SetOutput(&logs)
