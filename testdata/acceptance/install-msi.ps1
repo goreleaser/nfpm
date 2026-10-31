@@ -22,7 +22,10 @@ $ErrorActionPreference = 'Stop'
 $msi = Resolve-Path $Msi
 $defaultPolicy = $msi
 $installDir = 'C:\Program Files\NfpmMsiTest'
-if ($InstallDirectory) { $installDir = $InstallDirectory }
+if ($InstallDirectory) {
+    $InstallDirectory = [IO.Path]::GetFullPath($InstallDirectory.Replace('/', '\'))
+    $installDir = $InstallDirectory
+}
 $exe = Join-Path $installDir 'testapp.exe'
 $svcExe = Join-Path $installDir 'testsvc.exe'
 $conf = Join-Path $installDir 'etc\testapp\testapp.conf'
@@ -68,13 +71,19 @@ function Assert-NoMarkers([string[]]$hooks) {
 function Invoke-Msiexec([string[]]$arguments, [string]$log) {
     if ($InstallDirectory) {
         $arguments += "INSTALLFOLDER=`"$InstallDirectory`""
-        $log = Join-Path (Split-Path $log) ('redirect-' + (Split-Path $log -Leaf))
     }
+    $log = Get-LogPath $log
     $proc = Start-Process msiexec.exe -ArgumentList ($arguments + @('/qn', '/norestart', '/l*v', "`"$log`"")) -Wait -PassThru
     return $proc.ExitCode
 }
 
+function Get-LogPath([string]$log) {
+    if ($InstallDirectory) { return Join-Path (Split-Path $log) ('redirect-' + (Split-Path $log -Leaf)) }
+    return $log
+}
+
 function Show-Log([string]$log) {
+    $log = Get-LogPath $log
     if (Test-Path $log) { Get-Content $log | Write-Host }
 }
 

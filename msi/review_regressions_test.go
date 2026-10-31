@@ -166,6 +166,9 @@ func TestReviewEmptyDirectories(t *testing.T) {
 func TestReviewLicenseSelection(t *testing.T) {
 	i := exampleInfo()
 	i.MSI.MinimalUI = true
+	i.Contents = append(i.Contents, &files.Content{
+		Source: "excluded-license-must-not-be-read", Destination: "/ignored-license", Type: files.TypeRPMLicense, Packager: "rpm",
+	})
 	for _, name := range []string{"z-first", "a-second"} {
 		p := filepath.Join(t.TempDir(), name)
 		require.NoError(t, os.WriteFile(p, []byte(name), 0o600))
@@ -174,6 +177,45 @@ func TestReviewLicenseSelection(t *testing.T) {
 	db := buildDB(t, i)
 	r := rowWhere(t, tableRows(t, db, "Control"), "Control", "License")
 	assert.Equal(t, "z-first", r["Text"])
+}
+
+func TestReviewPerUserRegistryAliases(t *testing.T) {
+	i := exampleInfo()
+	i.MSI.PerUser = true
+	i.Contents = i.Contents[1:]
+	i.MSI.Registry = []nfpm.MSIRegistry{
+		{Root: "HKCR", Key: "Audit", Name: "Value", Value: "one"},
+		{Root: "HKCU", Key: `Software\Classes\Audit`, Name: "Value", Value: "two"},
+	}
+	var out bytes.Buffer
+	require.ErrorContains(t, msi.Default.Package(i, &out), "same registry value")
+	assert.Zero(t, out.Len())
+}
+
+func TestReviewValidPerUserShortcut(t *testing.T) {
+	i := exampleInfo()
+	i.MSI.PerUser = true
+	i.Contents = i.Contents[1:]
+	i.MSI.Shortcuts = []nfpm.MSIShortcut{{Name: "Audit", Target: i.Contents[0].Destination, Directory: "DesktopFolder"}}
+	assert.Len(t, tableRows(t, buildDB(t, i), "Shortcut"), 1)
+}
+
+func TestReviewInvalidPowerShellUTF8(t *testing.T) {
+	i := exampleInfo()
+	i.Scripts.PostInstall = filepath.Join(t.TempDir(), "hook.ps1")
+	require.NoError(t, os.WriteFile(i.Scripts.PostInstall, []byte{0x80}, 0o600))
+	var out bytes.Buffer
+	require.ErrorContains(t, msi.Default.Package(i, &out), "BOM-less PowerShell hooks must be valid UTF-8")
+	assert.Zero(t, out.Len())
+}
+
+func TestReviewPackageIdentifierCollision(t *testing.T) {
+	i := exampleInfo()
+	prefix := "/app/" + strings.Repeat("x", 40)
+	i.Contents[0].Destination, i.Contents[1].Destination = prefix+"133781", prefix+"1394350"
+	var out bytes.Buffer
+	require.ErrorContains(t, msi.Default.Package(i, &out), "is derived from both")
+	assert.Zero(t, out.Len())
 }
 
 func TestReviewPerUserShortcuts(t *testing.T) {
