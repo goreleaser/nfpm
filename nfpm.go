@@ -79,17 +79,24 @@ func Enumerate() []string {
 
 // Parse decodes YAML data from an io.Reader into a configuration struct.
 func Parse(in io.Reader) (config Config, err error) {
-	return ParseWithEnvMapping(in, os.Getenv)
+	return parse(in, os.Getenv, os.LookupEnv)
 }
 
 // ParseWithEnvMapping decodes YAML data from an io.Reader into a configuration struct.
+// Mapping functions cannot distinguish an unset variable from an empty one;
+// an empty mapped MSIX passphrase therefore uses the global default.
 func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Config, err error) {
+	return parse(in, mapping, nil)
+}
+
+func parse(in io.Reader, mapping func(string) string, lookup func(string) (string, bool)) (config Config, err error) {
 	dec := yaml.NewDecoder(in)
 	dec.KnownFields(true)
 	if err = dec.Decode(&config); err != nil {
 		return config, err
 	}
 	config.envMappingFunc = mapping
+	config.envLookupFunc = lookup
 	if config.envMappingFunc == nil {
 		config.envMappingFunc = func(s string) string { return s }
 	}
@@ -101,21 +108,25 @@ func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Conf
 
 // ParseFile decodes YAML data from a file path into a configuration struct.
 func ParseFile(path string) (config Config, err error) {
-	if path == "-" {
-		return ParseWithEnvMapping(os.Stdin, os.Getenv)
-	}
-	return ParseFileWithEnvMapping(path, os.Getenv)
+	return parseFile(path, os.Getenv, os.LookupEnv)
 }
 
 // ParseFileWithEnvMapping decodes YAML data from a file path into a configuration struct.
 func ParseFileWithEnvMapping(path string, mapping func(string) string) (config Config, err error) {
+	return parseFile(path, mapping, nil)
+}
+
+func parseFile(path string, mapping func(string) string, lookup func(string) (string, bool)) (config Config, err error) {
+	if path == "-" {
+		return parse(os.Stdin, mapping, lookup)
+	}
 	var file *os.File
 	file, err = os.Open(path) //nolint:gosec
 	if err != nil {
 		return config, err
 	}
 	defer file.Close() // nolint: errcheck,gosec
-	return ParseWithEnvMapping(file, mapping)
+	return parse(file, mapping, lookup)
 }
 
 // Packager represents any packager implementation.
@@ -134,6 +145,7 @@ type Config struct {
 	Info           `yaml:",inline" json:",inline"`
 	Overrides      map[string]*Overridables `yaml:"overrides,omitempty" json:"overrides,omitempty" jsonschema:"title=overrides,description=override some fields when packaging with a specific packager"`
 	envMappingFunc func(string) string
+	envLookupFunc  func(string) (string, bool)
 }
 
 // Get returns the Info struct for the given packager format. Overrides
@@ -286,9 +298,15 @@ func (c *Config) expandEnvVars() {
 	// MSIX specific
 	c.MSIX.Signature.PFXFile = os.Expand(c.MSIX.Signature.PFXFile, c.envMappingFunc)
 	c.MSIX.Publisher = os.Expand(c.MSIX.Publisher, c.envMappingFunc)
+	c.MSIX.Signature.KeyPassphrase = generalPassphrase
 	msixPassphrase := os.Expand("$NFPM_MSIX_PASSPHRASE", c.envMappingFunc)
 	if msixPassphrase != "" {
 		c.MSIX.Signature.KeyPassphrase = msixPassphrase
+	}
+	if c.envLookupFunc != nil {
+		if passphrase, set := c.envLookupFunc("NFPM_MSIX_PASSPHRASE"); set {
+			c.MSIX.Signature.KeyPassphrase = passphrase
+		}
 	}
 }
 
@@ -511,7 +529,7 @@ type IPKAlternative struct {
 // MSIX contains configs that are only available on MSIX packages.
 type MSIX struct {
 	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msix nomenclature"`
-	Publisher    string            `yaml:"publisher" json:"publisher" jsonschema:"title=publisher identity,example=CN=MyCompany\\, O=MyCompany\\, C=US"`
+	Publisher    string            `yaml:"publisher,omitempty" json:"publisher,omitempty" jsonschema:"title=publisher identity,description=defaults to the signing certificate subject when signing or CN=<vendor or maintainer>,example=CN=MyCompany\\, O=MyCompany\\, C=US"`
 	Identity     MSIXIdentity      `yaml:"identity,omitempty" json:"identity,omitempty" jsonschema:"title=package identity"`
 	Properties   MSIXProperties    `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=package properties"`
 	Applications []MSIXApplication `yaml:"applications" json:"applications" jsonschema:"title=applications in the package"`
@@ -571,7 +589,7 @@ type MSIXCapabilities struct {
 // MSIXSignature contains signing configuration for MSIX packages.
 type MSIXSignature struct {
 	PFXFile       string `yaml:"pfx_file,omitempty" json:"pfx_file,omitempty" jsonschema:"title=PFX certificate file"`
-	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSIX_PASSPHRASE env var
+	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSIX_PASSPHRASE, falling back to NFPM_PASSPHRASE
 }
 
 // Scripts contains information about maintainer scripts for packages.

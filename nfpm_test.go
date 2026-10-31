@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/mail"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -17,6 +18,70 @@ import (
 )
 
 var mtime = time.Date(2023, 11, 5, 23, 15, 17, 0, time.UTC)
+
+func TestMSIXPassphrasePrecedence(t *testing.T) {
+	for _, tt := range []struct {
+		name, specific, want string
+		set                  bool
+	}{
+		{"unset uses global", "", "global", false},
+		{"specific overrides global", "specific", "specific", true},
+		{"empty overrides global", "", "", true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("NFPM_PASSPHRASE", "global")
+			t.Setenv("NFPM_MSIX_PASSPHRASE", tt.specific)
+			if !tt.set {
+				require.NoError(t, os.Unsetenv("NFPM_MSIX_PASSPHRASE"))
+			}
+			config, err := nfpm.Parse(strings.NewReader("name: TestApp"))
+			require.NoError(t, err)
+			require.Equal(t, tt.want, config.MSIX.Signature.KeyPassphrase)
+			path := filepath.Join(t.TempDir(), "nfpm.yaml")
+			require.NoError(t, os.WriteFile(path, []byte("name: TestApp"), 0o600))
+			config, err = nfpm.ParseFile(path)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, config.MSIX.Signature.KeyPassphrase)
+		})
+	}
+}
+
+func TestMSIXPassphraseCustomMappingIsolation(t *testing.T) {
+	t.Setenv("NFPM_MSIX_PASSPHRASE", "process-value")
+	mapping := func(key string) string {
+		if key == "NFPM_PASSPHRASE" {
+			return "mapped-global"
+		}
+		return ""
+	}
+	config, err := nfpm.ParseWithEnvMapping(strings.NewReader("name: TestApp"), mapping)
+	require.NoError(t, err)
+	require.Equal(t, "mapped-global", config.MSIX.Signature.KeyPassphrase)
+	path := filepath.Join(t.TempDir(), "nfpm.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("name: TestApp"), 0o600))
+	config, err = nfpm.ParseFileWithEnvMapping(path, mapping)
+	require.NoError(t, err)
+	require.Equal(t, "mapped-global", config.MSIX.Signature.KeyPassphrase)
+}
+
+func TestMSIXEmptyPassphraseFromStdin(t *testing.T) {
+	t.Setenv("NFPM_PASSPHRASE", "other-packager-password")
+	t.Setenv("NFPM_MSIX_PASSPHRASE", "")
+	path := filepath.Join(t.TempDir(), "stdin.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("name: TestApp"), 0o600))
+	in, err := os.Open(path)
+	require.NoError(t, err)
+	previous := os.Stdin
+	os.Stdin = in
+	t.Cleanup(func() {
+		os.Stdin = previous
+		require.NoError(t, in.Close())
+	})
+	config, err := nfpm.ParseFile("-")
+	require.NoError(t, err)
+	require.Equal(t, "TestApp", config.Name)
+	require.Empty(t, config.MSIX.Signature.KeyPassphrase)
+}
 
 func TestEnumerate(t *testing.T) {
 	nfpm.RegisterPackager("deb", nil)
@@ -463,6 +528,7 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		require.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.MSIX.Signature.KeyPassphrase)
 	})
 
 	t.Run("specific passphrases", func(t *testing.T) {
@@ -470,11 +536,13 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		t.Setenv("NFPM_DEB_PASSPHRASE", debPass)
 		t.Setenv("NFPM_RPM_PASSPHRASE", rpmPass)
 		t.Setenv("NFPM_APK_PASSPHRASE", apkPass)
+		t.Setenv("NFPM_MSIX_PASSPHRASE", "msixPass")
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, "msixPass", info.MSIX.Signature.KeyPassphrase)
 	})
 
 	t.Run("packager", func(t *testing.T) {

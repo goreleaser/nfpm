@@ -9,11 +9,15 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/maintainer"
 	"go.digitalxero.dev/go-msix"
 )
 
@@ -66,6 +70,30 @@ func (*MSIX) ConventionalExtension() string {
 	return ".msix"
 }
 
+// dnAttributePattern matches a string that already starts with a distinguished
+// name attribute assignment such as "CN=" or "O=".
+// nolint: gochecknoglobals
+var dnAttributePattern = regexp.MustCompile(`^` + dnKeyPattern + `=`)
+
+const dnKeyPattern = `(CN|L|O|OU|E|C|S|STREET|T|G|I|SN|DC|SERIALNUMBER|Description|PostalCode|POBox|Phone|X21Address|dnQualifier|OID\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))+)`
+
+// ST_Publisher_2010_v2 from the Windows foundation manifest schema, with
+// Windows doubled-quote escaping and XML control characters excluded.
+// nolint: gochecknoglobals
+var publisherPattern = regexp.MustCompile(`^` + dnKeyPattern + `=` + dnValuePattern + `(, ` + dnKeyPattern + `=` + dnValuePattern + `)*$`)
+
+const dnValuePattern = `([^,+=\x00-\x1f"<>#;]+|"([^"\x00-\x1f]|"")*")`
+
+// ensureDN turns a plain name into a publisher distinguished name by prefixing
+// "CN=" and quoting per Windows X.500 syntax; values that already look like a DN pass
+// through untouched.
+func ensureDN(name string) string {
+	if dnAttributePattern.MatchString(name) {
+		return name
+	}
+	return "CN=" + quoteDNValue(name)
+}
+
 // SetPackagerDefaults sets default values for MSIX-specific fields.
 func (*MSIX) SetPackagerDefaults(info *nfpm.Info) {
 	needsFullTrust := false
@@ -115,11 +143,35 @@ func (*MSIX) SetPackagerDefaults(info *nfpm.Info) {
 
 // Package writes a new MSIX package to the given writer using the given info.
 func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
+	// Derived identity and application defaults belong to this attempt. A caller
+	// may retry with corrected credentials or reuse Info for another certificate.
+	packageInfo := *info
+	packageInfo.MSIX.Applications = slices.Clone(info.MSIX.Applications)
+	packageInfo.MSIX.Capabilities.Restricted = slices.Clone(info.MSIX.Capabilities.Restricted)
+	info = &packageInfo
 	m.SetPackagerDefaults(info)
 	info = ensureValidArch(info)
 
 	if err := nfpm.PrepareForPackager(info, packagerName); err != nil {
 		return err
+	}
+
+	if info.Scripts != (nfpm.Scripts{}) {
+		log.Printf("warning: msix is declarative and does not support install scripts, ignoring scripts")
+	}
+
+	// Load once so the derived identity and signature use the same certificate.
+	var signing msix.Signing
+	if info.MSIX.Signature.PFXFile != "" {
+		var err error
+		signing, err = loadSigning(info)
+		if err != nil {
+			return err
+		}
+	} else if info.MSIX.Publisher == "" {
+		if v := maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer); v != "" {
+			info.MSIX.Publisher = ensureDN(v)
+		}
 	}
 
 	if err := validate(info); err != nil {
@@ -145,10 +197,8 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 
 	addContents(builder, info)
 
-	if info.MSIX.Signature.PFXFile != "" {
-		if err := configureSigning(builder, info); err != nil {
-			return err
-		}
+	if signing != nil {
+		builder.WithSigning(signing)
 	}
 
 	return builder.Build(context.Background(), w)
@@ -156,7 +206,13 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 
 func validate(info *nfpm.Info) error {
 	if info.MSIX.Publisher == "" {
-		return fmt.Errorf("package %s must be provided", "msix.publisher")
+		return fmt.Errorf("package msix.publisher, vendor, or maintainer must be provided")
+	}
+	if err := validatePublisher(info.MSIX.Publisher); err != nil {
+		return err
+	}
+	if name := publisherDisplayName(info); !validDisplayName(name) {
+		return fmt.Errorf("package msix.properties.publisher_display_name must be a display name of 1 to 256 characters or an ms-resource reference, without line breaks or leading/trailing whitespace")
 	}
 	if info.MSIX.Properties.Logo == "" {
 		return fmt.Errorf("package %s must be provided", "msix.properties.logo")
@@ -175,21 +231,36 @@ func validate(info *nfpm.Info) error {
 	return nil
 }
 
+func validDisplayName(name string) bool {
+	if name == "" || strings.TrimSpace(name) != name || strings.ContainsAny(name, "\r\n") || !validXMLText(name) {
+		return false
+	}
+	// Resource references have a separate 256-character limit after the prefix.
+	name = strings.TrimPrefix(name, "ms-resource:")
+	return utf8.RuneCountInString(name) <= 256
+}
+
 func buildProperties(info *nfpm.Info) msix.Properties {
 	displayName := info.MSIX.Properties.DisplayName
 	if displayName == "" {
 		displayName = info.Name
 	}
-	publisherDisplayName := info.MSIX.Properties.PublisherDisplayName
-	if publisherDisplayName == "" {
-		publisherDisplayName = info.Name
-	}
 	return msix.NewProperties().
 		WithDisplayName(displayName).
-		WithPublisherDisplayName(publisherDisplayName).
+		WithPublisherDisplayName(publisherDisplayName(info)).
 		WithLogo(info.MSIX.Properties.Logo).
 		WithDescription(info.Description).
 		Build()
+}
+
+func publisherDisplayName(info *nfpm.Info) string {
+	if name := info.MSIX.Properties.PublisherDisplayName; name != "" {
+		return name
+	}
+	if name := maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer); name != "" {
+		return name
+	}
+	return info.Name
 }
 
 func buildDependencies(info *nfpm.Info) msix.Dependencies {
@@ -262,27 +333,33 @@ func addContents(builder msix.Builder, info *nfpm.Info) {
 	}
 }
 
-func configureSigning(builder msix.Builder, info *nfpm.Info) error {
+func loadSigning(info *nfpm.Info) (msix.Signing, error) {
 	pfxPath := info.MSIX.Signature.PFXFile
 	if _, err := os.Stat(pfxPath); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("PFX file not found: %w", err)
+			return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("PFX file not found: %w", err)}
 		}
-		return fmt.Errorf("unable to access PFX file: %w", err)
+		return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("unable to access PFX file: %w", err)}
 	}
 
 	cert, key, chain, err := msix.LoadPFX(pfxPath, info.MSIX.Signature.KeyPassphrase)
 	if err != nil {
-		return &nfpm.ErrSigningFailure{Err: fmt.Errorf("loading PFX: %w", err)}
+		return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("loading PFX: %w", err)}
 	}
+	publisher, err := certificatePublisher(cert.RawSubject)
+	if err != nil {
+		return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("format signing certificate publisher: %w", err)}
+	}
+	if info.MSIX.Publisher != "" && info.MSIX.Publisher != publisher {
+		return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("msix.publisher does not match the signing certificate subject; omit publisher to derive it from the certificate")}
+	}
+	info.MSIX.Publisher = publisher
 
-	builder.WithSigning(msix.NewSigning().
+	return msix.NewSigning().
 		WithCertificate(cert).
 		WithPrivateKey(key).
 		WithCertChain(chain...).
-		Build())
-
-	return nil
+		Build(), nil
 }
 
 // normalizePathForMSIX converts Unix-style paths to Windows-style package paths.

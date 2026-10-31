@@ -38,3 +38,17 @@ if ($pkg) {
     Write-Error "Package com.example.foo not found after installation"
     exit 1
 }
+
+# Verify the installed executable runs and prints the expected sentinel.
+$exe = Join-Path $pkg.InstallLocation "app\testapp.exe"
+if (-not (Test-Path $exe)) {
+    Write-Error "Installed executable not found at $exe"
+    exit 1
+}
+
+$output = & $exe 2>&1
+if ($output -ne "nfpm-msix-test-ok") {
+    Write-Error "Expected 'nfpm-msix-test-ok' but got '$output'"
+    exit 1
+}
+Write-Host "Installed application ran correctly"
