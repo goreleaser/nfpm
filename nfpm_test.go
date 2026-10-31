@@ -48,14 +48,39 @@ func TestMSIXPassphrasePrecedence(t *testing.T) {
 
 func TestMSIXPassphraseCustomMappingIsolation(t *testing.T) {
 	t.Setenv("NFPM_MSIX_PASSPHRASE", "process-value")
-	config, err := nfpm.ParseWithEnvMapping(strings.NewReader("name: TestApp"), func(key string) string {
+	mapping := func(key string) string {
 		if key == "NFPM_PASSPHRASE" {
 			return "mapped-global"
 		}
 		return ""
-	})
+	}
+	config, err := nfpm.ParseWithEnvMapping(strings.NewReader("name: TestApp"), mapping)
 	require.NoError(t, err)
 	require.Equal(t, "mapped-global", config.MSIX.Signature.KeyPassphrase)
+	path := filepath.Join(t.TempDir(), "nfpm.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("name: TestApp"), 0o600))
+	config, err = nfpm.ParseFileWithEnvMapping(path, mapping)
+	require.NoError(t, err)
+	require.Equal(t, "mapped-global", config.MSIX.Signature.KeyPassphrase)
+}
+
+func TestMSIXEmptyPassphraseFromStdin(t *testing.T) {
+	t.Setenv("NFPM_PASSPHRASE", "other-packager-password")
+	t.Setenv("NFPM_MSIX_PASSPHRASE", "")
+	path := filepath.Join(t.TempDir(), "stdin.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("name: TestApp"), 0o600))
+	in, err := os.Open(path)
+	require.NoError(t, err)
+	previous := os.Stdin
+	os.Stdin = in
+	t.Cleanup(func() {
+		os.Stdin = previous
+		require.NoError(t, in.Close())
+	})
+	config, err := nfpm.ParseFile("-")
+	require.NoError(t, err)
+	require.Equal(t, "TestApp", config.Name)
+	require.Empty(t, config.MSIX.Signature.KeyPassphrase)
 }
 
 func TestEnumerate(t *testing.T) {

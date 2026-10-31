@@ -152,3 +152,18 @@ func TestSigningMultiValuedSubject(t *testing.T) {
 		require.ErrorContains(t, Default.Package(info, io.Discard), "multi-valued RDN")
 	}
 }
+
+func TestSigningSubjectInvalidForManifest(t *testing.T) {
+	for _, name := range []string{"Test\nCompany", strings.Repeat("x", 8190)} {
+		raw, err := asn1.Marshal(pkix.Name{CommonName: name}.ToRDNSequence())
+		require.NoError(t, err)
+		pfx, passphrase := makeTestPFXWithSubject(t, raw, "test123")
+		info := exampleInfo()
+		info.MSIX.Publisher = ""
+		info.MSIX.Signature = nfpm.MSIXSignature{PFXFile: pfx, KeyPassphrase: passphrase}
+		var signingErr *nfpm.ErrSigningFailure
+		require.ErrorAs(t, Default.Package(info, io.Discard), &signingErr)
+		assert.Contains(t, signingErr.Error(), "format signing certificate publisher")
+		assert.Contains(t, signingErr.Error(), "msix.publisher")
+	}
+}
