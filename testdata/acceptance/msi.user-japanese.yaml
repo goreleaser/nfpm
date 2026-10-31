@@ -1,0 +1,22 @@
+name: NfpmMsiUserjapanese
+arch: amd64
+version: 1.0.0
+license: MIT
+vendor: "日本株式会社"
+description: "A per-user MSI package"
+contents:
+  - src: ./dist/testapp.exe
+    dst: /testapp.exe
+scripts:
+  postinstall: ./testdata/acceptance/testapp/peruser-postinstall.ps1
+msi:
+  product_name: "アプリ"
+  install_dir: NfpmMsiUserjapanese
+  per_user: true
+  file_versions:
+    /testapp.exe: ""
+  registry:
+    - root: HKCU
+      key: 'Software\NfpmMsiUserjapanese'
+      name: Installed
+      value: "1"
