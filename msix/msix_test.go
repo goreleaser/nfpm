@@ -283,12 +283,18 @@ func TestScriptsWarning(t *testing.T) {
 // password-protected PKCS#12 file, returning its path and passphrase.
 func makeTestPFX(t *testing.T) (string, string) {
 	t.Helper()
+	return makeTestPFXWithSubject(t, nil, "test123")
+}
+
+func makeTestPFXWithSubject(t *testing.T, rawSubject []byte, passphrase string) (string, string) {
+	t.Helper()
 
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 
 	tmpl := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
+		RawSubject:   rawSubject,
 		Subject: pkix.Name{
 			CommonName:   "nfpm, msix",
 			Organization: []string{"TestCompany"},
@@ -305,7 +311,6 @@ func makeTestPFX(t *testing.T) (string, string) {
 	cert, err := x509.ParseCertificate(der)
 	require.NoError(t, err)
 
-	const passphrase = "test123"
 	pfx, err := pkcs12.Modern.Encode(key, cert, nil, passphrase)
 	require.NoError(t, err)
 

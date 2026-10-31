@@ -5,12 +5,14 @@ import (
 	"encoding/asn1"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 )
 
 // certificatePublisher follows CertNameToStrW with CERT_X500_NAME_STR and
 // CERT_NAME_STR_REVERSE_FLAG, as used by Windows MSIX signature validation.
-// Decode RawSubject so repeated attributes and multi-valued RDNs retain their
-// encoded order and grouping instead of being flattened by pkix.Name.
+// Decode RawSubject so repeated attributes retain their encoded order.
+// Multi-valued RDNs cannot satisfy both the manifest schema and Windows'
+// certificate comparison, so reject them instead of flattening them.
 func certificatePublisher(rawSubject []byte) (string, error) {
 	var rdns pkix.RDNSequence
 	rest, err := asn1.Unmarshal(rawSubject, &rdns)
@@ -22,17 +24,39 @@ func certificatePublisher(rawSubject []byte) (string, error) {
 	}
 	parts := make([]string, 0, len(rdns))
 	for i := len(rdns) - 1; i >= 0; i-- {
-		attributes := make([]string, 0, len(rdns[i]))
-		for _, attribute := range rdns[i] {
-			value, ok := attribute.Value.(string)
-			if !ok {
-				return "", fmt.Errorf("unsupported certificate subject value for %s", attribute.Type)
-			}
-			attributes = append(attributes, windowsDNKey(attribute.Type)+"="+quoteDNValue(value))
+		if len(rdns[i]) == 0 {
+			return "", fmt.Errorf("empty certificate subject RDN")
 		}
-		parts = append(parts, strings.Join(attributes, " + "))
+		if len(rdns[i]) != 1 {
+			return "", fmt.Errorf("multi-valued RDN is not supported by MSIX; use a signing certificate with one attribute per RDN")
+		}
+		attribute := rdns[i][0]
+		value, ok := attribute.Value.(string)
+		if !ok {
+			return "", fmt.Errorf("unsupported certificate subject value for %s", attribute.Type)
+		}
+		parts = append(parts, windowsDNKey(attribute.Type)+"="+quoteDNValue(value))
 	}
-	return strings.Join(parts, ", "), nil
+	publisher := strings.Join(parts, ", ")
+	if err := validatePublisher(publisher); err != nil {
+		return "", err
+	}
+	return publisher, nil
+}
+
+func validatePublisher(publisher string) error {
+	if !validXMLText(publisher) || utf8.RuneCountInString(publisher) > 8192 || strings.TrimSpace(publisher) != publisher || !publisherPattern.MatchString(publisher) {
+		return fmt.Errorf("package msix.publisher must be a Windows distinguished name of at most 8192 characters, with comma-space separators and quoted reserved characters")
+	}
+	return nil
+}
+
+// encoding/xml replaces invalid characters, which would change the signed
+// publisher identity. Reject them before encoding instead.
+func validXMLText(value string) bool {
+	return utf8.ValidString(value) && !strings.ContainsFunc(value, func(r rune) bool {
+		return (r < 0x20 && r != '\t' && r != '\n' && r != '\r') || r == 0xfffe || r == 0xffff
+	})
 }
 
 // Windows doubles embedded quotes and quotes reserved characters and values

@@ -25,6 +25,7 @@ func Name(maintainer string) string {
 // maintainer. It is the shared default for fields such as the MSIX publisher
 // and the MSI manufacturer.
 func VendorOrMaintainer(vendor, maintainer string) string {
+	vendor = strings.TrimSpace(vendor)
 	if vendor != "" {
 		return vendor
 	}

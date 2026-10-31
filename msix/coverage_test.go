@@ -289,11 +289,10 @@ func TestPublisherFromBadPFX(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, fallback := range []struct {
-				name      string
-				vendor    string
-				publisher string
+				name   string
+				vendor string
 			}{
-				{name: "vendor fallback", vendor: "FallbackCo", publisher: "CN=FallbackCo"},
+				{name: "vendor fallback", vendor: "FallbackCo"},
 				{name: "no fallback"},
 			} {
 				t.Run(fallback.name, func(t *testing.T) {
@@ -308,16 +307,16 @@ func TestPublisherFromBadPFX(t *testing.T) {
 
 					err := Default.Package(info, io.Discard)
 					require.Error(t, err)
-					if tt.name == "missing" && fallback.vendor != "" {
+					var expectedError *nfpm.ErrSigningFailure
+					require.ErrorAs(t, err, &expectedError)
+					if tt.name == "missing" {
 						require.ErrorIs(t, err, os.ErrNotExist)
 						assert.Contains(t, err.Error(), "PFX file not found")
 					} else {
-						var expectedError *nfpm.ErrSigningFailure
-						require.ErrorAs(t, err, &expectedError)
 						assert.Contains(t, err.Error(), "loading PFX")
 					}
 					assert.NotContains(t, err.Error(), "msix.publisher, vendor, or maintainer")
-					assert.Equal(t, fallback.publisher, info.MSIX.Publisher)
+					assert.Empty(t, info.MSIX.Publisher, "failed attempts must not persist fallback metadata")
 				})
 			}
 		})

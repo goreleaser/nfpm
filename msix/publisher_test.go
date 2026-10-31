@@ -36,17 +36,6 @@ func publisherSubjects() []struct {
 			"CN=Last, O=Organization, CN=First",
 		},
 		{
-			"multi-valued RDN grouping",
-			pkix.RDNSequence{
-				{{Type: asn1.ObjectIdentifier{2, 5, 4, 6}, Value: "US"}},
-				{
-					{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: "Test"},
-					{Type: asn1.ObjectIdentifier{2, 5, 4, 11}, Value: "Team"},
-				},
-			},
-			"CN=Test + OU=Team, C=US",
-		},
-		{
 			"unknown OID",
 			pkix.RDNSequence{{{Type: asn1.ObjectIdentifier{1, 2, 3, 4}, Value: "Custom"}}},
 			"OID.1.2.3.4=Custom",
@@ -90,4 +79,8 @@ func TestCertificatePublisherInvalid(t *testing.T) {
 	require.NoError(t, err)
 	_, err = certificatePublisher(raw)
 	require.ErrorContains(t, err, "unsupported certificate subject value")
+	raw, err = asn1.Marshal(pkix.RDNSequence{{}})
+	require.NoError(t, err)
+	_, err = certificatePublisher(raw)
+	require.ErrorContains(t, err, "empty certificate subject RDN")
 }
