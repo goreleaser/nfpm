@@ -40,9 +40,9 @@ msi:
     - name: NfpmMsiTestSvc
       display_name: "nfpm MSI test service"
       executable: "/Program Files/NfpmMsiTest/testsvc.exe"
-      start_type: demand
+      start_type: AUTO
   registry:
-    - root: HKLM
+    - root: hkLm
       key: 'Software\NfpmMsiTest'
       name: InstallPath
       value: "[INSTALLFOLDER]"

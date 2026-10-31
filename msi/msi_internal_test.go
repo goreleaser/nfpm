@@ -2,7 +2,6 @@ package msi
 
 import (
 	"encoding/base64"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -211,7 +210,7 @@ func TestMakeID(t *testing.T) {
 
 // TestIDTable proves identifier hash collisions are detected instead of
 // silently merging two resources. The 32-bit hash makes real collisions easy
-// to find by brute force: two seeds sharing the same readable prefix (so the
+// to demonstrate with fixed witnesses: two seeds sharing the same readable prefix (so the
 // human-readable part of the ID matches) and the same FNV-1a hash.
 func TestIDTable(t *testing.T) {
 	t.Run("same seed reuses the id", func(t *testing.T) {
@@ -226,17 +225,8 @@ func TestIDTable(t *testing.T) {
 	t.Run("colliding seeds are rejected", func(t *testing.T) {
 		ids := newIDTable()
 		prefix := "app/" + strings.Repeat("x", 40)
-		seen := map[string]string{}
-		var a, b string
-		for i := 0; i < 5_000_000 && a == ""; i++ {
-			seed := fmt.Sprintf("%s%d", prefix, i)
-			id := makeID("c", seed)
-			if prev, ok := seen[id]; ok {
-				a, b = prev, seed
-			}
-			seen[id] = seed
-		}
-		require.NotEmpty(t, a, "expected to find an FNV-1a collision by brute force")
+		a, b := prefix+"133781", prefix+"1394350"
+		require.Equal(t, makeID("c", a), makeID("c", b), "fixed FNV-1a collision witnesses")
 
 		_, err := ids.id("c", a)
 		require.NoError(t, err)
@@ -440,17 +430,6 @@ func TestDerivedCodeNamespaces(t *testing.T) {
 		require.NotEqual(t, deriveProductCode(base), deriveProductCode(other))
 		require.NotEqual(t, deriveUpgradeCode(base), deriveUpgradeCode(other))
 	})
-}
-
-func TestReleaseIdentity(t *testing.T) {
-	info := derivationInfo("TestCo", "TestApp", "x64", "1.2.3")
-	info.Release = "2"
-	info.Prerelease = "rc1"
-	info.VersionMetadata = "git.abc"
-	require.Equal(t, "1.2.3|2|rc1|git.abc", releaseIdentity(info))
-
-	info.MSI.Version = "24.1.0"
-	require.Equal(t, "24.1.0", releaseIdentity(info), "an explicit msi.version is the whole identity")
 }
 
 // TestAddContentsSkipsEmptySource covers the empty-source guard. Package cannot

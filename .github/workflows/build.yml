@@ -197,6 +197,8 @@ jobs:
         run: ./dist/wix/wix.exe msi validate ./dist/foo.msi -ice ICE50
       - name: Install, upgrade, downgrade, verify and remove the MSI packages
         run: task acceptance:windows:install:msi
+      - name: Verify redirected executable, configuration, service and registry target
+        run: pwsh -ExecutionPolicy Bypass -File testdata/acceptance/install-msi.ps1 -Msi ./dist/foo.msi -InstallDirectory "${{ runner.temp }}/nfpm redirected"
       - name: Verify per-user privileges and native Unicode metadata
         run: task acceptance:windows:install:msi:per-user
       - name: Preserve native MSI verification logs

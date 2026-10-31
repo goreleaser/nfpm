@@ -1,6 +1,7 @@
 package msi
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"unicode/utf16"
+	"unicode/utf8"
 
 	"github.com/goreleaser/nfpm/v2"
 	"go.digitalxero.dev/go-msi"
@@ -112,6 +114,21 @@ func scriptCommandLine(caID, path string, is64 bool) (string, error) {
 	run, ok := scriptExtensions[strings.ToLower(filepath.Ext(path))]
 	if !ok {
 		return "", fmt.Errorf("%q: msi scripts must be .ps1, .bat, or .cmd", path)
+	}
+	if strings.EqualFold(filepath.Ext(path), ".ps1") {
+		// Windows PowerShell 5.1 reads BOM-less files using the machine ANSI
+		// code page. Treat BOM-less input as UTF-8 and mark it explicitly;
+		// preserve existing UTF-8/UTF-16/UTF-32 BOMs and their original bytes.
+		hasBOM := bytes.HasPrefix(script, []byte{0xef, 0xbb, 0xbf}) ||
+			bytes.HasPrefix(script, []byte{0xff, 0xfe}) ||
+			bytes.HasPrefix(script, []byte{0xfe, 0xff}) ||
+			bytes.HasPrefix(script, []byte{0, 0, 0xfe, 0xff})
+		if !hasBOM {
+			if !utf8.Valid(script) {
+				return "", fmt.Errorf("%q: BOM-less PowerShell hooks must be valid UTF-8; add an encoding BOM for other supported encodings", path)
+			}
+			script = append([]byte{0xef, 0xbb, 0xbf}, script...)
+		}
 	}
 
 	bootstrap := fmt.Sprintf(

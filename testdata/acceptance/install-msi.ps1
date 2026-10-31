@@ -13,13 +13,16 @@ param(
     [string]$Downgrade,
     # A package whose postinstall script fails (msi.rollback.yaml). When given,
     # installing it must fail and leave nothing behind.
-    [string]$Rollback
+    [string]$Rollback,
+    # Pass this same target during installation and maintenance/uninstall.
+    [string]$InstallDirectory
 )
 $ErrorActionPreference = 'Stop'
 
 $msi = Resolve-Path $Msi
 $defaultPolicy = $msi
 $installDir = 'C:\Program Files\NfpmMsiTest'
+if ($InstallDirectory) { $installDir = $InstallDirectory }
 $exe = Join-Path $installDir 'testapp.exe'
 $svcExe = Join-Path $installDir 'testsvc.exe'
 $conf = Join-Path $installDir 'etc\testapp\testapp.conf'
@@ -46,6 +49,11 @@ function Assert-Markers([string[]]$hooks) {
         if (-not (Test-Path $markers[$hook])) {
             throw "$hook script did not run (marker $($markers[$hook]) missing)"
         }
+        if ($hook -eq 'postinstall') {
+            $text = Get-Content $markers[$hook] -Raw -Encoding UTF8
+            $expected = 'postinstall-ran ' + [char]0x00e9 + ' ' + [char]0x65e5 + ' ' + [char]0x0416
+            if ($text.Trim() -ne $expected) { throw 'PowerShell 5.1 changed the UTF-8 hook literals' }
+        }
     }
 }
 
@@ -58,6 +66,10 @@ function Assert-NoMarkers([string[]]$hooks) {
 }
 
 function Invoke-Msiexec([string[]]$arguments, [string]$log) {
+    if ($InstallDirectory) {
+        $arguments += "INSTALLFOLDER=`"$InstallDirectory`""
+        $log = Join-Path (Split-Path $log) ('redirect-' + (Split-Path $log -Leaf))
+    }
     $proc = Start-Process msiexec.exe -ArgumentList ($arguments + @('/qn', '/norestart', '/l*v', "`"$log`"")) -Wait -PassThru
     return $proc.ExitCode
 }
@@ -78,6 +90,9 @@ function Assert-Installed([string]$version, [string]$expectedOutput = 'nfpm-msix
         if (-not (Test-Path $path)) { throw "expected $path after install" }
     }
     Write-Host "Files, shortcut and service executable are in place"
+    if ($InstallDirectory -and (Test-Path 'C:\Program Files\NfpmMsiTest\testapp.exe')) {
+        throw 'Redirected installation left the executable in the default folder'
+    }
 
     $output = & $exe 2>&1
     if ($output -ne $expectedOutput) {

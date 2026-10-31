@@ -785,13 +785,7 @@
 				"properties": {
 					"root": {
 						"type": "string",
-						"enum": [
-							"HKLM",
-							"HKCU",
-							"HKCR",
-							"HKMU",
-							"HKU"
-						],
+						"pattern": "^[hH][kK]([lL][mM]|[cC][uU]|[cC][rR]|[mM][uU]|[uU])$",
 						"title": "registry root"
 					},
 					"key": {
@@ -834,11 +828,7 @@
 					},
 					"start_type": {
 						"type": "string",
-						"enum": [
-							"auto",
-							"demand",
-							"disabled"
-						],
+						"pattern": "^([aA][uU][tT][oO]|[dD][eE][mM][aA][nN][dD]|[dD][iI][sS][aA][bB][lL][eE][dD])$",
 						"title": "service start type",
 						"default": "demand"
 					},

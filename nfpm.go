@@ -291,33 +291,42 @@ func (c *Config) expandEnvVars() {
 		c.MSIX.Signature.KeyPassphrase = msixPassphrase
 	}
 
+	c.expandMSI(&c.MSI)
+	for _, override := range c.Overrides {
+		if override != nil {
+			c.expandMSI(&override.MSI)
+		}
+	}
+}
+
+func (c *Config) expandMSI(cfg *MSI) {
 	// MSI specific
-	c.MSI.Version = os.Expand(c.MSI.Version, c.envMappingFunc)
-	c.MSI.ProductName = os.Expand(c.MSI.ProductName, c.envMappingFunc)
-	c.MSI.Manufacturer = os.Expand(c.MSI.Manufacturer, c.envMappingFunc)
-	c.MSI.InstallDir = os.Expand(c.MSI.InstallDir, c.envMappingFunc)
-	for k, v := range c.MSI.Properties {
-		c.MSI.Properties[k] = os.Expand(v, c.envMappingFunc)
+	cfg.Version = os.Expand(cfg.Version, c.envMappingFunc)
+	cfg.ProductName = os.Expand(cfg.ProductName, c.envMappingFunc)
+	cfg.Manufacturer = os.Expand(cfg.Manufacturer, c.envMappingFunc)
+	cfg.InstallDir = os.Expand(cfg.InstallDir, c.envMappingFunc)
+	for k, v := range cfg.Properties {
+		cfg.Properties[k] = os.Expand(v, c.envMappingFunc)
 	}
-	for k, v := range c.MSI.FileVersions {
-		c.MSI.FileVersions[k] = os.Expand(v, c.envMappingFunc)
+	for k, v := range cfg.FileVersions {
+		cfg.FileVersions[k] = os.Expand(v, c.envMappingFunc)
 	}
-	for i := range c.MSI.Shortcuts {
-		c.MSI.Shortcuts[i].Arguments = os.Expand(c.MSI.Shortcuts[i].Arguments, c.envMappingFunc)
+	for i := range cfg.Shortcuts {
+		cfg.Shortcuts[i].Arguments = os.Expand(cfg.Shortcuts[i].Arguments, c.envMappingFunc)
 	}
-	for i := range c.MSI.Services {
-		c.MSI.Services[i].Account = os.Expand(c.MSI.Services[i].Account, c.envMappingFunc)
-		c.MSI.Services[i].Arguments = os.Expand(c.MSI.Services[i].Arguments, c.envMappingFunc)
+	for i := range cfg.Services {
+		cfg.Services[i].Account = os.Expand(cfg.Services[i].Account, c.envMappingFunc)
+		cfg.Services[i].Arguments = os.Expand(cfg.Services[i].Arguments, c.envMappingFunc)
 	}
-	for i := range c.MSI.Registry {
-		c.MSI.Registry[i].Value = os.Expand(c.MSI.Registry[i].Value, c.envMappingFunc)
+	for i := range cfg.Registry {
+		cfg.Registry[i].Value = os.Expand(cfg.Registry[i].Value, c.envMappingFunc)
 	}
-	c.MSI.Signature.PFXFile = os.Expand(c.MSI.Signature.PFXFile, c.envMappingFunc)
-	c.MSI.Signature.TimestampURL = os.Expand(c.MSI.Signature.TimestampURL, c.envMappingFunc)
-	c.MSI.Signature.KeyPassphrase = generalPassphrase
+	cfg.Signature.PFXFile = os.Expand(cfg.Signature.PFXFile, c.envMappingFunc)
+	cfg.Signature.TimestampURL = os.Expand(cfg.Signature.TimestampURL, c.envMappingFunc)
+	cfg.Signature.KeyPassphrase = os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
 	msiPassphrase := os.Expand("$NFPM_MSI_PASSPHRASE", c.envMappingFunc)
 	if msiPassphrase != "" {
-		c.MSI.Signature.KeyPassphrase = msiPassphrase
+		cfg.Signature.KeyPassphrase = msiPassphrase
 	}
 }
 
@@ -648,7 +657,7 @@ type MSIService struct {
 	DisplayName  string   `yaml:"display_name,omitempty" json:"display_name,omitempty" jsonschema:"title=service display name"`
 	Executable   string   `yaml:"executable" json:"executable" jsonschema:"title=destination path of the installed service executable"`
 	Description  string   `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"title=service description"`
-	StartType    string   `yaml:"start_type,omitempty" json:"start_type,omitempty" jsonschema:"title=service start type,enum=auto,enum=demand,enum=disabled,default=demand"`
+	StartType    string   `yaml:"start_type,omitempty" json:"start_type,omitempty" jsonschema:"title=service start type,pattern=^([aA][uU][tT][oO]|[dD][eE][mM][aA][nN][dD]|[dD][iI][sS][aA][bB][lL][eE][dD])$,default=demand"`
 	Account      string   `yaml:"account,omitempty" json:"account,omitempty" jsonschema:"title=account the service runs as"`
 	Arguments    string   `yaml:"arguments,omitempty" json:"arguments,omitempty" jsonschema:"title=service arguments"`
 	Dependencies []string `yaml:"dependencies,omitempty" json:"dependencies,omitempty" jsonschema:"title=service dependencies"`
@@ -657,7 +666,7 @@ type MSIService struct {
 
 // MSIRegistry describes a registry entry to create from an MSI package.
 type MSIRegistry struct {
-	Root  string `yaml:"root" json:"root" jsonschema:"title=registry root,enum=HKLM,enum=HKCU,enum=HKCR,enum=HKMU,enum=HKU"`
+	Root  string `yaml:"root" json:"root" jsonschema:"title=registry root,pattern=^[hH][kK]([lL][mM]|[cC][uU]|[cC][rR]|[mM][uU]|[uU])$"`
 	Key   string `yaml:"key" json:"key" jsonschema:"title=registry key path"`
 	Name  string `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"title=value name"`
 	Value string `yaml:"value,omitempty" json:"value,omitempty" jsonschema:"title=value data"`

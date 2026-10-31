@@ -682,13 +682,20 @@ msix:
 #   /AppData/Roaming      -> the user's roaming application data folder
 # Anything else is installed under the product's install folder, keeping its
 # relative path: `/usr/bin/myapp` becomes
-# `C:\Program Files\<install_dir>\usr\bin\myapp`. Files installed under
+# `C:\Program Files\<install_dir>\usr\bin\myapp`. The product's own explicit
+# `/Program Files/<install_dir>/...` subtree also uses INSTALLFOLDER, so its
+# executable, service and configuration follow an install-time redirection
+# together. Other explicit Windows paths retain their fixed locations.
+# Files installed under
 # `/Windows` (including System32 and Fonts) are permanent: Windows Installer
 # never removes them, so they outlive every uninstall of the product; nFPM
 # warns when a package does this. Destinations that resolve to the same install
 # path are an error, including case/drive/slash differences and aliases such as
 # `/app.exe` and `/Program Files/<install_dir>/app.exe`. `config` contents are
 # installed as plain files (they are replaced on upgrade, with a warning).
+# A file cannot also serve as a directory. Empty directories (including empty
+# tree entries) are unsupported and rejected; include a file or omit the entry.
+# Windows reserved device names and trailing periods/spaces are rejected.
 #
 # Every release must have a distinct version that fits Windows Installer's
 # limits (see `version` below); releases replace older installs of the same
@@ -707,7 +714,10 @@ msix:
 #   removal on uninstall (not while an upgrade replaces the old release).
 #   Scripts must be .ps1, .bat or .cmd and at most 8 KiB; they are embedded in
 #   the package and extracted to a randomly named temporary file when they
-#   run. A non-zero exit rolls back the transaction; there is no way to undo
+#   run. BOM-less .ps1 inputs must be UTF-8; nFPM adds a UTF-8 BOM for Windows
+#   PowerShell 5.1. Existing UTF-8/UTF-16/UTF-32 BOM encodings are preserved.
+#   .bat/.cmd bytes are preserved and interpreted by cmd.exe.
+#   A non-zero exit rolls back the transaction; there is no way to undo
 #   what a script already did before failing. A machine-wide PowerShell
 #   execution policy set by Group Policy overrides the `Bypass` the runner
 #   uses, so .ps1 hooks fail (and roll the install back) on such machines.
@@ -772,7 +782,10 @@ msi:
   # Product code GUID. When omitted, a GUID is derived from the manufacturer,
   # product name, architecture, and full version (including any pre-release
   # or metadata), so it changes on every release, as Windows Installer
-  # requires for upgrades. Pinning it makes installing a new release over an
+  # requires for upgrades. The shared release identity is retained even when
+  # msi.version overrides its numeric Windows version. Fields containing '|'
+  # use unambiguous framing; ordinary names retain the existing GUIDs.
+  # Pinning it makes installing a new release over an
   # old one fail with "another version of this product is already installed"
   # (error 1638), so leave it empty unless you generate a new one per release.
   product_code: "{12345678-1234-1234-1234-123456789ABC}"
@@ -781,6 +794,9 @@ msi:
   # manufacturer, product name, and architecture, so it stays constant across
   # releases and every release replaces the previous one. Pin it explicitly if
   # the product or manufacturer name may change between releases.
+  # Packages authored by an older nFPM build with '|' in those fields need a
+  # deliberate identity migration: the old ambiguous IDs cannot safely identify
+  # unrelated products. An explicit upgrade_code can retain a known lineage.
   upgrade_code: "{ABCDEF01-2345-6789-ABCD-EF0123456789}"
 
   # Name of the default install folder (defaults to product_name). It is
@@ -820,6 +836,7 @@ msi:
     # Treat a package with the same major.minor.build as an upgrade (defaults
     # to false). Needed to replace a pre-release with its final release, or a
     # rebuilt package with the same version.
+    # When false, a different release with an equal numeric version is rejected.
     allow_same_version: false
 
   # Advertised shortcuts. The target must match one of the contents

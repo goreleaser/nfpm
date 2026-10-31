@@ -1117,9 +1117,10 @@ func upgradeRows(t *testing.T, db gomsi.Database) (remove, detectNewer gomsi.Row
 	t.Helper()
 	for _, r := range tableRows(t, db, "Upgrade") {
 		require.Equal(t, property(t, db, "UpgradeCode"), r["UpgradeCode"])
-		if r["Attributes"].(int32)&upgradeOnlyDetect != 0 {
+		switch r["ActionProperty"] {
+		case "WIX_DOWNGRADE_DETECTED":
 			detectNewer = r
-		} else if r["ActionProperty"] == "WIX_UPGRADE_DETECTED" {
+		case "WIX_UPGRADE_DETECTED":
 			remove = r
 		}
 	}
@@ -1154,9 +1155,9 @@ func TestMajorUpgradeDefault(t *testing.T) {
 		"the old product is removed before the new files land")
 
 	conditions := tableRows(t, db, "LaunchCondition")
-	require.Len(t, conditions, 1)
-	require.Contains(t, conditions[0]["Condition"], detectNewer["ActionProperty"])
-	require.Contains(t, conditions[0]["Description"], "newer version")
+	require.Len(t, conditions, 2)
+	condition := rowWhere(t, conditions, "Condition", "NOT WIX_DOWNGRADE_DETECTED")
+	require.Contains(t, condition["Description"], "newer version")
 }
 
 func TestMajorUpgradeOptions(t *testing.T) {
@@ -1165,8 +1166,8 @@ func TestMajorUpgradeOptions(t *testing.T) {
 		info.MSI.Upgrade.DowngradeErrorMessage = "A newer version of TestApp is already installed."
 		db := buildDB(t, info)
 		conditions := tableRows(t, db, "LaunchCondition")
-		require.Len(t, conditions, 1)
-		require.Equal(t, "A newer version of TestApp is already installed.", conditions[0]["Description"])
+		require.Len(t, conditions, 2)
+		require.Equal(t, "A newer version of TestApp is already installed.", rowWhere(t, conditions, "Condition", "NOT WIX_DOWNGRADE_DETECTED")["Description"])
 	})
 
 	t.Run("allow downgrades", func(t *testing.T) {
@@ -1176,7 +1177,7 @@ func TestMajorUpgradeOptions(t *testing.T) {
 		remove, detectNewer := upgradeRows(t, db)
 		require.NotNil(t, remove)
 		require.Nil(t, detectNewer, "no downgrade detection")
-		require.False(t, hasTable(db, "LaunchCondition"))
+		require.Len(t, tableRows(t, db, "LaunchCondition"), 1, "equal-version protection remains active")
 		newer := rowWhere(t, tableRows(t, db, "Upgrade"), "ActionProperty", "NFPM_NEWER_PRODUCTS")
 		require.Equal(t, "1.2.3", newer["VersionMin"])
 		require.Empty(t, newer["VersionMax"], "newer products must be in the removal range")
@@ -1185,7 +1186,7 @@ func TestMajorUpgradeOptions(t *testing.T) {
 		require.Empty(t, remove["VersionMin"])
 		require.Zero(t, remove["Attributes"].(int32)&upgradeVersionMaxInclusive)
 		require.Contains(t, property(t, db, "SecureCustomProperties"), "NFPM_NEWER_PRODUCTS")
-		require.Len(t, tableRows(t, db, "Upgrade"), 2)
+		require.Len(t, tableRows(t, db, "Upgrade"), 3)
 	})
 
 	t.Run("allow same version", func(t *testing.T) {
@@ -1823,10 +1824,10 @@ func TestConfigContentWarns(t *testing.T) {
 	require.Contains(t, logs.String(), "installed as a regular file")
 }
 
-func TestDirectoryContentSkipped(t *testing.T) {
+func TestDirectoryContentWithFiles(t *testing.T) {
 	info := exampleInfo()
 	info.Contents = append(info.Contents, &files.Content{
-		Destination: "/Program Files/TestApp/data",
+		Destination: "/Program Files/TestApp",
 		Type:        files.TypeDir,
 	})
 	db := buildDB(t, info)

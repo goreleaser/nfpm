@@ -73,8 +73,12 @@ var archToMSI = map[string]string{
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 	if info.MSI.Arch != "" {
 		info.Arch = strings.ToLower(info.MSI.Arch)
-	} else if arch, ok := archToMSI[info.Arch]; ok {
+	} else if arch, ok := archToMSI[strings.ToLower(info.Arch)]; ok {
 		info.Arch = arch
+	}
+	info.Arch = strings.ToLower(info.Arch)
+	if info.Arch == "intel" {
+		info.Arch = "x86"
 	}
 	return info
 }
@@ -146,8 +150,16 @@ func (*MSI) SetPackagerDefaults(info *nfpm.Info) {
 
 // Package writes a new MSI package to the given writer using the given info.
 func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
+	// Preparation sorts contents. Keep the caller's configured order available
+	// for license selection and for subsequent builds using the same Info.
+	prepared := *info
+	info = &prepared
 	m.SetPackagerDefaults(info)
 	info = ensureValidArch(info)
+	if err := validateVersion(info); err != nil {
+		return err
+	}
+	license := firstLicense(info.Contents)
 
 	if err := nfpm.PrepareForPackager(info, packagerName); err != nil {
 		return err
@@ -168,6 +180,13 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 		WithVersion(version).
 		WithPlatform(platform).
 		WithAllUsers(!info.MSI.PerUser)
+	if license != "" {
+		text, err := os.ReadFile(license)
+		if err != nil {
+			return fmt.Errorf("reading license file %s: %w", license, err)
+		}
+		b.WithLicenseText(string(text))
+	}
 
 	// ProductCode must always be present. Windows Installer requires a new
 	// ProductCode for every release for major upgrades to work, so the derived
@@ -245,6 +264,13 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 	}
 	if info.MSI.Upgrade.AllowSameVersion {
 		mu.AllowSameVersionUpgrades()
+	} else {
+		// Distinct releases can share MSI's three numeric version fields.
+		// Refuse a second owner of the same files unless replacement is enabled.
+		b.Upgrade(upgradeCode).DetectRange(version, version).Inclusive(true, true).
+			OnlyDetect().ActionProperty("NFPM_EQUAL_PRODUCTS")
+		b.LaunchCondition("Installed OR NOT NFPM_EQUAL_PRODUCTS",
+			"Another release with the same Windows Installer version is already installed; enable msi.upgrade.allow_same_version to replace it.")
 	}
 
 	if err := addScripts(b, info); err != nil {
@@ -411,7 +437,7 @@ func validate(info *nfpm.Info) error {
 		}
 	}
 
-	return nil
+	return validateResourceOwners(info)
 }
 
 // validateVersion rejects a version that Windows Installer cannot represent.
@@ -419,6 +445,13 @@ func validate(info *nfpm.Info) error {
 // ProductVersion (and the same derived ProductCode), so they could no longer
 // upgrade each other.
 func validateVersion(info *nfpm.Info) error {
+	if err := validateVersionFields(cmp.Or(info.MSI.Version, info.Version)); err != nil {
+		field := "version"
+		if info.MSI.Version != "" {
+			field = "msi.version"
+		}
+		return fmt.Errorf("package %s %q: %w", field, cmp.Or(info.MSI.Version, info.Version), err)
+	}
 	_, clamped := msiVersionClamped(info)
 	if !clamped {
 		return nil
@@ -471,6 +504,9 @@ func validateDestinations(info *nfpm.Info) (map[string]bool, error) {
 			}
 		}
 	}
+	if err := validatePathTree(info, firstByDest); err != nil {
+		return nil, err
+	}
 	return dests, nil
 }
 
@@ -505,8 +541,8 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info, upgradeCode string, ids 
 	for dest, version := range info.MSI.FileVersions {
 		versions[destinationKey(dest)] = version
 	}
-	licenseSet := false
 	warnedPermanent := map[string]bool{}
+	directoryIDs := map[string]string{}
 	is64 := is64bit(info.Arch)
 
 	for _, content := range info.Contents {
@@ -526,28 +562,13 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info, upgradeCode string, ids 
 			continue
 		}
 
-		// License contents are installed like any other file and additionally
-		// feed the install UI license screen (first one wins).
-		if content.Type == files.TypeRPMLicence || content.Type == files.TypeRPMLicense {
-			if licenseSet {
-				log.Printf("warning: multiple license contents, %s is not used for the install UI", content.Source)
-			} else {
-				text, err := os.ReadFile(content.Source)
-				if err != nil {
-					return nil, fmt.Errorf("reading license file %s: %w", content.Source, err)
-				}
-				b.WithLicenseText(string(text))
-				licenseSet = true
-			}
-		}
-
 		src, err := msi.FileSourceFromPath(content.Source)
 		if err != nil {
 			return nil, fmt.Errorf("reading file %s: %w", content.Source, err)
 		}
 
 		dest := normalizeDest(content.Destination)
-		rootID, rootDefault, rel := mapDestination(dest, is64)
+		rootID, rootDefault, rel := mapPackageDestination(info, dest)
 
 		// Ensure the root directory exists. Standard Windows Installer folders
 		// (ProgramFiles64Folder, etc.) must be rooted at TARGETDIR; declaring
@@ -577,9 +598,14 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info, upgradeCode string, ids 
 				continue
 			}
 			accum = accum + "/" + seg
-			dirID, err := ids.id("d", accum)
-			if err != nil {
-				return nil, err
+			dirID, exists := directoryIDs[strings.ToLower(accum)]
+			if !exists {
+				var err error
+				dirID, err = ids.id("d", accum)
+				if err != nil {
+					return nil, err
+				}
+				directoryIDs[strings.ToLower(accum)] = dirID
 			}
 			if !createdDirs[dirID] {
 				b.Directory(parentID).Subdirectory(dirID, seg)
@@ -704,7 +730,7 @@ func addServices(b msi.PackageBuilder, info *nfpm.Info, placed map[string]placem
 func addRegistry(b msi.PackageBuilder, info *nfpm.Info, upgradeCode string, ids *idTable) error {
 	for _, r := range info.MSI.Registry {
 		root := strings.ToUpper(r.Root)
-		identity := root + "|" + r.Key + "|" + r.Name
+		identity := identitySeed(root, r.Key, r.Name)
 		compID, err := ids.id("reg", identity)
 		if err != nil {
 			return err
@@ -906,7 +932,7 @@ func destinationKey(p string) string {
 // continue to use the original normalized destination.
 func resolvedDestinationKey(info *nfpm.Info, dest string) string {
 	is64 := is64bit(info.Arch)
-	root, _, rel := mapDestination(dest, is64)
+	root, _, rel := mapPackageDestination(info, dest)
 	switch root {
 	case installFolder:
 		if info.MSI.PerUser {
@@ -1008,24 +1034,16 @@ func deriveGUID(seed string) string {
 	return fmt.Sprintf("{%s-%s-%s-%s-%s}", s[0:8], s[8:12], s[12:16], s[16:20], s[20:32])
 }
 
-// releaseIdentity is the version string that distinguishes one release from
-// another: msi.version verbatim when set, otherwise the shared version with
-// its release, pre-release, and metadata parts. It deliberately uses the
-// original values rather than the normalized ProductVersion, so 1.2.3-rc1 and
-// 1.2.3 are different releases even though Windows Installer sees both as
-// 1.2.3.
-func releaseIdentity(info *nfpm.Info) string {
-	if info.MSI.Version != "" {
-		return info.MSI.Version
-	}
-	return info.Version + "|" + info.Release + "|" + info.Prerelease + "|" + info.VersionMetadata
-}
-
 // deriveProductCode derives the default ProductCode. Its namespace includes
 // the release identity, so every release gets a new ProductCode — a Windows
 // Installer requirement for major upgrades to trigger.
 func deriveProductCode(info *nfpm.Info) string {
-	return deriveGUID("product|" + info.MSI.Manufacturer + "|" + info.MSI.ProductName + "|" + info.Arch + "|" + releaseIdentity(info))
+	if info.MSI.Version != "" {
+		return deriveGUID(identitySeed("product-override", info.MSI.Manufacturer, info.MSI.ProductName, info.Arch,
+			info.MSI.Version, info.Version, info.Release, info.Prerelease, info.VersionMetadata))
+	}
+	return deriveGUID(identitySeed("product", info.MSI.Manufacturer, info.MSI.ProductName, info.Arch,
+		info.Version, info.Release, info.Prerelease, info.VersionMetadata))
 }
 
 // deriveUpgradeCode derives the default UpgradeCode. It excludes the version,
@@ -1033,7 +1051,7 @@ func deriveProductCode(info *nfpm.Info) string {
 // can find older installs. Architecture is included: each arch is its own
 // product line (no cross-arch upgrades).
 func deriveUpgradeCode(info *nfpm.Info) string {
-	return deriveGUID("upgrade|" + info.MSI.Manufacturer + "|" + info.MSI.ProductName + "|" + info.Arch)
+	return deriveGUID(identitySeed("upgrade", info.MSI.Manufacturer, info.MSI.ProductName, info.Arch))
 }
 
 // msiVersionMaxima are the per-field maxima Windows Installer enforces on the
@@ -1048,8 +1066,8 @@ var msiVersionMaxima = [3]int{255, 255, 65535}
 // be clamped (validation turns that into an error).
 func convertToMSIVersionClamped(version string) (converted string, clamped bool) {
 	version = strings.TrimPrefix(version, "v")
-	// Drop any pre-release / build metadata. This also strips the sign off a
-	// negative field, so no field can end up below zero.
+	// Drop pre-release / build metadata. Package validation rejects malformed
+	// numeric cores before this conversion is used to author a package.
 	if i := strings.IndexAny(version, "-+"); i >= 0 {
 		version = version[:i]
 	}
@@ -1059,12 +1077,12 @@ func convertToMSIVersionClamped(version string) (converted string, clamped bool)
 	for i := range 3 {
 		result[i] = "0"
 		if i < len(parts) {
-			if n, err := strconv.Atoi(parts[i]); err == nil {
-				if n > msiVersionMaxima[i] {
-					n = msiVersionMaxima[i]
+			if n, err := strconv.ParseUint(parts[i], 10, 64); err == nil {
+				if n > uint64(msiVersionMaxima[i]) {
+					n = uint64(msiVersionMaxima[i])
 					clamped = true
 				}
-				result[i] = strconv.Itoa(n)
+				result[i] = strconv.FormatUint(n, 10)
 			}
 		}
 	}
