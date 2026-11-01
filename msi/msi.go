@@ -5,6 +5,7 @@ package msi
 import (
 	"cmp"
 	"crypto/sha1"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -116,8 +117,19 @@ func is64bit(arch string) bool {
 
 // ConventionalFileName returns the conventional file name for an MSI package.
 func (m *MSI) ConventionalFileName(info *nfpm.Info) string {
-	info = ensureValidArch(info)
-	return fmt.Sprintf("%s_%s_%s.msi", info.Name, msiVersion(info), info.Arch)
+	normalized := *info
+	info = ensureValidArch(nfpm.WithDefaults(&normalized))
+	version := msiVersion(info)
+	if info.Version != version || info.Release != "" || info.Prerelease != "" || info.VersionMetadata != "" ||
+		info.MSI.Version != "" || info.MSI.ProductCode != "" {
+		// A safe, complete identity suffix prevents normalized versions (and
+		// explicit rebuilt ProductCodes) from overwriting one another. Raw
+		// release fields may contain characters unsafe in Windows filenames.
+		identity := identitySeed("filename", info.Version, info.Release, info.Prerelease,
+			info.VersionMetadata, info.MSI.Version, strings.ToUpper(info.MSI.ProductCode))
+		version += fmt.Sprintf("-%x", sha256.Sum256([]byte(identity)))
+	}
+	return fmt.Sprintf("%s_%s_%s.msi", info.Name, version, info.Arch)
 }
 
 // ConventionalExtension returns the file extension for MSI packages.
@@ -210,7 +222,13 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 	}
 	b = b.WithUpgradeCode(upgradeCode)
 	for k, v := range info.MSI.Properties {
+		if k == "SecureCustomProperties" {
+			v += ";INSTALLFOLDER;NFPM_SAVED_INSTALLFOLDER"
+		}
 		b = b.WithProperty(k, v)
+	}
+	if _, supplied := info.MSI.Properties["SecureCustomProperties"]; !supplied {
+		b.WithProperty("SecureCustomProperties", "INSTALLFOLDER;NFPM_SAVED_INSTALLFOLDER")
 	}
 
 	// Map shared root metadata onto the standard ARP properties, unless the
@@ -228,6 +246,7 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 
 	// The single primary feature every component is associated with.
 	b.Feature(mainFeature).WithTitle(info.MSI.ProductName).WithLevel(1)
+	persistInstallFolder(b, info, upgradeCode)
 
 	ids := newIDTable()
 	placed, err := addContents(b, info, upgradeCode, ids, createdDirs)
@@ -328,13 +347,14 @@ type placement struct {
 // key, so they are rejected up front with a pointer to the right field.
 // nolint: gochecknoglobals
 var reservedProperties = map[string]string{
-	"ProductName":     "msi.product_name",
-	"ProductVersion":  "msi.version",
-	"Manufacturer":    "msi.manufacturer",
-	"ProductCode":     "msi.product_code",
-	"UpgradeCode":     "msi.upgrade_code",
-	"ALLUSERS":        "msi.per_user",
-	"ProductLanguage": "",
+	"ProductName":              "msi.product_name",
+	"ProductVersion":           "msi.version",
+	"Manufacturer":             "msi.manufacturer",
+	"ProductCode":              "msi.product_code",
+	"UpgradeCode":              "msi.upgrade_code",
+	"ALLUSERS":                 "msi.per_user",
+	"ProductLanguage":          "",
+	"NFPM_SAVED_INSTALLFOLDER": "",
 }
 
 func validate(info *nfpm.Info) error {
@@ -374,6 +394,11 @@ func validate(info *nfpm.Info) error {
 		}
 	}
 
+	for _, content := range info.Contents {
+		if content.Type == files.TypeSymlink {
+			return fmt.Errorf("package contents %q: msi does not support symlinks", content.Destination)
+		}
+	}
 	dests, err := validateDestinations(info)
 	if err != nil {
 		return err
@@ -419,6 +444,9 @@ func validate(info *nfpm.Info) error {
 		}
 		if _, ok := startTypes[strings.ToLower(s.StartType)]; !ok {
 			return fmt.Errorf("package msi.services[%d].start_type %q is invalid", i, s.StartType)
+		}
+		if strings.EqualFold(s.StartType, "disabled") && s.Start {
+			return fmt.Errorf("package msi.services[%d]: a disabled service cannot be started on install", i)
 		}
 		if info.MSI.PerUser {
 			return fmt.Errorf("package msi.services[%d] %q: Windows services require a per-machine install; unset msi.per_user", i, s.Name)
@@ -551,9 +579,8 @@ func addContents(b msi.PackageBuilder, info *nfpm.Info, upgradeCode string, ids 
 			// Directories are implicit in the MSI directory tree.
 			continue
 		case files.TypeSymlink:
-			log.Printf("warning: msi does not support symlinks, skipping %s", content.Destination)
-			continue
-		case files.TypeConfig, files.TypeConfigNoReplace:
+			return nil, fmt.Errorf("package contents %q: msi does not support symlinks", content.Destination)
+		case files.TypeConfig, files.TypeConfigNoReplace, files.TypeConfigMissingOK:
 			log.Printf(
 				"warning: msi has no configuration file handling, %s is installed as a regular file and replaced on upgrade",
 				content.Destination)

@@ -695,7 +695,12 @@ msix:
 # installed as plain files (they are replaced on upgrade, with a warning).
 # A file cannot also serve as a directory. Empty directories (including empty
 # tree entries) are unsupported and rejected; include a file or omit the entry.
+# Symlink contents and symlinked source files (including in trees) are rejected.
 # Windows reserved device names and trailing periods/spaces are rejected.
+# Conventional artifact names retain a stable release-identity suffix when
+# normalization would hide prerelease/release/metadata fields, an MSI version
+# override, or an explicit ProductCode. Distinct releases do not overwrite one
+# another when the target is a directory.
 #
 # Every release must have a distinct version that fits Windows Installer's
 # limits (see `version` below); releases replace older installs of the same
@@ -803,14 +808,21 @@ msi:
   # created under Program Files (the 64-bit one for 64-bit packages) for
   # per-machine installs and under %LOCALAPPDATA%\Programs for per-user
   # installs; users can redirect it with `msiexec INSTALLFOLDER=...`.
+  # The chosen target is saved under a package-owned registry key and recovered
+  # before costing during upgrades/maintenance/uninstall. An explicit new
+  # INSTALLFOLDER wins. Older packages without this state need the original
+  # override supplied once when upgrading to this behavior.
   install_dir: "My Application"
 
   # Install for the current user only, without elevation (defaults to false: a
   # per-machine install for all users). A per-user package cannot install into
   # Program Files, ProgramData or the Windows folders, write HKLM registry
   # values, or install services. Its scripts must work with user privileges.
-  # Per-user packages require Windows Installer 4.0 or newer. If INSTALLFOLDER
-  # is overridden at install time, pass the same override during uninstall.
+  # Per-user packages require Windows Installer 4.0 or newer. Keep per_user
+  # unchanged across releases: Windows Installer does not perform major upgrades
+  # between per-user and per-machine contexts, even with the same UpgradeCode.
+  # Changing context requires an explicit uninstall or a separate migration;
+  # downgrade/equal-version detection also applies only within that context.
   per_user: false
 
   # Arbitrary MSI Property rows. Setting ARPCOMMENTS or ARPURLINFOABOUT here
@@ -818,6 +830,10 @@ msi:
   # properties nFPM derives from its own fields (ProductName, ProductVersion,
   # Manufacturer, ProductCode, UpgradeCode, ALLUSERS, ProductLanguage) cannot
   # be set here.
+  # MSI strings use $VAR/${VAR} environment expansion in both base settings
+  # and packager overrides. Use $$ for a literal dollar (e.g. "Cost $$5").
+  # MSI component-directory references such as "[$component]" are preserved
+  # automatically; they are resolved by Windows Installer, not the build host.
   properties:
     MYPROPERTY: "value"
 
@@ -826,7 +842,8 @@ msi:
   minimal_ui: true
 
   # Upgrade behavior. Major upgrades are always enabled: installing a release
-  # removes any older release with the same upgrade code first, and installing
+  # removes any older release in the same install context with the same upgrade
+  # code first, and installing
   # over a newer release is refused.
   upgrade:
     # Message shown when a newer version is already installed.
@@ -835,7 +852,10 @@ msi:
     allow_downgrades: false
     # Treat a package with the same major.minor.build as an upgrade (defaults
     # to false). Needed to replace a pre-release with its final release, or a
-    # rebuilt package with the same version.
+    # rebuilt package with the same numeric version. A major upgrade also
+    # requires a NEW ProductCode: change the shared release/version_metadata
+    # (e.g. build.1 -> build.2) or supply a new explicit product_code for each
+    # rebuild. This option alone does not replace identical release identities.
     # When false, a different release with an equal numeric version is rejected.
     allow_same_version: false
 
@@ -869,7 +889,7 @@ msi:
       account: ""
       arguments: ""
       dependencies: []
-      # Start the service once it is installed.
+      # Start the service once it is installed. Invalid with start_type: disabled.
       start: true
 
   # Registry values to create. Each value is its own component and is removed

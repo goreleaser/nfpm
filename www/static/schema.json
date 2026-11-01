@@ -727,7 +727,7 @@
 					"per_user": {
 						"type": "boolean",
 						"title": "per-user install",
-						"description": "install for the current user only without elevation; defaults to a per-machine install"
+						"description": "install for the current user only without elevation; keep context fixed across upgrades or uninstall/migrate first; defaults to a per-machine install"
 					},
 					"properties": {
 						"additionalProperties": {
@@ -927,7 +927,7 @@
 					"allow_same_version": {
 						"type": "boolean",
 						"title": "treat an equal version as an upgrade",
-						"description": "lets a rebuilt package (or a pre-release becoming a release) replace an install with the same major.minor.build; defaults to false"
+						"description": "replace the same major.minor.build within one install context; requires a new ProductCode via distinct release metadata or an explicit new code; defaults to false"
 					}
 				},
 				"additionalProperties": false,

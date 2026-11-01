@@ -30,6 +30,10 @@ func generate() error {
 		{"override-final", "NfpmMsiOverride", "2024.1.0", "24.1.0", "x64", "testapp-newer.exe", true},
 		{"arch-intel", "NfpmMsiArch", "1.0.0", "", "intel", "testapp.exe", false},
 		{"arch-x86", "NfpmMsiArch", "2.0.0", "", "x86", "testapp-newer.exe", false},
+		{"rebuild-old", "NfpmMsiRebuild", "1.2.3+build.1", "", "x64", "testapp.exe", true},
+		{"rebuild-new", "NfpmMsiRebuild", "1.2.3+build.2", "", "x64", "testapp-newer.exe", true},
+		{"location-old", "NfpmMsiLocation", "1.0.0", "", "x64", "testapp.exe", false},
+		{"location-new", "NfpmMsiLocation", "2.0.0", "", "x64", "testapp-newer.exe", false},
 	} {
 		info := nfpm.WithDefaults(&nfpm.Info{
 			Name: fixture.product, Version: fixture.version, Arch: "amd64", Vendor: "nFPM",

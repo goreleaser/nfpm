@@ -53,8 +53,8 @@ func TestReviewIdentity(t *testing.T) {
 		}
 		db := buildDB(t, i)
 		r := tableRows(t, db, "Registry")
-		require.Len(t, r, 2)
-		assert.NotEqual(t, r[0]["Component_"], r[1]["Component_"])
+		require.Len(t, r, 3)
+		assert.NotEqual(t, rowWhere(t, r, "Name", "Value")["Component_"], rowWhere(t, r, "Name", "Sub|Value")["Component_"])
 	})
 }
 

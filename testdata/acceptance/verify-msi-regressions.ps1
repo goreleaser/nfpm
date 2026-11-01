@@ -1,8 +1,9 @@
 $ErrorActionPreference = 'Stop'
 
-function Invoke-Installer([string]$name, [string]$operation, [string]$log) {
+function Invoke-Installer([string]$name, [string]$operation, [string]$log, [string[]]$properties = @()) {
     $package = (Resolve-Path "./dist/$name.msi").Path
-    $proc = Start-Process msiexec.exe -ArgumentList @($operation, "`"$package`"", '/qn', '/norestart', '/l*v', "`"$log`"") -Wait -PassThru
+    $arguments = @($operation, "`"$package`"") + $properties + @('/qn', '/norestart', '/l*v', "`"$log`"")
+    $proc = Start-Process msiexec.exe -ArgumentList $arguments -Wait -PassThru
     return $proc.ExitCode
 }
 
@@ -24,7 +25,8 @@ function Assert-Payload([string]$product, [string]$directory, [string]$message) 
 foreach ($case in @(
     @{ Product = 'NfpmMsiEqual'; Old = 'equal-rc'; New = 'equal-final-allowed'; Blocked = 'equal-final-blocked'; Root = $env:ProgramFiles },
     @{ Product = 'NfpmMsiOverride'; Old = 'override-rc'; New = 'override-final'; Blocked = $null; Root = $env:ProgramFiles },
-    @{ Product = 'NfpmMsiArch'; Old = 'arch-intel'; New = 'arch-x86'; Blocked = $null; Root = ${env:ProgramFiles(x86)} }
+    @{ Product = 'NfpmMsiArch'; Old = 'arch-intel'; New = 'arch-x86'; Blocked = $null; Root = ${env:ProgramFiles(x86)} },
+    @{ Product = 'NfpmMsiRebuild'; Old = 'rebuild-old'; New = 'rebuild-new'; Blocked = $null; Root = $env:ProgramFiles }
 )) {
     $directory = Join-Path $case.Root $case.Product
     if (@(Get-Products $case.Product).Count -ne 0) { throw "$($case.Product) was already installed" }
@@ -55,5 +57,40 @@ foreach ($case in @(
     }
     if ((Test-Path $directory) -or @(Get-Products $case.Product).Count -ne 0) {
         throw "$($case.Product) was not completely removed"
+    }
+}
+
+# Persist the selected target across a major upgrade without repeating it,
+# and prove that an explicitly selected new target wins over the saved value.
+foreach ($explicitNewTarget in @($false, $true)) {
+    $root = Join-Path $env:RUNNER_TEMP ('nfpm location ' + [guid]::NewGuid().ToString('N'))
+    $oldTarget = Join-Path $root 'original'
+    $newTarget = $oldTarget
+    $cleanup = 'location-old'
+    $label = "location-$explicitNewTarget"
+    try {
+        $code = Invoke-Installer 'location-old' '/i' "./dist/$label-install.log" @("INSTALLFOLDER=`"$oldTarget`"")
+        if ($code -ne 0) { throw "Redirected v1 installation returned $code" }
+        $oldCode = Assert-Payload 'NfpmMsiLocation' $oldTarget 'nfpm-msix-test-ok'
+        $properties = @()
+        if ($explicitNewTarget) {
+            $newTarget = Join-Path $root 'explicit replacement'
+            $properties = @("INSTALLFOLDER=`"$newTarget`"")
+        }
+        $code = Invoke-Installer 'location-new' '/i' "./dist/$label-upgrade.log" $properties
+        if ($code -ne 0) { throw "Redirected upgrade returned $code" }
+        $cleanup = 'location-new'
+        $newCode = Assert-Payload 'NfpmMsiLocation' $newTarget 'nfpm-msi-v2-test-ok'
+        if ($oldCode -eq $newCode) { throw 'Location upgrade retained the old product identity' }
+        if (Test-Path (Join-Path $env:ProgramFiles 'NfpmMsiLocation\app.exe')) { throw 'Upgrade moved payload to the default target' }
+        if ($explicitNewTarget -and (Test-Path $oldTarget)) { throw 'Explicitly redirected upgrade left the old target behind' }
+        Write-Host "SAVED_INSTALL_LOCATION_UPGRADE_OK explicitOverride=$explicitNewTarget"
+    } finally {
+        # No INSTALLFOLDER on uninstall: recover it from package-owned state.
+        $code = Invoke-Installer $cleanup '/x' "./dist/$label-remove.log"
+        if ($code -ne 0) { throw "Location removal returned $code" }
+    }
+    if ((Test-Path $oldTarget) -or (Test-Path $newTarget) -or @(Get-Products 'NfpmMsiLocation').Count -ne 0) {
+        throw 'Location fixture was not completely removed'
     }
 }

@@ -301,28 +301,28 @@ func (c *Config) expandEnvVars() {
 
 func (c *Config) expandMSI(cfg *MSI) {
 	// MSI specific
-	cfg.Version = os.Expand(cfg.Version, c.envMappingFunc)
-	cfg.ProductName = os.Expand(cfg.ProductName, c.envMappingFunc)
-	cfg.Manufacturer = os.Expand(cfg.Manufacturer, c.envMappingFunc)
-	cfg.InstallDir = os.Expand(cfg.InstallDir, c.envMappingFunc)
+	cfg.Version = expandMSIValue(cfg.Version, c.envMappingFunc)
+	cfg.ProductName = expandMSIValue(cfg.ProductName, c.envMappingFunc)
+	cfg.Manufacturer = expandMSIValue(cfg.Manufacturer, c.envMappingFunc)
+	cfg.InstallDir = expandMSIValue(cfg.InstallDir, c.envMappingFunc)
 	for k, v := range cfg.Properties {
-		cfg.Properties[k] = os.Expand(v, c.envMappingFunc)
+		cfg.Properties[k] = expandMSIValue(v, c.envMappingFunc)
 	}
 	for k, v := range cfg.FileVersions {
-		cfg.FileVersions[k] = os.Expand(v, c.envMappingFunc)
+		cfg.FileVersions[k] = expandMSIValue(v, c.envMappingFunc)
 	}
 	for i := range cfg.Shortcuts {
-		cfg.Shortcuts[i].Arguments = os.Expand(cfg.Shortcuts[i].Arguments, c.envMappingFunc)
+		cfg.Shortcuts[i].Arguments = expandMSIValue(cfg.Shortcuts[i].Arguments, c.envMappingFunc)
 	}
 	for i := range cfg.Services {
-		cfg.Services[i].Account = os.Expand(cfg.Services[i].Account, c.envMappingFunc)
-		cfg.Services[i].Arguments = os.Expand(cfg.Services[i].Arguments, c.envMappingFunc)
+		cfg.Services[i].Account = expandMSIValue(cfg.Services[i].Account, c.envMappingFunc)
+		cfg.Services[i].Arguments = expandMSIValue(cfg.Services[i].Arguments, c.envMappingFunc)
 	}
 	for i := range cfg.Registry {
-		cfg.Registry[i].Value = os.Expand(cfg.Registry[i].Value, c.envMappingFunc)
+		cfg.Registry[i].Value = expandMSIValue(cfg.Registry[i].Value, c.envMappingFunc)
 	}
-	cfg.Signature.PFXFile = os.Expand(cfg.Signature.PFXFile, c.envMappingFunc)
-	cfg.Signature.TimestampURL = os.Expand(cfg.Signature.TimestampURL, c.envMappingFunc)
+	cfg.Signature.PFXFile = expandMSIValue(cfg.Signature.PFXFile, c.envMappingFunc)
+	cfg.Signature.TimestampURL = expandMSIValue(cfg.Signature.TimestampURL, c.envMappingFunc)
 	cfg.Signature.KeyPassphrase = os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
 	msiPassphrase := os.Expand("$NFPM_MSI_PASSPHRASE", c.envMappingFunc)
 	if msiPassphrase != "" {
@@ -621,7 +621,7 @@ type MSI struct {
 	ProductCode  string            `yaml:"product_code,omitempty" json:"product_code,omitempty" jsonschema:"title=product code GUID,description=derived from manufacturer/product name/arch/version (changes every release) when empty; pinning it breaks upgrades,example={12345678-1234-1234-1234-123456789ABC}"`
 	UpgradeCode  string            `yaml:"upgrade_code,omitempty" json:"upgrade_code,omitempty" jsonschema:"title=upgrade code GUID,description=derived from manufacturer/product name/arch (stable across releases) when empty,example={ABCDEF01-2345-6789-ABCD-EF0123456789}"`
 	InstallDir   string            `yaml:"install_dir,omitempty" json:"install_dir,omitempty" jsonschema:"title=default install folder name,description=created under Program Files (or the user's local app data for per-user installs); defaults to the product name"`
-	PerUser      bool              `yaml:"per_user,omitempty" json:"per_user,omitempty" jsonschema:"title=per-user install,description=install for the current user only without elevation; defaults to a per-machine install"`
+	PerUser      bool              `yaml:"per_user,omitempty" json:"per_user,omitempty" jsonschema:"title=per-user install,description=install for the current user only without elevation; keep context fixed across upgrades or uninstall/migrate first; defaults to a per-machine install"`
 	Properties   map[string]string `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=arbitrary MSI Property rows"`
 	FileVersions map[string]string `yaml:"file_versions,omitempty" json:"file_versions,omitempty" jsonschema:"title=file version overrides by contents destination,description=PE file versions are detected automatically; an empty override explicitly keeps a file unversioned"`
 	MinimalUI    bool              `yaml:"minimal_ui,omitempty" json:"minimal_ui,omitempty" jsonschema:"title=install the canned minimal install wizard"`
@@ -638,7 +638,7 @@ type MSI struct {
 type MSIUpgrade struct {
 	DowngradeErrorMessage string `yaml:"downgrade_error_message,omitempty" json:"downgrade_error_message,omitempty" jsonschema:"title=message shown when a newer version is already installed"`
 	AllowDowngrades       bool   `yaml:"allow_downgrades,omitempty" json:"allow_downgrades,omitempty" jsonschema:"title=allow installing over a newer version,description=disables the downgrade block; defaults to false"`
-	AllowSameVersion      bool   `yaml:"allow_same_version,omitempty" json:"allow_same_version,omitempty" jsonschema:"title=treat an equal version as an upgrade,description=lets a rebuilt package (or a pre-release becoming a release) replace an install with the same major.minor.build; defaults to false"`
+	AllowSameVersion      bool   `yaml:"allow_same_version,omitempty" json:"allow_same_version,omitempty" jsonschema:"title=treat an equal version as an upgrade,description=replace the same major.minor.build within one install context; requires a new ProductCode via distinct release metadata or an explicit new code; defaults to false"`
 }
 
 // MSIShortcut describes an advertised shortcut in an MSI package.

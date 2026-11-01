@@ -321,7 +321,7 @@ func TestVersionConversion(t *testing.T) {
 		t.Run(in, func(t *testing.T) {
 			info := exampleInfo()
 			info.Version = in
-			require.Equal(t, "TestApp_"+want+"_x64.msi", msi.Default.ConventionalFileName(info))
+			require.Regexp(t, "^TestApp_"+strings.ReplaceAll(want, ".", `\.`)+`(-[0-9a-f]{64})?_x64\.msi$`, msi.Default.ConventionalFileName(info))
 		})
 	}
 }
@@ -354,7 +354,7 @@ func TestVersionOverride(t *testing.T) {
 	info.Version = "2024.1.0"
 	info.MSI.Version = "24.1.0"
 
-	require.Equal(t, "TestApp_24.1.0_x64.msi", msi.Default.ConventionalFileName(info))
+	require.Contains(t, msi.Default.ConventionalFileName(info), "TestApp_24.1.0-")
 	require.Equal(t, "24.1.0", property(t, buildDB(t, info), "ProductVersion"))
 }
 
@@ -1080,7 +1080,7 @@ func TestRegistry(t *testing.T) {
 	db := buildDB(t, info)
 
 	regs := tableRows(t, db, "Registry")
-	require.Len(t, regs, 2)
+	require.Len(t, regs, 3)
 	hklm := rowWhere(t, regs, "Name", "InstallPath")
 	require.Equal(t, int16(2), hklm["Root"], "HKLM")
 	require.Equal(t, `Software\TestCo\TestApp`, hklm["Key"])
@@ -1094,7 +1094,9 @@ func TestRegistry(t *testing.T) {
 		require.Equal(t, reg["Registry"], comp["KeyPath"], "the value is the component's key path")
 		attrs := comp["Attributes"].(int16)
 		require.NotZero(t, attrs&attrRegistryKeyPath, "KeyPath must be flagged as a registry key path")
-		require.NotZero(t, attrs&attr64bit, "registry rows of a 64-bit package bypass WOW6432Node")
+		if reg["Component_"] != "NfpmInstallLocation" {
+			require.NotZero(t, attrs&attr64bit, "user registry rows of a 64-bit package bypass WOW6432Node")
+		}
 		require.Equal(t, "INSTALLFOLDER", comp["Directory_"])
 	}
 	require.Equal(t, goldenRegistryGUID, rowWhere(t, comps, "Component", hklm["Component_"])["ComponentId"])
@@ -1800,18 +1802,12 @@ func TestPackageSystemDir(t *testing.T) {
 	require.Equal(t, 1, strings.Count(logs.String(), "never removes such files"), "warned once per system folder")
 }
 
-func TestSymlinkSkipped(t *testing.T) {
-	logs := captureLogs(t)
-
+func TestSymlinkRejected(t *testing.T) {
 	info := exampleInfo()
-	info.Contents = append(info.Contents, &files.Content{
-		Source:      "/Program Files/TestApp/app.exe",
-		Destination: "/Program Files/TestApp/link.exe",
-		Type:        files.TypeSymlink,
-	})
-	db := buildDB(t, info)
-	require.Len(t, tableRows(t, db, "File"), 2)
-	require.Contains(t, logs.String(), "msi does not support symlinks")
+	info.Contents = append(info.Contents, &files.Content{Source: "/Program Files/TestApp/app.exe", Destination: "/Program Files/TestApp/link.exe", Type: files.TypeSymlink})
+	var out bytes.Buffer
+	require.ErrorContains(t, msi.Default.Package(info, &out), "msi does not support symlinks")
+	require.Zero(t, out.Len())
 }
 
 func TestConfigContentWarns(t *testing.T) {
