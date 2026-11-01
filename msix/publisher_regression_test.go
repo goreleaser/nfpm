@@ -167,3 +167,21 @@ func TestSigningSubjectInvalidForManifest(t *testing.T) {
 		assert.Contains(t, signingErr.Error(), "msix.publisher")
 	}
 }
+
+func TestPublisherFromT61SigningCert(t *testing.T) {
+	for _, value := range [][]byte{{0xc3, 0xa9}, {0xe9}} {
+		raw, err := asn1.Marshal(pkix.RDNSequence{{{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: asn1.RawValue{
+			Tag: asn1.TagT61String, Bytes: value,
+		}}}})
+		require.NoError(t, err)
+		pfx, passphrase := makeTestPFXWithSubject(t, raw, "test123")
+		for _, publisher := range []string{"", "CN=é"} {
+			info := exampleInfo()
+			info.MSIX.Publisher = publisher
+			info.MSIX.Signature = nfpm.MSIXSignature{PFXFile: pfx, KeyPassphrase: passphrase}
+			var buf bytes.Buffer
+			require.NoError(t, Default.Package(info, &buf))
+			assert.Equal(t, "CN=é", decodedPublisher(t, buf.Bytes()))
+		}
+	}
+}

@@ -70,11 +70,6 @@ func (*MSIX) ConventionalExtension() string {
 	return ".msix"
 }
 
-// dnAttributePattern matches a string that already starts with a distinguished
-// name attribute assignment such as "CN=" or "O=".
-// nolint: gochecknoglobals
-var dnAttributePattern = regexp.MustCompile(`^` + dnKeyPattern + `=`)
-
 const dnKeyPattern = `(CN|L|O|OU|E|C|S|STREET|T|G|I|SN|DC|SERIALNUMBER|Description|PostalCode|POBox|Phone|X21Address|dnQualifier|OID\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))+)`
 
 // ST_Publisher_2010_v2 from the Windows foundation manifest schema, with
@@ -85,10 +80,9 @@ var publisherPattern = regexp.MustCompile(`^` + dnKeyPattern + `=` + dnValuePatt
 const dnValuePattern = `([^,+=\x00-\x1f"<>#;]+|"([^"\x00-\x1f]|"")*")`
 
 // ensureDN turns a plain name into a publisher distinguished name by prefixing
-// "CN=" and quoting per Windows X.500 syntax; values that already look like a DN pass
-// through untouched.
+// "CN=" and quoting per Windows X.500 syntax; valid Windows DNs pass through.
 func ensureDN(name string) string {
-	if dnAttributePattern.MatchString(name) {
+	if validatePublisher(name) == nil {
 		return name
 	}
 	return "CN=" + quoteDNValue(name)

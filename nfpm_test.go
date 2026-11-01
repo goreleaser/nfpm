@@ -523,6 +523,8 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 
 	t.Run("global passphrase", func(t *testing.T) {
 		t.Setenv("NFPM_PASSPHRASE", globalPass)
+		t.Setenv("NFPM_MSIX_PASSPHRASE", "")
+		require.NoError(t, os.Unsetenv("NFPM_MSIX_PASSPHRASE"))
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)

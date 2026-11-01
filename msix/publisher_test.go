@@ -36,6 +36,20 @@ func publisherSubjects() []struct {
 			"CN=Last, O=Organization, CN=First",
 		},
 		{
+			"T61 containing UTF8",
+			pkix.RDNSequence{{{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: asn1.RawValue{
+				Tag: asn1.TagT61String, Bytes: []byte{0xc3, 0xa9},
+			}}}},
+			"CN=é",
+		},
+		{
+			"T61 Latin1 fallback",
+			pkix.RDNSequence{{{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: asn1.RawValue{
+				Tag: asn1.TagT61String, Bytes: []byte{0xe9},
+			}}}},
+			"CN=é",
+		},
+		{
 			"unknown OID",
 			pkix.RDNSequence{{{Type: asn1.ObjectIdentifier{1, 2, 3, 4}, Value: "Custom"}}},
 			"OID.1.2.3.4=Custom",
@@ -83,4 +97,10 @@ func TestCertificatePublisherInvalid(t *testing.T) {
 	require.NoError(t, err)
 	_, err = certificatePublisher(raw)
 	require.ErrorContains(t, err, "empty certificate subject RDN")
+	raw, err = asn1.Marshal(pkix.RDNSequence{{{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: asn1.RawValue{
+		Tag: asn1.TagUTF8String, Bytes: []byte{0xff},
+	}}}})
+	require.NoError(t, err)
+	_, err = certificatePublisher(raw)
+	require.Error(t, err, "malformed UTF-8 must not be accepted as a certificate string")
 }

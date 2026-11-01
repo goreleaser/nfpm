@@ -210,6 +210,9 @@ func TestPublisherDefaults(t *testing.T) {
 		{"vendor with hash quoted", "Test#Co", `CN="Test#Co"`},
 		{"vendor with backslash", `Test\Co`, `CN="Test\Co"`},
 		{"vendor already a DN", "CN=TestCo, O=TestCo, C=US", "CN=TestCo, O=TestCo, C=US"},
+		{"DN-looking vendor with comma", "CN=Acme, Inc.", `CN="CN=Acme, Inc."`},
+		{"DN-looking vendor with empty value", "CN=", `CN="CN="`},
+		{"DN-looking vendor with malformed suffix", "CN=Acme, OU", `CN="CN=Acme, OU"`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -1,12 +1,20 @@
 package msix
 
 import (
-	"crypto/x509/pkix"
 	"encoding/asn1"
 	"fmt"
 	"strings"
 	"unicode/utf8"
 )
+
+type certificateAttribute struct {
+	Type  asn1.ObjectIdentifier
+	Value asn1.RawValue
+}
+
+// The SET suffix tells encoding/asn1 to decode each RDN as a SET, preserving
+// the value's original tag instead of decoding every string into Go text.
+type certificateRDNSET []certificateAttribute
 
 // certificatePublisher follows CertNameToStrW with CERT_X500_NAME_STR and
 // CERT_NAME_STR_REVERSE_FLAG, as used by Windows MSIX signature validation.
@@ -14,7 +22,7 @@ import (
 // Multi-valued RDNs cannot satisfy both the manifest schema and Windows'
 // certificate comparison, so reject them instead of flattening them.
 func certificatePublisher(rawSubject []byte) (string, error) {
-	var rdns pkix.RDNSequence
+	var rdns []certificateRDNSET
 	rest, err := asn1.Unmarshal(rawSubject, &rdns)
 	if err != nil {
 		return "", err
@@ -31,9 +39,18 @@ func certificatePublisher(rawSubject []byte) (string, error) {
 			return "", fmt.Errorf("multi-valued RDN is not supported by MSIX; use a signing certificate with one attribute per RDN")
 		}
 		attribute := rdns[i][0]
-		value, ok := attribute.Value.(string)
+		var decoded any
+		if _, err := asn1.Unmarshal(attribute.Value.FullBytes, &decoded); err != nil {
+			return "", err
+		}
+		value, ok := decoded.(string)
 		if !ok {
 			return "", fmt.Errorf("unsupported certificate subject value for %s", attribute.Type)
+		}
+		// CertNameToStrW tries UTF-8 for T.61 before falling back to 8-bit
+		// characters. encoding/asn1 always decodes T.61 as Latin-1.
+		if attribute.Value.Class == asn1.ClassUniversal && attribute.Value.Tag == asn1.TagT61String && utf8.Valid(attribute.Value.Bytes) {
+			value = string(attribute.Value.Bytes)
 		}
 		parts = append(parts, windowsDNKey(attribute.Type)+"="+quoteDNValue(value))
 	}

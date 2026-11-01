@@ -79,6 +79,7 @@ func TestPublisherManifestWindows(t *testing.T) {
 		{"semicolon", "Test;Co", true},
 		{"padded vendor", " TestCo ", true},
 		{"blank vendor", " \t ", true},
+		{"DN-looking vendor name", "CN=Acme, Inc.", true},
 		{"invalid RFC 2253 control", "", false},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -116,6 +117,29 @@ func TestPublisherManifestWindows(t *testing.T) {
 		var buf bytes.Buffer
 		require.NoError(t, Default.Package(info, &buf))
 		checkManifestWindows(t, makeappx, buf.Bytes(), true)
+	})
+	t.Run("signed T61 subject", func(t *testing.T) {
+		for _, value := range [][]byte{{0xc3, 0xa9}, {0xe9}} {
+			raw, err := asn1.Marshal(pkix.RDNSequence{{{Type: asn1.ObjectIdentifier{2, 5, 4, 3}, Value: asn1.RawValue{
+				Tag: asn1.TagT61String, Bytes: value,
+			}}}})
+			require.NoError(t, err)
+			pfx, passphrase := makeTestPFXWithSubject(t, raw, "test123")
+			want := windowsCertificatePublisher(t, raw)
+			for _, publisher := range []string{"", want} {
+				info := exampleInfo()
+				info.MSIX.Publisher = publisher
+				info.MSIX.Signature = nfpm.MSIXSignature{PFXFile: pfx, KeyPassphrase: passphrase}
+				info.MSIX.Properties.Logo = "Assets/logo.png"
+				info.Contents = append(info.Contents, &files.Content{
+					Source: "../testdata/acceptance/testapp/logo.png", Destination: "/Assets/logo.png",
+				})
+				var buf bytes.Buffer
+				require.NoError(t, Default.Package(info, &buf))
+				require.Equal(t, want, decodedPublisher(t, buf.Bytes()))
+				checkManifestWindows(t, makeappx, buf.Bytes(), true)
+			}
+		}
 	})
 	t.Run("signed multi-valued subject", func(t *testing.T) {
 		raw, err := asn1.Marshal(pkix.RDNSequence{{
