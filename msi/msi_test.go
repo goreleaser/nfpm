@@ -1651,7 +1651,32 @@ func TestSigningWithTimestampURL(t *testing.T) {
 
 	err := msi.Default.Package(info, io.Discard)
 	require.Error(t, err, "a failing timestamp authority must fail the package")
+	var signingFailure *nfpm.ErrSigningFailure
+	require.ErrorAs(t, err, &signingFailure)
+	var upstreamFailure *gomsi.SigningError
+	require.ErrorAs(t, err, &upstreamFailure, "preserve the upstream signing cause")
 	require.Positive(t, hits.Load(), "the configured timestamp URL must actually be requested")
+}
+
+type causeWriter struct{ cause error }
+
+func (w causeWriter) Write([]byte) (int, error) { return 0, w.cause }
+
+func TestDestinationFailureIsNotSigningFailure(t *testing.T) {
+	pfxPath, passphrase := makeTestPFX(t)
+	for _, signed := range []bool{false, true} {
+		info := exampleInfo()
+		if signed {
+			info.MSI.Signature = nfpm.MSISignature{PFXFile: pfxPath, KeyPassphrase: passphrase}
+		}
+		cause := errors.New("destination writer failed")
+		err := msi.Default.Package(info, causeWriter{cause: cause})
+		require.ErrorIs(t, err, cause)
+		var signingFailure *nfpm.ErrSigningFailure
+		assert.NotErrorAs(t, err, &signingFailure)
+		var upstreamFailure *gomsi.SigningError
+		assert.NotErrorAs(t, err, &upstreamFailure)
+	}
 }
 
 // errWriter fails every write, to exercise the package-writing error path.

@@ -311,7 +311,12 @@ func (m *MSI) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
-	return pkg.WriteMSI(w)
+	err = pkg.WriteMSI(w)
+	var signingErr *msi.SigningError
+	if errors.As(err, &signingErr) {
+		return &nfpm.ErrSigningFailure{Err: err}
+	}
+	return err
 }
 
 // declareInstallFolder declares INSTALLFOLDER with the configured install

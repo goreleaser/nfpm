@@ -23,6 +23,11 @@ func TestRound3InstallLocation(t *testing.T) {
 		i.MSI.PerUser = perUser
 		i.Contents = i.Contents[1:]
 		db := buildDB(t, i)
+		// A raw registry lookup has no file-signature row, but the native
+		// AppSearch engine still requires the table itself (MSI error 2228).
+		signatures, err := db.Table("Signature")
+		require.NoError(t, err)
+		assert.Empty(t, signatures)
 		saved := rowWhere(t, tableRows(t, db, "Registry"), "Name", "InstallFolder")
 		root := int16(2)
 		if perUser {
