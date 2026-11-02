@@ -330,6 +330,8 @@ contents:
 umask: 0o002
 
 # Scripts to run at specific stages. (overridable)
+#
+# MSIX packages are declarative and ignore scripts (a warning is printed).
 scripts:
   preinstall: ./scripts/preinstall.sh
   postinstall: ./scripts/postinstall.sh
@@ -592,13 +594,23 @@ ipk:
       priority: 50
 
 # Custom configuration applied only to the MSIX packager (Windows).
+# MSIX is declarative: the root `scripts` are ignored (with a warning) and the
+# root `homepage` cannot be represented in the AppxManifest.
 msix:
   # msix specific architecture name that overrides "arch" without performing
   # any replacements.
   arch: x64
 
-  # Publisher identity. (required)
+  # Publisher identity.
   # Must match the subject of the signing certificate if signing is used.
+  # When omitted it defaults to the signing certificate's subject (if a
+  # signature is configured), otherwise to "CN=<vendor>" (falling back to the
+  # maintainer name). Derived values use Windows DN quoting, for example
+  # CN="MyCompany, Inc". Certificate subjects use Windows attribute names and
+  # separators (S=, comma-space). Each RDN must contain a single attribute;
+  # multi-valued RDNs are rejected because Windows manifest validation does
+  # not accept their unquoted plus separator. Explicit publishers must match
+  # the signing certificate subject exactly.
   publisher: "CN=MyCompany, O=MyCompany, C=US"
 
   # Package identity settings.
@@ -610,7 +622,10 @@ msix:
   properties:
     # Display name shown to users (defaults to package name).
     display_name: "My Application"
-    # Publisher display name (defaults to package name).
+    # Publisher display name (defaults to the vendor or maintainer name,
+    # falling back to the package name). Derived vendor/maintainer names are
+    # trimmed; blank vendors fall back to the maintainer. Display names must
+    # have at most 256 characters, or be a valid ms-resource reference.
     publisher_display_name: "My Company"
     # Path to a logo file in the package.
     logo: "Assets/logo.png"
@@ -656,7 +671,10 @@ msix:
   signature:
     # Path to the PFX certificate file.
     pfx_file: certificate.pfx
-    # Passphrase is read from the NFPM_MSIX_PASSPHRASE environment variable.
+    # The passphrase is taken from the environment variable
+    # $NFPM_MSIX_PASSPHRASE with a fallback to $NFPM_PASSPHRASE when unset.
+    # Set NFPM_MSIX_PASSPHRASE to an empty value for a passwordless PFX,
+    # even when NFPM_PASSPHRASE is set for another packager.
 ```
 
 ## Templating
