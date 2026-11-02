@@ -1034,6 +1034,11 @@
 						},
 						"type": "array",
 						"title": "Prefixes for relocatable packages"
+					},
+					"script_requires": {
+						"type": "boolean",
+						"title": "require the interpreters of executable scripts",
+						"default": false
 					}
 				},
 				"additionalProperties": false,

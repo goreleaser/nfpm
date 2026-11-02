@@ -1,0 +1,22 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar"
+description: "Foo bar"
+license: "MIT"
+contents:
+- src: ./testdata/acceptance/scripts/script_requires_bash.sh
+  dst: /usr/libexec/foo/bash-script
+  file_info:
+    mode: 0755
+- src: ./testdata/acceptance/scripts/script_requires_env.sh
+  dst: /usr/libexec/foo/env-script
+  file_info:
+    mode: 0755
+- src: ./testdata/acceptance/scripts/script_requires_perl.pl
+  dst: /usr/share/foo/data.pl
+  file_info:
+    mode: 0644
+rpm:
+  script_requires: true
