@@ -71,6 +71,12 @@ func TestPublisherDisplayNameMetadata(t *testing.T) {
 		{"padded vendor", " TestCo ", "", "TestCo"},
 		{"blank vendor", " \t ", "", "MyCompany.TestApp"},
 		{"blank vendor with maintainer", " \t ", "Jane Doe <jane@example.com>", "Jane Doe"},
+		{"long vendor", strings.Repeat("x", 257), "Jane Doe <jane@example.com>", "MyCompany.TestApp"},
+		{"long maintainer", "", strings.Repeat("x", 257) + " <jane@example.com>", "MyCompany.TestApp"},
+		{"XML control in vendor", "Test\x00Company", "", "MyCompany.TestApp"},
+		{"line break in vendor", "Test\nCompany", "", "MyCompany.TestApp"},
+		{"XML control in maintainer", "", "Test\x00Company", "MyCompany.TestApp"},
+		{"line break in maintainer", "", "Test\nCompany", "MyCompany.TestApp"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			info := exampleInfo()
@@ -90,14 +96,11 @@ func TestPublisherMetadataLimits(t *testing.T) {
 	for _, tt := range []struct {
 		name, publisher, vendor, wantError string
 	}{
-		{"long derived display name", "CN=Test", strings.Repeat("x", 257), "publisher_display_name"},
 		{"long publisher", "CN=" + strings.Repeat("x", 8190), "Test", "publisher"},
 		{"malformed publisher", "CN=Test + OU=Team", "Test", "publisher"},
 		{"line break in quoted publisher", "CN=\"Test\nCompany\"", "Test", "publisher"},
 		{"quoted multi-valued publisher", `CN="Test" + OU="Team"`, "Test", "publisher"},
 		{"XML control in publisher", "CN=\"Test\x00Company\"", "Test", "publisher"},
-		{"XML control in derived display name", "CN=Test", "Test\x00Company", "publisher_display_name"},
-		{"line break in derived display name", "CN=Test", "Test\nCompany", "publisher_display_name"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			info := exampleInfo()
@@ -117,7 +120,7 @@ func TestPublisherMetadataBoundaries(t *testing.T) {
 }
 
 func TestExplicitPublisherDisplayNameInvalid(t *testing.T) {
-	for _, name := range []string{" Test ", " \t ", strings.Repeat("x", 257), "Test\nCompany"} {
+	for _, name := range []string{" Test ", " \t ", strings.Repeat("x", 257), "Test\nCompany", "Test\x00Company"} {
 		info := exampleInfo()
 		info.MSIX.Properties.PublisherDisplayName = name
 		require.ErrorContains(t, Default.Package(info, io.Discard), "publisher_display_name")

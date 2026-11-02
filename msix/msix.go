@@ -251,7 +251,7 @@ func publisherDisplayName(info *nfpm.Info) string {
 	if name := info.MSIX.Properties.PublisherDisplayName; name != "" {
 		return name
 	}
-	if name := maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer); name != "" {
+	if name := maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer); validDisplayName(name) {
 		return name
 	}
 	return info.Name
