@@ -378,8 +378,13 @@ rpm:
   # and runs them with /bin/sh by default. Interpreters must be absolute
   # paths without arguments, or `<lua>` for RPM's built-in Lua interpreter,
   # and each one needs the matching script. Each scriptlet requires its
-  # interpreter, except for `<lua>`. Debian and Alpine packages run their
-  # scripts with their shebang instead.
+  # interpreter, except for `<lua>`. The pretrans interpreter must already be
+  # installed when the transaction starts: RPM runs pretrans before it
+  # installs any file, so it refuses the transaction when the interpreter
+  # only comes from a package of the same transaction. Use `<lua>` for a
+  # pretrans script that must work on an empty root, such as a container
+  # image build. Debian and Alpine packages run their scripts with their
+  # shebang instead.
   interpreters:
     preinstall: /bin/bash
     postinstall: /bin/bash
