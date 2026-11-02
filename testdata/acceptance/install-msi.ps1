@@ -41,6 +41,7 @@ $markers = @{
     postinstall = Join-Path $env:SystemRoot 'Temp\nfpm-acc-postinstall.txt'
     preremove   = Join-Path $env:SystemRoot 'Temp\nfpm-acc-preremove.txt'
     postremove  = Join-Path $env:SystemRoot 'Temp\nfpm-acc-postremove.txt'
+    postinstallFail = Join-Path $env:SystemRoot 'Temp\nfpm-acc-postinstall-fail.txt'
 }
 
 function Reset-Markers {
@@ -232,16 +233,21 @@ Assert-Removed
 if ($Rollback) {
     $rollback = Resolve-Path $Rollback
     Reset-Markers
+    Assert-NoMarkers @('postinstallFail')
     Write-Host "Installing MSI with a failing postinstall: $rollback"
     $code = Invoke-Msiexec @('/i', "`"$rollback`"") './dist/rollback.log'
-    if ($code -eq 0) {
-        Write-Host "msiexec reported success although the postinstall script failed"
+    if ($code -ne 1603) {
+        Write-Host "expected the failing postinstall to return MSI error 1603, got $code"
         Show-Log './dist/rollback.log'
         exit 1
     }
     Write-Host "msiexec failed as expected with exit code $code"
-    Assert-Markers @('preinstall')
+    Assert-Markers @('preinstall', 'postinstallFail')
+    $failureMarker = Get-Content -LiteralPath $markers.postinstallFail -Raw -Encoding UTF8
+    if ($failureMarker.Trim() -ne 'postinstall-fail-ran') { throw 'Unexpected failing postinstall marker contents' }
     if (Test-Path 'C:\Program Files\NfpmMsiRollback') { throw "install directory of the rolled-back product still exists" }
     if ((Get-InstalledProducts 'NfpmMsiRollback').Count -ne 0) { throw "the rolled-back product is registered" }
     Write-Host "Failed install rolled back cleanly"
+    Write-Host 'POSTINSTALL_FAILURE_EXECUTED_ROLLBACK_OK'
+    Reset-Markers
 }

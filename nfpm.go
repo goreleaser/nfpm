@@ -301,10 +301,14 @@ func (c *Config) expandEnvVars() {
 
 func (c *Config) expandMSI(cfg *MSI) {
 	// MSI specific
+	cfg.Arch = expandMSIValue(cfg.Arch, c.envMappingFunc)
 	cfg.Version = expandMSIValue(cfg.Version, c.envMappingFunc)
 	cfg.ProductName = expandMSIValue(cfg.ProductName, c.envMappingFunc)
 	cfg.Manufacturer = expandMSIValue(cfg.Manufacturer, c.envMappingFunc)
+	cfg.ProductCode = expandMSIValue(cfg.ProductCode, c.envMappingFunc)
+	cfg.UpgradeCode = expandMSIValue(cfg.UpgradeCode, c.envMappingFunc)
 	cfg.InstallDir = expandMSIValue(cfg.InstallDir, c.envMappingFunc)
+	cfg.Upgrade.DowngradeErrorMessage = expandMSIValue(cfg.Upgrade.DowngradeErrorMessage, c.envMappingFunc)
 	for k, v := range cfg.Properties {
 		cfg.Properties[k] = expandMSIValue(v, c.envMappingFunc)
 	}
@@ -312,13 +316,29 @@ func (c *Config) expandMSI(cfg *MSI) {
 		cfg.FileVersions[k] = expandMSIValue(v, c.envMappingFunc)
 	}
 	for i := range cfg.Shortcuts {
+		cfg.Shortcuts[i].Name = expandMSIValue(cfg.Shortcuts[i].Name, c.envMappingFunc)
+		cfg.Shortcuts[i].Target = expandMSIValue(cfg.Shortcuts[i].Target, c.envMappingFunc)
+		cfg.Shortcuts[i].Directory = expandMSIValue(cfg.Shortcuts[i].Directory, c.envMappingFunc)
 		cfg.Shortcuts[i].Arguments = expandMSIValue(cfg.Shortcuts[i].Arguments, c.envMappingFunc)
+		cfg.Shortcuts[i].Description = expandMSIValue(cfg.Shortcuts[i].Description, c.envMappingFunc)
+		cfg.Shortcuts[i].Icon = expandMSIValue(cfg.Shortcuts[i].Icon, c.envMappingFunc)
 	}
 	for i := range cfg.Services {
+		cfg.Services[i].Name = expandMSIValue(cfg.Services[i].Name, c.envMappingFunc)
+		cfg.Services[i].DisplayName = expandMSIValue(cfg.Services[i].DisplayName, c.envMappingFunc)
+		cfg.Services[i].Executable = expandMSIValue(cfg.Services[i].Executable, c.envMappingFunc)
+		cfg.Services[i].Description = expandMSIValue(cfg.Services[i].Description, c.envMappingFunc)
+		cfg.Services[i].StartType = expandMSIValue(cfg.Services[i].StartType, c.envMappingFunc)
 		cfg.Services[i].Account = expandMSIValue(cfg.Services[i].Account, c.envMappingFunc)
 		cfg.Services[i].Arguments = expandMSIValue(cfg.Services[i].Arguments, c.envMappingFunc)
+		for j := range cfg.Services[i].Dependencies {
+			cfg.Services[i].Dependencies[j] = expandMSIValue(cfg.Services[i].Dependencies[j], c.envMappingFunc)
+		}
 	}
 	for i := range cfg.Registry {
+		cfg.Registry[i].Root = expandMSIValue(cfg.Registry[i].Root, c.envMappingFunc)
+		cfg.Registry[i].Key = expandMSIValue(cfg.Registry[i].Key, c.envMappingFunc)
+		cfg.Registry[i].Name = expandMSIValue(cfg.Registry[i].Name, c.envMappingFunc)
 		cfg.Registry[i].Value = expandMSIValue(cfg.Registry[i].Value, c.envMappingFunc)
 	}
 	cfg.Signature.PFXFile = expandMSIValue(cfg.Signature.PFXFile, c.envMappingFunc)

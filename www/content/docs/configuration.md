@@ -830,8 +830,11 @@ msi:
   # properties nFPM derives from its own fields (ProductName, ProductVersion,
   # Manufacturer, ProductCode, UpgradeCode, ALLUSERS, ProductLanguage) cannot
   # be set here.
-  # MSI strings use $VAR/${VAR} environment expansion in both base settings
-  # and packager overrides. Use $$ for a literal dollar (e.g. "Cost $$5").
+  # MSI string values (including shortcut icons, GUIDs, service dependencies
+  # and registry keys) use $VAR/${VAR} environment expansion in both base
+  # settings and packager overrides. The map keys in properties and
+  # file_versions stay literal; only their values expand.
+  # Use $$ for a literal dollar (e.g. "Cost $$5").
   # MSI component-directory references such as "[$component]" are preserved
   # automatically; they are resolved by Windows Installer, not the build host.
   properties:
