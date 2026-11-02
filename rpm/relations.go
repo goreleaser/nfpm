@@ -36,5 +36,13 @@ func applyRelations(b rpm.PackageBuilder, info *nfpm.Info) error {
 			Done()
 	}
 
+	interpreters, err := scriptRequires(info)
+	if err != nil {
+		return err
+	}
+	for _, interpreter := range interpreters {
+		b.Requires().With(interpreter, "", rpmSenseFindRequires).Done()
+	}
+
 	return nil
 }

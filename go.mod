@@ -14,8 +14,8 @@ require (
 	github.com/goreleaser/chglog v0.7.4
 	github.com/goreleaser/fileglob v1.4.1
 	github.com/invopop/jsonschema v0.14.0
-	github.com/klauspost/compress v1.20.1
-	github.com/klauspost/pgzip v1.2.7
+	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/pgzip v1.3.0
 	github.com/sassoftware/go-rpmutils v0.4.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
@@ -23,7 +23,7 @@ require (
 	go.digitalxero.dev/go-msi v0.5.5
 	go.digitalxero.dev/go-msix v1.0.1
 	go.digitalxero.dev/rpm v0.3.4
-	go.yaml.in/yaml/v3 v3.0.5
+	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/sys v0.49.0
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
