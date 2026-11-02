@@ -22,7 +22,7 @@ require (
 	github.com/ulikunitz/xz v0.5.17
 	go.digitalxero.dev/go-msix v1.0.1
 	go.digitalxero.dev/rpm v0.3.4
-	go.yaml.in/yaml/v3 v3.0.5
+	go.yaml.in/yaml/v3 v3.0.6
 )
 
 require (
