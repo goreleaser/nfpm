@@ -187,8 +187,11 @@ func TestSRPMGenerateSpecFileDirectives(t *testing.T) {
 }
 
 func TestSRPMGenerateSpecScriptRequires(t *testing.T) {
-	script := filepath.Join(t.TempDir(), "script")
+	dir := t.TempDir()
+	script := filepath.Join(dir, "script")
 	require.NoError(t, os.WriteFile(script, []byte("#!/bin/bash\necho\n"), 0o644))
+	example := filepath.Join(dir, "example.py")
+	require.NoError(t, os.WriteFile(example, []byte("#!/usr/bin/python3\nprint()\n"), 0o644))
 	info := nfpm.WithDefaults(&nfpm.Info{
 		Name:        "scripttest",
 		Arch:        "amd64",
@@ -196,12 +199,19 @@ func TestSRPMGenerateSpecScriptRequires(t *testing.T) {
 		Description: "script requires coverage",
 		Maintainer:  "maintainer",
 		Overridables: nfpm.Overridables{
-			Contents: []*files.Content{{
-				Source:      script,
-				Destination: "/usr/bin/script",
-				FileInfo:    &files.ContentFileInfo{Mode: 0o755},
-			}},
-			RPM: nfpm.RPM{ScriptRequires: true},
+			Contents: []*files.Content{
+				{
+					Source:      script,
+					Destination: "/usr/bin/script",
+					FileInfo:    &files.ContentFileInfo{Mode: 0o755},
+				},
+				{
+					Source:      example,
+					Destination: "/usr/share/doc/scripttest/example.py",
+					FileInfo:    &files.ContentFileInfo{Mode: 0o755},
+				},
+			},
+			RPM: nfpm.RPM{ScriptRequires: true, DocDirs: []string{"/usr/share/doc"}},
 		},
 	})
 	info = setDefaults(info)
@@ -213,6 +223,7 @@ func TestSRPMGenerateSpecScriptRequires(t *testing.T) {
 	// AutoReqProv is off, so the rebuild only keeps the explicit requires.
 	require.Contains(t, spec, "AutoReqProv: no\n")
 	require.Contains(t, spec, "Requires: /bin/bash\n")
+	require.NotContains(t, spec, "/usr/bin/python3")
 }
 
 func TestSRPMGenerateSpecLang(t *testing.T) {

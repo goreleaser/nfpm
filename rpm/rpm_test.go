@@ -198,24 +198,25 @@ func TestRPMPostRequires(t *testing.T) {
 func TestRPMScriptRequires(t *testing.T) {
 	dir := t.TempDir()
 	contents := func() files.Contents {
-		script := func(name, body, fileType string, mode os.FileMode) *files.Content {
-			path := filepath.Join(dir, name)
+		script := func(dest, body, fileType string, mode os.FileMode) *files.Content {
+			path := filepath.Join(dir, filepath.Base(dest))
 			require.NoError(t, os.WriteFile(path, []byte(body), 0o644))
 			return &files.Content{
 				Source:      path,
-				Destination: "/usr/libexec/foo/" + name,
+				Destination: dest,
 				Type:        fileType,
 				FileInfo:    &files.ContentFileInfo{Mode: mode},
 			}
 		}
 		return files.Contents{
-			script("expect", "#!/usr/bin/expect -f\nsend hi\n", files.TypeFile, 0o755),
-			script("env", "#!/usr/bin/env /bin/bash -x\necho\n", files.TypeFile, 0o750),
-			script("python", "#!/usr/bin/env python3\nprint()\n", files.TypeFile, 0o755),
-			script("config", "#! /bin/ksh\r\necho\r\n", files.TypeConfig, 0o755),
-			script("perl", "#!/usr/bin/perl\n", files.TypeFile, 0o644),
-			script("doc", "#!/bin/dash\necho\n", files.TypeRPMDoc, 0o755),
-			script("text", "/bin/false\n", files.TypeFile, 0o755),
+			script("/usr/libexec/foo/expect", "#!/usr/bin/expect -f\nsend hi\n", files.TypeFile, 0o755),
+			script("/usr/libexec/foo/env", "#!/usr/bin/env /bin/bash -x\necho\n", files.TypeFile, 0o750),
+			script("/usr/libexec/foo/python", "#!/usr/bin/env python3\nprint()\n", files.TypeFile, 0o755),
+			script("/usr/libexec/foo/config", "#! /bin/ksh\r\necho\r\n", files.TypeConfig, 0o755),
+			script("/usr/libexec/foo/perl", "#!/usr/bin/perl\n", files.TypeFile, 0o644),
+			script("/usr/libexec/foo/doc", "#!/bin/dash\necho\n", files.TypeRPMDoc, 0o755),
+			script("/usr/libexec/foo/text", "/bin/false\n", files.TypeFile, 0o755),
+			script("/usr/share/doc/foo/example", "#!/usr/bin/zsh\necho\n", files.TypeFile, 0o755),
 		}
 	}
 
@@ -223,13 +224,14 @@ func TestRPMScriptRequires(t *testing.T) {
 		enabled  bool
 		expected []string
 	}{
-		"enabled":  {true, []string{"/bin/bash", "/bin/ksh", "/usr/bin/env", "/usr/bin/expect"}},
+		"enabled":  {true, []string{"/bin/bash", "/bin/dash", "/bin/ksh", "/usr/bin/env", "/usr/bin/expect"}},
 		"disabled": {false, nil},
 	} {
 		t.Run(name, func(t *testing.T) {
 			info := exampleInfo()
 			info.Contents = contents()
 			info.RPM.ScriptRequires = tc.enabled
+			info.RPM.DocDirs = []string{"/usr/share/doc"}
 
 			var buf bytes.Buffer
 			require.NoError(t, DefaultRPM.Package(info, &buf))
