@@ -409,7 +409,8 @@ rpm:
   # Require the interpreter of each executable script in the package, read
   # from its #! line: `#!/bin/bash` adds `Requires: /bin/bash`, and
   # `#!/usr/bin/env /usr/bin/python3` adds `/usr/bin/env` and
-  # `/usr/bin/python3`. Documentation files are skipped.
+  # `/usr/bin/python3`. Paths containing /usr/share/doc are skipped, whatever
+  # the file type. rpmbuild does the same.
   # Default is false.
   script_requires: true
 
