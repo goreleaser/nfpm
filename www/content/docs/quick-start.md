@@ -47,9 +47,46 @@ Use [`nfpm package`](/docs/cmd/nfpm_package) to create your packages:
 nfpm pkg --packager deb --target /tmp/
 nfpm pkg --packager rpm --target /tmp/
 nfpm pkg --packager apk --target /tmp/
+nfpm pkg --packager xbps --target /tmp/
 ```
 
 You can also use `ipk`, `archlinux`, and `msix` as packagers.
+
+### Verify an XBPS package on Void Linux
+
+nFPM generates XBPS packages natively. Compatibility is tested primarily against
+Void Linux; other XBPS-based environments may also work, but they are secondary
+targets.
+
+In a disposable Void environment, a local repository smoke check can use the
+standard XBPS tooling:
+
+```sh
+repo="$(mktemp -d)"
+nfpm pkg --packager xbps --target "$repo/"
+xbps-rindex -a "$repo"/*.xbps
+xbps-install -i -R "$repo" -y foo
+xbps-query -p pkgver foo
+xbps-remove -y foo
+```
+
+`-i` only tells `xbps-install` to ignore the repositories configured in
+`xbps.d`, so the test uses the local repository alone. Packages installed from
+a local (file path) repository are verified by SHA-256 hash; XBPS verifies RSA
+signatures only for remote (`http`, `https`, `ftp`) repositories.
+
+When `xbps.signature.key_file` is configured, nFPM writes an adjacent
+`<package>.xbps.sig2` sidecar, equivalent to running `xbps-rindex --sign-pkg`
+with the same key. To serve a signed repository, sign its index with that same
+key after adding the packages:
+
+```sh
+xbps-rindex -a "$repo"/*.xbps
+xbps-rindex --privkey key.pem --signedby "Your Name <you@example.com>" --sign "$repo"
+```
+
+nFPM does not create or sign repository metadata, publish repositories, or
+run `xbps-rindex` for you.
 
 {{% /steps %}}
 
