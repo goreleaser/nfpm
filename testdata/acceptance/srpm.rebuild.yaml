@@ -41,7 +41,14 @@ contents:
       mode: 0755
 scripts:
   postinstall: ./testdata/scripts/srpm-rebuild-postinstall.sh
+  preremove: ./testdata/scripts/srpm-rebuild-preremove.sh
 rpm:
   group: "Application/Misc"
   summary: "foo summary"
   script_requires: true
+  scripts:
+    pretrans: ./testdata/acceptance/scripts/rpm_interpreter_pretrans.lua
+  interpreters:
+    postinstall: /bin/bash
+    pretrans: <lua>
+    preremove: '/opt/foo/"sh"\bin'

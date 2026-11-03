@@ -3,6 +3,7 @@ package rpm
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/goreleaser/nfpm/v2"
 	"go.digitalxero.dev/rpm"
@@ -61,6 +62,61 @@ func readScripts(info *nfpm.Info) (scriptBodies, error) {
 	return s, nil
 }
 
+const (
+	defaultInterpreter = "/bin/sh"
+	luaInterpreter     = "<lua>"
+)
+
+type scriptlet struct {
+	section     string
+	body        string
+	interpreter string
+	sense       rpm.Sense
+	builder     func(rpm.PackageBuilder) rpm.ScriptletBuilder
+}
+
+// scriptlets pairs every script body with its interpreter, in the order of the
+// generated spec.
+func (s scriptBodies) scriptlets(in nfpm.RPMInterpreters) ([]scriptlet, error) {
+	scriptlets := []scriptlet{
+		{"pre", s.preIn, in.PreInstall, rpm.SenseScriptPre, rpm.PackageBuilder.Prein},
+		{"post", s.postIn, in.PostInstall, rpm.SenseScriptPost, rpm.PackageBuilder.Postin},
+		{"preun", s.preUn, in.PreRemove, rpm.SenseScriptPreUn, rpm.PackageBuilder.Preun},
+		{"postun", s.postUn, in.PostRemove, rpm.SenseScriptPostUn, rpm.PackageBuilder.Postun},
+		{"pretrans", s.preTrans, in.PreTrans, rpm.SensePreTrans, rpm.PackageBuilder.Pretrans},
+		{"posttrans", s.postTrans, in.PostTrans, rpm.SensePostTrans, rpm.PackageBuilder.Posttrans},
+		{"verifyscript", s.verify, in.Verify, rpm.SenseScriptVerify, rpm.PackageBuilder.VerifyScript},
+	}
+	for i, sc := range scriptlets {
+		if sc.interpreter == "" {
+			scriptlets[i].interpreter = defaultInterpreter
+			continue
+		}
+		if err := checkInterpreter(sc.interpreter); err != nil {
+			return nil, fmt.Errorf("invalid %%%s interpreter: %w", sc.section, err)
+		}
+		if sc.body == "" {
+			return nil, fmt.Errorf("invalid %%%s interpreter: %q is set without a script", sc.section, sc.interpreter)
+		}
+	}
+	return scriptlets, nil
+}
+
+// checkInterpreter rejects the interpreters that rpmbuild would refuse in a
+// "-p" option, so that the generated SRPM can always be rebuilt.
+func checkInterpreter(interpreter string) error {
+	if interpreter == luaInterpreter {
+		return nil
+	}
+	if !strings.HasPrefix(interpreter, "/") {
+		return fmt.Errorf("%q must be an absolute path or %s", interpreter, luaInterpreter)
+	}
+	if strings.ContainsAny(interpreter, " \t\n\v\f\r") {
+		return fmt.Errorf("%q must not contain whitespace, interpreter arguments are not supported", interpreter)
+	}
+	return nil
+}
+
 // applyScripts attaches the configured lifecycle scripts to the package builder.
 func applyScripts(b rpm.PackageBuilder, info *nfpm.Info) error {
 	s, err := readScripts(info)
@@ -68,26 +124,21 @@ func applyScripts(b rpm.PackageBuilder, info *nfpm.Info) error {
 		return err
 	}
 
-	if s.preTrans != "" {
-		b.Pretrans().WithScript(s.preTrans).Done()
+	scriptlets, err := s.scriptlets(info.RPM.Interpreters)
+	if err != nil {
+		return err
 	}
-	if s.preIn != "" {
-		b.Prein().WithScript(s.preIn).Done()
-	}
-	if s.preUn != "" {
-		b.Preun().WithScript(s.preUn).Done()
-	}
-	if s.postIn != "" {
-		b.Postin().WithScript(s.postIn).Done()
-	}
-	if s.postUn != "" {
-		b.Postun().WithScript(s.postUn).Done()
-	}
-	if s.postTrans != "" {
-		b.Posttrans().WithScript(s.postTrans).Done()
-	}
-	if s.verify != "" {
-		b.VerifyScript().WithScript(s.verify).Done()
+	for _, sc := range scriptlets {
+		if sc.body == "" {
+			continue
+		}
+		sc.builder(b).WithScript(sc.body).WithInterpreter(sc.interpreter).Done()
+
+		// Require the interpreter so that it is installed before the scriptlet
+		// runs.
+		if strings.HasPrefix(sc.interpreter, "/") {
+			b.Requires().With(sc.interpreter, "", sc.sense|rpm.SenseInterp).Done()
+		}
 	}
 	return nil
 }
