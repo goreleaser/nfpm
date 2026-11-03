@@ -198,24 +198,25 @@ func TestRPMPostRequires(t *testing.T) {
 func TestRPMScriptRequires(t *testing.T) {
 	dir := t.TempDir()
 	contents := func() files.Contents {
-		script := func(name, body, fileType string, mode os.FileMode) *files.Content {
-			path := filepath.Join(dir, name)
+		script := func(dest, body, fileType string, mode os.FileMode) *files.Content {
+			path := filepath.Join(dir, filepath.Base(dest))
 			require.NoError(t, os.WriteFile(path, []byte(body), 0o644))
 			return &files.Content{
 				Source:      path,
-				Destination: "/usr/libexec/foo/" + name,
+				Destination: dest,
 				Type:        fileType,
 				FileInfo:    &files.ContentFileInfo{Mode: mode},
 			}
 		}
 		return files.Contents{
-			script("expect", "#!/usr/bin/expect -f\nsend hi\n", files.TypeFile, 0o755),
-			script("env", "#!/usr/bin/env /bin/bash -x\necho\n", files.TypeFile, 0o750),
-			script("python", "#!/usr/bin/env python3\nprint()\n", files.TypeFile, 0o755),
-			script("config", "#! /bin/ksh\r\necho\r\n", files.TypeConfig, 0o755),
-			script("perl", "#!/usr/bin/perl\n", files.TypeFile, 0o644),
-			script("doc", "#!/bin/dash\necho\n", files.TypeRPMDoc, 0o755),
-			script("text", "/bin/false\n", files.TypeFile, 0o755),
+			script("/usr/libexec/foo/expect", "#!/usr/bin/expect -f\nsend hi\n", files.TypeFile, 0o755),
+			script("/usr/libexec/foo/env", "#!/usr/bin/env /bin/bash -x\necho\n", files.TypeFile, 0o750),
+			script("/usr/libexec/foo/python", "#!/usr/bin/env python3\nprint()\n", files.TypeFile, 0o755),
+			script("/usr/libexec/foo/config", "#! /bin/ksh\r\necho\r\n", files.TypeConfig, 0o755),
+			script("/usr/libexec/foo/perl", "#!/usr/bin/perl\n", files.TypeFile, 0o644),
+			script("/usr/libexec/foo/doc", "#!/bin/dash\necho\n", files.TypeRPMDoc, 0o755),
+			script("/usr/libexec/foo/text", "/bin/false\n", files.TypeFile, 0o755),
+			script("/usr/share/doc/foo/example", "#!/usr/bin/zsh\necho\n", files.TypeFile, 0o755),
 		}
 	}
 
@@ -223,13 +224,14 @@ func TestRPMScriptRequires(t *testing.T) {
 		enabled  bool
 		expected []string
 	}{
-		"enabled":  {true, []string{"/bin/bash", "/bin/ksh", "/usr/bin/env", "/usr/bin/expect"}},
+		"enabled":  {true, []string{"/bin/bash", "/bin/dash", "/bin/ksh", "/usr/bin/env", "/usr/bin/expect"}},
 		"disabled": {false, nil},
 	} {
 		t.Run(name, func(t *testing.T) {
 			info := exampleInfo()
 			info.Contents = contents()
 			info.RPM.ScriptRequires = tc.enabled
+			info.RPM.DocDirs = []string{"/usr/share/doc"}
 
 			var buf bytes.Buffer
 			require.NoError(t, DefaultRPM.Package(info, &buf))
@@ -572,6 +574,79 @@ func TestRPMConfigTree(t *testing.T) {
 		require.NotZero(t, f.Flags()&rpmutils.RPMFILE_CONFIG, "%s should be a config file", f.Name())
 	}
 	require.True(t, sawFile, "expected at least one regular file in the tree")
+}
+
+func TestRPMDocDirs(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.DocDirs = []string{"/usr/share/doc", "opt/docs/"}
+	info.Contents = files.Contents{
+		{Source: "../testdata/fake", Destination: "/usr/share/doc/foo/README"},
+		{Source: "../testdata/fake", Destination: "/usr/share/doc/foo/sub/deep"},
+		{Source: "../testdata/whatever.conf", Destination: "/usr/share/doc/foo/foo.conf", Type: files.TypeConfig},
+		{Source: "README", Destination: "/usr/share/doc/foo/link", Type: files.TypeSymlink},
+		{Destination: "/usr/share/doc/foo/ghost", Type: files.TypeRPMGhost},
+		{Destination: "/usr/share/doc/foo", Type: files.TypeDir},
+		{Source: "../testdata/fake", Destination: "/usr/share/documentation/notes"},
+		{Source: "../testdata/fake", Destination: "/opt/docs/manual"},
+		{Source: "../testdata/fake", Destination: "/usr/bin/fake"},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(nfpm.WithDefaults(info), &buf))
+
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+	rpmFiles, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+
+	flags := map[string]int{}
+	for _, f := range rpmFiles {
+		flags[f.Name()] = f.Flags()
+	}
+	require.Equal(t, map[string]int{
+		"/usr/share/doc/foo/README":      rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo/sub/deep":    rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo/foo.conf":    rpmutils.RPMFILE_CONFIG | rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo/link":        rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo/ghost":       rpmutils.RPMFILE_GHOST | rpmutils.RPMFILE_DOC,
+		"/usr/share/doc/foo":             0,
+		"/usr/share/documentation/notes": 0,
+		"/opt/docs/manual":               rpmutils.RPMFILE_DOC,
+		"/usr/bin/fake":                  0,
+	}, flags)
+}
+
+func TestRPMRootDocDir(t *testing.T) {
+	info := exampleInfo()
+	info.RPM.DocDirs = []string{"/"}
+	info.Contents = files.Contents{
+		{Source: "../testdata/fake", Destination: "/usr/share/foo/README"},
+		{Source: "README", Destination: "/usr/share/foo/link", Type: files.TypeSymlink},
+		{Destination: "/usr/share/foo", Type: files.TypeDir},
+	}
+	info = nfpm.WithDefaults(info)
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultRPM.Package(info, &buf))
+	rpm, err := rpmutils.ReadRpm(&buf)
+	require.NoError(t, err)
+	rpmFiles, err := rpm.Header.GetFiles()
+	require.NoError(t, err)
+	flags := map[string]int{}
+	for _, f := range rpmFiles {
+		flags[f.Name()] = f.Flags()
+	}
+	require.Equal(t, map[string]int{
+		"/usr/share/foo/README": rpmutils.RPMFILE_DOC,
+		"/usr/share/foo/link":   rpmutils.RPMFILE_DOC,
+		"/usr/share/foo":        0,
+	}, flags)
+
+	spec, err := generateSpec(info, "foo-1.0.0.tar.gz")
+	require.NoError(t, err)
+	require.Regexp(t, `\n%doc %attr\(\d+, root, root\) "/usr/share/foo/README"\n`, spec)
+	require.Contains(t, spec, "\n%doc %attr(-, root, root) \"/usr/share/foo/link\"\n")
+	require.Contains(t, spec, "\n%dir %attr(0755, root, root) \"/usr/share/foo\"\n")
 }
 
 func TestRPMMandatoryFieldsOnly(t *testing.T) {
