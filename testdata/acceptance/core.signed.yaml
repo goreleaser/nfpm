@@ -19,3 +19,6 @@ rpm:
 apk:
   signature:
     key_file: ./internal/sign/testdata/rsa_unprotected.priv
+archlinux:
+  signature:
+    key_file: ./internal/sign/testdata/privkey_unprotected.asc
