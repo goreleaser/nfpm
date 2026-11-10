@@ -47,7 +47,7 @@ tasks:
   acceptance:windows:install:
     desc: Install packages built with package
     cmds:
-      - docker run --rm --workdir /tmp -v $PWD/dist:/tmp fedora rpm -ivh foo.rpm
+      - docker run --rm --workdir /tmp -v $PWD/dist:/tmp fedora rpm --nosignature -ivh foo.rpm
       - docker run --rm --workdir /tmp -v $PWD/dist:/tmp ubuntu dpkg -i foo.deb
       - docker run --rm --workdir /tmp -v $PWD/dist:/tmp archlinux pacman --noconfirm -U foo.pkg.tar.zst
       - docker run --rm --workdir /tmp -v $PWD/dist:/tmp alpine apk add --allow-untrusted foo.apk

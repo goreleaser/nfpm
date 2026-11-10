@@ -41,7 +41,7 @@ RUN rpm -qp --scripts /tmp/foo.rpm | grep -F '${host%%.*}'
 RUN rpm -qp --qf '[%{FILECOLORS} %{FILENAMES}\n]' /tmp/foo.rpm | grep -Fx '2 /usr/lib/foo/elf64'
 
 # Install it and verify the payload landed on disk.
-RUN rpm -ivh /tmp/foo.rpm
+RUN rpm --nosignature -ivh /tmp/foo.rpm
 RUN test -f /usr/bin/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /var/log/whatever
