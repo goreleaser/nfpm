@@ -1,0 +1,17 @@
+name: "foo"
+arch: "all"
+platform: "linux"
+version: "v1.2.3"
+release: "1"
+maintainer: "Foo Bar"
+description: |
+  Foo bar
+  Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/fake
+    dst: /usr/bin/fake
+xbps:
+  short_desc: "XBPS noarch package"

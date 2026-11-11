@@ -1,0 +1,34 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+release: "1"
+maintainer: "Foo Bar"
+description: |
+  Foo bar
+  Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+depends:
+  # A bare name (with an internal hyphen) and a native version pattern; both
+  # are satisfied by packages present in the Void base image.
+  - ca-certificates
+  - zlib>=1.0_1
+contents:
+  - src: ./testdata/fake
+    dst: /usr/bin/fake
+  - src: ./testdata/whatever.conf
+    dst: /etc/foo/whatever.conf
+    type: config
+  - dst: /var/lib/foo
+    type: dir
+    file_info:
+      mode: 0750
+scripts:
+  preinstall: ./testdata/acceptance/scripts/preinstall.sh
+  postinstall: ./testdata/acceptance/scripts/xbps/postinstall.sh
+  preremove: ./testdata/acceptance/scripts/preremove.sh
+  postremove: ./testdata/acceptance/scripts/postremove.sh
+xbps:
+  short_desc: "XBPS lifecycle package"
