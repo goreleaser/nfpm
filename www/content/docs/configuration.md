@@ -409,9 +409,19 @@ rpm:
   # Require the interpreter of each executable script in the package, read
   # from its #! line: `#!/bin/bash` adds `Requires: /bin/bash`, and
   # `#!/usr/bin/env /usr/bin/python3` adds `/usr/bin/env` and
-  # `/usr/bin/python3`. Documentation files are skipped.
+  # `/usr/bin/python3`. Paths containing /usr/share/doc are skipped, whatever
+  # the file type. rpmbuild does the same.
   # Default is false.
   script_requires: true
+
+  # Files below these directories are flagged as documentation (%doc).
+  # Directories themselves are not. Documentation is skipped when installing
+  # with --excludedocs, except for the files with type license, which RPM
+  # always installs.
+  # Default is empty: only the files with type doc are documentation.
+  doc_dirs:
+    - /usr/share/doc
+    - /usr/share/man
 
   # The package is signed if a key_file is set
   signature:
