@@ -6,7 +6,7 @@ COPY ${package} /tmp/foo.rpm
 
 # ---- minimal test ----
 FROM test_base AS min
-RUN rpm -ivh /tmp/foo.rpm
+RUN rpm --nosignature -ivh /tmp/foo.rpm
 
 
 # ---- symlink test ----
@@ -36,7 +36,7 @@ RUN test -f /usr/share/whatever/folder2/file2
 
 # ---- complex test ----
 FROM test_base AS complex
-RUN rpm --prefix=/opt -ivh /tmp/foo.rpm
+RUN rpm --nosignature --prefix=/opt -ivh /tmp/foo.rpm
 RUN test "$(rpm -qp --recommends /tmp/foo.rpm)" = "fish"
 RUN test "$(rpm -qp --suggests /tmp/foo.rpm)" = "zsh"
 # The package declares a single explicit dependency (bash); the remaining
@@ -165,7 +165,7 @@ FROM test_base AS upgrade
 ARG oldpackage
 RUN echo "${oldpackage}"
 COPY ${oldpackage} /tmp/old_foo.rpm
-RUN rpm -ivh /tmp/old_foo.rpm
+RUN rpm --nosignature -ivh /tmp/old_foo.rpm
 
 RUN test -f /tmp/preinstall-proof
 RUN cat /tmp/preinstall-proof | grep "Install"
@@ -176,7 +176,7 @@ RUN cat /tmp/postinstall-proof | grep "Install"
 RUN echo modified > /etc/regular.conf
 RUN echo modified > /etc/noreplace.conf
 
-RUN rpm -ivh /tmp/foo.rpm --upgrade
+RUN rpm --nosignature -ivh /tmp/foo.rpm --upgrade
 
 RUN test -f /tmp/preremove-proof
 RUN cat /tmp/preremove-proof | grep "Upgrade"
@@ -210,7 +210,7 @@ RUN test ! -f /usr/bin/fake
 # ---- directories test ----
 FROM test_base AS directories
 RUN groupadd test
-RUN rpm -ivh /tmp/foo.rpm
+RUN rpm --nosignature -ivh /tmp/foo.rpm
 RUN test -f /etc/foo/file
 RUN test -f /etc/bar/file
 RUN test -d /etc/bar

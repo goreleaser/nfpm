@@ -2,6 +2,8 @@ package main
 
 import "fmt"
 
+var message = "nfpm-msix-test-ok"
+
 func main() {
-	fmt.Println("nfpm-msix-test-ok")
+	fmt.Println(message)
 }
