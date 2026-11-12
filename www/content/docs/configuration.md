@@ -166,6 +166,9 @@ conflicts:
 
 # Contents to add to the package
 # This can be binaries or any other files.
+# Arch Linux packages reserve /.PKGINFO, /.BUILDINFO, /.MTREE, /.INSTALL,
+# and /.CHANGELOG; contents at these paths cause packaging to fail.
+# Use the scripts configuration for lifecycle scripts.
 contents:
   # Basic file that applies to all packagers
   - src: path/to/local/foo

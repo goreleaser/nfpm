@@ -176,6 +176,11 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 	for _, content := range info.Contents {
 		content.Destination = files.AsRelativePath(content.Destination)
 
+		switch strings.TrimSuffix(content.Destination, "/") {
+		case ".PKGINFO", ".BUILDINFO", ".MTREE", ".INSTALL", ".CHANGELOG":
+			return nil, 0, fmt.Errorf("reserved archlinux metadata path: %q", content.Destination)
+		}
+
 		switch content.Type {
 		case files.TypeDir, files.TypeImplicitDir:
 			entries = append(entries, MtreeEntry{

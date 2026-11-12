@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -127,6 +128,69 @@ func TestArchNoFiles(t *testing.T) {
 	info.ArchLinux = nfpm.ArchLinux{}
 	err := Default.Package(info, io.Discard)
 	require.NoError(t, err)
+}
+
+func TestArchReservedPaths(t *testing.T) {
+	for _, tt := range []struct {
+		destination string
+		contentType string
+	}{
+		{"/.PKGINFO", files.TypeFile},
+		{"/.BUILDINFO", files.TypeFile},
+		{"/.MTREE", files.TypeFile},
+		{"/.INSTALL", files.TypeFile},
+		{"/.CHANGELOG", files.TypeFile},
+		{"/.INSTALL", files.TypeSymlink},
+		{"/.INSTALL/", files.TypeDir},
+		{"/.INSTALL/payload", files.TypeFile},
+		{".INSTALL", files.TypeFile},
+		{"./.INSTALL", files.TypeFile},
+		{"/usr/../.INSTALL", files.TypeFile},
+		{"//.INSTALL", files.TypeFile},
+	} {
+		t.Run(tt.destination+"/"+tt.contentType, func(t *testing.T) {
+			info := exampleInfo()
+			info.Contents = files.Contents{{
+				Source:      "../testdata/fake",
+				Destination: tt.destination,
+				Type:        tt.contentType,
+			}}
+			info.Scripts = nfpm.Scripts{}
+			info.ArchLinux = nfpm.ArchLinux{}
+
+			err := Default.Package(info, io.Discard)
+			require.ErrorContains(t, err, "reserved archlinux metadata path")
+		})
+	}
+}
+
+func TestArchReservedTreePaths(t *testing.T) {
+	for _, name := range []string{".PKGINFO", ".BUILDINFO", ".MTREE", ".INSTALL", ".CHANGELOG"} {
+		t.Run(name, func(t *testing.T) {
+			source := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(source, name), []byte("payload"), 0o644))
+
+			for _, destination := range []string{"/", "/opt/app"} {
+				t.Run(destination, func(t *testing.T) {
+					info := exampleInfo()
+					info.Contents = files.Contents{{
+						Source:      source,
+						Destination: destination,
+						Type:        files.TypeTree,
+					}}
+					info.Scripts = nfpm.Scripts{}
+					info.ArchLinux = nfpm.ArchLinux{}
+
+					err := Default.Package(info, io.Discard)
+					if destination == "/" {
+						require.ErrorContains(t, err, "reserved archlinux metadata path")
+						return
+					}
+					require.NoError(t, err)
+				})
+			}
+		})
+	}
 }
 
 func TestArchNoInfo(t *testing.T) {
