@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   sponsors:
@@ -18,7 +18,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SPONSORS_TOKEN }}
       - run: npx @goreleaser/sponsors apply sponsors.json gh://goreleaser/.github/sponsors.tpl.md README.md
       - run: npx @goreleaser/sponsors apply sponsors.json .github/templates/sponsors.tpl.md www/content/docs/sponsors.md
-      - uses: stefanzweifel/git-auto-commit-action@v7
+      - name: Create repository token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: repository-token
         with:
-          commit_message: "chore: update sponsors"
-          file_pattern: "README.md www/content/docs/sponsors.md"
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8 # v8.1.2
+        with:
+          token: ${{ steps.repository-token.outputs.token }}
+          branch: auto-update-sponsors
+          base: main
+          delete-branch: true
+          title: "chore: update sponsors"
+          commit-message: "chore: update sponsors"
+          author: goreleaserbot <bot@goreleaser.com>
+          committer: goreleaserbot <bot@goreleaser.com>
+          add-paths: |
+            README.md
+            www/content/docs/sponsors.md

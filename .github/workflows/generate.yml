@@ -20,9 +20,11 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
@@ -36,7 +38,22 @@ jobs:
       - run: task docs:generate
       - run: task schema:generate
       - run: task schema:validate
-      - uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+      - name: Create repository token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: repository-token
         with:
-          commit_message: "docs: update cmd docs"
-          branch: main
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8 # v8.1.2
+        with:
+          token: ${{ steps.repository-token.outputs.token }}
+          branch: auto-update-generated-files
+          base: main
+          delete-branch: true
+          title: "docs: update cmd docs"
+          commit-message: "docs: update cmd docs"
+          author: goreleaserbot <bot@goreleaser.com>
+          committer: goreleaserbot <bot@goreleaser.com>
+          add-paths: www/
