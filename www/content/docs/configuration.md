@@ -1100,10 +1100,11 @@ pkg:
   min_os_version: "13.0"
 
   # pkg signing configuration.
-  # Uses a PKCS#12 file (not PGP like Linux packagers). To be accepted by
-  # Gatekeeper the certificate must be an Apple "Developer ID Installer"
-  # certificate, and the signed package still has to be notarized with
-  # Apple's tools. nFPM does not notarize.
+  # Uses a PKCS#12 file (not PGP like Linux packagers). The certificate must
+  # be an Apple "Developer ID Installer" certificate: macOS refuses to install
+  # a package signed with a certificate it does not trust, while an unsigned
+  # package installs. To pass Gatekeeper the signed package still has to be
+  # notarized with Apple's tools. nFPM does not notarize.
   signature:
     # Path to the PKCS#12 (.p12) file with the certificate and its private key.
     p12_file: installer.p12

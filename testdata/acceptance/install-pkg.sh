@@ -169,14 +169,16 @@ grep -q "Status: signed by untrusted certificate" <<<"$untrusted" ||
   fail "unexpected status for the package signed with the throwaway certificate: $untrusted"
 # Prove the signature was made with the throwaway identity and no other.
 expect "signing certificate" "$(leaf_fingerprint <<<"$untrusted")" "$(certificate_fingerprint dist/test.crt)"
-sudo installer -allowUntrusted -pkg dist/nfpm-pkg-test-signed.pkg -target /
-expect "signed package program output" "$("$bin-signed")" "nfpm-pkg-v1-test-ok"
-expect "signed package receipt count" "$(receipts "$id.signed")" "1"
+# Documented behavior: macOS reads the signature and refuses to install a
+# package signed with a certificate it does not trust.
+if sudo installer -pkg dist/nfpm-pkg-test-signed.pkg -target /; then
+  fail "the installer accepted a package signed with an untrusted certificate"
+fi
+[ ! -e "$bin-signed" ] || fail "payload of the untrusted package was installed"
+expect "receipt count of the untrusted package" "$(receipts "$id.signed")" "0"
 
 echo "== signature: Developer ID Installer"
 if developer_id; then
-  sudo rm -f "$bin-signed"
-  sudo pkgutil --forget "$id.signed" >/dev/null
   package=dist/developer-id/nfpm-pkg-test-signed.pkg
   # The system trust stack verifies the signature and the chain up to Apple.
   trusted="$(pkgutil --check-signature "$package")" || fail "macOS rejects the Developer ID signature made by nfpm: $trusted"
