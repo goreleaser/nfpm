@@ -13,7 +13,7 @@ layout: hextra-home
 
 <div class="hx:mb-12">
 {{< hextra/hero-subtitle >}}
-  A simple deb, rpm, apk, ipk, arch linux, msi, and msix packager written in Go.
+  A simple deb, rpm, apk, ipk, arch linux, msi, msix, and macOS (app, dmg, pkg) packager written in Go.
 {{< /hextra/hero-subtitle >}}
 </div>
 
@@ -30,7 +30,7 @@ layout: hextra-home
   >}}
   {{< hextra/feature-card
     title="Multiple Formats"
-    subtitle="Create deb, rpm, apk, ipk, arch linux, msi, and msix packages."
+    subtitle="Create deb, rpm, apk, ipk, arch linux, msi, msix, and macOS app, dmg, and pkg packages."
     icon="collection"
   >}}
   {{< hextra/feature-card

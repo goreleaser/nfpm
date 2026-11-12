@@ -349,6 +349,10 @@ umask: 0o002
 # non-zero exit rolls back the installer transaction (including on uninstall,
 # so a failing preremove/postremove leaves the product installed until the
 # script is fixed). See the `msi` section for details.
+#
+# For macOS pkg packages only preinstall and postinstall exist: macOS has no
+# package removal, so preremove and postremove are ignored with a warning. See
+# the `pkg` section for details. The app and dmg packagers run no scripts.
 scripts:
   preinstall: ./scripts/preinstall.sh
   postinstall: ./scripts/postinstall.sh
@@ -943,6 +947,172 @@ msi:
     timestamp_url: "http://timestamp.digicert.com"
     # The passphrase is taken from the environment variable
     # $NFPM_MSI_PASSPHRASE with a fallback to $NFPM_PASSPHRASE.
+
+# Custom configuration applied to the app and dmg packagers (macOS).
+#
+# Both build the same application bundle. The app packager delivers it as a
+# zip archive (`.app.zip`), the dmg packager in a disk image (`.dmg`) next to a
+# link to the Applications folder. They are still two packagers: use the
+# contents `packager` field or `overrides` to give one of them something the
+# other does not get.
+#
+# The bundle is built from the shared fields:
+# - `contents` are the files of the bundle, and their destinations are paths
+#   inside it, starting with /Contents/: /Contents/MacOS for programs,
+#   /Contents/Resources for everything else. Any other destination is an
+#   error. Symbolic links and `type: dir` entries are supported; owners and
+#   groups are not recorded.
+# - Info.plist and PkgInfo are generated and cannot be supplied.
+# - `version` is shown to the user in full, prerelease included
+#   (CFBundleShortVersionString). Its numeric part, which must be one to three
+#   numbers, is the build version macOS compares (CFBundleVersion).
+#
+# The main executable is /Contents/MacOS/<executable>. It must be among the
+# contents, be executable, and, when it is a Mach-O binary, be built for the
+# package architecture: a `universal` package needs a universal binary.
+#
+# What an application bundle does not have: install scripts and package
+# relationships. `scripts`, depends, recommends, suggests, conflicts, replaces
+# and provides are ignored with a warning.
+app:
+  # macOS architecture name that overrides "arch" without performing any
+  # replacements: arm64, x86_64 or universal.
+  arch: arm64
+
+  # Name of the bundle: the .app folder, the name macOS shows, and the volume
+  # name of the disk image. Defaults to the package name.
+  name: Foo
+
+  # Bundle identifier (CFBundleIdentifier). (required)
+  # macOS knows the application by it; keep it the same across releases. Use
+  # reverse-DNS notation with letters, digits, hyphens and periods.
+  # This will expand any env var you set in the field.
+  identifier: com.example.foo
+
+  # Name of the main executable in /Contents/MacOS. Defaults to the package
+  # name.
+  executable: foo
+
+  # The oldest macOS version the application launches on.
+  min_os_version: "13.0"
+
+  # Additional Info.plist keys. Values can be text, numbers, booleans, lists
+  # and maps, and env vars are expanded in every text value. The keys nFPM
+  # sets from the fields above (CFBundleName, CFBundleIdentifier,
+  # CFBundleExecutable, CFBundleShortVersionString, CFBundleVersion,
+  # LSMinimumSystemVersion, CFBundlePackageType and
+  # CFBundleInfoDictionaryVersion) cannot be set here.
+  info_plist:
+    # The icon is a regular contents entry, here /Contents/Resources/foo.icns.
+    CFBundleIconFile: foo
+    NSHighResolutionCapable: true
+
+  # Code signing configuration.
+  # Uses a PKCS#12 file (not PGP like Linux packagers). nFPM signs every
+  # program in the bundle and seals its other files; the dmg packager also
+  # signs the disk image with the same identity. A bundle that contains
+  # another bundle (a framework, a helper application) cannot be signed by
+  # nFPM and is an error when a signature is configured.
+  # To be accepted by Gatekeeper the certificate must be an Apple "Developer
+  # ID Application" certificate, and the result still has to be notarized
+  # with Apple's tools. nFPM does not notarize.
+  signature:
+    # Path to the PKCS#12 (.p12) file with the certificate and its private key.
+    p12_file: application.p12
+    # RFC3161 timestamp URL. Defaults to Apple's timestamp service, which
+    # notarization requires and which needs network access while packaging.
+    # Set to "none" to sign without a timestamp.
+    timestamp_url: none
+    # Entitlements property list embedded in the signature of the bundle's
+    # programs.
+    entitlements: foo.entitlements
+    # The passphrase is taken from the environment variable
+    # $NFPM_APP_PASSPHRASE with a fallback to $NFPM_PASSPHRASE, for both the
+    # app and the dmg packager.
+
+# Custom configuration applied only to the pkg packager (macOS).
+#
+# The pkg packager produces a macOS installer package: the `.pkg` file that
+# Installer.app and `installer -pkg` install. It is built from the shared
+# fields: `name` is the title shown by the installer, `version` (with its
+# prerelease, metadata and release) is the version macOS records, and
+# `contents` and the preinstall/postinstall `scripts` are installed and run.
+#
+# Destinations:
+# - macOS only lets a package install below /Applications, /Library, /Users,
+#   /opt, /private, /usr/local, /usr/libexec/cups and /usr/share/snmp. The rest
+#   of the system volume is read-only or protected, so any other destination
+#   (for example /usr/bin) is an error. Use the contents `packager` field or
+#   `overrides` to give macOS its own destinations.
+# - /etc, /var and /tmp are symbolic links on macOS; such destinations are
+#   stored as /private/etc, /private/var and /private/tmp.
+# - Destinations that differ only by letter case or Unicode normalization are
+#   an error: macOS volumes ignore both by default.
+# - Only the entries you list are installed. Parent directories are created
+#   when missing, and the installer leaves a directory that already exists
+#   exactly as it is, so installing into /usr/local/bin does not change
+#   /usr/local. Use `type: dir` to install a directory of your own with its
+#   mode and owner; a `type: dir` entry for one of the locations above or
+#   their parents is ignored.
+#
+# Owners and groups:
+# - A package records numeric IDs. Only accounts built in to macOS, such as
+#   root and daemon (owner) or wheel, staff and admin (group), are resolved by
+#   name, and the default group `root` means wheel. Any other owner or group
+#   must be given as a numeric ID, which cannot be larger than 65535.
+#
+# What macOS does not have:
+# - No package removal. There is no uninstall, so the preremove and postremove
+#   scripts are ignored with a warning.
+# - No version check. Installing a package over another with the same
+#   identifier is an upgrade whatever the two versions are: the files are
+#   replaced, files the new package no longer ships are removed, and the
+#   recorded version becomes the new one. An older package installs over a
+#   newer one just the same.
+# - No configuration file handling. `config` contents are installed as regular
+#   files and replaced on upgrade, with a warning.
+# - No package relationships. depends, recommends, suggests, conflicts,
+#   replaces and provides are ignored with a warning.
+#
+# Scripts are run directly by the installer, as root, and must start with an
+# interpreter line such as `#!/bin/sh`. The installer passes the package path,
+# the install location, the target volume and the system root as arguments,
+# not the `install`/`upgrade` arguments Linux package managers pass. A
+# non-zero exit from preinstall stops the installation before any file is
+# installed. A non-zero exit from postinstall also fails the installation,
+# but by then the files are in place and macOS leaves them there.
+pkg:
+  # macOS architecture name that overrides "arch" without performing any
+  # replacements: arm64, x86_64 or universal. The installer reads it to decide
+  # how to run: on Apple silicon an x86_64 package is installed through
+  # Rosetta, scripts included, while arm64 and universal packages install
+  # natively.
+  arch: arm64
+
+  # Package identifier. (required)
+  # macOS records the installation under this name. It must stay the same for
+  # every release: a release with a different identifier is a different
+  # package as far as macOS is concerned. Use reverse-DNS notation.
+  # This will expand any env var you set in the field.
+  identifier: com.example.foo
+
+  # The oldest macOS version the installer accepts.
+  min_os_version: "13.0"
+
+  # pkg signing configuration.
+  # Uses a PKCS#12 file (not PGP like Linux packagers). To be accepted by
+  # Gatekeeper the certificate must be an Apple "Developer ID Installer"
+  # certificate, and the signed package still has to be notarized with
+  # Apple's tools. nFPM does not notarize.
+  signature:
+    # Path to the PKCS#12 (.p12) file with the certificate and its private key.
+    p12_file: installer.p12
+    # RFC3161 timestamp URL. Defaults to Apple's timestamp service, which
+    # notarization requires and which needs network access while packaging.
+    # Set to "none" to sign without a timestamp.
+    timestamp_url: none
+    # The passphrase is taken from the environment variable
+    # $NFPM_PKG_PASSPHRASE with a fallback to $NFPM_PASSPHRASE.
 ```
 
 ## Templating
