@@ -22,15 +22,16 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: app-token
         with:
           client-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           permission-contents: write
+          permission-pull-requests: write
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          ref: main
       - name: Get GitHub App user ID
         id: app-user
         run: |
@@ -57,10 +58,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SPONSORS_TOKEN }}
       - run: npx @goreleaser/sponsors apply sponsors.json gh://goreleaser/.github/sponsors.tpl.md README.md
       - run: npx @goreleaser/sponsors apply sponsors.json .github/templates/sponsors.tpl.md www/content/docs/sponsors.md
-      - uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+      - uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8 # v8.1.2
         with:
-          commit_message: "chore: update generated files"
-          branch: main
-          commit_user_name: ${{ steps.app-token.outputs.app-slug }}[bot]
-          commit_user_email: ${{ steps.app-user.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com
-          commit_author: ${{ steps.app-token.outputs.app-slug }}[bot] <${{ steps.app-user.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
+          token: ${{ steps.app-token.outputs.token }}
+          branch: auto-update-generated-files
+          base: main
+          delete-branch: true
+          title: "chore: update generated files"
+          commit-message: "chore: update generated files"
+          author: ${{ steps.app-token.outputs.app-slug }}[bot] <${{ steps.app-user.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
+          committer: ${{ steps.app-token.outputs.app-slug }}[bot] <${{ steps.app-user.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
+          add-paths: |
+            README.md
+            www/
