@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/goreleaser/nfpm/v2"
@@ -83,8 +85,11 @@ func Build(info *nfpm.Info, packager string) (*Built, error) {
 	if info.App.MinOSVersion != "" {
 		builder = builder.WithMinimumSystemVersion(info.App.MinOSVersion)
 	}
-	for key, value := range info.App.InfoPlist {
-		builder = builder.WithInfoPlistValue(key, value)
+	// The keys are added in a fixed order. The property list encoder sorts
+	// them again, so this is not what makes the output reproducible, but
+	// nothing here should depend on how the library stores them.
+	for _, key := range slices.Sorted(maps.Keys(info.App.InfoPlist)) {
+		builder = builder.WithInfoPlistValue(key, info.App.InfoPlist[key])
 	}
 	for _, entry := range entries {
 		file := builder.File("Contents/" + entry.path).WithModTime(entry.content.ModTime())
