@@ -64,8 +64,8 @@ func TimestampURL(setting string) (url string, override bool) {
 }
 
 // WarnCertificateKind warns when the leaf of a signing chain is not of the
-// kind Gatekeeper requires. The package is still signed, which is enough for
-// testing, so this is not an error.
+// kind macOS requires. The result is still signed, which is what a test of
+// the signing itself needs, so this is not an error.
 func WarnCertificateKind(packager, path string, chain [][]byte, kind CertificateKind) {
 	if len(chain) == 0 {
 		return
@@ -80,6 +80,6 @@ func WarnCertificateKind(packager, path string, chain [][]byte, kind Certificate
 		}
 	}
 	log.Printf(
-		"warning: %s: the certificate in %s is not a %s certificate, so Gatekeeper will reject the result",
+		"warning: %s: the certificate in %s is not a %s certificate, so macOS will not accept the result",
 		packager, path, kind.Name)
 }
