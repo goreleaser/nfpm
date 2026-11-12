@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/goreleaser/nfpm/v2"
@@ -586,6 +587,56 @@ func TestReproducible(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(info.Contents[0].Source, []byte("#!/bin/sh\necho changed\n"), 0o644))
 	require.NotEqual(t, first, build(t, info), "changed content must change the bundle")
+}
+
+// Go visits a map in a different order every time. Additional Info.plist
+// keys, nested ones included, must still give the same bytes on every build.
+func TestReproducibleWithInfoPlistKeys(t *testing.T) {
+	info := exampleInfo(t)
+	info.App.InfoPlist = map[string]any{
+		"LSUIElement":               true,
+		"CFBundleIconFile":          "foo",
+		"NSHighResolutionCapable":   true,
+		"NSCameraUsageDescription":  "Scans codes",
+		"LSApplicationCategoryType": "public.app-category.developer-tools",
+		"NSHumanReadableCopyright":  "Copyright",
+		"ATSApplicationFontsPath":   "Fonts",
+		"ZZLast":                    int64(1),
+		"AAFirst":                   "first",
+		"CFBundleURLTypes": []any{
+			map[string]any{
+				"CFBundleURLName":    "foo",
+				"CFBundleURLSchemes": []any{"foo", "bar"},
+				"CFBundleTypeRole":   "Viewer",
+			},
+		},
+		"NSAppTransportSecurity": map[string]any{
+			"NSAllowsLocalNetworking": true,
+			"NSAllowsArbitraryLoads":  false,
+			"NSExceptionDomains":      map[string]any{"example.com": map[string]any{"b": true, "a": true}},
+		},
+	}
+
+	first := build(t, info)
+	for n := 0; n < 25; n++ {
+		require.Equal(t, first, build(t, info), "build %d differs", n)
+	}
+
+	// The keys are written in sorted order, at every level.
+	archive, err := zip.NewReader(bytes.NewReader(first), int64(len(first)))
+	require.NoError(t, err)
+	written := string(macostest.ReadFile(t, archive, root+"Contents/Info.plist"))
+	position := -1
+	for _, key := range []string{
+		"AAFirst", "ATSApplicationFontsPath", "CFBundleExecutable", "CFBundleIconFile", "CFBundleURLTypes",
+		"CFBundleTypeRole", "CFBundleURLName", "CFBundleURLSchemes", "CFBundleVersion",
+		"LSApplicationCategoryType", "LSUIElement", "NSAppTransportSecurity", "NSAllowsArbitraryLoads",
+		"NSAllowsLocalNetworking", "NSExceptionDomains", "NSCameraUsageDescription", "ZZLast",
+	} {
+		next := strings.Index(written, "<key>"+key+"</key>")
+		require.Greater(t, next, position, "%s is missing or out of order in:\n%s", key, written)
+		position = next
+	}
 }
 
 func TestPackageDoesNotChangeTheInfo(t *testing.T) {
