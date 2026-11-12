@@ -1,6 +1,8 @@
 name: generate
 
 on:
+  schedule:
+    - cron: "0 6 * * *" # daily at 06:00 UTC
   push:
     branches:
       - "main"
@@ -19,12 +21,25 @@ permissions:
 jobs:
   docs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
+      - name: Get GitHub App user ID
+        id: app-user
+        run: |
+          user_id=$(gh api "users/${APP_SLUG}[bot]" --jq .id)
+          echo "user-id=$user_id" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
@@ -38,22 +53,21 @@ jobs:
       - run: task docs:generate
       - run: task schema:generate
       - run: task schema:validate
-      - name: Create repository token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        id: repository-token
-        with:
-          client-id: ${{ vars.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          permission-contents: write
-          permission-pull-requests: write
+      - run: npx @goreleaser/sponsors generate --config gh://goreleaser/.github/sponsors.yml sponsors.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.SPONSORS_TOKEN }}
+      - run: npx @goreleaser/sponsors apply sponsors.json gh://goreleaser/.github/sponsors.tpl.md README.md
+      - run: npx @goreleaser/sponsors apply sponsors.json .github/templates/sponsors.tpl.md www/content/docs/sponsors.md
       - uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8 # v8.1.2
         with:
-          token: ${{ steps.repository-token.outputs.token }}
+          token: ${{ steps.app-token.outputs.token }}
           branch: auto-update-generated-files
           base: main
           delete-branch: true
-          title: "docs: update cmd docs"
-          commit-message: "docs: update cmd docs"
-          author: goreleaserbot <bot@goreleaser.com>
-          committer: goreleaserbot <bot@goreleaser.com>
-          add-paths: www/
+          title: "chore: update generated files"
+          commit-message: "chore: update generated files"
+          author: ${{ steps.app-token.outputs.app-slug }}[bot] <${{ steps.app-user.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
+          committer: ${{ steps.app-token.outputs.app-slug }}[bot] <${{ steps.app-user.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
+          add-paths: |
+            README.md
+            www/
