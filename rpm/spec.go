@@ -142,8 +142,8 @@ func writeFilesSection(b *strings.Builder, info *nfpm.Info) {
 
 func specFileLine(content *files.Content) string {
 	dest := escapeSpecText(files.ToNixPath(content.Destination))
-	owner := defaultTo(content.FileInfo.Owner, "root")
-	group := defaultTo(content.FileInfo.Group, "root")
+	owner := escapeSpecText(defaultTo(content.FileInfo.Owner, "root"))
+	group := escapeSpecText(defaultTo(content.FileInfo.Group, "root"))
 
 	// %lang() is orthogonal to the file directive and prefixes the file-bearing
 	// entries (config/doc/license/readme/generic). It is meaningless for

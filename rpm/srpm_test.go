@@ -275,3 +275,42 @@ func TestSRPMGenerateSpecEscapesPercent(t *testing.T) {
 	require.Contains(t, spec, "%global debug_package %{nil}")
 	require.Contains(t, spec, "tar -C %{buildroot} -xf %{SOURCE0}")
 }
+
+func TestSRPMSpecEscapesOwnership(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		fileType string
+		want     string
+	}{
+		{
+			name: "regular file",
+			want: `%attr(0644, %%(echo owner) %%{owner} %%%%, %%(echo group) %%{group} %%%%) "/etc/payload"`,
+		},
+		{
+			name:     "symlink",
+			fileType: files.TypeSymlink,
+			want:     `%attr(-, %%(echo owner) %%{owner} %%%%, %%(echo group) %%{group} %%%%) "/etc/payload"`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			info := exampleInfo()
+			info.Contents = files.Contents{{
+				Source:      "../testdata/whatever.conf",
+				Destination: "/etc/payload",
+				Type:        tt.fileType,
+				FileInfo: &files.ContentFileInfo{
+					Mode:  0o644,
+					Owner: "%(echo owner) %{owner} %%",
+					Group: "%(echo group) %{group} %%",
+				},
+			}}
+
+			var buf bytes.Buffer
+			require.NoError(t, DefaultSRPM.Package(info, &buf))
+
+			spec, err := extractFileFromRpm(buf.Bytes(), "/foo.spec")
+			require.NoError(t, err)
+			require.Contains(t, string(spec), tt.want)
+		})
+	}
+}
