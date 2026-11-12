@@ -22,9 +22,12 @@ require (
 	github.com/ulikunitz/xz v0.5.17
 	go.digitalxero.dev/go-msi v0.5.5
 	go.digitalxero.dev/go-msix v1.0.1
+	go.digitalxero.dev/osx v0.3.0
 	go.digitalxero.dev/rpm v0.3.4
 	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/sys v0.49.0
+	golang.org/x/text v0.43.0
+	howett.net/plist v1.0.1
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
 
@@ -36,6 +39,9 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-mime v0.0.0-20230322103455-7d82a3887f2f // indirect
 	github.com/abemedia/go-cfb v0.2.0 // indirect
+	github.com/anchore/go-logger v0.0.0-20251106021608-a5b0513fa9a9 // indirect
+	github.com/anchore/go-macholibre v0.0.0-20250826193721-3cd206ca93aa // indirect
+	github.com/anchore/quill v0.7.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.2.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
@@ -51,9 +57,11 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.7.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
+	github.com/github/smimesign v0.2.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.0 // indirect
 	github.com/go-git/go-git/v5 v5.19.2 // indirect
+	github.com/go-restruct/restruct v1.2.0-alpha // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -76,6 +84,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/scylladb/go-set v1.0.3-0.20200225121959-cc7b2070d91e // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
@@ -90,6 +99,5 @@ require (
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
