@@ -137,6 +137,72 @@ tasks:
     cmds:
       - pwsh -ExecutionPolicy Bypass -File testdata/acceptance/verify-signature.ps1 -Cert ./dist/test.cer -Signed ./dist/foo.msix -Unsigned ./dist/foo-unsigned.msix
 
+  acceptance:macos:package:
+    desc: Cross-compile the test app and build the macOS app, dmg and pkg packages (runs on Linux/macOS)
+    vars:
+      ARCH: '{{default "arm64" .ARCH}}'
+    env:
+      NFPM_PKG_TEST_ARCH: "{{.ARCH}}"
+      NFPM_PASSPHRASE: test123
+      NFPM_MACOS_TEST_P12: ./dist/test.pfx
+      NFPM_MACOS_TEST_TIMESTAMP_URL: none
+    cmds:
+      - mkdir -p ./dist
+      - ./testdata/acceptance/create-test-cert.sh
+      - printf 'hello from nfpm\n' > './dist/héllo-世界.txt'
+      - GOOS=darwin GOARCH={{.ARCH}} go build -ldflags="-X=main.message=nfpm-pkg-v1-test-ok" -o ./dist/testapp ./testdata/acceptance/testapp/
+      - GOOS=darwin GOARCH={{.ARCH}} go build -ldflags="-X=main.message=nfpm-pkg-v2-test-ok" -o ./dist/testapp-newer ./testdata/acceptance/testapp/
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/pkg.install.yaml -p pkg -t ./dist/nfpm-pkg-test-v1.pkg
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/pkg.upgrade.yaml -p pkg -t ./dist/nfpm-pkg-test-v2.pkg
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/pkg.rollback.yaml -p pkg -t ./dist/nfpm-pkg-test-rollback.pkg
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/pkg.postinstall-fail.yaml -p pkg -t ./dist/nfpm-pkg-test-postfail.pkg
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/pkg.signed.yaml -p pkg -t ./dist/nfpm-pkg-test-signed.pkg
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/app.install.yaml -p app -t ./dist/nfpm-app-test.app.zip
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/app.signed.yaml -p app -t ./dist/nfpm-app-test-signed.app.zip
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/app.install.yaml -p dmg -t ./dist/nfpm-app-test.dmg
+      - go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/app.signed.yaml -p dmg -t ./dist/nfpm-app-test-signed.dmg
+      - go run ./testdata/acceptance/macos-fixtures/
+
+  acceptance:macos:package:developer-id:
+    desc: Sign the macOS packages with real Apple Developer ID identities (runs on Linux/macOS, needs the identities and Apple's timestamp service)
+    vars:
+      ARCH: '{{default "arm64" .ARCH}}'
+    requires:
+      vars: [APPLICATION_P12, INSTALLER_P12]
+    env:
+      NFPM_PKG_TEST_ARCH: "{{.ARCH}}"
+      # Empty on purpose: the signer then uses its default, Apple's service.
+      NFPM_MACOS_TEST_TIMESTAMP_URL: ""
+    cmds:
+      - mkdir -p ./dist/developer-id
+      - NFPM_MACOS_TEST_P12={{.INSTALLER_P12}} go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/pkg.signed.yaml -p pkg -t ./dist/developer-id/nfpm-pkg-test-signed.pkg
+      - NFPM_MACOS_TEST_P12={{.APPLICATION_P12}} go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/app.signed.yaml -p app -t ./dist/developer-id/nfpm-app-test-signed.app.zip
+      - NFPM_MACOS_TEST_P12={{.APPLICATION_P12}} go run ./cmd/nfpm/... pkg -f ./testdata/acceptance/app.signed.yaml -p dmg -t ./dist/developer-id/nfpm-app-test-signed.dmg
+      # The certificates' fingerprints are public. The macOS job uses them to
+      # prove the signatures it accepts were made with these identities.
+      - ./testdata/acceptance/p12-fingerprint.sh {{.INSTALLER_P12}} > ./dist/developer-id/installer.sha256
+      - ./testdata/acceptance/p12-fingerprint.sh {{.APPLICATION_P12}} > ./dist/developer-id/application.sha256
+
+  acceptance:macos:install:pkg:
+    desc: Install, upgrade and verify the macOS installer packages on a disposable macOS CI runner
+    platforms: [darwin]
+    vars:
+      ARCH: '{{default "arm64" .ARCH}}'
+    env:
+      NFPM_PKG_TEST_ARCH: "{{.ARCH}}"
+    cmds:
+      - ./testdata/acceptance/install-pkg.sh
+
+  acceptance:macos:verify:app:
+    desc: Unpack, mount, launch and verify the macOS application bundles and disk images on macOS
+    platforms: [darwin]
+    vars:
+      ARCH: '{{default "arm64" .ARCH}}'
+    env:
+      NFPM_PKG_TEST_ARCH: "{{.ARCH}}"
+    cmds:
+      - ./testdata/acceptance/verify-app.sh
+
   acceptance:pull:
     desc: Pull acceptance test images
     vars:

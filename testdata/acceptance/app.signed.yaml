@@ -1,0 +1,36 @@
+# The bundle of app.install.yaml, signed with a throwaway certificate.
+name: nfpm-app-test
+arch: ${NFPM_PKG_TEST_ARCH}
+# A prerelease on purpose: macOS must launch a bundle whose version says so.
+version: 1.0.0-rc1
+maintainer: "Test Company <test@example.com>"
+description: "A test macOS application bundle"
+contents:
+  - src: ./dist/testapp
+    dst: /Contents/MacOS/nfpm-app-test
+    file_info:
+      mode: 0755
+  # A second program: signing has to cover every program in the bundle.
+  - src: ./dist/testapp-newer
+    dst: /Contents/MacOS/helper
+    file_info:
+      mode: 0755
+  - src: ./dist/héllo-世界.txt
+    dst: /Contents/Resources/héllo-世界.txt
+    file_info:
+      mode: 0644
+  - src: ../MacOS/nfpm-app-test
+    dst: /Contents/Resources/launcher
+    type: symlink
+app:
+  name: Nfpm App Test
+  identifier: dev.goreleaser.nfpm.apptest
+  min_os_version: "11.0"
+  info_plist:
+    LSUIElement: true
+  signature:
+    # The identity and the timestamp service come from the environment: a
+    # throwaway certificate without a timestamp by default, and a real
+    # Developer ID identity with Apple's timestamp where CI has one.
+    p12_file: ${NFPM_MACOS_TEST_P12}
+    timestamp_url: ${NFPM_MACOS_TEST_TIMESTAMP_URL}

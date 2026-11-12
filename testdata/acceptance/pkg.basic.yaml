@@ -1,0 +1,24 @@
+name: testapp
+arch: "${BUILD_ARCH}"
+version: "${SEMVER}"
+maintainer: "Foo Bar"
+vendor: "Test Company"
+homepage: "https://example.com/testapp"
+description: "A test macOS installer package"
+contents:
+  - src: ./testdata/fake
+    dst: /usr/local/bin/testapp
+    file_info:
+      mode: 0755
+  - src: /usr/local/bin/testapp
+    dst: /usr/local/bin/testapp-link
+    type: symlink
+  - src: ./testdata/whatever.conf
+    dst: /etc/testapp/testapp.conf
+    type: config
+scripts:
+  preinstall: ./testdata/acceptance/scripts/preinstall.sh
+  postinstall: ./testdata/acceptance/scripts/postinstall.sh
+pkg:
+  identifier: dev.goreleaser.nfpm.basic
+  min_os_version: "11.0"

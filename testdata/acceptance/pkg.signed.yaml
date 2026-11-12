@@ -1,0 +1,18 @@
+name: nfpm-pkg-test-signed
+arch: ${NFPM_PKG_TEST_ARCH}
+version: 1.0.0
+maintainer: "Test Company <test@example.com>"
+description: "A signed test macOS installer package"
+contents:
+  - src: ./dist/testapp
+    dst: /usr/local/bin/nfpm-pkg-test-signed
+    file_info:
+      mode: 0755
+pkg:
+  identifier: dev.goreleaser.nfpm.pkgtest.signed
+  signature:
+    # The identity and the timestamp service come from the environment: a
+    # throwaway certificate without a timestamp by default, and a real
+    # Developer ID identity with Apple's timestamp where CI has one.
+    p12_file: ${NFPM_MACOS_TEST_P12}
+    timestamp_url: ${NFPM_MACOS_TEST_TIMESTAMP_URL}
