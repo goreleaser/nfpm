@@ -343,6 +343,106 @@ jobs:
           path: |
             dist/*.msi
             dist/*.log
+  macos-acceptance-tests:
+    if: github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task setup
+      - run: task acceptance
+        env:
+          TEST_PATTERN: "TestMacOSStructure"
+  macos-linux-build:
+    # Builds the macOS packages on Linux: a GOOS=darwin cross-compiled test
+    # app, packaged as an installer package, an application bundle and a disk
+    # image by nfpm's pure-Go packagers, unsigned and signed. macos-verify
+    # installs, mounts and launches these exact bytes on a real Mac, so the
+    # cross-platform story is what gets verified.
+    #
+    # Everything is signed with a throwaway openssl certificate. Where the
+    # repository's Apple Developer ID identities are available (not on pull
+    # requests from forks) it is also signed with those, which is the only
+    # way to have macOS verify a signature all the way up to Apple.
+    runs-on: ubuntu-latest
+    env:
+      HAS_DEVELOPER_ID: ${{ secrets.MACOS_DEVELOPER_ID_APPLICATION_P12_BASE64 != '' && secrets.MACOS_DEVELOPER_ID_INSTALLER_P12_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build macOS packages
+        run: task acceptance:macos:package
+      - name: Sign macOS packages with Developer ID
+        if: env.HAS_DEVELOPER_ID == 'true'
+        env:
+          APPLICATION_P12_BASE64: ${{ secrets.MACOS_DEVELOPER_ID_APPLICATION_P12_BASE64 }}
+          INSTALLER_P12_BASE64: ${{ secrets.MACOS_DEVELOPER_ID_INSTALLER_P12_BASE64 }}
+        run: |
+          # The identities only ever exist in a private directory that is
+          # removed when this step ends; only signed packages and the public
+          # certificate fingerprints are uploaded.
+          identities="$(mktemp -d)"
+          trap 'rm -rf "$identities"' EXIT
+          printf '%s' "$APPLICATION_P12_BASE64" | base64 -d > "$identities/application.p12"
+          printf '%s' "$INSTALLER_P12_BASE64" | base64 -d > "$identities/installer.p12"
+          task acceptance:macos:package:developer-id \
+            APPLICATION_P12="$identities/application.p12" \
+            INSTALLER_P12="$identities/installer.p12"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: macos-packages
+          if-no-files-found: error
+          retention-days: 1
+          path: |
+            dist/*.pkg
+            dist/*.app.zip
+            dist/*.dmg
+            dist/test.crt
+            dist/unicode-cases.tsv
+            dist/developer-id/
+  macos-verify:
+    # Real macOS validation of the packages built on Linux by
+    # macos-linux-build. The installer installs, upgrades, downgrades and
+    # refuses the installer packages; the application bundles are unpacked and
+    # launched, the disk images mounted, and pkgutil, codesign and the system
+    # trust stack check the signatures.
+    needs: [macos-linux-build]
+    runs-on: macos-latest
+    env:
+      # Where the identities exist, their signed packages must be verified:
+      # a missing package is then a failure, not a skipped check.
+      NFPM_MACOS_EXPECT_DEVELOPER_ID: ${{ secrets.MACOS_DEVELOPER_ID_APPLICATION_P12_BASE64 != '' && secrets.MACOS_DEVELOPER_ID_INSTALLER_P12_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: macos-packages
+          path: dist
+      - name: Unpack, mount, launch and verify the application bundles and disk images
+        run: task acceptance:macos:verify:app
+      - name: Install, upgrade and verify the installer packages
+        run: task acceptance:macos:install:pkg
+      - name: Preserve the installer log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nfpm-macos-install-log
+          path: /var/log/install.log
+          if-no-files-found: warn
+          retention-days: 7
   build:
     if: always()
     needs:
@@ -360,6 +460,9 @@ jobs:
       - msi-windows-install
       - msi-signed-build
       - msi-windows-signature
+      - macos-acceptance-tests
+      - macos-linux-build
+      - macos-verify
     runs-on: ubuntu-latest
     env:
       RESULTS: ${{ toJSON(needs) }}
@@ -367,8 +470,8 @@ jobs:
       - name: Check PR results
         if: github.event_name != 'merge_group'
         run: |
-          printf '%s\n' "$RESULTS" | jq -e '[.["license-check"], .semgrep, .["unit-tests"], .["msi-windows-install"]] | ., all(.[]; .result == "success")'
+          printf '%s\n' "$RESULTS" | jq -e '[.["license-check"], .semgrep, .["unit-tests"], .["msi-windows-install"], .["macos-linux-build"], .["macos-verify"]] | ., all(.[]; .result == "success")'
       - name: Check acceptance results
         if: github.event_name == 'merge_group'
         run: |
-          printf '%s\n' "$RESULTS" | jq -e '[.["acceptance-tests"], .["msix-acceptance-tests"], .["windows-build-pkgs"], .["install-windows-pkgs"], .["msix-windows-install"], .["msix-signed-build"], .["msix-windows-signature"], .["msi-acceptance-tests"], .["msi-windows-install"], .["msi-signed-build"], .["msi-windows-signature"]] | ., all(.[]; .result == "success")'
+          printf '%s\n' "$RESULTS" | jq -e '[.["acceptance-tests"], .["msix-acceptance-tests"], .["windows-build-pkgs"], .["install-windows-pkgs"], .["msix-windows-install"], .["msix-signed-build"], .["msix-windows-signature"], .["msi-acceptance-tests"], .["msi-windows-install"], .["msi-signed-build"], .["msi-windows-signature"], .["macos-acceptance-tests"], .["macos-linux-build"], .["macos-verify"]] | ., all(.[]; .result == "success")'

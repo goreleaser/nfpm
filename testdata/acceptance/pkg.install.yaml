@@ -1,0 +1,43 @@
+name: nfpm-pkg-test
+arch: ${NFPM_PKG_TEST_ARCH}
+version: 1.0.0
+maintainer: "Test Company <test@example.com>"
+description: "A test macOS installer package"
+contents:
+  - src: ./dist/testapp
+    dst: /usr/local/bin/nfpm-pkg-test
+    file_info:
+      mode: 0755
+  - src: /usr/local/bin/nfpm-pkg-test
+    dst: /usr/local/bin/nfpm-pkg-test-link
+    type: symlink
+  # /etc is a symbolic link on macOS; the file must land in /private/etc and
+  # leave the link alone.
+  - src: ./testdata/whatever.conf
+    dst: /etc/nfpm-pkg-test/app.conf
+    type: config
+    file_info:
+      mode: 0640
+      group: admin
+  # An explicit directory with its own mode and group, and a space in the path.
+  - dst: /Library/Application Support/NfpmPkgTest
+    type: dir
+    file_info:
+      mode: 0750
+      group: staff
+  - src: ./dist/héllo-世界.txt
+    dst: /Library/Application Support/NfpmPkgTest/héllo-世界.txt
+    file_info:
+      mode: 0644
+  # Shipped by this release only: the upgrade test checks that the installer
+  # removes a file a newer release no longer contains.
+  - src: ./testdata/whatever.conf
+    dst: /Library/Application Support/NfpmPkgTest/only-in-v1.conf
+    file_info:
+      mode: 0644
+scripts:
+  preinstall: ./testdata/acceptance/pkg/preinstall.sh
+  postinstall: ./testdata/acceptance/pkg/postinstall.sh
+pkg:
+  identifier: dev.goreleaser.nfpm.pkgtest
+  min_os_version: "11.0"
