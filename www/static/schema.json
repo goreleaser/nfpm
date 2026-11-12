@@ -942,6 +942,7 @@
 					"publisher": {
 						"type": "string",
 						"title": "publisher identity",
+						"description": "defaults to the signing certificate subject when signing or CN=\u003cvendor or maintainer\u003e",
 						"examples": [
 							"CN=MyCompany, O=MyCompany, C=US"
 						]
@@ -977,7 +978,6 @@
 				"additionalProperties": false,
 				"type": "object",
 				"required": [
-					"publisher",
 					"applications"
 				]
 			},

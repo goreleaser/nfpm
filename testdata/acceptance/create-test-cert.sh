@@ -5,9 +5,9 @@
 # without any Windows tooling; the resulting packages are then validated and
 # installed on a real Windows runner.
 #
-# Subject RDNs are given in C, O, CN order on purpose: Windows and Go both
-# render the DN reversed, which yields "CN=TestCompany, O=TestCompany, C=US"
-# and matches the explicit msix.publisher in the acceptance configs.
+# Subject RDNs are given in C, O, CN order on purpose: Windows renders them
+# reversed as "CN=TestCompany, O=TestCompany, C=US". The signed MSIX config
+# omits publisher to exercise nfpm's Windows-compatible subject formatting.
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."

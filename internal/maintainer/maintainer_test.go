@@ -28,5 +28,8 @@ func TestName(t *testing.T) {
 func TestVendorOrMaintainer(t *testing.T) {
 	require.Equal(t, "ACME", maintainer.VendorOrMaintainer("ACME", "Jane Doe <jane@example.com>"))
 	require.Equal(t, "Jane Doe", maintainer.VendorOrMaintainer("", "Jane Doe <jane@example.com>"))
+	require.Equal(t, "ACME", maintainer.VendorOrMaintainer("  ACME\t", "Jane Doe <jane@example.com>"))
+	require.Equal(t, "Jane Doe", maintainer.VendorOrMaintainer(" \t ", "Jane Doe <jane@example.com>"))
+	require.Empty(t, maintainer.VendorOrMaintainer(" \t ", ""))
 	require.Empty(t, maintainer.VendorOrMaintainer("", ""))
 }
