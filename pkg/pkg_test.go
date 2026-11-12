@@ -473,9 +473,13 @@ func TestTreeRootedAtSlash(t *testing.T) {
 	program, err := entries.Entry("/usr/local/bin/foo")
 	require.NoError(t, err)
 	assert.Equal(t, "foo\n", content(t, program))
+	// The directory's mode is the one on disk, less nfpm's default umask.
+	// It is read back instead of assumed: Windows has its own idea of modes.
+	onDisk, err := os.Stat(filepath.Join(root, "Library", "Foo"))
+	require.NoError(t, err)
 	own, err := entries.Entry("/Library/Foo")
 	require.NoError(t, err)
-	assert.Equal(t, fs.ModeDir|0o750, own.Mode())
+	assert.Equal(t, fs.ModeDir|(onDisk.Mode().Perm()&^0o002), own.Mode())
 	empty, err := entries.Entry("/Library/Foo/empty")
 	require.NoError(t, err, "an empty directory in a tree is installed, not dropped")
 	assert.True(t, empty.Mode().IsDir())
