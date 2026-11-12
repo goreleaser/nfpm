@@ -310,10 +310,71 @@ func (c *Config) expandEnvVars() {
 	}
 
 	c.expandMSI(&c.MSI)
+	c.expandApp(&c.App)
+	c.expandPkg(&c.Pkg)
 	for _, override := range c.Overrides {
 		if override != nil {
 			c.expandMSI(&override.MSI)
+			c.expandApp(&override.App)
+			c.expandPkg(&override.Pkg)
 		}
+	}
+}
+
+// expandApp expands the macOS app bundle settings. Like expandPkg it runs for
+// the base settings and for every override, because overrides are merged only
+// after parsing.
+func (c *Config) expandApp(cfg *App) {
+	cfg.Arch = os.Expand(cfg.Arch, c.envMappingFunc)
+	cfg.Name = os.Expand(cfg.Name, c.envMappingFunc)
+	cfg.Identifier = os.Expand(cfg.Identifier, c.envMappingFunc)
+	cfg.Executable = os.Expand(cfg.Executable, c.envMappingFunc)
+	cfg.MinOSVersion = os.Expand(cfg.MinOSVersion, c.envMappingFunc)
+	for key, value := range cfg.InfoPlist {
+		cfg.InfoPlist[key] = c.expandPlistValue(value)
+	}
+	cfg.Signature.P12File = os.Expand(cfg.Signature.P12File, c.envMappingFunc)
+	cfg.Signature.TimestampURL = os.Expand(cfg.Signature.TimestampURL, c.envMappingFunc)
+	cfg.Signature.Entitlements = os.Expand(cfg.Signature.Entitlements, c.envMappingFunc)
+
+	cfg.Signature.KeyPassphrase = os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
+	appPassphrase := os.Expand("$NFPM_APP_PASSPHRASE", c.envMappingFunc)
+	if appPassphrase != "" {
+		cfg.Signature.KeyPassphrase = appPassphrase
+	}
+}
+
+// expandPlistValue expands every string in an Info.plist value, however
+// deeply it is nested. Keys are left alone.
+func (c *Config) expandPlistValue(value any) any {
+	switch typed := value.(type) {
+	case string:
+		return os.Expand(typed, c.envMappingFunc)
+	case []any:
+		for n := range typed {
+			typed[n] = c.expandPlistValue(typed[n])
+		}
+	case map[string]any:
+		for key := range typed {
+			typed[key] = c.expandPlistValue(typed[key])
+		}
+	}
+	return value
+}
+
+// expandPkg expands the macOS pkg settings. It runs for the base settings and
+// for every override, because overrides are merged only after parsing.
+func (c *Config) expandPkg(cfg *Pkg) {
+	cfg.Arch = os.Expand(cfg.Arch, c.envMappingFunc)
+	cfg.Identifier = os.Expand(cfg.Identifier, c.envMappingFunc)
+	cfg.MinOSVersion = os.Expand(cfg.MinOSVersion, c.envMappingFunc)
+	cfg.Signature.P12File = os.Expand(cfg.Signature.P12File, c.envMappingFunc)
+	cfg.Signature.TimestampURL = os.Expand(cfg.Signature.TimestampURL, c.envMappingFunc)
+
+	cfg.Signature.KeyPassphrase = os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
+	pkgPassphrase := os.Expand("$NFPM_PKG_PASSPHRASE", c.envMappingFunc)
+	if pkgPassphrase != "" {
+		cfg.Signature.KeyPassphrase = pkgPassphrase
 	}
 }
 
@@ -449,6 +510,8 @@ type Overridables struct {
 	IPK        IPK            `yaml:"ipk,omitempty" json:"ipk,omitempty" jsonschema:"title=ipk-specific settings"`
 	MSIX       MSIX           `yaml:"msix,omitempty" json:"msix,omitempty" jsonschema:"title=msix-specific settings"`
 	MSI        MSI            `yaml:"msi,omitempty" json:"msi,omitempty" jsonschema:"title=msi-specific settings"`
+	App        App            `yaml:"app,omitempty" json:"app,omitempty" jsonschema:"title=macOS app bundle settings,description=used by the app and dmg packagers"`
+	Pkg        Pkg            `yaml:"pkg,omitempty" json:"pkg,omitempty" jsonschema:"title=macOS pkg-specific settings"`
 }
 
 type ArchLinux struct {
@@ -718,6 +781,46 @@ type MSISignature struct {
 	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSI_PASSPHRASE, falling back to NFPM_PASSPHRASE
 }
 
+// App contains configs for macOS application bundles. It is used by both the
+// app packager (a zipped .app) and the dmg packager (the same .app in a disk
+// image). The bundle itself comes from the shared fields: name, version and
+// contents.
+type App struct {
+	Arch         string         `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in macOS nomenclature,enum=arm64,enum=x86_64,enum=universal"`
+	Name         string         `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"title=bundle name,description=name of the .app folder and the name macOS shows for the application; defaults to the package name,example=My App"`
+	Identifier   string         `yaml:"identifier" json:"identifier" jsonschema:"title=bundle identifier,description=reverse-DNS identifier (CFBundleIdentifier) macOS knows the application by; keep it the same across releases,example=com.example.myapp,pattern=^[A-Za-z0-9][A-Za-z0-9.-]*$"`
+	Executable   string         `yaml:"executable,omitempty" json:"executable,omitempty" jsonschema:"title=main executable,description=name of the file in Contents/MacOS that macOS launches; defaults to the package name"`
+	MinOSVersion string         `yaml:"min_os_version,omitempty" json:"min_os_version,omitempty" jsonschema:"title=minimum macOS version,description=macOS refuses to launch the application on an older version,example=13.0,pattern=^[0-9]+([.][0-9]+)?([.][0-9]+)?$"`
+	InfoPlist    map[string]any `yaml:"info_plist,omitempty" json:"info_plist,omitempty" jsonschema:"title=additional Info.plist keys,description=added to the generated Info.plist; the keys nFPM sets from other fields cannot be set here"`
+	Signature    AppSignature   `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=app signature"`
+}
+
+// AppSignature contains code signing configuration for macOS application
+// bundles and the disk images that carry them.
+type AppSignature struct {
+	P12File       string `yaml:"p12_file,omitempty" json:"p12_file,omitempty" jsonschema:"title=PKCS#12 file holding the Developer ID Application certificate and its private key"`
+	TimestampURL  string `yaml:"timestamp_url,omitempty" json:"timestamp_url,omitempty" jsonschema:"title=RFC3161 timestamp URL,description=defaults to Apple's timestamp service; set to none to sign without a timestamp,example=none"`
+	Entitlements  string `yaml:"entitlements,omitempty" json:"entitlements,omitempty" jsonschema:"title=entitlements property list file"`
+	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_APP_PASSPHRASE, falling back to NFPM_PASSPHRASE
+}
+
+// Pkg contains configs that are only available on macOS installer packages
+// (.pkg). Everything else comes from the shared fields: name, version, arch,
+// contents and the preinstall/postinstall scripts.
+type Pkg struct {
+	Arch         string       `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in macOS nomenclature,enum=arm64,enum=x86_64,enum=universal"`
+	Identifier   string       `yaml:"identifier" json:"identifier" jsonschema:"title=package identifier,description=reverse-DNS identifier macOS records the installation under; it must stay the same across releases or a new version is treated as a different package,example=com.example.myapp,pattern=^[A-Za-z0-9][A-Za-z0-9._-]*$"`
+	MinOSVersion string       `yaml:"min_os_version,omitempty" json:"min_os_version,omitempty" jsonschema:"title=minimum macOS version,description=the installer refuses to install on an older macOS,example=13.0,pattern=^[0-9]+([.][0-9]+)?([.][0-9]+)?$"`
+	Signature    PkgSignature `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=pkg signature"`
+}
+
+// PkgSignature contains signing configuration for macOS installer packages.
+type PkgSignature struct {
+	P12File       string `yaml:"p12_file,omitempty" json:"p12_file,omitempty" jsonschema:"title=PKCS#12 file holding the Developer ID Installer certificate and its private key"`
+	TimestampURL  string `yaml:"timestamp_url,omitempty" json:"timestamp_url,omitempty" jsonschema:"title=RFC3161 timestamp URL,description=defaults to Apple's timestamp service; set to none to sign without a timestamp,example=none"`
+	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_PKG_PASSPHRASE, falling back to NFPM_PASSPHRASE
+}
+
 // Scripts contains information about maintainer scripts for packages.
 type Scripts struct {
 	PreInstall  string `yaml:"preinstall,omitempty" json:"preinstall,omitempty" jsonschema:"title=pre install"`
@@ -747,7 +850,9 @@ func PrepareForPackager(info *Info, packager string) (err error) {
 			(packager == "rpm" && info.RPM.Arch == "") ||
 			(packager == "apk" && info.APK.Arch == "") ||
 			(packager == "msix" && info.MSIX.Arch == "") ||
-			(packager == "msi" && info.MSI.Arch == "")) {
+			(packager == "msi" && info.MSI.Arch == "") ||
+			((packager == "app" || packager == "dmg") && info.App.Arch == "") ||
+			(packager == "pkg" && info.Pkg.Arch == "")) {
 		return ErrFieldEmpty{"arch"}
 	}
 	if info.Version == "" {

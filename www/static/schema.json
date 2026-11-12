@@ -63,6 +63,86 @@
 				"additionalProperties": false,
 				"type": "object"
 			},
+			"App": {
+				"properties": {
+					"arch": {
+						"type": "string",
+						"enum": [
+							"arm64",
+							"x86_64",
+							"universal"
+						],
+						"title": "architecture in macOS nomenclature"
+					},
+					"name": {
+						"type": "string",
+						"title": "bundle name",
+						"description": "name of the .app folder and the name macOS shows for the application; defaults to the package name",
+						"examples": [
+							"My App"
+						]
+					},
+					"identifier": {
+						"type": "string",
+						"pattern": "^[A-Za-z0-9][A-Za-z0-9.-]*$",
+						"title": "bundle identifier",
+						"description": "reverse-DNS identifier (CFBundleIdentifier) macOS knows the application by; keep it the same across releases",
+						"examples": [
+							"com.example.myapp"
+						]
+					},
+					"executable": {
+						"type": "string",
+						"title": "main executable",
+						"description": "name of the file in Contents/MacOS that macOS launches; defaults to the package name"
+					},
+					"min_os_version": {
+						"type": "string",
+						"pattern": "^[0-9]+([.][0-9]+)?([.][0-9]+)?$",
+						"title": "minimum macOS version",
+						"description": "macOS refuses to launch the application on an older version",
+						"examples": [
+							"13.0"
+						]
+					},
+					"info_plist": {
+						"type": "object",
+						"title": "additional Info.plist keys",
+						"description": "added to the generated Info.plist; the keys nFPM sets from other fields cannot be set here"
+					},
+					"signature": {
+						"$ref": "#/$defs/AppSignature",
+						"title": "app signature"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"identifier"
+				]
+			},
+			"AppSignature": {
+				"properties": {
+					"p12_file": {
+						"type": "string",
+						"title": "PKCS#12 file holding the Developer ID Application certificate and its private key"
+					},
+					"timestamp_url": {
+						"type": "string",
+						"title": "RFC3161 timestamp URL",
+						"description": "defaults to Apple's timestamp service; set to none to sign without a timestamp",
+						"examples": [
+							"none"
+						]
+					},
+					"entitlements": {
+						"type": "string",
+						"title": "entitlements property list file"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
 			"ArchLinux": {
 				"properties": {
 					"pkgbase": {
@@ -203,6 +283,15 @@
 					"msi": {
 						"$ref": "#/$defs/MSI",
 						"title": "msi-specific settings"
+					},
+					"app": {
+						"$ref": "#/$defs/App",
+						"title": "macOS app bundle settings",
+						"description": "used by the app and dmg packagers"
+					},
+					"pkg": {
+						"$ref": "#/$defs/Pkg",
+						"title": "macOS pkg-specific settings"
 					},
 					"name": {
 						"type": "string",
@@ -1240,6 +1329,73 @@
 					"msi": {
 						"$ref": "#/$defs/MSI",
 						"title": "msi-specific settings"
+					},
+					"app": {
+						"$ref": "#/$defs/App",
+						"title": "macOS app bundle settings",
+						"description": "used by the app and dmg packagers"
+					},
+					"pkg": {
+						"$ref": "#/$defs/Pkg",
+						"title": "macOS pkg-specific settings"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object"
+			},
+			"Pkg": {
+				"properties": {
+					"arch": {
+						"type": "string",
+						"enum": [
+							"arm64",
+							"x86_64",
+							"universal"
+						],
+						"title": "architecture in macOS nomenclature"
+					},
+					"identifier": {
+						"type": "string",
+						"pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+						"title": "package identifier",
+						"description": "reverse-DNS identifier macOS records the installation under; it must stay the same across releases or a new version is treated as a different package",
+						"examples": [
+							"com.example.myapp"
+						]
+					},
+					"min_os_version": {
+						"type": "string",
+						"pattern": "^[0-9]+([.][0-9]+)?([.][0-9]+)?$",
+						"title": "minimum macOS version",
+						"description": "the installer refuses to install on an older macOS",
+						"examples": [
+							"13.0"
+						]
+					},
+					"signature": {
+						"$ref": "#/$defs/PkgSignature",
+						"title": "pkg signature"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"identifier"
+				]
+			},
+			"PkgSignature": {
+				"properties": {
+					"p12_file": {
+						"type": "string",
+						"title": "PKCS#12 file holding the Developer ID Installer certificate and its private key"
+					},
+					"timestamp_url": {
+						"type": "string",
+						"title": "RFC3161 timestamp URL",
+						"description": "defaults to Apple's timestamp service; set to none to sign without a timestamp",
+						"examples": [
+							"none"
+						]
 					}
 				},
 				"additionalProperties": false,
