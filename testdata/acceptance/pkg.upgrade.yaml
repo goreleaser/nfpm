@@ -1,0 +1,35 @@
+name: nfpm-pkg-test
+arch: ${NFPM_PKG_TEST_ARCH}
+# A prerelease on purpose: macOS must accept and record the full version.
+version: 2.0.0-rc1
+maintainer: "Test Company <test@example.com>"
+description: "A test macOS installer package"
+contents:
+  - src: ./dist/testapp-newer
+    dst: /usr/local/bin/nfpm-pkg-test
+    file_info:
+      mode: 0755
+  - src: /usr/local/bin/nfpm-pkg-test
+    dst: /usr/local/bin/nfpm-pkg-test-link
+    type: symlink
+  - src: ./testdata/whatever.conf
+    dst: /etc/nfpm-pkg-test/app.conf
+    type: config
+    file_info:
+      mode: 0640
+      group: admin
+  - dst: /Library/Application Support/NfpmPkgTest
+    type: dir
+    file_info:
+      mode: 0750
+      group: staff
+  - src: ./dist/héllo-世界.txt
+    dst: /Library/Application Support/NfpmPkgTest/héllo-世界.txt
+    file_info:
+      mode: 0644
+scripts:
+  preinstall: ./testdata/acceptance/pkg/preinstall.sh
+  postinstall: ./testdata/acceptance/pkg/postinstall.sh
+pkg:
+  identifier: dev.goreleaser.nfpm.pkgtest
+  min_os_version: "11.0"

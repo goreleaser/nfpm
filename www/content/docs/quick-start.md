@@ -49,7 +49,7 @@ nfpm pkg --packager rpm --target /tmp/
 nfpm pkg --packager apk --target /tmp/
 ```
 
-You can also use `ipk`, `archlinux`, `msi`, and `msix` as packagers.
+You can also use `ipk`, `archlinux`, `msi`, `msix`, and the macOS packagers `app`, `dmg`, and `pkg`.
 
 {{% /steps %}}
 
