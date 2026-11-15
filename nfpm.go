@@ -156,12 +156,18 @@ func (c *Config) Get(format string) (info *Info, err error) {
 	if err = mergo.Merge(info, c.Info, mergo.WithOverride); err != nil {
 		return nil, fmt.Errorf("failed to merge config into info: %w", err)
 	}
+	// mergo copies the outer Info.plist map but shares the dictionaries and
+	// arrays nested in it, and merging an override writes through them. Each
+	// result gets its own copy so that no format changes another's settings.
+	info.App.InfoPlist = clonePlist(c.App.InfoPlist)
 	override, ok := c.Overrides[format]
 	if !ok || override == nil {
 		// no overrides, or an empty override clause (e.g. "overrides:\n  deb:")
 		return info, nil
 	}
-	if err = mergo.Merge(&info.Overridables, override, mergo.WithOverride); err != nil {
+	isolated := *override
+	isolated.App.InfoPlist = clonePlist(override.App.InfoPlist)
+	if err = mergo.Merge(&info.Overridables, isolated, mergo.WithOverride); err != nil {
 		return nil, fmt.Errorf("failed to merge overrides into info: %w", err)
 	}
 
@@ -173,6 +179,32 @@ func (c *Config) Get(format string) (info *Info, err error) {
 	}
 	info.Contents = contents
 	return info, nil
+}
+
+// clonePlist returns a deep copy of Info.plist settings.
+func clonePlist(values map[string]any) map[string]any {
+	if values == nil {
+		return nil
+	}
+	copied := make(map[string]any, len(values))
+	for key, value := range values {
+		copied[key] = clonePlistValue(value)
+	}
+	return copied
+}
+
+func clonePlistValue(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		return clonePlist(typed)
+	case []any:
+		copied := make([]any, len(typed))
+		for n, item := range typed {
+			copied[n] = clonePlistValue(item)
+		}
+		return copied
+	}
+	return value
 }
 
 // Validate ensures that the config is well typed.
@@ -337,11 +369,7 @@ func (c *Config) expandApp(cfg *App) {
 	cfg.Signature.TimestampURL = os.Expand(cfg.Signature.TimestampURL, c.envMappingFunc)
 	cfg.Signature.Entitlements = os.Expand(cfg.Signature.Entitlements, c.envMappingFunc)
 
-	cfg.Signature.KeyPassphrase = os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
-	appPassphrase := os.Expand("$NFPM_APP_PASSPHRASE", c.envMappingFunc)
-	if appPassphrase != "" {
-		cfg.Signature.KeyPassphrase = appPassphrase
-	}
+	cfg.Signature.KeyPassphrase = c.passphrase("NFPM_APP_PASSPHRASE")
 }
 
 // expandPlistValue expands every string in an Info.plist value, however
@@ -371,11 +399,24 @@ func (c *Config) expandPkg(cfg *Pkg) {
 	cfg.Signature.P12File = os.Expand(cfg.Signature.P12File, c.envMappingFunc)
 	cfg.Signature.TimestampURL = os.Expand(cfg.Signature.TimestampURL, c.envMappingFunc)
 
-	cfg.Signature.KeyPassphrase = os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
-	pkgPassphrase := os.Expand("$NFPM_PKG_PASSPHRASE", c.envMappingFunc)
-	if pkgPassphrase != "" {
-		cfg.Signature.KeyPassphrase = pkgPassphrase
+	cfg.Signature.KeyPassphrase = c.passphrase("NFPM_PKG_PASSPHRASE")
+}
+
+// passphrase returns the signing passphrase for one format: the value of its
+// own variable, or NFPM_PASSPHRASE when that variable is not set. A variable
+// that is set but empty selects an empty passphrase. Only the process
+// environment can tell an unset variable from an empty one; with a custom
+// mapping an empty value falls back to NFPM_PASSPHRASE, as it does for MSIX.
+func (c *Config) passphrase(name string) string {
+	if c.envLookupFunc != nil {
+		if passphrase, set := c.envLookupFunc(name); set {
+			return passphrase
+		}
 	}
+	if passphrase := os.Expand("$"+name, c.envMappingFunc); passphrase != "" {
+		return passphrase
+	}
+	return os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
 }
 
 func (c *Config) expandMSI(cfg *MSI) {
@@ -786,11 +827,11 @@ type MSISignature struct {
 // image). The bundle itself comes from the shared fields: name, version and
 // contents.
 type App struct {
-	Arch         string         `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in macOS nomenclature,enum=arm64,enum=x86_64,enum=universal"`
+	Arch         string         `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in macOS nomenclature,description=arm64; x86_64 or universal; an environment variable may supply it,pattern=^(arm64|x86_64|universal|.*[$].*)$"`
 	Name         string         `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"title=bundle name,description=name of the .app folder and the name macOS shows for the application; defaults to the package name,example=My App"`
-	Identifier   string         `yaml:"identifier" json:"identifier" jsonschema:"title=bundle identifier,description=reverse-DNS identifier (CFBundleIdentifier) macOS knows the application by; keep it the same across releases,example=com.example.myapp,pattern=^[A-Za-z0-9][A-Za-z0-9.-]*$"`
+	Identifier   string         `yaml:"identifier,omitempty" json:"identifier,omitempty" jsonschema:"title=bundle identifier,description=reverse-DNS identifier (CFBundleIdentifier) macOS knows the application by; the app and dmg packagers require it; keep it the same across releases,example=com.example.myapp,pattern=^([A-Za-z0-9][A-Za-z0-9.-]*|.*[$].*)$"`
 	Executable   string         `yaml:"executable,omitempty" json:"executable,omitempty" jsonschema:"title=main executable,description=name of the file in Contents/MacOS that macOS launches; defaults to the package name"`
-	MinOSVersion string         `yaml:"min_os_version,omitempty" json:"min_os_version,omitempty" jsonschema:"title=minimum macOS version,description=macOS refuses to launch the application on an older version,example=13.0,pattern=^[0-9]+([.][0-9]+)?([.][0-9]+)?$"`
+	MinOSVersion string         `yaml:"min_os_version,omitempty" json:"min_os_version,omitempty" jsonschema:"title=minimum macOS version,description=macOS refuses to launch the application on an older version,example=13.0,pattern=^([0-9]+([.][0-9]+)?([.][0-9]+)?|.*[$].*)$"`
 	InfoPlist    map[string]any `yaml:"info_plist,omitempty" json:"info_plist,omitempty" jsonschema:"title=additional Info.plist keys,description=added to the generated Info.plist; the keys nFPM sets from other fields cannot be set here"`
 	Signature    AppSignature   `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=app signature"`
 }
@@ -808,9 +849,9 @@ type AppSignature struct {
 // (.pkg). Everything else comes from the shared fields: name, version, arch,
 // contents and the preinstall/postinstall scripts.
 type Pkg struct {
-	Arch         string       `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in macOS nomenclature,enum=arm64,enum=x86_64,enum=universal"`
-	Identifier   string       `yaml:"identifier" json:"identifier" jsonschema:"title=package identifier,description=reverse-DNS identifier macOS records the installation under; it must stay the same across releases or a new version is treated as a different package,example=com.example.myapp,pattern=^[A-Za-z0-9][A-Za-z0-9._-]*$"`
-	MinOSVersion string       `yaml:"min_os_version,omitempty" json:"min_os_version,omitempty" jsonschema:"title=minimum macOS version,description=the installer refuses to install on an older macOS,example=13.0,pattern=^[0-9]+([.][0-9]+)?([.][0-9]+)?$"`
+	Arch         string       `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in macOS nomenclature,description=arm64; x86_64 or universal; an environment variable may supply it,pattern=^(arm64|x86_64|universal|.*[$].*)$"`
+	Identifier   string       `yaml:"identifier,omitempty" json:"identifier,omitempty" jsonschema:"title=package identifier,description=reverse-DNS identifier macOS records the installation under; the pkg packager requires it; it must stay the same across releases or a new version is treated as a different package,example=com.example.myapp,pattern=^([A-Za-z0-9][A-Za-z0-9._-]*|.*[$].*)$"`
+	MinOSVersion string       `yaml:"min_os_version,omitempty" json:"min_os_version,omitempty" jsonschema:"title=minimum macOS version,description=the installer refuses to install on an older macOS,example=13.0,pattern=^([0-9]+([.][0-9]+)?([.][0-9]+)?|.*[$].*)$"`
 	Signature    PkgSignature `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=pkg signature"`
 }
 

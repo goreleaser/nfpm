@@ -1027,8 +1027,10 @@ app:
     # programs.
     entitlements: foo.entitlements
     # The passphrase is taken from the environment variable
-    # $NFPM_APP_PASSPHRASE with a fallback to $NFPM_PASSPHRASE, for both the
-    # app and the dmg packager.
+    # $NFPM_APP_PASSPHRASE with a fallback to $NFPM_PASSPHRASE when unset, for
+    # both the app and the dmg packager. Set NFPM_APP_PASSPHRASE to an empty
+    # value for a passwordless p12, even when NFPM_PASSPHRASE is set for
+    # another packager.
 
 # Custom configuration applied only to the pkg packager (macOS).
 #
@@ -1113,7 +1115,9 @@ pkg:
     # Set to "none" to sign without a timestamp.
     timestamp_url: none
     # The passphrase is taken from the environment variable
-    # $NFPM_PKG_PASSPHRASE with a fallback to $NFPM_PASSPHRASE.
+    # $NFPM_PKG_PASSPHRASE with a fallback to $NFPM_PASSPHRASE when unset.
+    # Set NFPM_PKG_PASSPHRASE to an empty value for a passwordless p12, even
+    # when NFPM_PASSPHRASE is set for another packager.
 ```
 
 ## Templating

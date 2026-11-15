@@ -16,6 +16,7 @@ require (
 	github.com/invopop/jsonschema v0.14.0
 	github.com/klauspost/compress v1.20.4
 	github.com/klauspost/pgzip v1.3.0
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/sassoftware/go-rpmutils v0.4.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
