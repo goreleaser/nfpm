@@ -38,6 +38,11 @@ type entry struct {
 func bundleEntries(packager string, info *nfpm.Info, arch string) ([]entry, error) {
 	executable := contentsRoot + "/MacOS/" + executableName(info)
 	index := macos.NewPathIndex()
+	// placed maps each bundle path to the contents entry that supplies it.
+	// The path index accepts the same spelling twice, because parent
+	// directories repeat; two entries for one path would leave only the
+	// later one in the bundle.
+	placed := map[string]string{}
 	var (
 		entries      []entry
 		hasMain      bool
@@ -56,6 +61,12 @@ func bundleEntries(packager string, info *nfpm.Info, arch string) ([]entry, erro
 		if err := validateDestination(content.Destination, destination); err != nil {
 			return nil, err
 		}
+		if previous, taken := placed[destination]; taken {
+			return nil, fmt.Errorf(
+				"package contents %q and %q are placed at the same path in the bundle, %s",
+				previous, content.Destination, destination)
+		}
+		placed[destination] = content.Destination
 		if err := index.Add(destination); err != nil {
 			return nil, err
 		}

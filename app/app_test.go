@@ -523,6 +523,27 @@ func TestInfoPlistValuesMustBeEncodable(t *testing.T) {
 	require.ErrorContains(t, packageError(t, info), `app.info_plist["Outer"][0]["Inner"]`)
 }
 
+// A file and a directory at one path cannot both be in the bundle. Without
+// the check the directory silently replaced the file.
+func TestFileAndDirectoryAtTheSamePath(t *testing.T) {
+	for name, directoryFirst := range map[string]bool{"file first": false, "directory first": true} {
+		t.Run(name, func(t *testing.T) {
+			file := &files.Content{Source: macostest.WriteFile(t, "data", "data"), Destination: "/Contents/Resources/data"}
+			directory := &files.Content{Destination: "/Contents/Resources/data/", Type: files.TypeDir}
+			info := exampleInfo(t)
+			if directoryFirst {
+				info.Contents = append(info.Contents, directory, file)
+			} else {
+				info.Contents = append(info.Contents, file, directory)
+			}
+			var out bytes.Buffer
+			err := app.Default.Package(info, &out)
+			require.ErrorContains(t, err, "are placed at the same path in the bundle, /Contents/Resources/data")
+			assert.Zero(t, out.Len(), "no package is written")
+		})
+	}
+}
+
 // macOS volumes ignore letter case and Unicode normalization, so these are
 // one path there.
 func TestCollidingDestinations(t *testing.T) {
