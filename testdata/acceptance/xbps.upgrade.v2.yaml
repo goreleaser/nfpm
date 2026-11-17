@@ -13,6 +13,15 @@ license: "MIT"
 contents:
   - src: ./testdata/acceptance/xbps.current.v2.txt
     dst: /usr/share/foo/current.txt
+  # Unchanged between the two versions and not owned by root: xbps leaves
+  # the file in place on upgrade, and the generated INSTALL script must keep
+  # its ownership.
+  - src: ./testdata/acceptance/xbps.state.txt
+    dst: /var/lib/foo/state
+    file_info:
+      mode: 0640
+      owner: nobody
+      group: nogroup
 scripts:
   postinstall: ./testdata/acceptance/scripts/xbps/postinstall.sh
 xbps:

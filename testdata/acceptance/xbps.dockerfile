@@ -31,6 +31,7 @@ RUN set -eu; \
       xbps-install -i -R /repo -y foo; \
       grep 'v1' /usr/share/foo/current.txt; \
       test -f /usr/share/foo/preserve.txt; \
+      test "$(stat -c '%U:%G %a' /var/lib/foo/state)" = 'nobody:nogroup 640'; \
       xbps-rindex -a "/repo/${pkgfile}"; \
       xbps-install -i -R /repo -y -u foo; \
     else \
@@ -45,6 +46,8 @@ RUN set -eu; \
     case "${scenario}" in \
       lifecycle) \
         test -x /usr/bin/fake; \
+        test "$(stat -c %a /usr/bin/fake-setuid)" = 4755; \
+        test "$(stat -c %a /usr/bin/fake-setuid-inferred)" = 4755; \
         test -f /etc/foo/whatever.conf; \
         xbps-query -p pkgver foo | grep -x 'foo-1.2.3_1'; \
         xbps-query -p architecture foo | grep -x 'x86_64'; \
@@ -92,6 +95,23 @@ RUN set -eu; \
         grep 'v2' /usr/share/foo/current.txt; \
         test -f /usr/share/foo/preserve.txt; \
         test "$(sed -n 5p /tmp/postinstall-args)" = yes; \
+        # The state file was left in place by the upgrade (unchanged content),
+        # which chowns it to the numeric ids in the archive; the generated
+        # INSTALL script restores the configured ownership and mode.
+        test "$(stat -c '%U:%G %a' /var/lib/foo/state)" = 'nobody:nogroup 640'; \
+        ;; \
+      hookstatus) \
+        test -d /var/lib/foo; \
+        # A post-remove hook that fails must fail xbps-remove, even though the
+        # generated directory cleanup runs after it. The package is removed
+        # regardless, as xbps does on a failed post-remove action.
+        if xbps-remove -y foo; then \
+          echo "failing post-remove hook was reported as success" >&2; \
+          exit 1; \
+        fi; \
+        test -f /tmp/postremove-proof; \
+        test ! -e /usr/bin/fake; \
+        test ! -e /var/lib/foo; \
         ;; \
       *) \
         echo "unknown scenario: ${scenario}" >&2; \

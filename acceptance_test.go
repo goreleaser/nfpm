@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -376,10 +377,19 @@ func TestXBPSSpecific(t *testing.T) {
 			pkgfile:   "foo-1.2.3_1.noarch.xbps",
 			buildArgs: []string{"scenario=noarch"},
 		},
+		{
+			name:      "hookstatus",
+			conf:      "xbps.hookstatus.yaml",
+			pkgfile:   "foo-1.2.3_1.x86_64.xbps",
+			buildArgs: []string{"scenario=hookstatus"},
+		},
 	} {
 		testCase := testCase
 		t.Run(fmt.Sprintf("%s/%s/%s", format, arch, testCase.name), func(t *testing.T) {
 			t.Parallel()
+			if testCase.name == "lifecycle" {
+				writeSetuidFixture(t, "./testdata/acceptance/tmp/xbps_setuid_fake")
+			}
 			generatedPackage := fmt.Sprintf("tmp/xbps_%s_%s.%s", testCase.name, arch, format)
 			buildArgs := append([]string{}, testCase.buildArgs...)
 			buildArgs = append(buildArgs,
@@ -466,6 +476,24 @@ func TestXBPSSpecific(t *testing.T) {
 			},
 		})
 	})
+}
+
+// writeSetuidFixture copies testdata/fake to path with the setuid bit set on
+// disk, so a content entry without an explicit mode infers it from the
+// source; git does not keep setuid bits, hence the copy.
+func writeSetuidFixture(t *testing.T, path string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("setuid bits are not representable on windows")
+	}
+	fake, err := os.ReadFile("./testdata/fake")
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o700))
+	require.NoError(t, os.WriteFile(path, fake, 0o755))
+	require.NoError(t, os.Chmod(path, os.ModeSetuid|0o755))
+	st, err := os.Stat(path)
+	require.NoError(t, err)
+	require.NotZero(t, st.Mode()&os.ModeSetuid, "filesystem does not keep the setuid bit")
 }
 
 type acceptParms struct {

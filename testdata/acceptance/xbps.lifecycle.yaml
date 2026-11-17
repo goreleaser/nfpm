@@ -18,6 +18,14 @@ depends:
 contents:
   - src: ./testdata/fake
     dst: /usr/bin/fake
+  # Special mode bits: one given as a YAML octal, one inferred from a source
+  # file that the acceptance test creates with the setuid bit set on disk.
+  - src: ./testdata/fake
+    dst: /usr/bin/fake-setuid
+    file_info:
+      mode: 04755
+  - src: ./testdata/acceptance/tmp/xbps_setuid_fake
+    dst: /usr/bin/fake-setuid-inferred
   - src: ./testdata/whatever.conf
     dst: /etc/foo/whatever.conf
     type: config
