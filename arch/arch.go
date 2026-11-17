@@ -53,6 +53,8 @@ var archToArchLinux = map[string]string{
 	"aarch64": "aarch64",
 	"i386":    "i686",
 	"riscv64": "riscv64",
+	"ppc64":   "powerpc64",
+	"ppc64le": "powerpc64le",
 }
 
 func ensureValidArch(info *nfpm.Info) *nfpm.Info {
@@ -173,6 +175,11 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 
 	for _, content := range info.Contents {
 		content.Destination = files.AsRelativePath(content.Destination)
+
+		switch strings.TrimSuffix(content.Destination, "/") {
+		case ".PKGINFO", ".BUILDINFO", ".MTREE", ".INSTALL", ".CHANGELOG":
+			return nil, 0, fmt.Errorf("reserved archlinux metadata path: %q", content.Destination)
+		}
 
 		switch content.Type {
 		case files.TypeDir, files.TypeImplicitDir:
@@ -354,6 +361,13 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 
 	for _, depend := range info.Depends {
 		err = writeKVPair(buf, "depend", depend)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, optdepend := range slices.Concat(info.Recommends, info.Suggests) {
+		err = writeKVPair(buf, "optdepend", optdepend)
 		if err != nil {
 			return nil, err
 		}

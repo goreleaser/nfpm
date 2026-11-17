@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -35,6 +36,12 @@ func exampleInfo() *nfpm.Info {
 		Overridables: nfpm.Overridables{
 			Depends: []string{
 				"bash",
+			},
+			Recommends: []string{
+				"git",
+			},
+			Suggests: []string{
+				"fish",
 			},
 			Replaces: []string{
 				"svn",
@@ -94,7 +101,7 @@ func TestConventionalExtension(t *testing.T) {
 }
 
 func TestArch(t *testing.T) {
-	for _, arch := range []string{"386", "amd64", "arm64", "riscv64"} {
+	for _, arch := range []string{"386", "amd64", "arm64", "riscv64", "ppc64", "ppc64le"} {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
@@ -123,22 +130,108 @@ func TestArchNoFiles(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestArchReservedPaths(t *testing.T) {
+	for _, tt := range []struct {
+		destination string
+		contentType string
+	}{
+		{"/.PKGINFO", files.TypeFile},
+		{"/.BUILDINFO", files.TypeFile},
+		{"/.MTREE", files.TypeFile},
+		{"/.INSTALL", files.TypeFile},
+		{"/.CHANGELOG", files.TypeFile},
+		{"/.INSTALL", files.TypeSymlink},
+		{"/.INSTALL/", files.TypeDir},
+		{"/.INSTALL/payload", files.TypeFile},
+		{".INSTALL", files.TypeFile},
+		{"./.INSTALL", files.TypeFile},
+		{"/usr/../.INSTALL", files.TypeFile},
+		{"//.INSTALL", files.TypeFile},
+	} {
+		t.Run(tt.destination+"/"+tt.contentType, func(t *testing.T) {
+			info := exampleInfo()
+			info.Contents = files.Contents{{
+				Source:      "../testdata/fake",
+				Destination: tt.destination,
+				Type:        tt.contentType,
+			}}
+			info.Scripts = nfpm.Scripts{}
+			info.ArchLinux = nfpm.ArchLinux{}
+
+			err := Default.Package(info, io.Discard)
+			require.ErrorContains(t, err, "reserved archlinux metadata path")
+		})
+	}
+}
+
+func TestArchReservedTreePaths(t *testing.T) {
+	for _, name := range []string{".PKGINFO", ".BUILDINFO", ".MTREE", ".INSTALL", ".CHANGELOG"} {
+		t.Run(name, func(t *testing.T) {
+			source := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(source, name), []byte("payload"), 0o644))
+
+			for _, destination := range []string{"/", "/opt/app"} {
+				t.Run(destination, func(t *testing.T) {
+					info := exampleInfo()
+					info.Contents = files.Contents{{
+						Source:      source,
+						Destination: destination,
+						Type:        files.TypeTree,
+					}}
+					info.Scripts = nfpm.Scripts{}
+					info.ArchLinux = nfpm.ArchLinux{}
+
+					err := Default.Package(info, io.Discard)
+					if destination == "/" {
+						require.ErrorContains(t, err, "reserved archlinux metadata path")
+						return
+					}
+					require.NoError(t, err)
+				})
+			}
+		})
+	}
+}
+
 func TestArchNoInfo(t *testing.T) {
 	err := Default.Package(nfpm.WithDefaults(&nfpm.Info{}), io.Discard)
 	require.Error(t, err)
 }
 
 func TestArchConventionalFileName(t *testing.T) {
-	for _, arch := range []string{"386", "amd64", "arm64", "riscv64"} {
+	for arch, expectedArch := range map[string]string{
+		"386":     "i686",
+		"amd64":   "x86_64",
+		"arm64":   "aarch64",
+		"riscv64": "riscv64",
+		"ppc64":   "powerpc64",
+		"ppc64le": "powerpc64le",
+	} {
 		t.Run(arch, func(t *testing.T) {
 			info := exampleInfo()
 			info.Arch = arch
 			name := Default.ConventionalFileName(info)
 			require.Equal(
 				t,
-				"foo-test-1.0.0beta_1-1-"+archToArchLinux[arch]+".pkg.tar.zst",
+				"foo-test-1.0.0beta_1-1-"+expectedArch+".pkg.tar.zst",
 				name,
 			)
+		})
+	}
+}
+
+func TestArchPkginfoArch(t *testing.T) {
+	for arch, expectedArch := range map[string]string{
+		"ppc64":   "powerpc64",
+		"ppc64le": "powerpc64le",
+	} {
+		t.Run(arch, func(t *testing.T) {
+			info := exampleInfo()
+			info.Arch = arch
+			pkginfoData, err := makeTestPkginfo(t, info)
+			require.NoError(t, err)
+			fields := extractPkginfoFields(pkginfoData)
+			require.Equal(t, expectedArch, fields["arch"])
 		})
 	}
 }
@@ -161,6 +254,7 @@ func TestArchPkginfo(t *testing.T) {
 	require.Equal(t, "zsh", fields["conflict"])
 	require.Equal(t, "bzr", fields["provides"])
 	require.Equal(t, "bash", fields["depend"])
+	require.ElementsMatch(t, []string{"git", "fish"}, extractPkginfoValues(pkginfoData, "optdepend"))
 	require.Equal(t, "etc/fake/fake.conf", fields["backup"])
 }
 
@@ -250,6 +344,16 @@ func extractPkginfoFields(data []byte) map[string]string {
 		out[splitPair[0]] = splitPair[1]
 	}
 
+	return out
+}
+
+func extractPkginfoValues(data []byte, key string) []string {
+	var out []string
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		if k, v, ok := strings.Cut(line, " = "); ok && k == key {
+			out = append(out, v)
+		}
+	}
 	return out
 }
 

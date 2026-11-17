@@ -1,0 +1,47 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+maintainer: "Foo Bar <foo@bar.com>"
+release: "4"
+epoch: "1"
+description: |
+  Foo bar
+    Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+depends:
+  - bash
+provides:
+  - foo-tool
+contents:
+  - src: ./testdata/fake
+    dst: /usr/bin/fake
+  - src: ./testdata/elf64
+    dst: /usr/lib/foo/elf64
+    file_info:
+      mode: 0755
+  - src: ./testdata/whatever.conf
+    dst: /etc/foo/whatever.conf
+    type: config|noreplace
+  - src: ./testdata/fake
+    dst: /usr/share/doc/foo/README
+    type: doc
+  - dst: /var/log/whatever
+    type: dir
+  - src: /usr/bin/fake
+    dst: /usr/bin/fake-link
+    type: symlink
+  - dst: /var/lib/foo/state
+    type: ghost
+  - src: ./testdata/acceptance/scripts/script_requires_bash.sh
+    dst: /usr/libexec/foo/bash-script
+    file_info:
+      mode: 0755
+scripts:
+  postinstall: ./testdata/scripts/srpm-rebuild-postinstall.sh
+rpm:
+  group: "Application/Misc"
+  summary: "foo summary"
+  script_requires: true

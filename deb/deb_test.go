@@ -2,6 +2,7 @@ package deb
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"crypto/md5" // nolint: gosec
@@ -455,6 +456,34 @@ func TestConffiles(t *testing.T) {
 	out, ok := conffiles(info)
 	require.True(t, ok)
 	require.Equal(t, "/etc/fake\n", string(out), "should have a trailing empty line")
+}
+
+func TestConffilesFromConfigTree(t *testing.T) {
+	info := nfpm.WithDefaults(&nfpm.Info{
+		Name:        "minimal",
+		Arch:        "arm64",
+		Description: "Minimal does nothing",
+		Priority:    "extra",
+		Version:     "1.0.0",
+		Section:     "default",
+		Maintainer:  "maintainer",
+		Overridables: nfpm.Overridables{
+			Contents: []*files.Content{
+				{
+					Source:      "../files/testdata/tree/files",
+					Destination: "/etc/fake",
+					Type:        files.TypeConfigTree,
+				},
+			},
+		},
+	})
+	err := nfpm.PrepareForPackager(withChangelogIfRequested(info), packagerName)
+	require.NoError(t, err)
+	out, ok := conffiles(info)
+	require.True(t, ok)
+	// Every regular file in the tree must be registered as a conffile.
+	require.Contains(t, string(out), "/etc/fake/a\n")
+	require.Contains(t, string(out), "/etc/fake/b/c\n")
 }
 
 func TestNoConffiles(t *testing.T) {
@@ -1225,8 +1254,13 @@ func TestCompressionAlgorithms(t *testing.T) {
 func TestDefaultCompressionMatchesExplicitGzip(t *testing.T) {
 	// When compression is unset, it should default to gzip at the same level
 	// as explicitly setting compression to "gzip", producing identical output.
+	// Use a fixed MTime so both builds embed identical timestamps; otherwise
+	// each build calls time.Now() and the differing timestamps compress to
+	// slightly different sizes, making this comparison flaky.
+	mtime := time.Unix(1700000000, 0)
 	buildDeb := func(compression string) []byte {
 		info := exampleInfo()
+		info.MTime = mtime
 		info.Deb.Compression = compression
 
 		var deb bytes.Buffer
@@ -1659,4 +1693,50 @@ func verifyDpkgSigFileHashes(arFiles map[string][]byte, msg string) error {
 		}
 	}
 	return nil
+}
+
+type errWriter struct{ err error }
+
+func (w *errWriter) Write([]byte) (int, error) {
+	return 0, w.err
+}
+
+func TestWriterPathErrorsAreWrapped(t *testing.T) {
+	tests := []struct {
+		name    string
+		fn      func() error
+		want    error
+		wantMsg string
+	}{
+		{
+			name: "addArFile write error",
+			fn: func() error {
+				buffer := bufio.NewWriter(&errWriter{err: os.ErrClosed})
+				w := ar.NewWriter(buffer)
+				if err := w.WriteGlobalHeader(); err != nil {
+					return err
+				}
+				return addArFile(w, "test", make([]byte, buffer.Size()), mtime)
+			},
+			want:    os.ErrClosed,
+			wantMsg: "cannot write test body to deb:",
+		},
+		{
+			name: "newFilePathInsideTar read error",
+			fn: func() error {
+				tw := tar.NewWriter(io.Discard)
+				return newFilePathInsideTar(tw, "/nonexistent/path", "dest", 0o644, mtime)
+			},
+			want:    os.ErrNotExist,
+			wantMsg: "cannot read /nonexistent/path:",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.fn()
+			require.ErrorIs(t, err, tt.want)
+			require.ErrorContains(t, err, tt.wantMsg)
+		})
+	}
 }

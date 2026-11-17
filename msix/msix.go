@@ -2,17 +2,22 @@
 package msix
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"log"
 	"os"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
+	"github.com/goreleaser/nfpm/v2/internal/maintainer"
 	"go.digitalxero.dev/go-msix"
 )
 
@@ -65,6 +70,24 @@ func (*MSIX) ConventionalExtension() string {
 	return ".msix"
 }
 
+const dnKeyPattern = `(CN|L|O|OU|E|C|S|STREET|T|G|I|SN|DC|SERIALNUMBER|Description|PostalCode|POBox|Phone|X21Address|dnQualifier|OID\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))+)`
+
+// ST_Publisher_2010_v2 from the Windows foundation manifest schema, with
+// Windows doubled-quote escaping and XML control characters excluded.
+// nolint: gochecknoglobals
+var publisherPattern = regexp.MustCompile(`^` + dnKeyPattern + `=` + dnValuePattern + `(, ` + dnKeyPattern + `=` + dnValuePattern + `)*$`)
+
+const dnValuePattern = `([^,+=\x00-\x1f"<>#;]+|"([^"\x00-\x1f]|"")*")`
+
+// ensureDN turns a plain name into a publisher distinguished name by prefixing
+// "CN=" and quoting per Windows X.500 syntax; valid Windows DNs pass through.
+func ensureDN(name string) string {
+	if validatePublisher(name) == nil {
+		return name
+	}
+	return "CN=" + quoteDNValue(name)
+}
+
 // SetPackagerDefaults sets default values for MSIX-specific fields.
 func (*MSIX) SetPackagerDefaults(info *nfpm.Info) {
 	needsFullTrust := false
@@ -114,6 +137,12 @@ func (*MSIX) SetPackagerDefaults(info *nfpm.Info) {
 
 // Package writes a new MSIX package to the given writer using the given info.
 func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
+	// Derived identity and application defaults belong to this attempt. A caller
+	// may retry with corrected credentials or reuse Info for another certificate.
+	packageInfo := *info
+	packageInfo.MSIX.Applications = slices.Clone(info.MSIX.Applications)
+	packageInfo.MSIX.Capabilities.Restricted = slices.Clone(info.MSIX.Capabilities.Restricted)
+	info = &packageInfo
 	m.SetPackagerDefaults(info)
 	info = ensureValidArch(info)
 
@@ -121,47 +150,63 @@ func (m *MSIX) Package(info *nfpm.Info, w io.Writer) error {
 		return err
 	}
 
+	if info.Scripts != (nfpm.Scripts{}) {
+		log.Printf("warning: msix is declarative and does not support install scripts, ignoring scripts")
+	}
+
+	// Load once so the derived identity and signature use the same certificate.
+	var signing msix.Signing
+	if info.MSIX.Signature.PFXFile != "" {
+		var err error
+		signing, err = loadSigning(info)
+		if err != nil {
+			return err
+		}
+	} else if info.MSIX.Publisher == "" {
+		if v := maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer); v != "" {
+			info.MSIX.Publisher = ensureDN(v)
+		}
+	}
+
 	if err := validate(info); err != nil {
 		return err
 	}
 
-	builder := msix.NewBuilder()
+	builder := msix.NewBuilder().
+		WithIdentity(msix.NewIdentity().
+			WithName(info.Name).
+			WithVersion(convertToMSIXVersion(info.Version)).
+			WithPublisher(info.MSIX.Publisher).
+			WithProcessorArchitecture(info.Arch).
+			WithResourceID(info.MSIX.Identity.ResourceID).
+			Build()).
+		WithProperties(buildProperties(info)).
+		WithDependencies(buildDependencies(info)).
+		WithCapabilities(buildCapabilities(info)).
+		AddResource(msix.NewResource().WithLanguage("en-us").Build())
 
-	builder.Manifest = msix.Manifest{
-		Identity: msix.Identity{
-			Name:                  info.Name,
-			Version:               convertToMSIXVersion(info.Version),
-			Publisher:             info.MSIX.Publisher,
-			ProcessorArchitecture: info.Arch,
-			ResourceID:            info.MSIX.Identity.ResourceID,
-		},
-		Properties: buildProperties(info),
-		Dependencies: msix.Dependencies{
-			TargetDeviceFamilies: buildTargetDeviceFamilies(info),
-		},
-		Resources: []msix.Resource{
-			{Language: "en-us"},
-		},
-		Applications: buildApplications(info),
-		Capabilities: buildCapabilities(info),
+	for _, app := range buildApplications(info) {
+		builder.AddApplication(app)
 	}
 
-	if err := addContents(builder, info); err != nil {
-		return err
+	addContents(builder, info)
+
+	if signing != nil {
+		builder.WithSigning(signing)
 	}
 
-	if info.MSIX.Signature.PFXFile != "" {
-		if err := configureSigning(builder, info); err != nil {
-			return err
-		}
-	}
-
-	return builder.Build(w)
+	return builder.Build(context.Background(), w)
 }
 
 func validate(info *nfpm.Info) error {
 	if info.MSIX.Publisher == "" {
-		return fmt.Errorf("package %s must be provided", "msix.publisher")
+		return fmt.Errorf("package msix.publisher, vendor, or maintainer must be provided")
+	}
+	if err := validatePublisher(info.MSIX.Publisher); err != nil {
+		return err
+	}
+	if name := publisherDisplayName(info); !validDisplayName(name) {
+		return fmt.Errorf("package msix.properties.publisher_display_name must be a display name of 1 to 256 characters or an ms-resource reference, without line breaks or leading/trailing whitespace")
 	}
 	if info.MSIX.Properties.Logo == "" {
 		return fmt.Errorf("package %s must be provided", "msix.properties.logo")
@@ -180,74 +225,89 @@ func validate(info *nfpm.Info) error {
 	return nil
 }
 
-func buildProperties(info *nfpm.Info) msix.Properties {
-	props := msix.Properties{
-		DisplayName:          info.MSIX.Properties.DisplayName,
-		PublisherDisplayName: info.MSIX.Properties.PublisherDisplayName,
-		Logo:                 info.MSIX.Properties.Logo,
-		Description:          info.Description,
+func validDisplayName(name string) bool {
+	if name == "" || strings.TrimSpace(name) != name || strings.ContainsAny(name, "\r\n") || !validXMLText(name) {
+		return false
 	}
-	if props.DisplayName == "" {
-		props.DisplayName = info.Name
-	}
-	if props.PublisherDisplayName == "" {
-		props.PublisherDisplayName = info.Name
-	}
-	return props
+	// Resource references have a separate 256-character limit after the prefix.
+	name = strings.TrimPrefix(name, "ms-resource:")
+	return utf8.RuneCountInString(name) <= 256
 }
 
-func buildTargetDeviceFamilies(info *nfpm.Info) []msix.TargetDeviceFamily {
-	families := make([]msix.TargetDeviceFamily, len(info.MSIX.Dependencies.TargetDeviceFamilies))
-	for i, f := range info.MSIX.Dependencies.TargetDeviceFamilies {
-		families[i] = msix.TargetDeviceFamily{
-			Name:             f.Name,
-			MinVersion:       f.MinVersion,
-			MaxVersionTested: f.MaxVersionTested,
-		}
+func buildProperties(info *nfpm.Info) msix.Properties {
+	displayName := info.MSIX.Properties.DisplayName
+	if displayName == "" {
+		displayName = info.Name
 	}
-	return families
+	return msix.NewProperties().
+		WithDisplayName(displayName).
+		WithPublisherDisplayName(publisherDisplayName(info)).
+		WithLogo(info.MSIX.Properties.Logo).
+		WithDescription(info.Description).
+		Build()
+}
+
+func publisherDisplayName(info *nfpm.Info) string {
+	if name := info.MSIX.Properties.PublisherDisplayName; name != "" {
+		return name
+	}
+	if name := maintainer.VendorOrMaintainer(info.Vendor, info.Maintainer); validDisplayName(name) {
+		return name
+	}
+	return info.Name
+}
+
+func buildDependencies(info *nfpm.Info) msix.Dependencies {
+	deps := msix.NewDependencies()
+	for _, f := range info.MSIX.Dependencies.TargetDeviceFamilies {
+		deps.AddTargetDeviceFamily(f.Name, f.MinVersion, f.MaxVersionTested)
+	}
+	return deps.Build()
 }
 
 func buildApplications(info *nfpm.Info) []msix.Application {
-	apps := make([]msix.Application, len(info.MSIX.Applications))
-	for i, app := range info.MSIX.Applications {
-		apps[i] = msix.Application{
-			ID:         app.ID,
-			Executable: app.Executable,
-			EntryPoint: app.EntryPoint,
-			VisualElements: msix.VisualElements{
-				DisplayName:       app.VisualElements.DisplayName,
-				Description:       app.VisualElements.Description,
-				BackgroundColor:   app.VisualElements.BackgroundColor,
-				Square150x150Logo: app.VisualElements.Square150x150Logo,
-				Square44x44Logo:   app.VisualElements.Square44x44Logo,
-			},
+	apps := make([]msix.Application, 0, len(info.MSIX.Applications))
+	for _, app := range info.MSIX.Applications {
+		displayName := app.VisualElements.DisplayName
+		if displayName == "" {
+			displayName = info.Name
 		}
-		if apps[i].VisualElements.DisplayName == "" {
-			apps[i].VisualElements.DisplayName = info.Name
+		description := app.VisualElements.Description
+		if description == "" {
+			description = info.Description
 		}
-		if apps[i].VisualElements.Description == "" {
-			apps[i].VisualElements.Description = info.Description
-		}
+		ve := msix.NewVisualElements().
+			WithDisplayName(displayName).
+			WithDescription(description).
+			WithBackgroundColor(app.VisualElements.BackgroundColor).
+			WithSquare150x150Logo(app.VisualElements.Square150x150Logo).
+			WithSquare44x44Logo(app.VisualElements.Square44x44Logo).
+			Build()
+		apps = append(apps, msix.NewApplication().
+			WithID(app.ID).
+			WithExecutable(app.Executable).
+			WithEntryPoint(app.EntryPoint).
+			WithVisualElements(ve).
+			Build())
 	}
 	return apps
 }
 
 func buildCapabilities(info *nfpm.Info) msix.Capabilities {
-	caps := msix.Capabilities{}
+	caps := msix.NewCapabilities()
 	for _, c := range info.MSIX.Capabilities.Capabilities {
-		caps.Capabilities = append(caps.Capabilities, msix.Capability{Name: c})
+		caps.AddCapability(c)
 	}
 	for _, c := range info.MSIX.Capabilities.DeviceCapabilities {
-		caps.DeviceCapabilities = append(caps.DeviceCapabilities, msix.DeviceCapability{Name: c})
+		caps.AddDeviceCapability(msix.NewDeviceCapability().WithName(c).Build())
 	}
 	for _, c := range info.MSIX.Capabilities.Restricted {
-		caps.Restricted = append(caps.Restricted, msix.RestrictedCapability{Name: c})
+		caps.AddRestricted(c)
 	}
-	return caps
+	return caps.Build()
 }
 
-func addContents(builder *msix.Builder, info *nfpm.Info) error {
+func addContents(builder msix.Builder, info *nfpm.Info) {
 	for _, content := range info.Contents {
 		switch content.Type {
 		case files.TypeDir:
@@ -257,39 +317,43 @@ func addContents(builder *msix.Builder, info *nfpm.Info) error {
 			log.Printf("warning: msix does not support symlinks, skipping %s", content.Destination)
 			continue
 		default:
-			// Treat everything else (TypeFile, TypeConfig, etc.) as regular files
+			// Treat everything else (TypeFile, TypeConfig, etc.) as regular files.
+			// AddFile defers errors to Build, so they surface from builder.Build.
 			dest := normalizePathForMSIX(content.Destination)
 			if content.Source != "" {
-				if err := builder.AddFile(dest, content.Source); err != nil {
-					return fmt.Errorf("adding file %s: %w", content.Source, err)
-				}
+				builder.AddFile(dest, content.Source)
 			}
 		}
 	}
-	return nil
 }
 
-func configureSigning(builder *msix.Builder, info *nfpm.Info) error {
+func loadSigning(info *nfpm.Info) (msix.Signing, error) {
 	pfxPath := info.MSIX.Signature.PFXFile
 	if _, err := os.Stat(pfxPath); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("PFX file not found: %w", err)
+			return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("PFX file not found: %w", err)}
 		}
-		return fmt.Errorf("unable to access PFX file: %w", err)
+		return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("unable to access PFX file: %w", err)}
 	}
 
 	cert, key, chain, err := msix.LoadPFX(pfxPath, info.MSIX.Signature.KeyPassphrase)
 	if err != nil {
-		return &nfpm.ErrSigningFailure{Err: fmt.Errorf("loading PFX: %w", err)}
+		return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("loading PFX: %w", err)}
 	}
-
-	builder.SignOptions = &msix.SignOptions{
-		Certificate: cert,
-		PrivateKey:  key,
-		CertChain:   chain,
+	publisher, err := certificatePublisher(cert.RawSubject)
+	if err != nil {
+		return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("format signing certificate publisher: %w", err)}
 	}
+	if info.MSIX.Publisher != "" && info.MSIX.Publisher != publisher {
+		return nil, &nfpm.ErrSigningFailure{Err: fmt.Errorf("msix.publisher does not match the signing certificate subject; omit publisher to derive it from the certificate")}
+	}
+	info.MSIX.Publisher = publisher
 
-	return nil
+	return msix.NewSigning().
+		WithCertificate(cert).
+		WithPrivateKey(key).
+		WithCertChain(chain...).
+		Build(), nil
 }
 
 // normalizePathForMSIX converts Unix-style paths to Windows-style package paths.

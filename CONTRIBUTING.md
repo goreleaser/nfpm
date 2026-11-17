@@ -9,7 +9,7 @@ By participating to this project, you agree to abide our [code of conduct](https
 Prerequisites:
 
 - [Task](https://taskfile.dev/#/installation)
-- [Go 1.26+](https://golang.org/doc/install)
+- [Go 1.27.4+](https://golang.org/doc/install)
 - [Docker](https://www.docker.com/)
 - `gpg` (probably already installed on your system)
 
@@ -91,6 +91,11 @@ See #284
 ## Submit a pull request
 
 Push your branch to your `nfpm` fork and open a pull request against the main branch.
+
+Pull requests merge through the merge queue using squash merges.
+The required `build` and `lint` checks must pass on both the pull request and its merge group.
+On pull requests, `build` waits for unit tests, license checks, and Semgrep.
+In the merge queue, `build` waits for acceptance tests, including Windows package and installation checks.
 
 ## Financial contributions
 

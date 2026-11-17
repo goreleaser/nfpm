@@ -16,7 +16,9 @@ IgnoreURLs:
   - "https://github.com/goreleaser/nfpm/releases"
   - "https://becker.software/nfpm.png"
   - "https://opencollective.com/"
+  - "https://images.opencollective.com/"
   - "https://wiki.alpinelinux.org/"
+  - "utm_medium=sponsor"
 IgnoreAltMissing: true
 IgnoreInternalEmptyHash: true
 LogLevel: 2

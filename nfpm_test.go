@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/mail"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -17,6 +18,70 @@ import (
 )
 
 var mtime = time.Date(2023, 11, 5, 23, 15, 17, 0, time.UTC)
+
+func TestMSIXPassphrasePrecedence(t *testing.T) {
+	for _, tt := range []struct {
+		name, specific, want string
+		set                  bool
+	}{
+		{"unset uses global", "", "global", false},
+		{"specific overrides global", "specific", "specific", true},
+		{"empty overrides global", "", "", true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("NFPM_PASSPHRASE", "global")
+			t.Setenv("NFPM_MSIX_PASSPHRASE", tt.specific)
+			if !tt.set {
+				require.NoError(t, os.Unsetenv("NFPM_MSIX_PASSPHRASE"))
+			}
+			config, err := nfpm.Parse(strings.NewReader("name: TestApp"))
+			require.NoError(t, err)
+			require.Equal(t, tt.want, config.MSIX.Signature.KeyPassphrase)
+			path := filepath.Join(t.TempDir(), "nfpm.yaml")
+			require.NoError(t, os.WriteFile(path, []byte("name: TestApp"), 0o600))
+			config, err = nfpm.ParseFile(path)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, config.MSIX.Signature.KeyPassphrase)
+		})
+	}
+}
+
+func TestMSIXPassphraseCustomMappingIsolation(t *testing.T) {
+	t.Setenv("NFPM_MSIX_PASSPHRASE", "process-value")
+	mapping := func(key string) string {
+		if key == "NFPM_PASSPHRASE" {
+			return "mapped-global"
+		}
+		return ""
+	}
+	config, err := nfpm.ParseWithEnvMapping(strings.NewReader("name: TestApp"), mapping)
+	require.NoError(t, err)
+	require.Equal(t, "mapped-global", config.MSIX.Signature.KeyPassphrase)
+	path := filepath.Join(t.TempDir(), "nfpm.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("name: TestApp"), 0o600))
+	config, err = nfpm.ParseFileWithEnvMapping(path, mapping)
+	require.NoError(t, err)
+	require.Equal(t, "mapped-global", config.MSIX.Signature.KeyPassphrase)
+}
+
+func TestMSIXEmptyPassphraseFromStdin(t *testing.T) {
+	t.Setenv("NFPM_PASSPHRASE", "other-packager-password")
+	t.Setenv("NFPM_MSIX_PASSPHRASE", "")
+	path := filepath.Join(t.TempDir(), "stdin.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("name: TestApp"), 0o600))
+	in, err := os.Open(path)
+	require.NoError(t, err)
+	previous := os.Stdin
+	os.Stdin = in
+	t.Cleanup(func() {
+		os.Stdin = previous
+		require.NoError(t, in.Close())
+	})
+	config, err := nfpm.ParseFile("-")
+	require.NoError(t, err)
+	require.Equal(t, "TestApp", config.Name)
+	require.Empty(t, config.MSIX.Signature.KeyPassphrase)
+}
 
 func TestEnumerate(t *testing.T) {
 	nfpm.RegisterPackager("deb", nil)
@@ -299,6 +364,76 @@ func TestValidateError(t *testing.T) {
 	}
 }
 
+func TestPrepareForPackagerArchRequired(t *testing.T) {
+	t.Run("msi", func(t *testing.T) {
+		info := &nfpm.Info{Name: "foo", Version: "1.0.0"}
+		require.EqualError(t, nfpm.PrepareForPackager(info, "msi"), "package arch must be provided")
+		info.MSI.Arch = "x64"
+		require.NoError(t, nfpm.PrepareForPackager(info, "msi"))
+	})
+}
+
+// TestMSIEnvVarExpansion proves every free-form MSI string field goes through
+// environment variable expansion, matching the other packagers' fields.
+func TestMSIEnvVarExpansion(t *testing.T) {
+	env := map[string]string{
+		"MSI_VERSION": "24.1.0",
+		"MSI_PRODUCT": "My App",
+		"MSI_VENDOR":  "My Company",
+		"MSI_DIR":     "MyApp",
+		"MSI_PROP":    "prop-value",
+		"MSI_ARGS":    "--from-env",
+		"MSI_ACCOUNT": `NT AUTHORITY\LocalService`,
+		"MSI_REG":     "reg-value",
+		"MSI_PFX":     "/certs/code.pfx",
+		"MSI_TSA":     "http://timestamp.example.com",
+	}
+	config, err := nfpm.ParseWithEnvMapping(strings.NewReader(`
+name: foo
+msi:
+  version: "$MSI_VERSION"
+  product_name: "$MSI_PRODUCT"
+  manufacturer: "$MSI_VENDOR"
+  install_dir: "$MSI_DIR"
+  properties:
+    MYPROP: "$MSI_PROP"
+  file_versions:
+    /a.exe: "$MSI_VERSION"
+    /unversioned.exe: ""
+  shortcuts:
+    - name: s
+      target: /a.exe
+      arguments: "$MSI_ARGS"
+  services:
+    - name: svc
+      executable: /a.exe
+      account: "$MSI_ACCOUNT"
+      arguments: "$MSI_ARGS"
+  registry:
+    - root: HKLM
+      key: k
+      name: n
+      value: "$MSI_REG"
+  signature:
+    pfx_file: "$MSI_PFX"
+    timestamp_url: "$MSI_TSA"
+`), func(s string) string { return env[s] })
+	require.NoError(t, err)
+
+	require.Equal(t, "24.1.0", config.MSI.Version)
+	require.Equal(t, "My App", config.MSI.ProductName)
+	require.Equal(t, "My Company", config.MSI.Manufacturer)
+	require.Equal(t, "MyApp", config.MSI.InstallDir)
+	require.Equal(t, "prop-value", config.MSI.Properties["MYPROP"])
+	require.Equal(t, map[string]string{"/a.exe": "24.1.0", "/unversioned.exe": ""}, config.MSI.FileVersions)
+	require.Equal(t, "--from-env", config.MSI.Shortcuts[0].Arguments)
+	require.Equal(t, `NT AUTHORITY\LocalService`, config.MSI.Services[0].Account)
+	require.Equal(t, "--from-env", config.MSI.Services[0].Arguments)
+	require.Equal(t, "reg-value", config.MSI.Registry[0].Value)
+	require.Equal(t, "/certs/code.pfx", config.MSI.Signature.PFXFile)
+	require.Equal(t, "http://timestamp.example.com", config.MSI.Signature.TimestampURL)
+}
+
 func parseAndValidate(filename string) (nfpm.Config, error) {
 	config, err := nfpm.ParseFile(filename)
 	if err != nil {
@@ -343,7 +478,10 @@ func TestParseFile(t *testing.T) {
 	require.Equal(t, "my/rpm/key/file", config.RPM.Signature.KeyFile)
 	require.Equal(t, "hard/coded/file", config.Deb.Signature.KeyFile)
 	require.Empty(t, config.APK.Signature.KeyFile)
-	_, err = parseAndValidate("./testdata/overrides-missing.yaml")
+	missing, err := parseAndValidate("./testdata/overrides-missing.yaml")
+	require.NoError(t, err)
+	// an empty override clause (overrides.deb) must not panic when resolved
+	_, err = missing.Get("deb")
 	require.NoError(t, err)
 }
 
@@ -475,12 +613,17 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 	})
 
 	t.Run("global passphrase", func(t *testing.T) {
+		t.Setenv("NFPM_MSI_PASSPHRASE", "")
 		t.Setenv("NFPM_PASSPHRASE", globalPass)
+		t.Setenv("NFPM_MSIX_PASSPHRASE", "")
+		require.NoError(t, os.Unsetenv("NFPM_MSIX_PASSPHRASE"))
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, globalPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.APK.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.MSIX.Signature.KeyPassphrase)
+		require.Equal(t, globalPass, info.MSI.Signature.KeyPassphrase)
 		require.Equal(t, globalPass, info.XBPS.Signature.KeyPassphrase)
 	})
 
@@ -502,12 +645,16 @@ maintainer: '"$GIT_COMMITTER_NAME" <$GIT_COMMITTER_EMAIL>'
 		t.Setenv("NFPM_APK_PASSPHRASE", apkPass)
 		t.Setenv("XBPS_PASSPHRASE", xbpsPass)
 		t.Setenv("NFPM_XBPS_PASSPHRASE", nfpmXBPSPass)
+		t.Setenv("NFPM_MSIX_PASSPHRASE", "msixPass")
+		t.Setenv("NFPM_MSI_PASSPHRASE", "msiPass")
 		info, err := nfpm.Parse(strings.NewReader("name: foo"))
 		require.NoError(t, err)
 		require.Equal(t, debPass, info.Deb.Signature.KeyPassphrase)
 		require.Equal(t, rpmPass, info.RPM.Signature.KeyPassphrase)
 		require.Equal(t, apkPass, info.APK.Signature.KeyPassphrase)
 		require.Equal(t, nfpmXBPSPass, info.XBPS.Signature.KeyPassphrase)
+		require.Equal(t, "msixPass", info.MSIX.Signature.KeyPassphrase)
+		require.Equal(t, "msiPass", info.MSI.Signature.KeyPassphrase)
 	})
 
 	t.Run("packager", func(t *testing.T) {

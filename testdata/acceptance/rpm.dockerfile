@@ -6,7 +6,7 @@ COPY ${package} /tmp/foo.rpm
 
 # ---- minimal test ----
 FROM test_base AS min
-RUN rpm -ivh /tmp/foo.rpm
+RUN rpm --nosignature -ivh /tmp/foo.rpm
 
 
 # ---- symlink test ----
@@ -36,10 +36,12 @@ RUN test -f /usr/share/whatever/folder2/file2
 
 # ---- complex test ----
 FROM test_base AS complex
-RUN rpm --prefix=/opt -ivh /tmp/foo.rpm
+RUN rpm --nosignature --prefix=/opt -ivh /tmp/foo.rpm
 RUN test "$(rpm -qp --recommends /tmp/foo.rpm)" = "fish"
 RUN test "$(rpm -qp --suggests /tmp/foo.rpm)" = "zsh"
-RUN test "$(rpm -qp --requires /tmp/foo.rpm)" = "bash"
+# The package declares a single explicit dependency (bash); the remaining
+# entries are the standard rpmlib() feature requirements.
+RUN rpm -qp --requires /tmp/foo.rpm | grep -E '^bash$'
 RUN test -e /opt/fake
 RUN test -f /etc/foo/whatever.conf
 RUN test -d /usr/share/whatever/folder
@@ -163,7 +165,7 @@ FROM test_base AS upgrade
 ARG oldpackage
 RUN echo "${oldpackage}"
 COPY ${oldpackage} /tmp/old_foo.rpm
-RUN rpm -ivh /tmp/old_foo.rpm
+RUN rpm --nosignature -ivh /tmp/old_foo.rpm
 
 RUN test -f /tmp/preinstall-proof
 RUN cat /tmp/preinstall-proof | grep "Install"
@@ -174,7 +176,7 @@ RUN cat /tmp/postinstall-proof | grep "Install"
 RUN echo modified > /etc/regular.conf
 RUN echo modified > /etc/noreplace.conf
 
-RUN rpm -ivh /tmp/foo.rpm --upgrade
+RUN rpm --nosignature -ivh /tmp/foo.rpm --upgrade
 
 RUN test -f /tmp/preremove-proof
 RUN cat /tmp/preremove-proof | grep "Upgrade"
@@ -208,7 +210,7 @@ RUN test ! -f /usr/bin/fake
 # ---- directories test ----
 FROM test_base AS directories
 RUN groupadd test
-RUN rpm -ivh /tmp/foo.rpm
+RUN rpm --nosignature -ivh /tmp/foo.rpm
 RUN test -f /etc/foo/file
 RUN test -f /etc/bar/file
 RUN test -d /etc/bar
@@ -232,3 +234,26 @@ FROM min AS postrequires
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^bash 1024 ?$'
 RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS} %{REQUIREVERSION}\n]' /tmp/foo.rpm | grep -E '^coreutils 1036 9\.0$'
+
+# ---- elfcolors test ----
+FROM min AS elfcolors
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '1 /usr/lib/foo/elf32'
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '2 /usr/lib/foo/elf64'
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '0 /usr/lib/foo/elf64.so'
+RUN rpm -q --qf '[%{FILECOLORS} %{FILENAMES}\n]' foo | grep -Fx '0 /usr/bin/fake'
+
+# ---- isaprovide test ----
+FROM min AS isaprovide
+RUN rpm -qp --provides /tmp/foo.rpm
+RUN rpm -qp --provides /tmp/foo.rpm | grep -Fx "foo = 1:1.2.3-4"
+RUN rpm -qp --provides /tmp/foo.rpm | grep -Fx "foo$(rpm --eval '%{_isa}') = 1:1.2.3-4"
+
+# ---- script requires test ----
+FROM min AS scriptrequires
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/bin/bash 16384'
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/usr/bin/env 16384'
+RUN rpm -qp --qf '[%{REQUIRENAME} %{REQUIREFLAGS}\n]' /tmp/foo.rpm | grep -Fx '/bin/sh 16384'
+# Scripts that are not executable are not scanned.
+RUN ! rpm -qp --requires /tmp/foo.rpm | grep -F perl

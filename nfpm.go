@@ -79,17 +79,24 @@ func Enumerate() []string {
 
 // Parse decodes YAML data from an io.Reader into a configuration struct.
 func Parse(in io.Reader) (config Config, err error) {
-	return ParseWithEnvMapping(in, os.Getenv)
+	return parse(in, os.Getenv, os.LookupEnv)
 }
 
 // ParseWithEnvMapping decodes YAML data from an io.Reader into a configuration struct.
+// Mapping functions cannot distinguish an unset variable from an empty one;
+// an empty mapped MSIX passphrase therefore uses the global default.
 func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Config, err error) {
+	return parse(in, mapping, nil)
+}
+
+func parse(in io.Reader, mapping func(string) string, lookup func(string) (string, bool)) (config Config, err error) {
 	dec := yaml.NewDecoder(in)
 	dec.KnownFields(true)
 	if err = dec.Decode(&config); err != nil {
 		return config, err
 	}
 	config.envMappingFunc = mapping
+	config.envLookupFunc = lookup
 	if config.envMappingFunc == nil {
 		config.envMappingFunc = func(s string) string { return s }
 	}
@@ -101,21 +108,25 @@ func ParseWithEnvMapping(in io.Reader, mapping func(string) string) (config Conf
 
 // ParseFile decodes YAML data from a file path into a configuration struct.
 func ParseFile(path string) (config Config, err error) {
-	if path == "-" {
-		return ParseWithEnvMapping(os.Stdin, os.Getenv)
-	}
-	return ParseFileWithEnvMapping(path, os.Getenv)
+	return parseFile(path, os.Getenv, os.LookupEnv)
 }
 
 // ParseFileWithEnvMapping decodes YAML data from a file path into a configuration struct.
 func ParseFileWithEnvMapping(path string, mapping func(string) string) (config Config, err error) {
+	return parseFile(path, mapping, nil)
+}
+
+func parseFile(path string, mapping func(string) string, lookup func(string) (string, bool)) (config Config, err error) {
+	if path == "-" {
+		return parse(os.Stdin, mapping, lookup)
+	}
 	var file *os.File
 	file, err = os.Open(path) //nolint:gosec
 	if err != nil {
 		return config, err
 	}
 	defer file.Close() // nolint: errcheck,gosec
-	return ParseWithEnvMapping(file, mapping)
+	return parse(file, mapping, lookup)
 }
 
 // Packager represents any packager implementation.
@@ -134,6 +145,7 @@ type Config struct {
 	Info           `yaml:",inline" json:",inline"`
 	Overrides      map[string]*Overridables `yaml:"overrides,omitempty" json:"overrides,omitempty" jsonschema:"title=overrides,description=override some fields when packaging with a specific packager"`
 	envMappingFunc func(string) string
+	envLookupFunc  func(string) (string, bool)
 }
 
 // Get returns the Info struct for the given packager format. Overrides
@@ -145,8 +157,8 @@ func (c *Config) Get(format string) (info *Info, err error) {
 		return nil, fmt.Errorf("failed to merge config into info: %w", err)
 	}
 	override, ok := c.Overrides[format]
-	if !ok {
-		// no overrides
+	if !ok || override == nil {
+		// no overrides, or an empty override clause (e.g. "overrides:\n  deb:")
 		return info, nil
 	}
 	if err = mergo.Merge(&info.Overridables, override, mergo.WithOverride); err != nil {
@@ -303,9 +315,73 @@ func (c *Config) expandEnvVars() {
 	// MSIX specific
 	c.MSIX.Signature.PFXFile = os.Expand(c.MSIX.Signature.PFXFile, c.envMappingFunc)
 	c.MSIX.Publisher = os.Expand(c.MSIX.Publisher, c.envMappingFunc)
+	c.MSIX.Signature.KeyPassphrase = generalPassphrase
 	msixPassphrase := os.Expand("$NFPM_MSIX_PASSPHRASE", c.envMappingFunc)
 	if msixPassphrase != "" {
 		c.MSIX.Signature.KeyPassphrase = msixPassphrase
+	}
+	if c.envLookupFunc != nil {
+		if passphrase, set := c.envLookupFunc("NFPM_MSIX_PASSPHRASE"); set {
+			c.MSIX.Signature.KeyPassphrase = passphrase
+		}
+	}
+
+	c.expandMSI(&c.MSI)
+	for _, override := range c.Overrides {
+		if override != nil {
+			c.expandMSI(&override.MSI)
+		}
+	}
+}
+
+func (c *Config) expandMSI(cfg *MSI) {
+	// MSI specific
+	cfg.Arch = expandMSIValue(cfg.Arch, c.envMappingFunc)
+	cfg.Version = expandMSIValue(cfg.Version, c.envMappingFunc)
+	cfg.ProductName = expandMSIValue(cfg.ProductName, c.envMappingFunc)
+	cfg.Manufacturer = expandMSIValue(cfg.Manufacturer, c.envMappingFunc)
+	cfg.ProductCode = expandMSIValue(cfg.ProductCode, c.envMappingFunc)
+	cfg.UpgradeCode = expandMSIValue(cfg.UpgradeCode, c.envMappingFunc)
+	cfg.InstallDir = expandMSIValue(cfg.InstallDir, c.envMappingFunc)
+	cfg.Upgrade.DowngradeErrorMessage = expandMSIValue(cfg.Upgrade.DowngradeErrorMessage, c.envMappingFunc)
+	for k, v := range cfg.Properties {
+		cfg.Properties[k] = expandMSIValue(v, c.envMappingFunc)
+	}
+	for k, v := range cfg.FileVersions {
+		cfg.FileVersions[k] = expandMSIValue(v, c.envMappingFunc)
+	}
+	for i := range cfg.Shortcuts {
+		cfg.Shortcuts[i].Name = expandMSIValue(cfg.Shortcuts[i].Name, c.envMappingFunc)
+		cfg.Shortcuts[i].Target = expandMSIValue(cfg.Shortcuts[i].Target, c.envMappingFunc)
+		cfg.Shortcuts[i].Directory = expandMSIValue(cfg.Shortcuts[i].Directory, c.envMappingFunc)
+		cfg.Shortcuts[i].Arguments = expandMSIValue(cfg.Shortcuts[i].Arguments, c.envMappingFunc)
+		cfg.Shortcuts[i].Description = expandMSIValue(cfg.Shortcuts[i].Description, c.envMappingFunc)
+		cfg.Shortcuts[i].Icon = expandMSIValue(cfg.Shortcuts[i].Icon, c.envMappingFunc)
+	}
+	for i := range cfg.Services {
+		cfg.Services[i].Name = expandMSIValue(cfg.Services[i].Name, c.envMappingFunc)
+		cfg.Services[i].DisplayName = expandMSIValue(cfg.Services[i].DisplayName, c.envMappingFunc)
+		cfg.Services[i].Executable = expandMSIValue(cfg.Services[i].Executable, c.envMappingFunc)
+		cfg.Services[i].Description = expandMSIValue(cfg.Services[i].Description, c.envMappingFunc)
+		cfg.Services[i].StartType = expandMSIValue(cfg.Services[i].StartType, c.envMappingFunc)
+		cfg.Services[i].Account = expandMSIValue(cfg.Services[i].Account, c.envMappingFunc)
+		cfg.Services[i].Arguments = expandMSIValue(cfg.Services[i].Arguments, c.envMappingFunc)
+		for j := range cfg.Services[i].Dependencies {
+			cfg.Services[i].Dependencies[j] = expandMSIValue(cfg.Services[i].Dependencies[j], c.envMappingFunc)
+		}
+	}
+	for i := range cfg.Registry {
+		cfg.Registry[i].Root = expandMSIValue(cfg.Registry[i].Root, c.envMappingFunc)
+		cfg.Registry[i].Key = expandMSIValue(cfg.Registry[i].Key, c.envMappingFunc)
+		cfg.Registry[i].Name = expandMSIValue(cfg.Registry[i].Name, c.envMappingFunc)
+		cfg.Registry[i].Value = expandMSIValue(cfg.Registry[i].Value, c.envMappingFunc)
+	}
+	cfg.Signature.PFXFile = expandMSIValue(cfg.Signature.PFXFile, c.envMappingFunc)
+	cfg.Signature.TimestampURL = expandMSIValue(cfg.Signature.TimestampURL, c.envMappingFunc)
+	cfg.Signature.KeyPassphrase = os.Expand("$NFPM_PASSPHRASE", c.envMappingFunc)
+	msiPassphrase := os.Expand("$NFPM_MSI_PASSPHRASE", c.envMappingFunc)
+	if msiPassphrase != "" {
+		cfg.Signature.KeyPassphrase = msiPassphrase
 	}
 }
 
@@ -390,6 +466,7 @@ type Overridables struct {
 	IPK        IPK            `yaml:"ipk,omitempty" json:"ipk,omitempty" jsonschema:"title=ipk-specific settings"`
 	XBPS       XBPS           `yaml:"xbps,omitempty" json:"xbps,omitempty" jsonschema:"title=xbps-specific settings"`
 	MSIX       MSIX           `yaml:"msix,omitempty" json:"msix,omitempty" jsonschema:"title=msix-specific settings"`
+	MSI        MSI            `yaml:"msi,omitempty" json:"msi,omitempty" jsonschema:"title=msi-specific settings"`
 }
 
 type ArchLinux struct {
@@ -406,16 +483,17 @@ type ArchLinuxScripts struct {
 
 // RPM is custom configs that are only available on RPM packages.
 type RPM struct {
-	Arch        string       `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in rpm nomenclature"`
-	BuildHost   string       `yaml:"buildhost,omitempty" json:"buildhost,omitempty" jsonschema:"title=host name of the build environment, default=os.Hostname()"`
-	Scripts     RPMScripts   `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=rpm-specific scripts"`
-	Requires    RPMRequires  `yaml:"requires,omitempty" json:"requires,omitempty" jsonschema:"title=rpm-specific requires"`
-	Group       string       `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=package group,example=Unspecified"`
-	Summary     string       `yaml:"summary,omitempty" json:"summary,omitempty" jsonschema:"title=package summary"`
-	Compression string       `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=lzma,enum=xz,enum=zstd,default=gzip:-1"`
-	Signature   RPMSignature `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=rpm signature"`
-	Packager    string       `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that actually packaged the software"`
-	Prefixes    []string     `yaml:"prefixes,omitempty" json:"prefixes,omitempty" jsonschema:"title=Prefixes for relocatable packages"`
+	Arch           string       `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in rpm nomenclature"`
+	BuildHost      string       `yaml:"buildhost,omitempty" json:"buildhost,omitempty" jsonschema:"title=host name of the build environment, default=os.Hostname()"`
+	Scripts        RPMScripts   `yaml:"scripts,omitempty" json:"scripts,omitempty" jsonschema:"title=rpm-specific scripts"`
+	Requires       RPMRequires  `yaml:"requires,omitempty" json:"requires,omitempty" jsonschema:"title=rpm-specific requires"`
+	Group          string       `yaml:"group,omitempty" json:"group,omitempty" jsonschema:"title=package group,example=Unspecified"`
+	Summary        string       `yaml:"summary,omitempty" json:"summary,omitempty" jsonschema:"title=package summary"`
+	Compression    string       `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=lzma,enum=xz,enum=zstd,default=gzip:-1"`
+	Signature      RPMSignature `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=rpm signature"`
+	Packager       string       `yaml:"packager,omitempty" json:"packager,omitempty" jsonschema:"title=organization that actually packaged the software"`
+	Prefixes       []string     `yaml:"prefixes,omitempty" json:"prefixes,omitempty" jsonschema:"title=Prefixes for relocatable packages"`
+	ScriptRequires bool         `yaml:"script_requires,omitempty" json:"script_requires,omitempty" jsonschema:"title=require the interpreters of executable scripts,default=false"`
 }
 
 // RPMScripts represents scripts only available on RPM packages.
@@ -559,7 +637,7 @@ type XBPSSignature struct {
 // MSIX contains configs that are only available on MSIX packages.
 type MSIX struct {
 	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msix nomenclature"`
-	Publisher    string            `yaml:"publisher" json:"publisher" jsonschema:"title=publisher identity,example=CN=MyCompany\\, O=MyCompany\\, C=US"`
+	Publisher    string            `yaml:"publisher,omitempty" json:"publisher,omitempty" jsonschema:"title=publisher identity,description=defaults to the signing certificate subject when signing or CN=<vendor or maintainer>,example=CN=MyCompany\\, O=MyCompany\\, C=US"`
 	Identity     MSIXIdentity      `yaml:"identity,omitempty" json:"identity,omitempty" jsonschema:"title=package identity"`
 	Properties   MSIXProperties    `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=package properties"`
 	Applications []MSIXApplication `yaml:"applications" json:"applications" jsonschema:"title=applications in the package"`
@@ -619,7 +697,74 @@ type MSIXCapabilities struct {
 // MSIXSignature contains signing configuration for MSIX packages.
 type MSIXSignature struct {
 	PFXFile       string `yaml:"pfx_file,omitempty" json:"pfx_file,omitempty" jsonschema:"title=PFX certificate file"`
-	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSIX_PASSPHRASE env var
+	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSIX_PASSPHRASE, falling back to NFPM_PASSPHRASE
+}
+
+// MSI contains configs that are only available on MSI packages.
+type MSI struct {
+	Arch         string            `yaml:"arch,omitempty" json:"arch,omitempty" jsonschema:"title=architecture in msi nomenclature"`
+	Version      string            `yaml:"version,omitempty" json:"version,omitempty" jsonschema:"title=version in msi nomenclature,description=overrides \"version\"; still normalized to major.minor.build and must fit 255.255.65535,example=24.1.0"`
+	ProductName  string            `yaml:"product_name,omitempty" json:"product_name,omitempty" jsonschema:"title=product name,description=defaults to the package name"`
+	Manufacturer string            `yaml:"manufacturer,omitempty" json:"manufacturer,omitempty" jsonschema:"title=manufacturer/author of the product,description=defaults to the vendor or maintainer,example=My Company"`
+	ProductCode  string            `yaml:"product_code,omitempty" json:"product_code,omitempty" jsonschema:"title=product code GUID,description=derived from manufacturer/product name/arch/version (changes every release) when empty; pinning it breaks upgrades,example={12345678-1234-1234-1234-123456789ABC}"`
+	UpgradeCode  string            `yaml:"upgrade_code,omitempty" json:"upgrade_code,omitempty" jsonschema:"title=upgrade code GUID,description=derived from manufacturer/product name/arch (stable across releases) when empty,example={ABCDEF01-2345-6789-ABCD-EF0123456789}"`
+	InstallDir   string            `yaml:"install_dir,omitempty" json:"install_dir,omitempty" jsonschema:"title=default install folder name,description=created under Program Files (or the user's local app data for per-user installs); defaults to the product name"`
+	PerUser      bool              `yaml:"per_user,omitempty" json:"per_user,omitempty" jsonschema:"title=per-user install,description=install for the current user only without elevation; keep context fixed across upgrades or uninstall/migrate first; defaults to a per-machine install"`
+	Properties   map[string]string `yaml:"properties,omitempty" json:"properties,omitempty" jsonschema:"title=arbitrary MSI Property rows"`
+	FileVersions map[string]string `yaml:"file_versions,omitempty" json:"file_versions,omitempty" jsonschema:"title=file version overrides by contents destination,description=PE file versions are detected automatically; an empty override explicitly keeps a file unversioned"`
+	MinimalUI    bool              `yaml:"minimal_ui,omitempty" json:"minimal_ui,omitempty" jsonschema:"title=install the canned minimal install wizard"`
+	Upgrade      MSIUpgrade        `yaml:"upgrade,omitempty" json:"upgrade,omitempty" jsonschema:"title=major upgrade behavior"`
+	Shortcuts    []MSIShortcut     `yaml:"shortcuts,omitempty" json:"shortcuts,omitempty" jsonschema:"title=shortcuts to create"`
+	Services     []MSIService      `yaml:"services,omitempty" json:"services,omitempty" jsonschema:"title=windows services to install"`
+	Registry     []MSIRegistry     `yaml:"registry,omitempty" json:"registry,omitempty" jsonschema:"title=registry entries to create"`
+	Signature    MSISignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=msi signature"`
+}
+
+// MSIUpgrade contains major-upgrade configuration for MSI packages. Major
+// upgrades are always enabled: every release replaces older installs of the
+// same upgrade code.
+type MSIUpgrade struct {
+	DowngradeErrorMessage string `yaml:"downgrade_error_message,omitempty" json:"downgrade_error_message,omitempty" jsonschema:"title=message shown when a newer version is already installed"`
+	AllowDowngrades       bool   `yaml:"allow_downgrades,omitempty" json:"allow_downgrades,omitempty" jsonschema:"title=allow installing over a newer version,description=disables the downgrade block; defaults to false"`
+	AllowSameVersion      bool   `yaml:"allow_same_version,omitempty" json:"allow_same_version,omitempty" jsonschema:"title=treat an equal version as an upgrade,description=replace the same major.minor.build within one install context; requires a new ProductCode via distinct release metadata or an explicit new code; defaults to false"`
+}
+
+// MSIShortcut describes an advertised shortcut in an MSI package.
+type MSIShortcut struct {
+	Name        string `yaml:"name" json:"name" jsonschema:"title=shortcut display name"`
+	Target      string `yaml:"target" json:"target" jsonschema:"title=destination path of an installed file the shortcut points to"`
+	Directory   string `yaml:"directory,omitempty" json:"directory,omitempty" jsonschema:"title=standard folder ID,default=ProgramMenuFolder,example=DesktopFolder"`
+	Arguments   string `yaml:"arguments,omitempty" json:"arguments,omitempty" jsonschema:"title=command-line arguments"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"title=shortcut description"`
+	Icon        string `yaml:"icon,omitempty" json:"icon,omitempty" jsonschema:"title=path to a PE file containing icon resources,description=advertised shortcuts require EXE-format icon data; raw .ico files are not supported"`
+}
+
+// MSIService describes a Windows service to install from an MSI package.
+type MSIService struct {
+	Name         string   `yaml:"name" json:"name" jsonschema:"title=service name"`
+	DisplayName  string   `yaml:"display_name,omitempty" json:"display_name,omitempty" jsonschema:"title=service display name"`
+	Executable   string   `yaml:"executable" json:"executable" jsonschema:"title=destination path of the installed service executable"`
+	Description  string   `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"title=service description"`
+	StartType    string   `yaml:"start_type,omitempty" json:"start_type,omitempty" jsonschema:"title=service start type,pattern=^([aA][uU][tT][oO]|[dD][eE][mM][aA][nN][dD]|[dD][iI][sS][aA][bB][lL][eE][dD])$,default=demand"`
+	Account      string   `yaml:"account,omitempty" json:"account,omitempty" jsonschema:"title=account the service runs as"`
+	Arguments    string   `yaml:"arguments,omitempty" json:"arguments,omitempty" jsonschema:"title=service arguments"`
+	Dependencies []string `yaml:"dependencies,omitempty" json:"dependencies,omitempty" jsonschema:"title=service dependencies"`
+	Start        bool     `yaml:"start,omitempty" json:"start,omitempty" jsonschema:"title=start the service on install,description=the service is always stopped before install/upgrade and stopped and deleted on uninstall"`
+}
+
+// MSIRegistry describes a registry entry to create from an MSI package.
+type MSIRegistry struct {
+	Root  string `yaml:"root" json:"root" jsonschema:"title=registry root,pattern=^[hH][kK]([lL][mM]|[cC][uU]|[cC][rR]|[mM][uU]|[uU])$"`
+	Key   string `yaml:"key" json:"key" jsonschema:"title=registry key path"`
+	Name  string `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"title=value name"`
+	Value string `yaml:"value,omitempty" json:"value,omitempty" jsonschema:"title=value data"`
+}
+
+// MSISignature contains signing configuration for MSI packages.
+type MSISignature struct {
+	PFXFile       string `yaml:"pfx_file,omitempty" json:"pfx_file,omitempty" jsonschema:"title=PFX certificate file"`
+	TimestampURL  string `yaml:"timestamp_url,omitempty" json:"timestamp_url,omitempty" jsonschema:"title=RFC3161 timestamp URL"`
+	KeyPassphrase string `yaml:"-" json:"-"` // populated from NFPM_MSI_PASSPHRASE, falling back to NFPM_PASSPHRASE
 }
 
 // Scripts contains information about maintainer scripts for packages.
@@ -650,7 +795,8 @@ func PrepareForPackager(info *Info, packager string) (err error) {
 		((packager == "deb" && info.Deb.Arch == "") ||
 			(packager == "rpm" && info.RPM.Arch == "") ||
 			(packager == "apk" && info.APK.Arch == "") ||
-			(packager == "msix" && info.MSIX.Arch == "")) {
+			(packager == "msix" && info.MSIX.Arch == "") ||
+			(packager == "msi" && info.MSI.Arch == "")) {
 		return ErrFieldEmpty{"arch"}
 	}
 	if info.Version == "" {
