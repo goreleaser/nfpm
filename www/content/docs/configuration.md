@@ -600,9 +600,21 @@ xbps:
   # post-remove when empty, matching the make_dirs mechanism of xbps-src.
   # Parent directories of packaged files are created implicitly.
 
+  # Ownership: file owners and groups are stored by name, and XBPS resolves
+  # them on the target system when it extracts a file. A file it leaves in
+  # place on an upgrade (unchanged content, or a kept configuration file)
+  # would otherwise end up owned by root, so the generated INSTALL script
+  # re-applies the configured owner, group and mode of every file not owned
+  # by root:root at post-install, before the postinstall hook runs. Accounts
+  # that do not exist on the target are reported and skipped. Setuid, setgid
+  # and sticky bits are kept whether given as a YAML octal (04755) or
+  # inherited from the source file.
+
   # Lifecycle scripts receive the arguments XBPS passes:
   # ACTION PKGNAME VERSION UPDATE CONF ARCH, where ACTION is "pre" or "post"
-  # and UPDATE is "yes" on an upgrade and "no" on a first install.
+  # and UPDATE is "yes" on an upgrade and "no" on a first install. The exit
+  # status of a hook is the status XBPS sees; the directory cleanup that
+  # follows the postremove hook does not alter it.
 
   # XBPS package signature sidecar output. When key_file is set, nFPM writes
   # an adjacent <package>.xbps.sig2 file: an RSA PKCS#1 v1.5 signature over the
