@@ -642,27 +642,34 @@ func renderXBPSActionScript(functions []xbpsShellFunction, cases []xbpsActionCas
 	return buf.Bytes()
 }
 
-// dirMode renders the directory mode for chmod. Go's os.FileMode keeps
-// setuid/setgid/sticky in high bits (os.ModeSetuid and friends), while a
-// YAML-parsed octal such as 02775 keeps them at the traditional positions
-// (0o4000, 0o2000, 0o1000); both encodings reach this point, so both are
-// honoured, as the rpm packager does.
-func dirMode(content *files.Content) string {
-	mode := content.Mode()
-	bits := uint32(mode.Perm())
-	if mode&os.ModeSetuid != 0 || uint32(mode)&0o4000 != 0 {
+// modeBits converts a content mode to the traditional permission bits a tar
+// header or chmod understands. Go's os.FileMode keeps setuid/setgid/sticky in
+// high bits (os.ModeSetuid and friends) when the mode was inferred from the
+// source file, while a YAML-parsed octal such as 04755 keeps them at the
+// traditional positions (0o4000, 0o2000, 0o1000); both encodings reach this
+// point, so both are honoured, as the deb and rpm packagers do. Casting the
+// os.FileMode directly would carry the high bits into the archive, where
+// libarchive strips them and the file installs without its special bits.
+func modeBits(mode os.FileMode) int64 {
+	bits := int64(mode & 0o7777)
+	if mode&os.ModeSetuid != 0 {
 		bits |= 0o4000
 	}
-	if mode&os.ModeSetgid != 0 || uint32(mode)&0o2000 != 0 {
+	if mode&os.ModeSetgid != 0 {
 		bits |= 0o2000
 	}
-	if mode&os.ModeSticky != 0 || uint32(mode)&0o1000 != 0 {
+	if mode&os.ModeSticky != 0 {
 		bits |= 0o1000
 	}
-	return fmt.Sprintf("%04o", bits)
+	return bits
 }
 
-func dirOwner(value string) string {
+// shellMode renders a content mode as a chmod argument.
+func shellMode(content *files.Content) string {
+	return fmt.Sprintf("%04o", modeBits(content.Mode()))
+}
+
+func shellOwner(value string) string {
 	if value == "" {
 		return "root"
 	}
@@ -680,12 +687,15 @@ func makeDirsFunctions(dirs []*files.Content) (create []xbpsShellFunction, remov
 	for _, dir := range dirs {
 		path := shellQuote(files.NormalizeAbsoluteFilePath(dir.Destination))
 		fmt.Fprintf(&createBody, "\tnfpm_make_dir %s %s %s %s\n",
-			path, dirMode(dir), shellQuote(dirOwner(dir.FileInfo.Owner)), shellQuote(dirOwner(dir.FileInfo.Group)))
+			path, shellMode(dir), shellQuote(shellOwner(dir.FileInfo.Owner)), shellQuote(shellOwner(dir.FileInfo.Group)))
 		// Written so that a non-empty directory never fails the script, even
 		// if a user hook enabled "set -e" in the same shell.
 		fmt.Fprintf(&removeBody, "\tif [ -d .%s ]; then rmdir .%s 2>/dev/null || :; fi\n", path, path)
 	}
-	removeBody.WriteString("\t:\n")
+	// The caller passes the exit status of the user's post-remove hook, which
+	// ran just before; returning it keeps a failed hook visible to xbps instead
+	// of masking it with the cleanup's own (always successful) status.
+	removeBody.WriteString("\treturn \"${1:-0}\"\n")
 
 	create = []xbpsShellFunction{
 		{
@@ -702,6 +712,58 @@ func makeDirsFunctions(dirs []*files.Content) (create []xbpsShellFunction, remov
 	}
 	remove = xbpsShellFunction{name: "nfpm_remove_dirs", body: removeBody.Bytes()}
 	return create, remove
+}
+
+// ownedFiles returns the payload files whose configured owner or group is not
+// root, sorted by destination. The archive carries their owner and group by
+// name with numeric ids 0:0, because nFPM does not resolve accounts on the
+// build host. xbps resolves the names when it extracts a file, but a file it
+// does not extract (unchanged content on an upgrade, or a kept configuration
+// file) is chowned to the numeric ids instead (lib/package_unpack.c), which
+// would leave it root-owned. Symlinks are always extracted and directories
+// are handled by makeDirsFunctions, so neither is listed.
+func ownedFiles(info *nfpm.Info) []*files.Content {
+	var owned []*files.Content
+	for _, content := range info.Contents {
+		if !isPayloadFileType(content.Type) || content.FileInfo == nil {
+			continue
+		}
+		if shellOwner(content.FileInfo.Owner) == "root" && shellOwner(content.FileInfo.Group) == "root" {
+			continue
+		}
+		owned = append(owned, content)
+	}
+	sort.Slice(owned, func(i, j int) bool {
+		return owned[i].Destination < owned[j].Destination
+	})
+	return owned
+}
+
+// setOwnersFunctions generates the shell that applies the configured owner,
+// group and mode of non-root-owned files at post-install, so the ownership
+// also holds after an upgrade that left the file in place. The mode is
+// re-applied because chown clears setuid and setgid bits. Failures are
+// reported but not fatal, as with directories.
+func setOwnersFunctions(owned []*files.Content) []xbpsShellFunction {
+	var body bytes.Buffer
+	for _, content := range owned {
+		fmt.Fprintf(&body, "\tnfpm_set_owner %s %s %s %s\n",
+			shellQuote(files.NormalizeAbsoluteFilePath(content.Destination)), shellMode(content),
+			shellQuote(shellOwner(content.FileInfo.Owner)), shellQuote(shellOwner(content.FileInfo.Group)))
+	}
+	return []xbpsShellFunction{
+		{
+			name: "nfpm_set_owner",
+			body: []byte(`	# $1 path, $2 mode, $3 owner, $4 group
+	if [ ! -e ".$1" ]; then
+		return 0
+	fi
+	chown "$3:$4" ".$1" 2>/dev/null || echo "nfpm: failed to set owner of $1 to $3:$4" >&2
+	chmod "$2" ".$1" || echo "nfpm: failed to set mode of $1 to $2" >&2
+`),
+		},
+		{name: "nfpm_set_owners", body: body.Bytes()},
+	}
 }
 
 func renderInstallScript(info *nfpm.Info) ([]byte, error) {
@@ -724,6 +786,10 @@ func renderInstallScript(info *nfpm.Info) ([]byte, error) {
 		create, _ := makeDirsFunctions(dirs)
 		functions = append(functions, create...)
 		postStatements = append(postStatements, "nfpm_make_dirs")
+	}
+	if owned := ownedFiles(info); len(owned) > 0 {
+		functions = append(functions, setOwnersFunctions(owned)...)
+		postStatements = append(postStatements, "nfpm_set_owners")
 	}
 	if len(post) > 0 {
 		functions = append(functions, xbpsShellFunction{name: "postinstall", body: post})
@@ -763,7 +829,13 @@ func renderRemoveScript(info *nfpm.Info) ([]byte, error) {
 	if dirs := explicitDirs(info); len(dirs) > 0 {
 		_, remove := makeDirsFunctions(dirs)
 		functions = append(functions, remove)
-		postStatements = append(postStatements, "nfpm_remove_dirs")
+		// The cleanup runs after the user's hook, so it is handed the hook's
+		// exit status and returns it: the script's status stays the hook's.
+		if len(post) > 0 {
+			postStatements = append(postStatements, `nfpm_remove_dirs "$?"`)
+		} else {
+			postStatements = append(postStatements, "nfpm_remove_dirs")
+		}
 	}
 
 	var cases []xbpsActionCase
@@ -872,7 +944,7 @@ func writeContentEntry(tw *tar.Writer, content *files.Content) error {
 	case files.TypeDir, files.TypeImplicitDir:
 		return tw.WriteHeader(&tar.Header{
 			Name:     name,
-			Mode:     int64(content.Mode()),
+			Mode:     modeBits(content.Mode()),
 			Typeflag: tar.TypeDir,
 			ModTime:  content.ModTime(),
 			Uname:    content.FileInfo.Owner,
@@ -900,7 +972,7 @@ func writeContentEntry(tw *tar.Writer, content *files.Content) error {
 		defer f.Close()
 		if err := tw.WriteHeader(&tar.Header{
 			Name:     name,
-			Mode:     int64(content.Mode()),
+			Mode:     modeBits(content.Mode()),
 			Size:     content.Size(),
 			Typeflag: tar.TypeReg,
 			ModTime:  content.ModTime(),

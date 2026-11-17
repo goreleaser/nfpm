@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -105,6 +106,27 @@ func readTarNames(t *testing.T, data []byte) []string {
 		require.NoError(t, err)
 	}
 	return names
+}
+
+func readTarModes(t *testing.T, data []byte) map[string]int64 {
+	t.Helper()
+	zr, err := zstd.NewReader(bytes.NewReader(data))
+	require.NoError(t, err)
+	defer zr.Close()
+
+	tr := tar.NewReader(zr)
+	modes := map[string]int64{}
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		modes[hdr.Name] = hdr.Mode
+		_, err = io.Copy(io.Discard, tr)
+		require.NoError(t, err)
+	}
+	return modes
 }
 
 func writeTempScript(t *testing.T, dir, name, body string) string {
@@ -584,6 +606,26 @@ func runGeneratedScript(t *testing.T, rootdir string, script []byte, args ...str
 	return stdout.String(), stderr.String()
 }
 
+// runGeneratedScriptStatus is runGeneratedScript for scripts expected to fail:
+// it returns stdout and the exit status instead of requiring success.
+func runGeneratedScriptStatus(t *testing.T, rootdir string, script []byte, args ...string) (string, int) {
+	t.Helper()
+	sh := requireShell(t)
+	path := filepath.Join(t.TempDir(), "script")
+	require.NoError(t, os.WriteFile(path, script, 0o755))
+	cmd := exec.Command(sh, append([]string{path}, args...)...)
+	cmd.Dir = rootdir
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	var exitErr *exec.ExitError
+	if err != nil && !errors.As(err, &exitErr) {
+		require.NoError(t, err, "stdout: %s\nstderr: %s", stdout.String(), stderr.String())
+	}
+	return stdout.String(), cmd.ProcessState.ExitCode()
+}
+
 func TestLifecycleScriptsForwardXBPSArguments(t *testing.T) {
 	// xbps passes ACTION PKGNAME VERSION UPDATE CONF ARCH; a hook that uses $4
 	// to tell an upgrade from a first install must see the real value, and an
@@ -671,7 +713,7 @@ func TestInstallScriptCreatesExplicitDirectories(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestDirModeHonoursBothSpecialBitEncodings(t *testing.T) {
+func TestShellModeHonoursBothSpecialBitEncodings(t *testing.T) {
 	testCases := map[string]struct {
 		mode     os.FileMode
 		expected string
@@ -690,9 +732,211 @@ func TestDirModeHonoursBothSpecialBitEncodings(t *testing.T) {
 				Type:        files.TypeDir,
 				FileInfo:    &files.ContentFileInfo{Mode: testCase.mode},
 			}
-			require.Equal(t, testCase.expected, dirMode(content))
+			require.Equal(t, testCase.expected, shellMode(content))
 		})
 	}
+}
+
+func TestArchiveModesFoldGoSpecialBits(t *testing.T) {
+	// A mode inferred from the source file carries setuid/setgid/sticky in
+	// Go's high bits; a tar header only understands the traditional 0o4000,
+	// 0o2000 and 0o1000 positions, which an explicit YAML octal already uses.
+	// Both must end up identical in the archive, or the inferred file installs
+	// without its special bits.
+	dir := t.TempDir()
+	source := filepath.Join(dir, "tool")
+	require.NoError(t, os.WriteFile(source, []byte("#!/bin/sh\n"), 0o755))
+
+	info := exampleInfoWithoutExplicitDirs()
+	info.Contents = []*files.Content{
+		{Source: source, Destination: "/usr/bin/inferred-setuid", FileInfo: &files.ContentFileInfo{Mode: os.ModeSetuid | 0o755}},
+		{Source: source, Destination: "/usr/bin/inferred-setgid", FileInfo: &files.ContentFileInfo{Mode: os.ModeSetgid | 0o755}},
+		{Source: source, Destination: "/usr/bin/explicit-setuid", FileInfo: &files.ContentFileInfo{Mode: 0o4755}},
+		{Source: source, Destination: "/usr/bin/plain", FileInfo: &files.ContentFileInfo{Mode: 0o755}},
+		{Destination: "/var/tmp/foo", Type: files.TypeDir, FileInfo: &files.ContentFileInfo{Mode: os.ModeDir | os.ModeSticky | 0o1777}},
+	}
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+
+	modes := readTarModes(t, buf.Bytes())
+	require.Equal(t, int64(0o4755), modes["./usr/bin/inferred-setuid"])
+	require.Equal(t, int64(0o2755), modes["./usr/bin/inferred-setgid"])
+	require.Equal(t, int64(0o4755), modes["./usr/bin/explicit-setuid"])
+	require.Equal(t, int64(0o755), modes["./usr/bin/plain"])
+	require.Equal(t, int64(0o1777), modes["./var/tmp/foo/"])
+	for name, mode := range modes {
+		require.Zero(t, mode&^0o7777, "%s carries bits a tar mode cannot express: %o", name, mode)
+	}
+}
+
+func TestInferredSourceModeKeepsSpecialBitsInArchive(t *testing.T) {
+	// End to end through nfpm's defaults: a setuid source file packaged without
+	// an explicit mode must install setuid.
+	if runtime.GOOS == "windows" {
+		t.Skip("setuid bits are not representable on windows")
+	}
+	dir := t.TempDir()
+	source := filepath.Join(dir, "tool")
+	require.NoError(t, os.WriteFile(source, []byte("#!/bin/sh\n"), 0o755))
+	require.NoError(t, os.Chmod(source, os.ModeSetuid|0o755))
+	st, err := os.Stat(source)
+	require.NoError(t, err)
+	if st.Mode()&os.ModeSetuid == 0 {
+		t.Skip("filesystem does not keep the setuid bit")
+	}
+
+	info := exampleInfoWithoutExplicitDirs()
+	info.Contents = []*files.Content{{Source: source, Destination: "/usr/bin/tool"}}
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+	var buf bytes.Buffer
+	require.NoError(t, Default.Package(info, &buf))
+	require.Equal(t, int64(0o4755), readTarModes(t, buf.Bytes())["./usr/bin/tool"])
+}
+
+func TestInstallScriptRestoresOwnershipOfNonRootFiles(t *testing.T) {
+	// xbps resolves the owner and group names in the archive only when it
+	// extracts a file; a file it leaves in place on an upgrade (unchanged
+	// content) is chowned to the numeric ids in the header, which nFPM cannot
+	// resolve on the build host and writes as 0:0 (lib/package_unpack.c). The
+	// generated INSTALL script therefore re-applies the configured ownership,
+	// and the mode (chown clears setuid/setgid), at post-install for every
+	// payload file not owned by root:root.
+	info := exampleInfoWithoutExplicitDirs()
+	info.Contents = append(info.Contents,
+		&files.Content{
+			Source:      "../testdata/fake",
+			Destination: "/var/lib/foo/state",
+			FileInfo:    &files.ContentFileInfo{Mode: 0o640, Owner: "foo", Group: "foo"},
+		},
+		&files.Content{
+			Source:      "../testdata/fake",
+			Destination: "/usr/bin/foo's tool",
+			FileInfo:    &files.ContentFileInfo{Mode: 0o4755, Owner: "root", Group: "foo"},
+		},
+		&files.Content{
+			Source:      "../testdata/whatever.conf",
+			Destination: "/etc/foo/owned.conf",
+			Type:        files.TypeConfigNoReplace,
+			FileInfo:    &files.ContentFileInfo{Mode: 0o600, Owner: "foo"},
+		},
+		&files.Content{
+			Source:      "/var/lib/foo/state",
+			Destination: "/var/lib/foo/state-link",
+			Type:        files.TypeSymlink,
+			FileInfo:    &files.ContentFileInfo{Owner: "foo", Group: "foo"},
+		},
+		&files.Content{
+			Destination: "/var/lib/foo",
+			Type:        files.TypeDir,
+			FileInfo:    &files.ContentFileInfo{Mode: 0o750 | os.ModeDir, Owner: "foo", Group: "foo"},
+		},
+	)
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+	install, err := renderInstallScript(info)
+	require.NoError(t, err)
+	script := string(install)
+	require.Contains(t, script, "nfpm_set_owner '/etc/foo/owned.conf' 0600 'foo' 'root'")
+	require.Contains(t, script, "nfpm_set_owner '/usr/bin/foo'\\''s tool' 4755 'root' 'foo'")
+	require.Contains(t, script, "nfpm_set_owner '/var/lib/foo/state' 0640 'foo' 'foo'")
+	require.NotContains(t, script, "nfpm_set_owner '/usr/bin/fake'", "root-owned files need no ownership action")
+	require.NotContains(t, script, "nfpm_set_owner '/etc/fake/fake.conf'", "root-owned files need no ownership action")
+	require.NotContains(t, script, "nfpm_set_owner '/var/lib/foo/state-link'", "symlinks are always extracted by xbps")
+	require.NotContains(t, script, "nfpm_set_owner '/var/lib/foo' ", "directories are handled by nfpm_make_dir")
+	require.Contains(t, script, "nfpm_make_dir '/var/lib/foo' 0750 'foo' 'foo'")
+
+	// Ownership is restored after the directories exist and before the user's
+	// post-install hook, on first install and on upgrade alike.
+	require.Less(t, strings.Index(script, "\tnfpm_make_dirs\n"), strings.Index(script, "\tnfpm_set_owners\n"))
+
+	// The script is tolerant of accounts missing on the target and of files
+	// xbps did not install (preserved paths): it reports and carries on, and
+	// still applies the mode. The test cannot assume it runs as root, so only
+	// the mode and the exit status are asserted.
+	rootdir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(rootdir, "var/lib/foo"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(rootdir, "usr/bin"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(rootdir, "var/lib/foo/state"), []byte("x"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(rootdir, "usr/bin/foo's tool"), []byte("x"), 0o644))
+	for _, update := range []string{"no", "yes"} {
+		_, _ = runGeneratedScript(t, rootdir, install, "post", "foo", "1.2.3_2", update, "no", "x86_64")
+		st, err := os.Stat(filepath.Join(rootdir, "var/lib/foo/state"))
+		require.NoError(t, err)
+		require.Equal(t, os.FileMode(0o640), st.Mode().Perm())
+		st, err = os.Stat(filepath.Join(rootdir, "usr/bin/foo's tool"))
+		require.NoError(t, err)
+		require.Equal(t, int64(0o4755), modeBits(st.Mode()))
+	}
+}
+
+func TestInstallScriptOmitsOwnershipActionForRootOwnedPackages(t *testing.T) {
+	info := exampleInfo()
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+	install, err := renderInstallScript(info)
+	require.NoError(t, err)
+	require.NotContains(t, string(install), "nfpm_set_owner")
+}
+
+func TestRemoveScriptPreservesFailedHookStatus(t *testing.T) {
+	// xbps reports a non-zero post-remove status as a failed transaction; the
+	// directory cleanup that runs after the user's hook must not turn that
+	// into a success, with or without explicit directories to clean up.
+	for name, info := range map[string]*nfpm.Info{
+		"with explicit directories":    exampleInfo(),
+		"without explicit directories": exampleInfoWithoutExplicitDirs(),
+	} {
+		info := info
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			info.Scripts.PostRemove = writeTempScript(t, dir, "postremove.sh", "echo postremove\nfalse\n")
+			require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+			remove, err := renderRemoveScript(info)
+			require.NoError(t, err)
+
+			rootdir := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(rootdir, "var/lib/foo"), 0o755))
+			stdout, status := runGeneratedScriptStatus(t, rootdir, remove, "post", "foo", "1.2.3_2", "no", "no", "x86_64")
+			require.Equal(t, "postremove\n", stdout)
+			require.Equal(t, 1, status)
+
+			// The cleanup still ran before the status was returned.
+			_, err = os.Stat(filepath.Join(rootdir, "var/lib/foo"))
+			if len(explicitDirs(info)) > 0 {
+				require.ErrorIs(t, err, os.ErrNotExist)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestRemoveScriptPreservesHookExitCode(t *testing.T) {
+	// A hook that exits explicitly ends the whole script, as in any inlined
+	// function; the status it chose is what xbps sees.
+	info := exampleInfo()
+	dir := t.TempDir()
+	info.Scripts.PostRemove = writeTempScript(t, dir, "postremove.sh", "exit 7\n")
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+
+	remove, err := renderRemoveScript(info)
+	require.NoError(t, err)
+	_, status := runGeneratedScriptStatus(t, t.TempDir(), remove, "post", "foo", "1.2.3_2", "no", "no", "x86_64")
+	require.Equal(t, 7, status)
+}
+
+func TestRemoveScriptSucceedsWithoutHook(t *testing.T) {
+	info := exampleInfo()
+	require.NoError(t, nfpm.PrepareForPackager(info, packagerName))
+	remove, err := renderRemoveScript(info)
+	require.NoError(t, err)
+	require.Contains(t, string(remove), "\tnfpm_remove_dirs\n")
+	require.NotContains(t, string(remove), `nfpm_remove_dirs "$?"`)
+	_, status := runGeneratedScriptStatus(t, t.TempDir(), remove, "post", "foo", "1.2.3_2", "no", "no", "x86_64")
+	require.Equal(t, 0, status)
 }
 
 func TestRemoveScriptToleratesSetEAndNonEmptyDirectory(t *testing.T) {
