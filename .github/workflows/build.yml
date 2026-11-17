@@ -188,7 +188,7 @@ jobs:
       - run: task setup
       - name: Build nfpm-signed MSIX package
         run: task acceptance:windows:package:signed:msix
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: signed-msix-pkg
           if-no-files-found: error
@@ -212,7 +212,7 @@ jobs:
       - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: signed-msix-pkg
           path: dist
@@ -236,7 +236,7 @@ jobs:
           }
       - name: Upload diagnostic packages
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: msix-signature-diagnostics
           path: dist/*.msix
@@ -264,7 +264,7 @@ jobs:
         run: task acceptance:windows:install:msi:per-user
       - name: Preserve native MSI verification logs
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: nfpm-msi-native-logs
           path: dist/*.log
@@ -289,7 +289,7 @@ jobs:
       - run: task setup
       - name: Build nfpm-signed MSI package
         run: task acceptance:windows:package:signed:msi
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: signed-msi-pkg
           if-no-files-found: error
@@ -313,7 +313,7 @@ jobs:
       - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: signed-msi-pkg
           path: dist
@@ -337,7 +337,7 @@ jobs:
           }
       - name: Upload diagnostic packages and logs
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: msi-signature-diagnostics
           path: |
