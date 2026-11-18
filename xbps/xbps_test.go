@@ -108,6 +108,21 @@ func readTarNames(t *testing.T, data []byte) []string {
 	return names
 }
 
+// fsKeepsSetuid reports whether files under dir keep a setuid bit set with
+// chmod. Some sandboxes and filesystems silently clear it, which says nothing
+// about the package being built, so tests that assert the bit check first.
+func fsKeepsSetuid(t *testing.T, dir string) bool {
+	t.Helper()
+	probe := filepath.Join(dir, "setuid-probe")
+	require.NoError(t, os.WriteFile(probe, []byte("x"), 0o755))
+	if err := os.Chmod(probe, os.ModeSetuid|0o755); err != nil {
+		return false
+	}
+	st, err := os.Stat(probe)
+	require.NoError(t, err)
+	return st.Mode()&os.ModeSetuid != 0
+}
+
 func readTarModes(t *testing.T, data []byte) map[string]int64 {
 	t.Helper()
 	zr, err := zstd.NewReader(bytes.NewReader(data))
@@ -780,12 +795,10 @@ func TestInferredSourceModeKeepsSpecialBitsInArchive(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "tool")
 	require.NoError(t, os.WriteFile(source, []byte("#!/bin/sh\n"), 0o755))
-	require.NoError(t, os.Chmod(source, os.ModeSetuid|0o755))
-	st, err := os.Stat(source)
-	require.NoError(t, err)
-	if st.Mode()&os.ModeSetuid == 0 {
+	if !fsKeepsSetuid(t, dir) {
 		t.Skip("filesystem does not keep the setuid bit")
 	}
+	require.NoError(t, os.Chmod(source, os.ModeSetuid|0o755))
 
 	info := exampleInfoWithoutExplicitDirs()
 	info.Contents = []*files.Content{{Source: source, Destination: "/usr/bin/tool"}}
@@ -861,6 +874,7 @@ func TestInstallScriptRestoresOwnershipOfNonRootFiles(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(rootdir, "usr/bin"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(rootdir, "var/lib/foo/state"), []byte("x"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(rootdir, "usr/bin/foo's tool"), []byte("x"), 0o644))
+	keepsSetuid := fsKeepsSetuid(t, rootdir)
 	for _, update := range []string{"no", "yes"} {
 		_, _ = runGeneratedScript(t, rootdir, install, "post", "foo", "1.2.3_2", update, "no", "x86_64")
 		st, err := os.Stat(filepath.Join(rootdir, "var/lib/foo/state"))
@@ -868,7 +882,12 @@ func TestInstallScriptRestoresOwnershipOfNonRootFiles(t *testing.T) {
 		require.Equal(t, os.FileMode(0o640), st.Mode().Perm())
 		st, err = os.Stat(filepath.Join(rootdir, "usr/bin/foo's tool"))
 		require.NoError(t, err)
-		require.Equal(t, int64(0o4755), modeBits(st.Mode()))
+		if keepsSetuid {
+			require.Equal(t, int64(0o4755), modeBits(st.Mode()))
+		} else {
+			t.Log("filesystem does not keep the setuid bit; checking the permission bits only")
+			require.Equal(t, os.FileMode(0o755), st.Mode().Perm())
+		}
 	}
 }
 
