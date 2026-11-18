@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -401,6 +402,15 @@ func TestMainExecutable(t *testing.T) {
 		info.App.Executable = "bin/foo"
 		require.ErrorContains(t, packageError(t, info), "package app.executable")
 	})
+	// A file shorter than a Mach-O magic number, such as an empty
+	// placeholder, is not a Mach-O program and is packaged as it is.
+	for _, program := range []string{"", "#", "#!", "#!/"} {
+		t.Run(fmt.Sprintf("%d bytes", len(program)), func(t *testing.T) {
+			info := exampleInfo(t)
+			info.Contents[0].Source = macostest.WriteFile(t, "foo", program)
+			assert.Equal(t, program, string(macostest.ReadFile(t, open(t, info), root+"Contents/MacOS/foo")))
+		})
+	}
 }
 
 // A package that says arm64 must not carry an Intel program: it would not

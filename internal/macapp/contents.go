@@ -4,6 +4,7 @@ import (
 	"debug/macho"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"path"
 	"strings"
@@ -168,10 +169,12 @@ func machoArchitectures(source string) (map[string]bool, error) {
 }
 
 // isFormatError reports whether err says the file is not the kind of Mach-O
-// that was asked for, as opposed to the file being unreadable.
+// that was asked for, as opposed to the file being unreadable. A file too
+// short to hold a Mach-O header ends before the magic number can be read.
 func isFormatError(err error) bool {
 	var format *macho.FormatError
-	return errors.Is(err, macho.ErrNotFat) || errors.As(err, &format)
+	return errors.Is(err, macho.ErrNotFat) || errors.As(err, &format) ||
+		errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)
 }
 
 func cpuName(cpu macho.Cpu) string {
