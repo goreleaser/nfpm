@@ -8,7 +8,6 @@ import (
 	"os"
 	"regexp"
 	"slices"
-	"strings"
 
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
@@ -18,8 +17,6 @@ import (
 // the rpmbuild dependency generators.
 // https://github.com/rpm-software-management/rpm/blob/master/include/rpm/rpmds.h
 const rpmSenseFindRequires = 1 << 14
-
-const docDir = "/usr/share/doc"
 
 // The two expressions of rpm's script.req: the interpreter of the #! line, and
 // the absolute path of the program run by env.
@@ -35,6 +32,7 @@ func scriptRequires(info *nfpm.Info) ([]string, error) {
 		return nil, nil
 	}
 
+	docDirs := cleanDocDirs(info.RPM.DocDirs)
 	var interpreters []string
 	for _, content := range info.Contents {
 		if content.Packager != "" && content.Packager != contentPackager {
@@ -43,11 +41,15 @@ func scriptRequires(info *nfpm.Info) ([]string, error) {
 		switch content.Type {
 		case files.TypeSymlink, files.TypeDir, files.TypeImplicitDir, files.TypeRPMGhost:
 			continue
-		}
-		// rpmbuild skips the paths that match %__global_requires_exclude_from,
-		// which is %{_docdir} by default, whatever the file type.
-		if strings.Contains(content.Destination, docDir) {
+		case files.TypeRPMDoc, files.TypeRPMReadme:
+			// rpmbuild generates no dependencies for documentation.
 			continue
+		case files.TypeRPMLicence, files.TypeRPMLicense:
+			// RPM installs license files even with --excludedocs.
+		default:
+			if isBelowDocDir(files.ToNixPath(content.Destination), docDirs) {
+				continue
+			}
 		}
 		// rpmbuild checks the mode of the file in the build root; the mode
 		// in the package is the nfpm equivalent, and the only one that can

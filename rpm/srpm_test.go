@@ -188,42 +188,58 @@ func TestSRPMGenerateSpecFileDirectives(t *testing.T) {
 
 func TestSRPMGenerateSpecScriptRequires(t *testing.T) {
 	dir := t.TempDir()
-	script := filepath.Join(dir, "script")
-	require.NoError(t, os.WriteFile(script, []byte("#!/bin/bash\necho\n"), 0o644))
-	example := filepath.Join(dir, "example.py")
-	require.NoError(t, os.WriteFile(example, []byte("#!/usr/bin/python3\nprint()\n"), 0o644))
-	info := nfpm.WithDefaults(&nfpm.Info{
-		Name:        "scripttest",
-		Arch:        "amd64",
-		Version:     "1.0.0",
-		Description: "script requires coverage",
-		Maintainer:  "maintainer",
-		Overridables: nfpm.Overridables{
-			Contents: []*files.Content{
-				{
-					Source:      script,
-					Destination: "/usr/bin/script",
-					FileInfo:    &files.ContentFileInfo{Mode: 0o755},
-				},
-				{
-					Source:      example,
-					Destination: "/usr/share/doc/scripttest/example.py",
-					FileInfo:    &files.ContentFileInfo{Mode: 0o755},
-				},
-			},
-			RPM: nfpm.RPM{ScriptRequires: true, DocDirs: []string{"/usr/share/doc"}},
-		},
-	})
-	info = setDefaults(info)
-	require.NoError(t, nfpm.PrepareForPackager(info, "rpm"))
+	script := func(dest, interpreter, fileType string) *files.Content {
+		path := filepath.Join(dir, filepath.Base(dest))
+		require.NoError(t, os.WriteFile(path, []byte("#!"+interpreter+"\n"), 0o644))
+		return &files.Content{
+			Source:      path,
+			Destination: dest,
+			Type:        fileType,
+			FileInfo:    &files.ContentFileInfo{Mode: 0o755},
+		}
+	}
 
-	spec, err := generateSpec(info, "scripttest-1.0.0.tar.gz")
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		docDirs  []string
+		required []string
+		skipped  []string
+	}{
+		"no doc dirs": {nil, []string{"/bin/bash", "/usr/bin/zsh", "/usr/bin/python3"}, []string{"/bin/dash"}},
+		"doc dirs":    {[]string{"/opt/docs"}, []string{"/bin/bash", "/usr/bin/zsh"}, []string{"/bin/dash", "/usr/bin/python3"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			info := nfpm.WithDefaults(&nfpm.Info{
+				Name:        "scripttest",
+				Arch:        "amd64",
+				Version:     "1.0.0",
+				Description: "script requires coverage",
+				Maintainer:  "maintainer",
+				Overridables: nfpm.Overridables{
+					Contents: []*files.Content{
+						script("/usr/bin/script", "/bin/bash", files.TypeFile),
+						script("/usr/share/documentation/tool", "/usr/bin/zsh", files.TypeFile),
+						script("/opt/docs/example.py", "/usr/bin/python3", files.TypeFile),
+						script("/usr/libexec/scripttest/doc", "/bin/dash", files.TypeRPMDoc),
+					},
+					RPM: nfpm.RPM{ScriptRequires: true, DocDirs: tc.docDirs},
+				},
+			})
+			info = setDefaults(info)
+			require.NoError(t, nfpm.PrepareForPackager(info, "rpm"))
 
-	// AutoReqProv is off, so the rebuild only keeps the explicit requires.
-	require.Contains(t, spec, "AutoReqProv: no\n")
-	require.Contains(t, spec, "Requires: /bin/bash\n")
-	require.NotContains(t, spec, "/usr/bin/python3")
+			spec, err := generateSpec(info, "scripttest-1.0.0.tar.gz")
+			require.NoError(t, err)
+
+			// AutoReqProv is off, so the rebuild only keeps the explicit requires.
+			require.Contains(t, spec, "AutoReqProv: no\n")
+			for _, interpreter := range tc.required {
+				require.Contains(t, spec, "Requires: "+interpreter+"\n")
+			}
+			for _, interpreter := range tc.skipped {
+				require.NotContains(t, spec, interpreter)
+			}
+		})
+	}
 }
 
 func TestSRPMGenerateSpecLang(t *testing.T) {

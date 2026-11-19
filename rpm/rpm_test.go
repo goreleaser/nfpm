@@ -216,22 +216,26 @@ func TestRPMScriptRequires(t *testing.T) {
 			script("/usr/libexec/foo/perl", "#!/usr/bin/perl\n", files.TypeFile, 0o644),
 			script("/usr/libexec/foo/doc", "#!/bin/dash\necho\n", files.TypeRPMDoc, 0o755),
 			script("/usr/libexec/foo/text", "/bin/false\n", files.TypeFile, 0o755),
-			script("/usr/share/doc/foo/example", "#!/usr/bin/zsh\necho\n", files.TypeFile, 0o755),
+			script("/usr/share/documentation/tool", "#!/usr/bin/zsh\necho\n", files.TypeFile, 0o755),
+			script("/opt/docs/example", "#!/usr/bin/lua\nprint()\n", files.TypeFile, 0o755),
+			script("/opt/docs/license", "#!/usr/bin/tclsh\nputs\n", files.TypeRPMLicense, 0o755),
 		}
 	}
 
 	for name, tc := range map[string]struct {
 		enabled  bool
+		docDirs  []string
 		expected []string
 	}{
-		"enabled":  {true, []string{"/bin/bash", "/bin/dash", "/bin/ksh", "/usr/bin/env", "/usr/bin/expect"}},
-		"disabled": {false, nil},
+		"enabled":  {true, nil, []string{"/bin/bash", "/bin/ksh", "/usr/bin/env", "/usr/bin/expect", "/usr/bin/lua", "/usr/bin/tclsh", "/usr/bin/zsh"}},
+		"doc dirs": {true, []string{"/opt/docs"}, []string{"/bin/bash", "/bin/ksh", "/usr/bin/env", "/usr/bin/expect", "/usr/bin/tclsh", "/usr/bin/zsh"}},
+		"disabled": {false, nil, nil},
 	} {
 		t.Run(name, func(t *testing.T) {
 			info := exampleInfo()
 			info.Contents = contents()
 			info.RPM.ScriptRequires = tc.enabled
-			info.RPM.DocDirs = []string{"/usr/share/doc"}
+			info.RPM.DocDirs = tc.docDirs
 
 			var buf bytes.Buffer
 			require.NoError(t, DefaultRPM.Package(info, &buf))
