@@ -203,13 +203,12 @@ func escapeSpecText(s string) string {
 	return strings.ReplaceAll(s, "%", "%%")
 }
 
-// escapeSpecArg backslash-escapes the whitespace, quotes and backslashes in s,
-// so that rpmbuild's argument parser (popt) reads it as a single literal
-// argument.
+// escapeSpecArg backslash-escapes the quotes and backslashes in s, so that
+// rpmbuild's argument parser (popt) reads them literally.
 func escapeSpecArg(s string) string {
 	var b strings.Builder
 	for _, r := range s {
-		if strings.ContainsRune(" \t\v\f\"'\\", r) {
+		if strings.ContainsRune(`"'\`, r) {
 			b.WriteByte('\\')
 		}
 		b.WriteRune(r)
