@@ -8,7 +8,8 @@ Distribution: unstable
 Urgency: medium
 Maintainer: Carlos A Becker <pkg@carlosbecker.com>
 Changed-By: Carlos A Becker <pkg@carlosbecker.com>
-Description: Foo does things
+Description:
+ foo - Foo does things
 Bugs: https://github.com/goreleaser/nfpm/issues
 Changes:
  foo (1.0.0) unstable; urgency=medium
