@@ -117,6 +117,15 @@ changelog: "changelog.yaml"
 # Disables globbing for files, config_files, etc.
 disable_globbing: false
 
+# Also generates a metadata file next to the package. Currently only supported
+# by the deb packager, which creates a .changes file (named after the package,
+# e.g. foo_1.0.0_amd64.changes) that upload tools like reprepro or dput use.
+# Requires deb.metadata.distribution and deb.metadata.urgency, and a package
+# file name in the conventional name_version_arch.deb format, which is what
+# nFPM generates unless you set a custom target with `--target`.
+# If the deb signature is set, the .changes file is clear-signed with it.
+enable_metadata: false
+
 # Packages it replaces. (overridable)
 # This will expand any env var you set in the field, e.g. ${REPLACE_BLA}
 # the env var approach can be used to account for differences in platforms
@@ -523,6 +532,22 @@ deb:
   # built package.
   predepends:
     - baz (>= 1.2.3-0)
+
+  # Used when enable_metadata is true to generate the .changes file.
+  metadata:
+    # The distribution the package is uploaded to. Required.
+    distribution: unstable
+
+    # The urgency of the upload. Required.
+    urgency: medium
+
+    # The person who made the last change, in the format `Name <email>`.
+    # Optional.
+    changed_by: GoReleaser <staff@goreleaser.com>
+
+    # Additional fields for the .changes file. Empty fields are ignored.
+    fields:
+      Bugs: https://github.com/goreleaser/nfpm/issues
 
 apk:
   # apk specific architecture name that overrides "arch" without performing any replacements.
