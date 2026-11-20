@@ -314,3 +314,36 @@ func TestSRPMSpecEscapesOwnership(t *testing.T) {
 		})
 	}
 }
+
+func TestSRPMSpecEscapesLang(t *testing.T) {
+	info := exampleInfo()
+	info.Contents = files.Contents{{
+		Source:      "../testdata/whatever.conf",
+		Destination: "/etc/payload",
+		Type:        files.TypeConfig,
+		FileInfo: &files.ContentFileInfo{
+			Mode: 0o644,
+			Lang: "%(echo lang) %{lang} %%",
+		},
+	}}
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultSRPM.Package(info, &buf))
+
+	spec, err := extractFileFromRpm(buf.Bytes(), "/foo.spec")
+	require.NoError(t, err)
+	require.Contains(t, string(spec), `%lang(%%(echo lang) %%{lang} %%%%) %config %attr(0644, root, root) "/etc/payload"`)
+}
+
+func TestSRPMSpecEscapesSourceName(t *testing.T) {
+	info := exampleInfo()
+	info.Name = "foo%(echo name)"
+	info.Version = "1.0.0+%{version}"
+
+	var buf bytes.Buffer
+	require.NoError(t, DefaultSRPM.Package(info, &buf))
+
+	spec, err := extractFileFromRpm(buf.Bytes(), "/foo%(echo name).spec")
+	require.NoError(t, err)
+	require.Contains(t, string(spec), "Source0: foo%%(echo name)-1.0.0+%%{version}.tar.gz\n")
+}

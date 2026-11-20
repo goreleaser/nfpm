@@ -81,7 +81,7 @@ func generateSpec(info *nfpm.Info, sourceName string) (string, error) {
 		writeField("Suggests", dep)
 	}
 
-	fmt.Fprintf(&b, "Source0: %s\n", sourceName)
+	writeField("Source0", sourceName)
 
 	fmt.Fprintf(&b, "\n%%description\n%s\n", escapeSpecText(description))
 
@@ -150,7 +150,7 @@ func specFileLine(content *files.Content) string {
 	// directories, symlinks and ghosts, which never carry a language tag.
 	langPrefix := ""
 	if content.FileInfo.Lang != "" {
-		langPrefix = fmt.Sprintf("%%lang(%s) ", content.FileInfo.Lang)
+		langPrefix = fmt.Sprintf("%%lang(%s) ", escapeSpecText(content.FileInfo.Lang))
 	}
 
 	switch content.Type {
