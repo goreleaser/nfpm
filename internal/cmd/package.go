@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -114,5 +116,27 @@ func doPackage(configPath, target, packager string) error {
 	}
 
 	fmt.Printf("created package: %s\n", target)
-	return f.Close()
+
+	meta, supports := pkg.(nfpm.PackagerWithMetadata)
+	if !supports || !info.EnableMetadata {
+		return nil
+	}
+
+	return doPackageMeta(meta, f, info)
+}
+
+func doPackageMeta(pkgMeta nfpm.PackagerWithMetadata, p io.ReadSeeker, info *nfpm.Info) error {
+	target := pkgMeta.ConventionalMetadataFileName(info)
+
+	var buf bytes.Buffer
+	if err := pkgMeta.PackageMetadata(&nfpm.MetaInfo{Info: info, Package: p}, &buf); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(target, buf.Bytes(), 0o644); err != nil { //nolint:gosec
+		return err
+	}
+
+	fmt.Printf("created package metadata: %s\n", target)
+	return nil
 }
