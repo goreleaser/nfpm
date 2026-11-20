@@ -493,24 +493,57 @@ func TestGlob(t *testing.T) {
 	}
 }
 
-func TestArchTreeDirModeMasked(t *testing.T) {
-	// A type: tree walk records Go's fs.FileMode for directories, which
-	// includes the fs.ModeDir type bit. That bit must not leak into the tar
-	// header or the .MTREE, otherwise pacman reports spurious
-	// "directory permissions differ" warnings on install. See deb/apk, which
-	// already mask with & 0o7777.
+func TestArchFileModes(t *testing.T) {
+	// A type: tree walk records Go's fs.FileMode, which includes type flags
+	// (fs.ModeDir) that must not leak into the tar header or the .MTREE.
+	// fs.ModeSetuid/Setgid/Sticky flags must become 0o4000/0o2000/0o1000.
 	source := t.TempDir()
 	require.NoError(t, os.Chmod(source, 0o755))
-	sub := filepath.Join(source, "sub")
-	require.NoError(t, os.Mkdir(sub, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(sub, "hello.txt"), []byte("hello"), 0o644))
+	require.NoError(t, os.Mkdir(filepath.Join(source, "sub"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(source, "plain.txt"), []byte("hello"), 0o644))
+	require.NoError(t, os.Mkdir(filepath.Join(source, "sticky"), 0o755))
+	require.NoError(t, os.Chmod(filepath.Join(source, "sticky"), 0o775|os.ModeSticky))
+
+	// Setuid and setgid are set through file_info because some filesystems
+	// and sandboxes silently drop them on chmod.
+	want := map[string]int64{
+		"usr/lib/repro/sub":       0o755,
+		"usr/lib/repro/plain.txt": 0o644,
+		"usr/lib/repro/sticky":    0o1775,
+		"usr/bin/suid":            0o4755,
+		"usr/bin/sgid":            0o2755,
+		"usr/share/sgid-dir":      0o2775,
+		"usr/share/sticky-dir":    0o1777,
+	}
 
 	info := exampleInfo()
-	info.Contents = files.Contents{{
-		Source:      source,
-		Destination: "/usr/lib/repro",
-		Type:        files.TypeTree,
-	}}
+	info.Contents = files.Contents{
+		{
+			Source:      source,
+			Destination: "/usr/lib/repro",
+			Type:        files.TypeTree,
+		},
+		{
+			Source:      "../testdata/fake",
+			Destination: "/usr/bin/suid",
+			FileInfo:    &files.ContentFileInfo{Mode: 0o755 | os.ModeSetuid},
+		},
+		{
+			Source:      "../testdata/fake",
+			Destination: "/usr/bin/sgid",
+			FileInfo:    &files.ContentFileInfo{Mode: 0o755 | os.ModeSetgid},
+		},
+		{
+			Destination: "/usr/share/sgid-dir",
+			Type:        files.TypeDir,
+			FileInfo:    &files.ContentFileInfo{Mode: 0o775 | os.ModeSetgid},
+		},
+		{
+			Destination: "/usr/share/sticky-dir",
+			Type:        files.TypeDir,
+			FileInfo:    &files.ContentFileInfo{Mode: 0o777 | os.ModeSticky},
+		},
+	}
 	info.Scripts = nfpm.Scripts{}
 	info.ArchLinux = nfpm.ArchLinux{}
 
@@ -522,8 +555,8 @@ func TestArchTreeDirModeMasked(t *testing.T) {
 	t.Cleanup(func() { pkgZstd.Close() })
 
 	var mtreeBts []byte
+	gotTar := map[string]int64{}
 	pkgTar := tar.NewReader(pkgZstd)
-	sawDir := false
 	for {
 		h, err := pkgTar.Next()
 		if err == io.EOF {
@@ -537,13 +570,8 @@ func TestArchTreeDirModeMasked(t *testing.T) {
 			continue
 		}
 
-		if h.Typeflag == tar.TypeDir {
-			sawDir = true
-			require.Zero(t, h.Mode&^0o7777,
-				"tar header for %q leaks non-permission mode bits: %#o", h.Name, h.Mode)
-		}
+		gotTar[strings.TrimSuffix(h.Name, "/")] = h.Mode
 	}
-	require.True(t, sawDir, "expected at least one directory entry in the package")
 
 	mtreeGzip, err := pgzip.NewReader(bytes.NewReader(mtreeBts))
 	require.NoError(t, err)
@@ -551,22 +579,25 @@ func TestArchTreeDirModeMasked(t *testing.T) {
 	mtreeContent, err := io.ReadAll(mtreeGzip)
 	require.NoError(t, err)
 
-	sawMtreeDir := false
+	gotMtree := map[string]int64{}
 	for _, line := range strings.Split(string(mtreeContent), "\n") {
-		if !strings.Contains(line, "type=dir") {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
 			continue
 		}
-		for _, field := range strings.Fields(line) {
-			mode, ok := strings.CutPrefix(field, "mode=")
-			if !ok {
-				continue
+		for _, field := range fields[1:] {
+			if mode, ok := strings.CutPrefix(field, "mode="); ok {
+				parsed, err := strconv.ParseInt(mode, 8, 64)
+				require.NoError(t, err)
+				gotMtree[strings.TrimSuffix(strings.TrimPrefix(fields[0], "./"), "/")] = parsed
 			}
-			sawMtreeDir = true
-			parsed, err := strconv.ParseInt(mode, 8, 64)
-			require.NoError(t, err)
-			require.Zero(t, parsed&^0o7777,
-				".MTREE dir line %q leaks non-permission mode bits", line)
 		}
 	}
-	require.True(t, sawMtreeDir, "expected at least one directory line in .MTREE")
+
+	for name, mode := range want {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, mode, gotTar[name], "tar header: got %#o, want %#o", gotTar[name], mode)
+			require.Equal(t, mode, gotMtree[name], ".MTREE: got %#o, want %#o", gotMtree[name], mode)
+		})
+	}
 }
