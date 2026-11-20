@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/goreleaser/nfpm/v2"
+	"github.com/goreleaser/nfpm/v2/internal/modtime"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
 )
 
@@ -68,8 +69,6 @@ type changesFileData struct {
 	Sha1Sum   string
 	Sha256Sum string
 }
-
-var now = time.Now
 
 // ConventionalMetadataFileName returns the name of the .changes file for the
 // given info. It is always a different file than the package itself.
@@ -165,7 +164,7 @@ func (d *Deb) prepareChangesData(meta *nfpm.MetaInfo) (*changesData, error) {
 	synopsis, _, _ := strings.Cut(strings.TrimSpace(info.Description), "\n")
 
 	return &changesData{
-		Date:     now().Format(time.RFC1123Z),
+		Date:     modtime.Get(info.MTime).Format(time.RFC1123Z),
 		Info:     info,
 		Version:  version,
 		Synopsis: strings.TrimSpace(synopsis),

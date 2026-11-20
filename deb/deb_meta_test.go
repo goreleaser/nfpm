@@ -22,10 +22,8 @@ func fakeTime() time.Time {
 func metaInfo(t *testing.T) *nfpm.Info {
 	t.Helper()
 
-	now = fakeTime
-	t.Cleanup(func() { now = time.Now })
-
 	info := exampleInfo()
+	info.MTime = fakeTime()
 	info.EnableMetadata = true
 	info.Deb.Metadata = nfpm.DebMetadata{
 		Distribution: "unstable",
@@ -89,6 +87,19 @@ func TestMetaFields(t *testing.T) {
 	bts, err := os.ReadFile(golden) //nolint:gosec
 	require.NoError(t, err)
 	require.Equal(t, string(bts), got)
+}
+
+func TestMetaDateUsesMTime(t *testing.T) {
+	info := metaInfo(t)
+	info.MTime = time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	first, err := packageMetadata(t, info)
+	require.NoError(t, err)
+	require.Contains(t, first, "\nDate: Sun, 01 Jan 2023 00:00:00 +0000\n")
+
+	second, err := packageMetadata(t, info)
+	require.NoError(t, err)
+	require.Equal(t, first, second)
 }
 
 func TestMetaDescription(t *testing.T) {
