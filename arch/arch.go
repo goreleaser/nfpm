@@ -186,13 +186,13 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 			entries = append(entries, MtreeEntry{
 				Destination: content.Destination,
 				Time:        content.ModTime().Unix(),
-				Mode:        int64(content.Mode()),
+				Mode:        int64(content.Mode() & 0o7777),
 				Type:        files.TypeDir,
 			})
 
 			if err := tw.WriteHeader(&tar.Header{
 				Name:     content.Destination,
-				Mode:     int64(content.Mode()),
+				Mode:     int64(content.Mode() & 0o7777),
 				Typeflag: tar.TypeDir,
 				ModTime:  content.ModTime(),
 				Uname:    content.FileInfo.Owner,
@@ -226,14 +226,14 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 
 			header := &tar.Header{
 				Name:     content.Destination,
-				Mode:     int64(content.Mode()),
+				Mode:     int64(content.Mode() & 0o7777),
 				Typeflag: tar.TypeReg,
 				Size:     content.Size(),
 				ModTime:  content.ModTime(),
 			}
 
 			if content.FileInfo != nil && content.Mode() != 0 {
-				header.Mode = int64(content.Mode())
+				header.Mode = int64(content.Mode() & 0o7777)
 			}
 
 			if content.FileInfo != nil && !content.ModTime().IsZero() {
@@ -262,7 +262,7 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 			entries = append(entries, MtreeEntry{
 				Destination: content.Destination,
 				Time:        content.ModTime().Unix(),
-				Mode:        int64(content.Mode()),
+				Mode:        int64(content.Mode() & 0o7777),
 				Size:        content.Size(),
 				Type:        content.Type,
 				MD5:         md5Hash.Sum(nil),

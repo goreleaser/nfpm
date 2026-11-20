@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -490,4 +491,82 @@ func TestGlob(t *testing.T) {
 		expect := expected[filename]
 		require.Equal(t, expect, strings.Split(line, " ")[1:], filename)
 	}
+}
+
+func TestArchTreeDirModeMasked(t *testing.T) {
+	// A type: tree walk records Go's fs.FileMode for directories, which
+	// includes the fs.ModeDir type bit. That bit must not leak into the tar
+	// header or the .MTREE, otherwise pacman reports spurious
+	// "directory permissions differ" warnings on install. See deb/apk, which
+	// already mask with & 0o7777.
+	source := t.TempDir()
+	require.NoError(t, os.Chmod(source, 0o755))
+	sub := filepath.Join(source, "sub")
+	require.NoError(t, os.Mkdir(sub, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(sub, "hello.txt"), []byte("hello"), 0o644))
+
+	info := exampleInfo()
+	info.Contents = files.Contents{{
+		Source:      source,
+		Destination: "/usr/lib/repro",
+		Type:        files.TypeTree,
+	}}
+	info.Scripts = nfpm.Scripts{}
+	info.ArchLinux = nfpm.ArchLinux{}
+
+	var pkg bytes.Buffer
+	require.NoError(t, Default.Package(info, &pkg))
+
+	pkgZstd, err := zstd.NewReader(&pkg)
+	require.NoError(t, err)
+	t.Cleanup(func() { pkgZstd.Close() })
+
+	var mtreeBts []byte
+	pkgTar := tar.NewReader(pkgZstd)
+	sawDir := false
+	for {
+		h, err := pkgTar.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+
+		if h.Name == ".MTREE" {
+			mtreeBts, err = io.ReadAll(pkgTar)
+			require.NoError(t, err)
+			continue
+		}
+
+		if h.Typeflag == tar.TypeDir {
+			sawDir = true
+			require.Zero(t, h.Mode&^0o7777,
+				"tar header for %q leaks non-permission mode bits: %#o", h.Name, h.Mode)
+		}
+	}
+	require.True(t, sawDir, "expected at least one directory entry in the package")
+
+	mtreeGzip, err := pgzip.NewReader(bytes.NewReader(mtreeBts))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, mtreeGzip.Close()) })
+	mtreeContent, err := io.ReadAll(mtreeGzip)
+	require.NoError(t, err)
+
+	sawMtreeDir := false
+	for _, line := range strings.Split(string(mtreeContent), "\n") {
+		if !strings.Contains(line, "type=dir") {
+			continue
+		}
+		for _, field := range strings.Fields(line) {
+			mode, ok := strings.CutPrefix(field, "mode=")
+			if !ok {
+				continue
+			}
+			sawMtreeDir = true
+			parsed, err := strconv.ParseInt(mode, 8, 64)
+			require.NoError(t, err)
+			require.Zero(t, parsed&^0o7777,
+				".MTREE dir line %q leaks non-permission mode bits", line)
+		}
+	}
+	require.True(t, sawMtreeDir, "expected at least one directory line in .MTREE")
 }
