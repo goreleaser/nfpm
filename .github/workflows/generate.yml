@@ -53,11 +53,16 @@ jobs:
       - run: task docs:generate
       - run: task schema:generate
       - run: task schema:validate
-      - run: npx @goreleaser/sponsors generate --config gh://goreleaser/.github/sponsors.yml sponsors.json
+      - name: Generate sponsor data
+        id: sponsors
+        continue-on-error: true
+        run: npx @goreleaser/sponsors generate --config gh://goreleaser/.github/sponsors.yml sponsors.json
         env:
           GITHUB_TOKEN: ${{ secrets.SPONSORS_TOKEN }}
-      - run: npx @goreleaser/sponsors apply sponsors.json gh://goreleaser/.github/sponsors.tpl.md README.md
-      - run: npx @goreleaser/sponsors apply sponsors.json .github/templates/sponsors.tpl.md www/content/docs/sponsors.md
+      - if: steps.sponsors.outcome == 'success'
+        run: npx @goreleaser/sponsors apply sponsors.json gh://goreleaser/.github/sponsors.tpl.md README.md
+      - if: steps.sponsors.outcome == 'success'
+        run: npx @goreleaser/sponsors apply sponsors.json .github/templates/sponsors.tpl.md www/content/docs/sponsors.md
       - uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
         with:
           token: ${{ steps.app-token.outputs.token }}
@@ -71,3 +76,8 @@ jobs:
           add-paths: |
             README.md
             www/
+      - name: Report sponsor data generation failure
+        if: steps.sponsors.outcome == 'failure'
+        run: |
+          echo "::error::Sponsor data generation failed. Generated files were processed without sponsor updates."
+          exit 1
