@@ -1,0 +1,14 @@
+name: nfpm-pkg-test-rollback
+arch: ${NFPM_PKG_TEST_ARCH}
+version: 1.0.0
+maintainer: "Test Company <test@example.com>"
+description: "A package whose preinstall script fails"
+contents:
+  - src: ./dist/testapp
+    dst: /usr/local/bin/nfpm-pkg-test-rollback
+    file_info:
+      mode: 0755
+scripts:
+  preinstall: ./testdata/acceptance/pkg/preinstall-fail.sh
+pkg:
+  identifier: dev.goreleaser.nfpm.pkgtest.rollback

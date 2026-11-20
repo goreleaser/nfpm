@@ -20,7 +20,7 @@ Thank you!
 
 ---
 
-{{< tabs items="Deb,RPM,APK,Arch Linux,IPK,MSI,MSIX" >}}
+{{< tabs items="Deb,RPM,APK,Arch Linux,IPK,MSI,MSIX,macOS" >}}
 
 {{< tab >}}
 
@@ -153,6 +153,23 @@ error. `intel64` is Itanium, not x86-64.
 |   `arm`   |   `arm`   |
 |  `arm7`   |   `arm`   |
 |   `all`   | `neutral` |
+
+{{< /tab >}}
+
+{{< tab >}}
+
+The `app`, `dmg` and `pkg` packagers share this mapping. macOS runs on two
+architectures; any other input is an error. A `universal` package supports
+both.
+
+|    Input    |    Value    |
+| :---------: | :---------: |
+|   `amd64`   |  `x86_64`   |
+|  `x86_64`   |  `x86_64`   |
+|   `arm64`   |   `arm64`   |
+|  `aarch64`  |   `arm64`   |
+|    `all`    | `universal` |
+| `universal` | `universal` |
 
 {{< /tab >}}
 

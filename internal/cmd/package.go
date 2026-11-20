@@ -54,6 +54,35 @@ func newPackageCmd() *packageCmd {
 
 var errInsufficientParams = errors.New("a packager must be specified if target is a directory or blank")
 
+// guessPackager names the packager for a target file. The last extension is
+// tried first, as a packager name (foo.deb is deb). When no packager has that
+// name, the packager whose conventional extension ends the target wins, the
+// longest extension first, so that foo.app.zip is app and
+// foo.pkg.tar.zst is archlinux. An unknown extension is returned as it is,
+// and nfpm.Get reports it.
+func guessPackager(target string) string {
+	packager := filepath.Ext(target)[1:]
+	if _, err := nfpm.Get(packager); err == nil {
+		return packager
+	}
+	guess, longest := packager, 0
+	for _, name := range nfpm.Enumerate() {
+		registered, err := nfpm.Get(name)
+		if err != nil {
+			continue
+		}
+		withExtension, ok := registered.(nfpm.PackagerWithExtension)
+		if !ok {
+			continue
+		}
+		extension := withExtension.ConventionalExtension()
+		if len(extension) > longest && strings.HasSuffix(target, extension) {
+			guess, longest = name, len(extension)
+		}
+	}
+	return guess
+}
+
 // nolint:funlen
 func doPackage(configPath, target, packager string) error {
 	targetIsADirectory := false
@@ -63,12 +92,11 @@ func doPackage(configPath, target, packager string) error {
 	}
 
 	if packager == "" {
-		ext := filepath.Ext(target)
-		if targetIsADirectory || ext == "" {
+		if targetIsADirectory || filepath.Ext(target) == "" {
 			return errInsufficientParams
 		}
 
-		packager = ext[1:]
+		packager = guessPackager(target)
 		fmt.Println("guessing packager from target file extension...")
 	}
 
