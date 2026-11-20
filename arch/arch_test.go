@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -514,6 +515,12 @@ func TestArchFileModes(t *testing.T) {
 		"usr/bin/sgid":            0o2755,
 		"usr/share/sgid-dir":      0o2775,
 		"usr/share/sticky-dir":    0o1777,
+	}
+	if runtime.GOOS == "windows" {
+		// Windows does not keep Unix permission bits on walked files.
+		delete(want, "usr/lib/repro/sub")
+		delete(want, "usr/lib/repro/plain.txt")
+		delete(want, "usr/lib/repro/sticky")
 	}
 
 	info := exampleInfo()
