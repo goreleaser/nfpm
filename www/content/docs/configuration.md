@@ -263,10 +263,22 @@ contents:
   - dst: /var/log/boo.log
     type: ghost
 
-  # License files are installed like regular files and additionally marked as
-  # `%license` in RPM packages. For MSI packages the first license content is
-  # also used as the license text shown by the install wizard. Other packagers
-  # ignore this type. ('licence' is accepted as an alternate spelling.)
+  # Documentation and readme files are installed like regular files and
+  # additionally marked as `%doc` and `%readme` in RPM packages. All other
+  # packagers skip these entries: the file is NOT added to the package. To ship
+  # the same file in those packages, see the `packager` example below.
+  - src: path/to/local/README.md
+    dst: /usr/share/doc/myapp/README.md
+    type: doc
+  - src: path/to/local/README.first
+    dst: /usr/share/doc/myapp/README.first
+    type: readme
+
+  # License files are installed like regular files in RPM and MSI packages. RPM
+  # additionally marks them as `%license`, and MSI uses the first license
+  # content as the license text shown by the install wizard. All other packagers
+  # skip these entries: the file is NOT added to the package.
+  # ('licence' is accepted as an alternate spelling.)
   - src: LICENSE
     dst: /usr/share/licenses/myapp/LICENSE
     type: license
@@ -284,6 +296,22 @@ contents:
   - src: path/to/apk/file.conf
     dst: /etc/file.conf
     type: config|noreplace
+    packager: apk
+
+  # Since `doc`, `readme`, `license` and `ghost` entries are skipped by the
+  # packagers that do not support them, use one entry per packager to ship the
+  # file everywhere. Here, the file is a `%doc` in RPM packages and a regular
+  # file in deb and apk packages. Do not add an entry without `packager` for the
+  # same `dst`: it would collide with the `doc` entry when building the RPM.
+  - src: path/to/local/CHANGES.md
+    dst: /usr/share/doc/myapp/CHANGES.md
+    type: doc
+    packager: rpm
+  - src: path/to/local/CHANGES.md
+    dst: /usr/share/doc/myapp/CHANGES.md
+    packager: deb
+  - src: path/to/local/CHANGES.md
+    dst: /usr/share/doc/myapp/CHANGES.md
     packager: apk
 
   # Sometimes it is important to be able to set the mtime, mode, owner, or group for a file
