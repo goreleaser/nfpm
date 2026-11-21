@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"slices"
 	"strconv"
@@ -168,6 +169,22 @@ func (ArchLinux) ConventionalExtension() string {
 	return ".pkg.tar.zst"
 }
 
+// normalizeFileMode keeps the permission bits and maps Go's special-bit flags
+// to their Unix values, dropping type flags such as fs.ModeDir.
+func normalizeFileMode(mode fs.FileMode) fs.FileMode {
+	result := mode & 0o7777
+	if mode&fs.ModeSetuid != 0 {
+		result |= 0o4000
+	}
+	if mode&fs.ModeSetgid != 0 {
+		result |= 0o2000
+	}
+	if mode&fs.ModeSticky != 0 {
+		result |= 0o1000
+	}
+	return result
+}
+
 // createFilesInTar adds the files described in the given info to the given tar writer
 func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, error) {
 	entries := make([]MtreeEntry, 0, len(info.Contents))
@@ -186,13 +203,13 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 			entries = append(entries, MtreeEntry{
 				Destination: content.Destination,
 				Time:        content.ModTime().Unix(),
-				Mode:        int64(content.Mode()),
+				Mode:        int64(normalizeFileMode(content.Mode())),
 				Type:        files.TypeDir,
 			})
 
 			if err := tw.WriteHeader(&tar.Header{
 				Name:     content.Destination,
-				Mode:     int64(content.Mode()),
+				Mode:     int64(normalizeFileMode(content.Mode())),
 				Typeflag: tar.TypeDir,
 				ModTime:  content.ModTime(),
 				Uname:    content.FileInfo.Owner,
@@ -226,14 +243,14 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 
 			header := &tar.Header{
 				Name:     content.Destination,
-				Mode:     int64(content.Mode()),
+				Mode:     int64(normalizeFileMode(content.Mode())),
 				Typeflag: tar.TypeReg,
 				Size:     content.Size(),
 				ModTime:  content.ModTime(),
 			}
 
 			if content.FileInfo != nil && content.Mode() != 0 {
-				header.Mode = int64(content.Mode())
+				header.Mode = int64(normalizeFileMode(content.Mode()))
 			}
 
 			if content.FileInfo != nil && !content.ModTime().IsZero() {
@@ -262,7 +279,7 @@ func createFilesInTar(info *nfpm.Info, tw *tar.Writer) ([]MtreeEntry, int64, err
 			entries = append(entries, MtreeEntry{
 				Destination: content.Destination,
 				Time:        content.ModTime().Unix(),
-				Mode:        int64(content.Mode()),
+				Mode:        int64(normalizeFileMode(content.Mode())),
 				Size:        content.Size(),
 				Type:        content.Type,
 				MD5:         md5Hash.Sum(nil),

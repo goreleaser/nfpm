@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -489,5 +491,120 @@ func TestGlob(t *testing.T) {
 		filename := parts[0]
 		expect := expected[filename]
 		require.Equal(t, expect, strings.Split(line, " ")[1:], filename)
+	}
+}
+
+func TestArchFileModes(t *testing.T) {
+	// A type: tree walk records Go's fs.FileMode, which includes type flags
+	// (fs.ModeDir) that must not leak into the tar header or the .MTREE.
+	// fs.ModeSetuid/Setgid/Sticky flags must become 0o4000/0o2000/0o1000.
+	source := t.TempDir()
+	require.NoError(t, os.Chmod(source, 0o755))
+	require.NoError(t, os.Mkdir(filepath.Join(source, "sub"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(source, "plain.txt"), []byte("hello"), 0o644))
+	require.NoError(t, os.Mkdir(filepath.Join(source, "sticky"), 0o755))
+	require.NoError(t, os.Chmod(filepath.Join(source, "sticky"), 0o775|os.ModeSticky))
+
+	// Setuid and setgid are set through file_info because some filesystems
+	// and sandboxes silently drop them on chmod.
+	want := map[string]int64{
+		"usr/lib/repro/sub":       0o755,
+		"usr/lib/repro/plain.txt": 0o644,
+		"usr/lib/repro/sticky":    0o1775,
+		"usr/bin/suid":            0o4755,
+		"usr/bin/sgid":            0o2755,
+		"usr/share/sgid-dir":      0o2775,
+		"usr/share/sticky-dir":    0o1777,
+	}
+	if runtime.GOOS == "windows" {
+		// Windows does not keep Unix permission bits on walked files.
+		delete(want, "usr/lib/repro/sub")
+		delete(want, "usr/lib/repro/plain.txt")
+		delete(want, "usr/lib/repro/sticky")
+	}
+
+	info := exampleInfo()
+	info.Contents = files.Contents{
+		{
+			Source:      source,
+			Destination: "/usr/lib/repro",
+			Type:        files.TypeTree,
+		},
+		{
+			Source:      "../testdata/fake",
+			Destination: "/usr/bin/suid",
+			FileInfo:    &files.ContentFileInfo{Mode: 0o755 | os.ModeSetuid},
+		},
+		{
+			Source:      "../testdata/fake",
+			Destination: "/usr/bin/sgid",
+			FileInfo:    &files.ContentFileInfo{Mode: 0o755 | os.ModeSetgid},
+		},
+		{
+			Destination: "/usr/share/sgid-dir",
+			Type:        files.TypeDir,
+			FileInfo:    &files.ContentFileInfo{Mode: 0o775 | os.ModeSetgid},
+		},
+		{
+			Destination: "/usr/share/sticky-dir",
+			Type:        files.TypeDir,
+			FileInfo:    &files.ContentFileInfo{Mode: 0o777 | os.ModeSticky},
+		},
+	}
+	info.Scripts = nfpm.Scripts{}
+	info.ArchLinux = nfpm.ArchLinux{}
+
+	var pkg bytes.Buffer
+	require.NoError(t, Default.Package(info, &pkg))
+
+	pkgZstd, err := zstd.NewReader(&pkg)
+	require.NoError(t, err)
+	t.Cleanup(func() { pkgZstd.Close() })
+
+	var mtreeBts []byte
+	gotTar := map[string]int64{}
+	pkgTar := tar.NewReader(pkgZstd)
+	for {
+		h, err := pkgTar.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+
+		if h.Name == ".MTREE" {
+			mtreeBts, err = io.ReadAll(pkgTar)
+			require.NoError(t, err)
+			continue
+		}
+
+		gotTar[strings.TrimSuffix(h.Name, "/")] = h.Mode
+	}
+
+	mtreeGzip, err := pgzip.NewReader(bytes.NewReader(mtreeBts))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, mtreeGzip.Close()) })
+	mtreeContent, err := io.ReadAll(mtreeGzip)
+	require.NoError(t, err)
+
+	gotMtree := map[string]int64{}
+	for _, line := range strings.Split(string(mtreeContent), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		for _, field := range fields[1:] {
+			if mode, ok := strings.CutPrefix(field, "mode="); ok {
+				parsed, err := strconv.ParseInt(mode, 8, 64)
+				require.NoError(t, err)
+				gotMtree[strings.TrimSuffix(strings.TrimPrefix(fields[0], "./"), "/")] = parsed
+			}
+		}
+	}
+
+	for name, mode := range want {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, mode, gotTar[name], "tar header: got %#o, want %#o", gotTar[name], mode)
+			require.Equal(t, mode, gotMtree[name], ".MTREE: got %#o, want %#o", gotMtree[name], mode)
+		})
 	}
 }
