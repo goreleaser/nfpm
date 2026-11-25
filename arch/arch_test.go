@@ -245,7 +245,7 @@ func TestArchPkginfo(t *testing.T) {
 	fields := extractPkginfoFields(pkginfoData)
 	require.Equal(t, "foo-test", fields["pkgname"])
 	require.Equal(t, "foo-test", fields["pkgbase"])
-	require.Equal(t, "1.0.0-1", fields["pkgver"])
+	require.Equal(t, "1.0.0beta_1-1", fields["pkgver"])
 	require.Equal(t, "Foo does things", fields["pkgdesc"])
 	require.Equal(t, "http://carlosbecker.com", fields["url"])
 	require.Equal(t, "Unknown Packager", fields["packager"])
@@ -279,11 +279,20 @@ func TestArchInvalidName(t *testing.T) {
 func TestArchVersionWithRelease(t *testing.T) {
 	info := exampleInfo()
 	info.Version = "0.0.1"
+	info.Prerelease = ""
 	info.Release = "4"
 	pkginfoData, err := makeTestPkginfo(t, info)
 	require.NoError(t, err)
 	fields := extractPkginfoFields(pkginfoData)
 	require.Equal(t, "0.0.1-4", fields["pkgver"])
+}
+
+func TestArchVersionWithPrerelease(t *testing.T) {
+	info := exampleInfo()
+	pkginfoData, err := makeTestPkginfo(t, info)
+	require.NoError(t, err)
+	fields := extractPkginfoFields(pkginfoData)
+	require.Equal(t, "1.0.0beta_1-1", fields["pkgver"])
 }
 
 func TestArchVersionWithEpoch(t *testing.T) {
