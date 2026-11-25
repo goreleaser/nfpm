@@ -34,8 +34,9 @@ certificate_fingerprint() {
 }
 
 # developer_id reports whether packages signed with real Apple Developer ID
-# identities were built. CI sets NFPM_MACOS_EXPECT_DEVELOPER_ID where it has
-# the identities, so their absence there is a failure, not a skipped check.
+# identities were built. A run that has the identities sets
+# NFPM_MACOS_EXPECT_DEVELOPER_ID, so their absence there is a failure, not a
+# skipped check.
 developer_id() {
   if [ -d dist/developer-id ]; then
     return 0
