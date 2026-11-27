@@ -314,15 +314,15 @@ func createPkginfo(info *nfpm.Info, tw *tar.Writer, totalSize int64) (*MtreeEntr
 		pkgrel = 1
 	}
 
-	pkgver := fmt.Sprintf("%s-%d", info.Version, pkgrel)
+	version := info.Version + strings.ReplaceAll(info.Prerelease, "-", "_")
+	pkgver := fmt.Sprintf("%s-%d", version, pkgrel)
 	if info.Epoch != "" {
 		epoch, err := strconv.ParseUint(info.Epoch, 10, 64)
 		if err == nil {
 			pkgver = fmt.Sprintf(
-				"%d:%s%s-%d",
+				"%d:%s-%d",
 				epoch,
-				info.Version,
-				strings.ReplaceAll(info.Prerelease, "-", "_"),
+				version,
 				pkgrel,
 			)
 		}
