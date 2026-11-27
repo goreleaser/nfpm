@@ -1,0 +1,25 @@
+# One application bundle, used by both the app and the dmg packager.
+name: testapp
+arch: "${BUILD_ARCH}"
+version: "${SEMVER}"
+maintainer: "Foo Bar"
+vendor: "Test Company"
+homepage: "https://example.com/testapp"
+description: "A test macOS application bundle"
+contents:
+  # A launcher script: it runs on every architecture.
+  - src: ./testdata/acceptance/scripts/preinstall.sh
+    dst: /Contents/MacOS/testapp
+    file_info:
+      mode: 0755
+  - src: ./testdata/acceptance/testapp/logo.png
+    dst: /Contents/Resources/logo.png
+  - src: ../MacOS/testapp
+    dst: /Contents/Resources/launcher
+    type: symlink
+app:
+  name: Test App
+  identifier: dev.goreleaser.nfpm.basic
+  min_os_version: "11.0"
+  info_plist:
+    LSUIElement: true

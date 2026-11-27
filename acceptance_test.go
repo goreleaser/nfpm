@@ -6,6 +6,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,14 +15,19 @@ import (
 
 	"github.com/goreleaser/nfpm/v2"
 	_ "github.com/goreleaser/nfpm/v2/apk"
+	_ "github.com/goreleaser/nfpm/v2/app"
 	_ "github.com/goreleaser/nfpm/v2/arch"
 	_ "github.com/goreleaser/nfpm/v2/deb"
+	_ "github.com/goreleaser/nfpm/v2/dmg"
 	_ "github.com/goreleaser/nfpm/v2/ipk"
 	_ "github.com/goreleaser/nfpm/v2/msi"
 	_ "github.com/goreleaser/nfpm/v2/msix"
+	_ "github.com/goreleaser/nfpm/v2/pkg"
 	_ "github.com/goreleaser/nfpm/v2/rpm"
 	"github.com/stretchr/testify/require"
 	gomsi "go.digitalxero.dev/go-msi"
+	osxdmg "go.digitalxero.dev/osx/dmg"
+	osxpkg "go.digitalxero.dev/osx/pkg"
 )
 
 // nolint: gochecknoglobals
@@ -550,6 +556,125 @@ func TestMSIStructure(t *testing.T) {
 					t.Errorf("ICE error finding %s: %s", f.ICE(), f.Message())
 				}
 			}
+		})
+	}
+}
+
+// TestMacOSStructure builds the three macOS formats from their acceptance
+// configurations and reads each one back, for both architectures. The real
+// installer, codesign and hdiutil check the same formats on a macOS runner;
+// this is the structural check that runs anywhere.
+func TestMacOSStructure(t *testing.T) {
+	t.Parallel()
+	for _, arch := range []string{"amd64", "arm64"} {
+		arch := arch
+		build := func(t *testing.T, format, configFile string) []byte {
+			t.Helper()
+			envFunc := func(s string) string {
+				switch s {
+				case "BUILD_ARCH":
+					return arch
+				case "SEMVER":
+					return "v1.0.0-0.1.b1+git.abcdefgh"
+				default:
+					return os.Getenv(s)
+				}
+			}
+			config, err := nfpm.ParseFileWithEnvMapping(configFile, envFunc)
+			require.NoError(t, err)
+			info, err := config.Get(format)
+			require.NoError(t, err)
+			require.NoError(t, nfpm.Validate(info))
+			packager, err := nfpm.Get(format)
+			require.NoError(t, err)
+			var buf bytes.Buffer
+			require.NoError(t, packager.Package(nfpm.WithDefaults(info), &buf))
+			return buf.Bytes()
+		}
+		macArch := map[string]string{"amd64": "x86_64", "arm64": "arm64"}[arch]
+
+		t.Run("pkg/"+arch, func(t *testing.T) {
+			t.Parallel()
+			raw := build(t, "pkg", "./testdata/acceptance/pkg.basic.yaml")
+
+			archive, err := osxpkg.Open(bytes.NewReader(raw), int64(len(raw)))
+			require.NoError(t, err)
+			// The container's checksums, and the payload against the bill of
+			// materials the installer keeps as its receipt.
+			require.NoError(t, archive.Verify())
+			require.True(t, archive.IsProduct(), "the package must be a product archive")
+			// The package must declare the architecture it was built for.
+			require.Equal(t, []string{macArch}, archive.HostArchitectures())
+			require.Equal(t, "11.0", archive.MinOSVersion())
+			require.Len(t, archive.Components(), 1)
+			component := archive.Components()[0]
+			require.NoError(t, component.Verify())
+			require.Equal(t, "dev.goreleaser.nfpm.basic", component.Identifier())
+			require.Equal(t, "1.0.0-0.1.b1+git.abcdefgh", component.Version())
+
+			payload, err := component.Payload()
+			require.NoError(t, err)
+			program, err := payload.Entry("/usr/local/bin/testapp")
+			require.NoError(t, err)
+			require.Equal(t, fs.FileMode(0o755), program.Mode())
+			link, err := payload.Entry("/usr/local/bin/testapp-link")
+			require.NoError(t, err)
+			require.Equal(t, "/usr/local/bin/testapp", link.LinkTarget())
+			_, err = payload.Entry("/private/etc/testapp/testapp.conf")
+			require.NoError(t, err, "/etc is stored as /private/etc")
+			_, err = component.PreInstallScript()
+			require.NoError(t, err)
+			_, err = component.PostInstallScript()
+			require.NoError(t, err)
+		})
+
+		t.Run("app/"+arch, func(t *testing.T) {
+			t.Parallel()
+			raw := build(t, "app", "./testdata/acceptance/app.basic.yaml")
+
+			archive, err := zip.NewReader(bytes.NewReader(raw), int64(len(raw)))
+			require.NoError(t, err)
+			modes := map[string]fs.FileMode{}
+			for _, f := range archive.File {
+				modes[f.Name] = f.Mode()
+			}
+			require.Contains(t, modes, "Test App.app/Contents/Info.plist")
+			require.Contains(t, modes, "Test App.app/Contents/PkgInfo")
+			require.Equal(t, fs.FileMode(0o755), modes["Test App.app/Contents/MacOS/testapp"],
+				"the main executable must stay executable")
+			require.Equal(t, fs.ModeSymlink, modes["Test App.app/Contents/Resources/launcher"].Type())
+
+			plist, err := fs.ReadFile(archive, "Test App.app/Contents/Info.plist")
+			require.NoError(t, err)
+			for _, want := range []string{
+				"<string>dev.goreleaser.nfpm.basic</string>",
+				"<string>1.0.0-0.1.b1+git.abcdefgh</string>",
+				"<key>LSUIElement</key>",
+			} {
+				require.Contains(t, string(plist), want)
+			}
+		})
+
+		t.Run("dmg/"+arch, func(t *testing.T) {
+			t.Parallel()
+			raw := build(t, "dmg", "./testdata/acceptance/app.basic.yaml")
+
+			image, err := osxdmg.Open(bytes.NewReader(raw), int64(len(raw)))
+			require.NoError(t, err)
+			// The checksums hdiutil verify checks.
+			require.NoError(t, image.Verify())
+			require.Equal(t, "Test App", image.VolumeName())
+			volume := image.FS()
+			info, err := fs.Stat(volume, "Test App.app/Contents/MacOS/testapp")
+			require.NoError(t, err)
+			require.Equal(t, fs.FileMode(0o755), info.Mode().Perm())
+			_, err = fs.Stat(volume, "Test App.app/Contents/Info.plist")
+			require.NoError(t, err)
+			links, ok := volume.(fs.ReadLinkFS)
+			require.True(t, ok)
+			target, err := links.ReadLink("Applications")
+			require.NoError(t, err)
+			require.Equal(t, "/Applications", target)
 		})
 	}
 }
