@@ -54,6 +54,42 @@ func newPackageCmd() *packageCmd {
 
 var errInsufficientParams = errors.New("a packager must be specified if target is a directory or blank")
 
+// extensionMismatch reports the packager whose conventional extension target
+// ends with, when that packager is not the one requested.
+//
+// Packager names are not file extensions: srpm writes .src.rpm, which
+// filepath.Ext reports as .rpm, and archlinux writes .pkg.tar.zst, which it
+// reports as .zst. Matching the conventional extensions longest first keeps
+// srpm packages from being rejected as rpm, and still catches a .pkg.tar.zst
+// target requested as deb.
+func extensionMismatch(target, packager string) (string, string) {
+	target = strings.ToLower(target)
+
+	var matchedExt, matchedPackager string
+	for _, name := range nfpm.Enumerate() {
+		pkg, err := nfpm.Get(name)
+		if err != nil {
+			continue
+		}
+		withExt, ok := pkg.(nfpm.PackagerWithExtension)
+		if !ok {
+			continue
+		}
+		ext := strings.ToLower(withExt.ConventionalExtension())
+		if ext == "" || !strings.HasSuffix(target, ext) {
+			continue
+		}
+		if len(ext) > len(matchedExt) {
+			matchedExt, matchedPackager = ext, name
+		}
+	}
+
+	if matchedExt == "" || matchedPackager == packager {
+		return "", ""
+	}
+	return matchedExt, matchedPackager
+}
+
 // nolint:funlen
 func doPackage(configPath, target, packager string) error {
 	targetIsADirectory := false
@@ -70,6 +106,15 @@ func doPackage(configPath, target, packager string) error {
 
 		packager = ext[1:]
 		fmt.Println("guessing packager from target file extension...")
+	}
+
+	if target != "" && !targetIsADirectory {
+		if ext, other := extensionMismatch(target, packager); ext != "" {
+			return fmt.Errorf(
+				"target %q has the extension %q of the %s packager, but %q was requested",
+				target, ext, other, packager,
+			)
+		}
 	}
 
 	config, err := nfpm.ParseFile(configPath)
