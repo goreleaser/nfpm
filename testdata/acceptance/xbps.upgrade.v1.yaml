@@ -1,0 +1,29 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+release: "1"
+maintainer: "Foo Bar"
+description: |
+  Foo bar
+  Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/acceptance/xbps.current.v1.txt
+    dst: /usr/share/foo/current.txt
+  # Unchanged between the two versions and not owned by root: xbps leaves
+  # the file in place on upgrade, and the generated INSTALL script must keep
+  # its ownership.
+  - src: ./testdata/acceptance/xbps.state.txt
+    dst: /var/lib/foo/state
+    file_info:
+      mode: 0640
+      owner: nobody
+      group: nogroup
+  - src: ./testdata/acceptance/xbps.preserve.v1.txt
+    dst: /usr/share/foo/preserve.txt
+xbps:
+  short_desc: "XBPS upgrade package"
+  preserve: true

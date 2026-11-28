@@ -65,6 +65,11 @@ jobs:
       matrix:
         pkgFormat: [deb, rpm, apk, archlinux, ipk]
         pkgPlatform: [amd64, arm64, 386, ppc64le, armv6, armv7, s390x]
+        include:
+          # TestXBPSSpecific defines amd64 subtests only; a full xbps row
+          # would add six jobs that match no test.
+          - pkgFormat: xbps
+            pkgPlatform: amd64
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: "enabled"

@@ -20,7 +20,7 @@ Thank you!
 
 ---
 
-{{< tabs items="Deb,RPM,APK,Arch Linux,IPK,MSI,MSIX" >}}
+{{< tabs items="Deb,RPM,APK,Arch Linux,IPK,MSI,XBPS,MSIX" >}}
 
 {{< tab >}}
 
@@ -136,6 +136,26 @@ error. `intel64` is Itanium, not x86-64.
 |   `arm`   |   `arm`   |
 |  `arm7`   |   `arm`   |
 |  `ia64`   | `intel64` |
+
+{{< /tab >}}
+
+{{< tab >}}
+
+|   Input   |   Value   |
+| :-------: | :-------: |
+|   `all`   | `noarch`  |
+| `noarch`  | `noarch`  |
+|  `amd64`  | `x86_64`  |
+| `x86_64`  | `x86_64`  |
+|   `386`   |  `i686`   |
+|  `i386`   |  `i686`   |
+|  `i686`   |  `i686`   |
+|  `arm64`  | `aarch64` |
+| `aarch64` | `aarch64` |
+|  `arm6`   | `armv6l`  |
+| `armv6l`  | `armv6l`  |
+|  `arm7`   | `armv7l`  |
+| `armv7l`  | `armv7l`  |
 
 {{< /tab >}}
 

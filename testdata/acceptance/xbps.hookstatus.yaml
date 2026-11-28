@@ -1,0 +1,25 @@
+name: "foo"
+arch: "${BUILD_ARCH}"
+platform: "linux"
+version: "v1.2.3"
+release: "1"
+maintainer: "Foo Bar"
+description: |
+  Foo bar
+  Multiple lines
+vendor: "foobar"
+homepage: "https://foobar.org"
+license: "MIT"
+contents:
+  - src: ./testdata/fake
+    dst: /usr/bin/fake
+  # An explicit directory makes the generated REMOVE script run its cleanup
+  # after the user's post-remove hook.
+  - dst: /var/lib/foo
+    type: dir
+    file_info:
+      mode: 0750
+scripts:
+  postremove: ./testdata/acceptance/scripts/xbps/postremove-fail.sh
+xbps:
+  short_desc: "XBPS hook status package"
