@@ -32,6 +32,7 @@ func scriptRequires(info *nfpm.Info) ([]string, error) {
 		return nil, nil
 	}
 
+	docDirs := cleanDocDirs(info.RPM.DocDirs)
 	var interpreters []string
 	for _, content := range info.Contents {
 		if content.Packager != "" && content.Packager != contentPackager {
@@ -43,6 +44,12 @@ func scriptRequires(info *nfpm.Info) ([]string, error) {
 		case files.TypeRPMDoc, files.TypeRPMReadme:
 			// rpmbuild generates no dependencies for documentation.
 			continue
+		case files.TypeRPMLicence, files.TypeRPMLicense:
+			// RPM installs license files even with --excludedocs.
+		default:
+			if isBelowDocDir(files.ToNixPath(content.Destination), docDirs) {
+				continue
+			}
 		}
 		// rpmbuild checks the mode of the file in the build root; the mode
 		// in the package is the nfpm equivalent, and the only one that can

@@ -148,7 +148,16 @@ func TestSRPMGenerateSpecFileDirectives(t *testing.T) {
 				{Destination: "/var/log/ghost.log", Type: files.TypeRPMGhost},
 				{Source: "/usr/bin/fake", Destination: "/usr/bin/fakelink", Type: files.TypeSymlink},
 				{Destination: "/var/lib/spectest", Type: files.TypeDir},
+				{Source: "../testdata/whatever.conf", Destination: "/usr/share/doc/spectest/cfg.conf", Type: files.TypeConfig, FileInfo: &files.ContentFileInfo{Mode: 0o644}},
+				{Source: "../testdata/fake", Destination: "/usr/share/doc/spectest/LICENSE", Type: files.TypeRPMLicense},
+				{Destination: "/usr/share/doc/spectest/ghost", Type: files.TypeRPMGhost},
+				{Source: "readme", Destination: "/usr/share/doc/spectest/link", Type: files.TypeSymlink},
+				{Destination: "/usr/share/doc/spectest", Type: files.TypeDir},
+				{Source: "../testdata/fake", Destination: "/opt/100%docs/manual"},
+				{Source: "../testdata/fake", Destination: "/opt/docs:v1/manual"},
+				{Source: "../testdata/fake", Destination: "/opt/docs/manual"},
 			},
+			RPM: nfpm.RPM{DocDirs: []string{"/usr/share/doc/", "", "opt/100%docs", "/opt/docs:v1"}},
 		},
 	})
 	info = setDefaults(info)
@@ -165,35 +174,72 @@ func TestSRPMGenerateSpecFileDirectives(t *testing.T) {
 	require.Contains(t, spec, "%dir %attr")
 	require.Contains(t, spec, "/var/lib/spectest")
 	require.Contains(t, spec, `%attr(-, root, root) "/usr/bin/fakelink"`)
+	require.Contains(t, spec, "%global __docdir_path %{nil}\n")
+	require.Contains(t, spec, "\n%config %doc %attr(0644, root, root) \"/usr/share/doc/spectest/cfg.conf\"\n")
+	require.Contains(t, spec, "\n%license %doc %attr(")
+	require.Contains(t, spec, "\n%ghost %doc %attr(0644, root, root) \"/usr/share/doc/spectest/ghost\"\n")
+	require.Contains(t, spec, "\n%doc %attr(-, root, root) \"/usr/share/doc/spectest/link\"\n")
+	require.Contains(t, spec, "\n%dir %attr(0755, root, root) \"/usr/share/doc/spectest\"\n")
+	require.Regexp(t, `\n%doc %attr\(\d+, root, root\) "/opt/100%%docs/manual"\n`, spec)
+	require.Regexp(t, `\n%doc %attr\(\d+, root, root\) "/opt/docs:v1/manual"\n`, spec)
+	require.Regexp(t, `\n%attr\(\d+, root, root\) "/opt/docs/manual"\n`, spec)
+	require.NotContains(t, spec, "%doc %doc")
 }
 
 func TestSRPMGenerateSpecScriptRequires(t *testing.T) {
-	script := filepath.Join(t.TempDir(), "script")
-	require.NoError(t, os.WriteFile(script, []byte("#!/bin/bash\necho\n"), 0o644))
-	info := nfpm.WithDefaults(&nfpm.Info{
-		Name:        "scripttest",
-		Arch:        "amd64",
-		Version:     "1.0.0",
-		Description: "script requires coverage",
-		Maintainer:  "maintainer",
-		Overridables: nfpm.Overridables{
-			Contents: []*files.Content{{
-				Source:      script,
-				Destination: "/usr/bin/script",
-				FileInfo:    &files.ContentFileInfo{Mode: 0o755},
-			}},
-			RPM: nfpm.RPM{ScriptRequires: true},
-		},
-	})
-	info = setDefaults(info)
-	require.NoError(t, nfpm.PrepareForPackager(info, "rpm"))
+	dir := t.TempDir()
+	script := func(dest, interpreter, fileType string) *files.Content {
+		path := filepath.Join(dir, filepath.Base(dest))
+		require.NoError(t, os.WriteFile(path, []byte("#!"+interpreter+"\n"), 0o644))
+		return &files.Content{
+			Source:      path,
+			Destination: dest,
+			Type:        fileType,
+			FileInfo:    &files.ContentFileInfo{Mode: 0o755},
+		}
+	}
 
-	spec, err := generateSpec(info, "scripttest-1.0.0.tar.gz")
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		docDirs  []string
+		required []string
+		skipped  []string
+	}{
+		"no doc dirs": {nil, []string{"/bin/bash", "/usr/bin/zsh", "/usr/bin/python3"}, []string{"/bin/dash"}},
+		"doc dirs":    {[]string{"/opt/docs"}, []string{"/bin/bash", "/usr/bin/zsh"}, []string{"/bin/dash", "/usr/bin/python3"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			info := nfpm.WithDefaults(&nfpm.Info{
+				Name:        "scripttest",
+				Arch:        "amd64",
+				Version:     "1.0.0",
+				Description: "script requires coverage",
+				Maintainer:  "maintainer",
+				Overridables: nfpm.Overridables{
+					Contents: []*files.Content{
+						script("/usr/bin/script", "/bin/bash", files.TypeFile),
+						script("/usr/share/documentation/tool", "/usr/bin/zsh", files.TypeFile),
+						script("/opt/docs/example.py", "/usr/bin/python3", files.TypeFile),
+						script("/usr/libexec/scripttest/doc", "/bin/dash", files.TypeRPMDoc),
+					},
+					RPM: nfpm.RPM{ScriptRequires: true, DocDirs: tc.docDirs},
+				},
+			})
+			info = setDefaults(info)
+			require.NoError(t, nfpm.PrepareForPackager(info, "rpm"))
 
-	// AutoReqProv is off, so the rebuild only keeps the explicit requires.
-	require.Contains(t, spec, "AutoReqProv: no\n")
-	require.Contains(t, spec, "Requires: /bin/bash\n")
+			spec, err := generateSpec(info, "scripttest-1.0.0.tar.gz")
+			require.NoError(t, err)
+
+			// AutoReqProv is off, so the rebuild only keeps the explicit requires.
+			require.Contains(t, spec, "AutoReqProv: no\n")
+			for _, interpreter := range tc.required {
+				require.Contains(t, spec, "Requires: "+interpreter+"\n")
+			}
+			for _, interpreter := range tc.skipped {
+				require.NotContains(t, spec, interpreter)
+			}
+		})
+	}
 }
 
 func TestSRPMGenerateSpecLang(t *testing.T) {
